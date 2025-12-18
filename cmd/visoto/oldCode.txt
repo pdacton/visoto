@@ -1,0 +1,82 @@
+
+
+
+
+// send a SPARQL query to the specified endpoint and return the response
+func querySparqlEndpoint(endpointURL, query string) ([]byte, error) {
+
+	// Prepare the request parameters
+	params := url.Values{}
+	params.Set("query", query)
+	params.Set("format", "application/sparql-results+json")
+
+	// Create the HTTP request
+	req, err := http.NewRequest("POST", endpointURL, strings.NewReader(params.Encode()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	// Set appropriate headers
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Accept", "application/sparql-results+json")
+
+	// Execute the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check for HTTP errors
+	if resp.StatusCode != http.StatusOK {
+		io.Copy(io.Discard, resp.Body) // Drain body to allow connection reuse
+		return nil, fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
+	}
+
+	// Read the response body
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	return body, nil
+}
+
+// fetchResourceData sends a SPARQL query to the endpoint for the given IRI
+func fetchResourceData(iri string) (SparqlResponse, error) {
+
+	// set SPARQL endpoint URL (using Lindas as an example)
+	// TODO: make this endpoint configurable
+	endpointURL := "https://lindas.admin.ch/query"
+
+	// 1. SPARQL query: pick up all value properties (literals)
+	sparqlQuery := `
+		PREFIX dbo: <http://dbpedia.org/ontology/>
+		PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+		SELECT ?p ?o WHERE {
+			BIND ( <` + iri + `> AS ?s)
+			?s ?p ?o
+			FILTER (isLiteral(?o))
+		}
+		LIMIT 500
+	`
+	fmt.Printf("Query: %v\n", sparqlQuery)
+
+	// 2. query the SPARQL endpoint about the resource
+	response, err := querySparqlEndpoint(endpointURL, sparqlQuery)
+	if err != nil {
+		return SparqlResponse{}, fmt.Errorf("error executing SPARQL query: %w", err)
+	}
+
+	// 3. Parse the JSON response into go struct
+	var sparqlResp SparqlResponse
+	if err := json.Unmarshal(response, &sparqlResp); err != nil {
+		return SparqlResponse{}, fmt.Errorf("error parsing JSON response: %w", err)
+	}
+
+	fmt.Printf("Result: %v\n", sparqlResp)
+
+	return sparqlResp, nil
+}

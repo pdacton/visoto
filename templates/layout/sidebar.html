@@ -1,0 +1,80 @@
+<aside class="navbar navbar-vertical navbar-expand-lg">
+  <div class="container-fluid">
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#sidebar-menu" aria-controls="sidebar-menu" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="sidebar-menu">
+      <ul class="navbar-nav pt-lg-3">
+
+        <!-- Zefix Resource Link -->
+        <li class="nav-item">
+          <a class="nav-link" href="/resource/https://register.ld.admin.ch/zefix/company/1331820">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <!-- Building icon from Tabler -->
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-buildings"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 21v-15c0 -1 1 -2 2 -2h5c1 0 2 1 2 2v15" /><path d="M16 8h2c1 0 2 1 2 2v11" /><path d="M3 21h18" /><path d="M10 12v0" /><path d="M10 16v0" /><path d="M10 8v0" /><path d="M7 12v0" /><path d="M7 16v0" /><path d="M7 8v0" /><path d="M17 12v0" /><path d="M17 16v0" /></svg>
+            </span>
+            <span class="nav-link-title">Zefix Simple</span>
+          </a>
+        </li>
+
+        <!-- Zefix Resource Link 2 -->
+        <li class="nav-item">
+          <a class="nav-link" href="/embedded/https://register.ld.admin.ch/zefix/company/1331820">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <!-- Building icon from Tabler -->
+              <svg  xmlns="http://www.w3.org/2000/svg"  width="24"  height="24"  viewBox="0 0 24 24"  fill="none"  stroke="currentColor"  stroke-width="2"  stroke-linecap="round"  stroke-linejoin="round"  class="icon icon-tabler icons-tabler-outline icon-tabler-buildings"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M4 21v-15c0 -1 1 -2 2 -2h5c1 0 2 1 2 2v15" /><path d="M16 8h2c1 0 2 1 2 2v11" /><path d="M3 21h18" /><path d="M10 12v0" /><path d="M10 16v0" /><path d="M10 8v0" /><path d="M7 12v0" /><path d="M7 16v0" /><path d="M7 8v0" /><path d="M17 12v0" /><path d="M17 16v0" /></svg>
+            </span>
+            <span class="nav-link-title">Zefix embedded</span>
+          </a>
+        </li>
+
+        <!-- Simple menu item -->
+        <li class="nav-item">
+          <a class="nav-link" href="/dashboard">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <!-- Home icon from Tabler -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                <path d="M5 12l-2 0l9 -9l9 9l-2 0"></path>
+                <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2 -2v-7"></path>
+                <path d="M9 21v-6a2 2 0 0 1 2 -2h2a2 2 0 0 1 2 2v6"></path>
+              </svg>
+            </span>
+            <span class="nav-link-title">Dashboard</span>
+          </a>
+        </li>
+
+        <!-- Menu item with sub menu -->
+        <li class="nav-item dropdown">
+          <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+            <span class="nav-link-icon d-md-none d-lg-inline-block">
+              <!-- Folder icon from Tabler -->
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon icon-1">
+                <path d="M3 7h3l3 5h8a2 2 0 0 1 2 2v5a2 2 0 0 1 -2 2h-14a2 2 0 0 1 -2 -2v-10a2 2 0 0 1 2 -2z"></path>
+              </svg>
+            </span>
+            <span class="nav-link-title">Projects</span>
+          </a>
+          <div class="dropdown-menu">
+            <a class="dropdown-item" href="/projects/active">Active Projects</a>
+            <a class="dropdown-item" href="/projects/archive">Archived Projects</a>
+          </div>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+</aside>
+<style>
+  /* Ensure the sidebar appears below the navbar and does not overlap */
+  .navbar-vertical {
+    margin-top: 56px; /* Adjust if your navbar is taller */
+    min-height: calc(100vh - 56px);
+    position: static;
+  }
+  @media (max-width: 991.98px) {
+    .navbar-vertical {
+      margin-top: 0;
+      min-height: 0;
+    }
+  }
+</style>

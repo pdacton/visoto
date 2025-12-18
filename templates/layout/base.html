@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>visoto visualizer</title>
+    <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
+    <link rel="icon" href="/path/to/favicon.png">
+
+    <!-- bootstrap, tabler, tabulator includes -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/css/tabler.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css">
+    
+    <!-- overrides -->
+    <link rel="stylesheet" href="/static/css/overrides.css">
+
+    <!-- ontodia includes -->
+    <script type="text/javascript" src="https://unpkg.com/ontodia@0.8.0/dist/ontodia-full.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/react/15.6.2/react.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/15.6.2/react-dom.js"></script>
+
+  </head>
+
+  <body>
+    <div class="page">
+
+      {{ template "navbar.html" . }}
+
+      {{ template "sidebar.html" . }}
+
+      <div class="page-wrapper">
+
+        <!-- Header -->
+        {{ template "header.html" . }}
+        
+        <!-- Body -->
+        <div class="page-body">
+          <div class="container-xl">
+            {{ block "pageContent" . }}<p>This is the base page</p>{{ end }}
+          </div>
+        </div>
+
+        <!-- Footer -->
+        {{ template "footer.html" . }}
+
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/js/tabler.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
+    <script src="/static/js/darkmode.js"></script>
+    <script src="/static/js/sidebar.js"></script>
+    {{ block "pageScripts" . }}{{ end }}
+
+  </body>
+
+</html>

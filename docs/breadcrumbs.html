@@ -1,0 +1,28 @@
+          <!-- following breadcrumbs should use these styles: 
+          <li class="breadcrumb-item"><a href="/">Library</a></li>
+          <li class="breadcrumb-item active" aria-current="page"><a href="#">Articles</a></li>
+
+          TODO
+          Suggestion by Claude:
+          Pass breadcrumb data from Go 
+            handlers:
+            data := map[string]interface{}{
+                "breadcrumbs":
+            []map[string]string{
+                    {"name": "Home", "url": "/"},
+                    {"name": "Resource", "url":
+            "", "active": true},
+                },
+            }
+
+          Then in template:
+          {{ range .breadcrumbs }}
+            <li class="breadcrumb-item {{ if .active }}active" aria-current="page"{{ end }}">
+              {{ if .url }}
+                <a href="{{ .url }}">{{ .name }}</a>
+              {{ else }}
+                {{ .name }}
+              {{ end }}
+            </li>
+          {{ end }}
+          -->

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<svg width="674" height="684" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xml:space="preserve">
+ <defs>
+  <linearGradient id="fill0" spreadMethod="reflect" x1="1" x2="0" y1="1" y2="0">
+   <stop offset="0" stop-color="#E97132"/>
+   <stop offset="0.17" stop-color="#E97132"/>
+   <stop offset="1" stop-color="#FFC000"/>
+  </linearGradient>
+ </defs>
+ <g class="layer" display="inline">
+  <title>Layer 1</title>
+  <g id="svg_1" transform="translate(-0.0882303 0.959693) scale(1.34323 1.36594) translate(0.0882303 -0.959693) translate(-0.0480042 1) matrix(0.959774 0 0 0.959693 -264.852 -319.578)">
+   <path d="m277,593.5c0,-207.6 52,-259.5 260,-259.5c208,0 260,51.9 260,259.5c0,207.6 -52,259.5 -260,259.5c-208,0 -260,-51.9 -260,-259.5" fill="url(#fill0)" fill-rule="evenodd" id="svg_2"/>
+   <text fill="#FFFFFF" font-family="Aptos,Aptos_MSFontService,sans-serif" font-size="248" font-weight="700" id="svg_3" transform="matrix(1 0 0 1 276.952 585)">vis</text>
+   <text fill="#FFFFFF" font-family="Aptos,Aptos_MSFontService,sans-serif" font-size="248" font-weight="700" id="svg_4" transform="matrix(1 0 0 1 315.91 748)">oto</text>
+  </g>
+ </g>
+</svg>

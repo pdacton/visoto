@@ -1,0 +1,5 @@
+{{ define "pageTitle" }}embedded.html{{ end }}
+
+{{ define "pageContent" }}
+this is embedded.html content.
+{{ end }}

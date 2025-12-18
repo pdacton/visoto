@@ -1,0 +1,58 @@
+// assets/js/darkmode.js
+
+document.addEventListener('DOMContentLoaded', function () {
+  const themeToggle = document.getElementById('theme-toggle');
+  const html = document.documentElement;
+
+  // Helper to update icon and tooltip based on theme
+  function updateThemeToggle(theme) {
+    if (!themeToggle) return;
+    const themeIcon = themeToggle.querySelector('#theme-icon');
+
+    // switch the icon
+    if (themeIcon) {
+      if (theme === 'dark') {
+        themeIcon.classList.remove('bi-moon');
+        themeIcon.classList.add('bi-sun');
+        themeIcon.setAttribute('aria-label', 'Switch to light mode');
+      } else {
+        themeIcon.classList.remove('bi-sun');
+        themeIcon.classList.add('bi-moon');
+        themeIcon.setAttribute('aria-label', 'Switch to dark mode');
+      }
+    }
+
+    // switch the container of the icon
+    if (theme === 'dark') {
+      themeToggle.setAttribute('aria-label', 'Enable light mode');
+      themeToggle.setAttribute('data-bs-original-title', 'Enable light mode');
+    } else {
+      themeToggle.setAttribute('aria-label', 'Enable dark mode');
+      themeToggle.setAttribute('data-bs-original-title', 'Enable dark mode');
+    }
+    
+    // If using Bootstrap tooltips, update the tooltip if already initialized
+    if (window.bootstrap && window.bootstrap.Tooltip) {
+      const tooltip = window.bootstrap.Tooltip.getInstance(themeToggle);
+      if (tooltip) tooltip.setContent({ '.tooltip-inner': themeToggle.getAttribute('data-bs-original-title') });
+    }
+  }
+
+  // Load theme from localStorage if available
+  const savedTheme = localStorage.getItem('bs-theme');
+  if (savedTheme) {
+    html.setAttribute('data-bs-theme', savedTheme);
+    updateThemeToggle(savedTheme);
+  } else {
+    // Set icon based on current theme (default)
+    updateThemeToggle(html.getAttribute('data-bs-theme'));
+  }
+
+  themeToggle?.addEventListener('click', function () {
+    const currentTheme = html.getAttribute('data-bs-theme');
+    const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-bs-theme', newTheme);
+    localStorage.setItem('bs-theme', newTheme);
+    updateThemeToggle(newTheme);
+  });
+});

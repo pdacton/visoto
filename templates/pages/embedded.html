@@ -1,0 +1,87 @@
+{{ define "pageTitle" }}Embedded SPARQL Query Demo{{ end }}
+
+{{ define "pageContent" }}
+
+<!-- TODO: sparql-table template -->
+
+<div class="container py-4">
+
+  <h2>Outgoing Relationships</h2>
+
+  <sparql-query id="outgoing" style="display: none;">
+    SELECT * WHERE {
+      BIND (?? AS ?s)
+      ?s ?p ?o .
+    } LIMIT 1000
+  </sparql-query>
+
+  {{ if .QueryResults.outgoing.Error }}
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle"></i>
+      Query failed: {{ .QueryResults.outgoing.Error }}
+    </div>
+  {{ else }}
+    <p>Found {{ len .QueryResults.outgoing.Bindings }} results</p>
+
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          {{ range .QueryResults.outgoing.Vars }}
+            <th>{{ . }}</th>
+          {{ end }}
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .QueryResults.outgoing.Bindings }}
+          <tr>
+            <td>{{ linkOrText .s }}</td>
+            <td>{{ linkOrText .p }}</td>
+            <td>{{ linkOrText .o }}</td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  {{ end }}
+
+  <h2>Incoming Relationships</h2>
+
+  <sparql-query id="incoming" style="display: none;">
+    SELECT * WHERE {
+      BIND (?? AS ?o)
+      ?s ?p ?o .
+    } LIMIT 1000
+  </sparql-query>
+
+  {{ if .QueryResults.incoming.Error }}
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle"></i>
+      Query failed: {{ .QueryResults.incoming.Error }}
+    </div>
+  {{ else }}
+    <p>Found {{ len .QueryResults.incoming.Bindings }} results</p>
+
+    <table class="table table-bordered">
+      <thead>
+        <tr>
+          {{ range .QueryResults.incoming.Vars }}
+            <th>{{ . }}</th>
+          {{ end }}
+        </tr>
+      </thead>
+      <tbody>
+        {{ range .QueryResults.incoming.Bindings }}
+          <tr>
+            <td>{{ linkOrText .s }}</td>
+            <td>{{ linkOrText .p }}</td>
+            <td>{{ linkOrText .o }}</td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  {{ end }}
+  
+</div>
+
+{{ . }}
+
+{{ end }}
