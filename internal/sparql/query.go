@@ -80,29 +80,17 @@ func querySparqlEndpoint(endpointURL, query string) ([]byte, error) {
 // we basically take out the Head and Results and keep the Vars and Bindings only
 func simplifyBindings(resp sparqlResponse) QueryResult {
 	result := QueryResult{
-		Vars: resp.Head.Vars,
-		Bindings: make([]map[string]struct {
-			Type  string
-			Value string
-			Lol   string
-		}, 0, len(resp.Results.Bindings)),
+		Vars:     resp.Head.Vars,
+		Bindings: make([]map[string]Binding, 0, len(resp.Results.Bindings)),
 	}
 
 	// apparently we have to copy each binding entry individually,
 	// even though the structures of QueryResult.Bindings and sparqlResponse.Results.Bindings are identical
 	// but go treats them as different types because of the tags
 	for _, binding := range resp.Results.Bindings {
-		simplified := make(map[string]struct {
-			Type  string
-			Value string
-			Lol   string
-		})
+		simplified := make(map[string]Binding)
 		for varName, varData := range binding {
-			simplified[varName] = struct {
-				Type  string
-				Value string
-				Lol   string
-			}{
+			simplified[varName] = Binding{
 				Type:  varData.Type,
 				Value: varData.Value,
 				Lol:   varData.Value,

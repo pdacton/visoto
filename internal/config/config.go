@@ -1,4 +1,4 @@
-// load config file into Config struct
+// load application config file from TOML file into Config struct
 
 package config
 
@@ -88,7 +88,7 @@ func (c *Config) GetTimeout() time.Duration {
 	return time.Duration(c.Application.Timeout) * time.Second
 }
 
-// GetPort returns the formatted port string for router.Run()
+// GetPort returns the formatted port string ":8080" instead of int for router.Run()
 func (c *Config) GetPort() string {
 	return fmt.Sprintf(":%d", c.Application.Port)
 }

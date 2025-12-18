@@ -1,6 +1,12 @@
+// deals with our custom html elements
 package sparql
 
-import "fmt"
+import (
+	"fmt"
+	"log/slog"
+
+	"hutzli.org/visoto/internal/logger"
+)
 
 // ExtractedElement represents any SPARQL custom element found in template
 type ExtractedElement struct {
@@ -13,6 +19,10 @@ type ExtractedElement struct {
 // AsQuery converts ExtractedElement to extractedQuery
 func (e ExtractedElement) AsQuery() (extractedQuery, error) {
 	if e.TagName != "sparql-query" {
+		log := logger.Get()
+		log.Warn("invalid element type for AsQuery conversion",
+			slog.String("tag_name", e.TagName),
+			slog.String("expected", "sparql-query"))
 		return extractedQuery{}, fmt.Errorf("not a sparql-query element: %s", e.TagName)
 	}
 

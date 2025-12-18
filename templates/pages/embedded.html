@@ -34,9 +34,9 @@
       <tbody>
         {{ range .QueryResults.outgoing.Bindings }}
           <tr>
-            <td>{{ linkOrText .s }}</td>
-            <td>{{ linkOrText .p }}</td>
-            <td>{{ linkOrText .o }}</td>
+            <td>{{ render .s }}</td>
+            <td>{{ render .p }}</td>
+            <td>{{ render .o }}</td>
           </tr>
         {{ end }}
       </tbody>
@@ -71,9 +71,9 @@
       <tbody>
         {{ range .QueryResults.incoming.Bindings }}
           <tr>
-            <td>{{ linkOrText .s }}</td>
-            <td>{{ linkOrText .p }}</td>
-            <td>{{ linkOrText .o }}</td>
+            <td>{{ render .s }}</td>
+            <td>{{ render .p }}</td>
+            <td>{{ render .o }}</td>
           </tr>
         {{ end }}
       </tbody>

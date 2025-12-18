@@ -112,11 +112,7 @@ func TestExtractIRIs(t *testing.T) {
 			name: "mixed types",
 			result: QueryResult{
 				Vars: []string{"s", "p", "o"},
-				Bindings: []map[string]struct {
-					Type  string
-					Value string
-					Lol   string
-				}{
+				Bindings: []map[string]Binding{
 					{
 						"s": {Type: "uri", Value: "http://example.com/subject", Lol: ""},
 						"p": {Type: "uri", Value: "http://example.com/predicate", Lol: ""},
@@ -139,11 +135,7 @@ func TestExtractIRIs(t *testing.T) {
 			name: "empty result",
 			result: QueryResult{
 				Vars:     []string{},
-				Bindings: []map[string]struct {
-					Type  string
-					Value string
-					Lol   string
-				}{},
+				Bindings: []map[string]Binding{},
 			},
 			want: []string{},
 		},
@@ -151,11 +143,7 @@ func TestExtractIRIs(t *testing.T) {
 			name: "only literals",
 			result: QueryResult{
 				Vars: []string{"o"},
-				Bindings: []map[string]struct {
-					Type  string
-					Value string
-					Lol   string
-				}{
+				Bindings: []map[string]Binding{
 					{
 						"o": {Type: "literal", Value: "literal1", Lol: ""},
 					},
@@ -306,11 +294,7 @@ func TestLabelCache(t *testing.T) {
 func TestEnrichWithLabels(t *testing.T) {
 	result := QueryResult{
 		Vars: []string{"s", "p", "o"},
-		Bindings: []map[string]struct {
-			Type  string
-			Value string
-			Lol   string
-		}{
+		Bindings: []map[string]Binding{
 			{
 				"s": {Type: "uri", Value: "http://example.com/subject", Lol: "http://example.com/subject"},
 				"p": {Type: "uri", Value: "http://schema.org/name", Lol: "http://schema.org/name"},
