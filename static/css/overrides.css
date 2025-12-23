@@ -24,10 +24,10 @@
     background: var(--tblr-bg-surface-tertiary);
 }
 
-.tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+/* .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
     padding-top: 8px;
     padding-bottom: 8px;
-}
+} */
 
 
 /* --- table row formatting --- */

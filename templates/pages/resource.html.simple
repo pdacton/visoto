@@ -1,5 +1,0 @@
-{{ define "pageTitle" }}resource.html{{ end }}
-
-{{ define "pageContent" }}
-<h1>this is resource.html content.</h1> 
-{{ end }}

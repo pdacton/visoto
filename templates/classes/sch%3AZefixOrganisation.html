@@ -1,0 +1,121 @@
+{{ define "pageTitle" }}Zefix Organization Class{{ end }}
+
+{{ define "pageContent" }}
+
+<!-- TODO: sparql-table template -->
+
+<h1>{{ template "pageTitle" }}</h1>
+
+<div class="container py-4">
+
+  <div class="mt-5">
+
+    <h2>Outgoing Relationships</h2>
+
+    <sparql-query id="outgoing" style="display: none;">
+      SELECT * WHERE {
+        BIND (?? AS ?s)
+        ?s ?p ?o .
+      } LIMIT 1000
+    </sparql-query>
+
+    {{ if .QueryResults.outgoing.Error }}
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i>
+        Query failed: {{ .QueryResults.outgoing.Error }}
+      </div>
+    {{ else }}
+      <!-- table header with search box -->
+      <div class="mb-3 d-flex align-items-center gap-3">
+        <span>Found {{ len .QueryResults.outgoing.Bindings }} results</span>
+        <input type="text" id="search-table" class="form-control" placeholder="Search table..." style="max-width: 300px;">
+      </div>
+
+      <!-- the table itself  -->
+      <table id="outgoing-table">
+        <thead>
+          <tr>
+            {{ range .QueryResults.outgoing.Vars }}
+              <th tabulator-formatter="html" tabulator-sorter="string">{{ . }}</th>
+            {{ end }}
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .QueryResults.outgoing.Bindings }}
+            <tr>
+              <td>{{ render .s }}</td>
+              <td>{{ render .p }}</td>
+              <td>{{ render .o }}</td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    {{ end }}
+  
+  </div>
+
+  <div class="mt-5">
+    <h2>Incoming Relationships</h2>
+
+    <sparql-query id="incoming" style="display: none;">
+      SELECT * WHERE {
+        BIND (?? AS ?o)
+        ?s ?p ?o .
+      } LIMIT 1000
+    </sparql-query>
+
+    {{ if .QueryResults.incoming.Error }}
+      <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i>
+        Query failed: {{ .QueryResults.incoming.Error }}
+      </div>
+    {{ else }}
+      <p>Found {{ len .QueryResults.incoming.Bindings }} results</p>
+
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            {{ range .QueryResults.incoming.Vars }}
+              <th>{{ . }}</th>
+            {{ end }}
+          </tr>
+        </thead>
+        <tbody>
+          {{ range .QueryResults.incoming.Bindings }}
+            <tr>
+              <td>{{ render .s }}</td>
+              <td>{{ render .p }}</td>
+              <td>{{ render .o }}</td>
+            </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    {{ end }}
+  </div>
+
+</div>
+
+{{ end }}
+
+
+
+{{ define "pageScripts" }}
+<script>
+   var table = new Tabulator("#outgoing-table", {
+     layout: "fitColumns",
+     renderHorizontal: "virtual",
+     movableColumns: true,
+   });
+
+   // Global search
+   document.getElementById("search-table").addEventListener("input", function(e) {
+     table.setFilter([
+       [
+         {field: "s", type: "like", value: e.target.value},
+         {field: "p", type: "like", value: e.target.value},
+         {field: "o", type: "like", value: e.target.value},
+       ]
+     ]);
+   });
+</script>
+{{ end }}

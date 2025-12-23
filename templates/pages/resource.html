@@ -1,50 +1,89 @@
-{{ define "pageTitle" }}Resource Page{{ end }}
+{{ define "pageTitle" }}Resource SPARQL Query Demo{{ end }}
 
 {{ define "pageContent" }}
+
+<!-- TODO: sparql-table template -->
+
+<h1>{{ template "pageTitle" }}</h1>
+
 <div class="container py-4">
-  <h2>Resource Page</h2>
-  <p>This is the resource page content, rendered using a custom template that overwrites the base content block.</p>
 
-  {{ . }}
+  <h2>Outgoing Relationships</h2>
 
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        {{ range .Head.Vars }}
-          <th>{{ . }}</th>
-        {{ end }}
-      </tr>
-    </thead>
-    <tbody>
-      {{ range .Results.Bindings }}
+  <sparql-query id="outgoing" style="display: none;">
+    SELECT * WHERE {
+      BIND (?? AS ?s)
+      ?s ?p ?o .
+    } LIMIT 1000
+  </sparql-query>
+
+  {{ if .QueryResults.outgoing.Error }}
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle"></i>
+      Query failed: {{ .QueryResults.outgoing.Error }}
+    </div>
+  {{ else }}
+    <p>Found {{ len .QueryResults.outgoing.Bindings }} results</p>
+
+    <table class="table table-bordered">
+      <thead>
         <tr>
-          {{ range . }}
-            <td>{{ .Value }}</td>
+          {{ range .QueryResults.outgoing.Vars }}
+            <th>{{ . }}</th>
           {{ end }}
         </tr>
-      {{ end }}
-    </tbody>
-  </table>
-
-  <table class="table table-bordered">
-    <thead>
-      <tr>
-        {{ range .Head.Vars }}
-          <th>{{ . }}</th>
+      </thead>
+      <tbody>
+        {{ range .QueryResults.outgoing.Bindings }}
+          <tr>
+            <td>{{ render .s }}</td>
+            <td>{{ render .p }}</td>
+            <td>{{ render .o }}</td>
+          </tr>
         {{ end }}
-      </tr>
-    </thead>
-    <tbody>
-      {{ range .Results.Bindings }}
-        {{$p := index . "p"}}
-        {{$o := index . "o"}}      
+      </tbody>
+    </table>
+  {{ end }}
+
+  <h2>Incoming Relationships</h2>
+
+  <sparql-query id="incoming" style="display: none;">
+    SELECT * WHERE {
+      BIND (?? AS ?o)
+      ?s ?p ?o .
+    } LIMIT 1000
+  </sparql-query>
+
+  {{ if .QueryResults.incoming.Error }}
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle"></i>
+      Query failed: {{ .QueryResults.incoming.Error }}
+    </div>
+  {{ else }}
+    <p>Found {{ len .QueryResults.incoming.Bindings }} results</p>
+
+    <table class="table table-bordered">
+      <thead>
         <tr>
-            <td>{{ $p.Value }}</td>
-            <td>{{ $o.Value }}</td>
+          {{ range .QueryResults.incoming.Vars }}
+            <th>{{ . }}</th>
+          {{ end }}
         </tr>
-      {{ end }}
-    </tbody>
-  </table>
-  
+      </thead>
+      <tbody>
+        {{ range .QueryResults.incoming.Bindings }}
+          <tr>
+            <td>{{ render .s }}</td>
+            <td>{{ render .p }}</td>
+            <td>{{ render .o }}</td>
+          </tr>
+        {{ end }}
+      </tbody>
+    </table>
+  {{ end }}
+
 </div>
+
+{{ . }}
+
 {{ end }}

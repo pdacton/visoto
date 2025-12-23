@@ -12,14 +12,14 @@ type Config struct {
 
 // QueryResult stores simplified SPARQL results for template consumption
 type QueryResult struct {
-	Vars     []string                // Variable names from head.vars
-	Bindings []map[string]Binding    // bindings: value and type
-	Error    string                  // Error message if query failed
+	Vars     []string             // Variable names from head.vars
+	Bindings []map[string]Binding // bindings: value and type
+	Error    string               // Error message if query failed
 }
 
-// PageData wraps all data passed to templates with embedded queries
-type PageData struct {
-	QueryResults map[string]QueryResult // Results indexed by query ID
+// PageData wraps all data retrieved for a resource
+type TemplateData struct {
+	QueryResults map[string]QueryResult // Results indexed by query ID defined in template
 }
 
 // extractedQuery represents a SPARQL query found in template (internal use)

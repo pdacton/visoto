@@ -14,6 +14,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
+	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/sparql"
 	"hutzli.org/visoto/internal/templates"
 )
@@ -36,6 +37,9 @@ type SparqlResponse struct {
 // Package-level SPARQL preprocessor instance
 var sparqlPreproc *sparql.Preprocessor
 
+// Package-level config instance
+var cfg *config.Config
+
 func homeHandler(c *gin.Context) {
 
 	// native gin template rendering
@@ -44,8 +48,47 @@ func homeHandler(c *gin.Context) {
 
 func resourceHandler(c *gin.Context) {
 
+	// extract iri from path
+	iri := strings.TrimPrefix(c.Param("path"), "/")
+
+	// log request
+	log := logger.Get()
+	log.Debug("processing resource request",
+		slog.String("path", c.Param("path")),
+		slog.String("iri", iri))
+
+	// create Resource instance
+	r, err := resource.New(iri, cfg.RDF.ParsedPrefixes)
+	if err != nil {
+		log := logger.Get()
+		log.Error("invalid resource IRI", slog.String("iri", iri), slog.String("error", err.Error()))
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Get language preference from request
+	//acceptLanguage := c.GetHeader("Accept-Language")
+
+	// Resolve template based on IRI and RDF types
+	if err := r.ResolveTemplate(sparqlPreproc, cfg.RDF.TypePriority, cfg.RDF.ParsedPrefixes); err != nil {
+		log.Error("template resolution failed",
+			slog.String("iri", iri),
+			slog.String("error", err.Error()))
+		// Continue with fallback already set by ResolveTemplate
+	}
+
+	// TODO: refactor, move into Resource method
+	// extract SPARQL query from template and retrieve data
+	r.Data, err = sparqlPreproc.ProcessTemplateFile(r.TemplatePath, iri, "")
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
+		return
+	}
+
+	// log.Debug("SPARQL data retrieved", slog.Any("data", r.Data))
+
 	// native gin template rendering
-	c.HTML(http.StatusOK, "resource.html", "")
+	c.HTML(http.StatusOK, r.TemplateName, r.Data)
 }
 
 func embeddedHandler(c *gin.Context) {
@@ -65,6 +108,9 @@ func embeddedHandler(c *gin.Context) {
 	// Get language preference from request
 	acceptLanguage := c.GetHeader("Accept-Language")
 
+	// TODO: resolve template written for resource
+	// either direct match over IRI, or resolve for rdf:type and then match
+
 	// extract SPARQL query from template and retrieve data
 	data, err := sparqlPreproc.ProcessTemplateFile("templates/pages/embedded.html", iri, acceptLanguage)
 	if err != nil {
@@ -81,7 +127,8 @@ func embeddedHandler(c *gin.Context) {
 func main() {
 
 	// Load configuration
-	cfg, err := config.Load("visoto.config")
+	var err error
+	cfg, err = config.Load("visoto.config")
 	if err != nil {
 		// Config loading failed, but cfg contains defaults
 		fmt.Fprintf(os.Stderr, "WARNING: Failed to load config file, using defaults: %v\n", err)

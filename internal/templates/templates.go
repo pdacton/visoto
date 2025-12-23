@@ -34,9 +34,25 @@ func Load(templatesDir string) multitemplate.Renderer {
 		panic(err.Error())
 	}
 
+	// Compile list of class templates
+	classes, err := filepath.Glob(templatesDir + "/classes/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Compile list of instance templates
+	instances, err := filepath.Glob(templatesDir + "/instances/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Combine all template lists
+	allTemplates := append(pages, classes...)
+	allTemplates = append(allTemplates, instances...)
+
 	// Generate templates map: one template set for each page
 	// Each page gets combined with all layouts
-	for _, page := range pages {
+	for _, page := range allTemplates {
 		layoutCopy := make([]string, len(layouts))
 		copy(layoutCopy, layouts)
 		files := append(layoutCopy, page)
@@ -51,7 +67,9 @@ func Load(templatesDir string) multitemplate.Renderer {
 	log := logger.Get()
 	log.Debug("templates loaded",
 		slog.Int("layouts", len(layouts)),
-		slog.Int("pages", len(pages)))
+		slog.Int("pages", len(pages)),
+		slog.Int("classes", len(classes)),
+		slog.Int("instances", len(instances)))
 
 	return r
 }

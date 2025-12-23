@@ -1,5 +1,8 @@
 package logger
 
+// TODO: change to global instead Get function for leaner calls
+// TODO: add file rotation support
+
 import (
 	"fmt"
 	"io"

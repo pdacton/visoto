@@ -23,18 +23,18 @@ func New(config Config) *Preprocessor {
 
 // ProcessTemplateFile reads a template file, extracts and executes SPARQL queries,
 // and returns the cleaned template content and query results
-func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLanguage string) (PageData, error) {
+func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLanguage string) (TemplateData, error) {
 
 	// Read template file
 	content, err := os.ReadFile(filepath)
 	if err != nil {
-		return PageData{}, fmt.Errorf("failed to read template file: %w", err)
+		return TemplateData{}, fmt.Errorf("failed to read template file: %w", err)
 	}
 
 	// Extract SPARQL queries from template using DOM parser
 	queries, err := extractQueriesDOM(string(content))
 	if err != nil {
-		return PageData{}, fmt.Errorf("failed to extract queries: %w", err)
+		return TemplateData{}, fmt.Errorf("failed to extract queries: %w", err)
 	}
 
 	// Replace the entity placehoder `??` with the provided IRI in each query
@@ -48,8 +48,8 @@ func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLa
 	// Execute queries in parallel with language preference
 	results := executeQueriesParallel(p.config.EndpointURL, queries, p.config.Timeout, acceptLanguage)
 
-	// Create PageData with results
-	data := PageData{QueryResults: results}
+	// Create TemplateData with results
+	data := TemplateData{QueryResults: results}
 
 	return data, nil
 }

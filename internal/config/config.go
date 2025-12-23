@@ -35,6 +35,7 @@ type ApplicationConfig struct {
 type RDFConfig struct {
 	Prefixes       []string `toml:"prefixes"`
 	ParsedPrefixes []Prefix
+	TypePriority   []string `toml:"type_priority"` // Priority order for RDF types in template resolution
 }
 
 // Prefix represents a single RDF prefix definition

@@ -69,9 +69,9 @@ func querySparqlEndpoint(endpointURL, query string) ([]byte, error) {
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	fmt.Println("=== SPARQL Response Body ===")
-	fmt.Println(string(body))
-	fmt.Println("=== End SPARQL Response Body ===")
+	// fmt.Println("=== SPARQL Response Body ===")
+	// fmt.Println(string(body))
+	// fmt.Println("=== End SPARQL Response Body ===")
 
 	return body, nil
 }
@@ -129,6 +129,35 @@ func executeQuery(endpointURL, query string, resolveLabels bool, acceptLanguage 
 	}
 
 	return result
+}
+
+// QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI
+// Returns a slice of type URIs
+func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
+	// Construct SPARQL query to get all types
+	query := fmt.Sprintf("SELECT ?type WHERE { <%s> a ?type }", iri)
+
+	// Execute query
+	response, err := querySparqlEndpoint(p.config.EndpointURL, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query types for IRI %s: %w", iri, err)
+	}
+
+	// Parse JSON response
+	var sparqlResp sparqlResponse
+	if err := json.Unmarshal(response, &sparqlResp); err != nil {
+		return nil, fmt.Errorf("failed to parse SPARQL response: %w", err)
+	}
+
+	// Extract type URIs from bindings
+	types := make([]string, 0, len(sparqlResp.Results.Bindings))
+	for _, binding := range sparqlResp.Results.Bindings {
+		if typeData, ok := binding["type"]; ok {
+			types = append(types, typeData.Value)
+		}
+	}
+
+	return types, nil
 }
 
 // executeQueriesParallel executes multiple queries concurrently with timeout
