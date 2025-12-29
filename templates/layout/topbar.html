@@ -1,20 +1,27 @@
 <!-- horizontal Topbar start -->
+
+
+
 <header class="navbar navbar-expand-md sticky-top d-print-none">
   <div class="container-fluid d-flex align-items-center">
 
     <!-- hamburger button to toggle sidebar  -->
     <div class="nav-item">
         <button id="sidebar-toggle" class="nav-link px-0" type="button" aria-label="Toggle sidebar">
-          <span class="navbar-toggler-icon"></span>
+          <i class="bi bi-list" style="font-size: 1rem;"></i>
         </button>
     </div>
 
-
     <!-- logo and title -->
-    <a href="/" class="navbar-brand navbar-brand-autodark me-3 mb-0 d-flex align-items-center text-decoration-none">
-      <img src="/static/img/visoto_light.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-2">
-      <span>visoto</span>
+    <a href="/" class="navbar-brand navbar-brand-autodark ms-3 mb-0 d-flex align-items-center text-decoration-none">
+      <img src="/static/img/visoto_light.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-1">
+      <span class="d-none d-md-inline">visoto</span>
     </a>
+
+    <!-- search field -->
+    <div class="nav-item mx-auto" style="width: 50%;">
+      <input type="text" class="form-control" placeholder="Search..." aria-label="Search">
+    </div>
 
     <!-- darkmode button -->
     <div class="d-none d-md-flex">
