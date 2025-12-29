@@ -1,15 +1,12 @@
-<!-- Header -->
-<div class="page-header d-print-none" aria-label="Page header">
-  <div class="container-xl">
-    <div class="row g-2 align-items-center">
-      <div class="col">
-        <ol class="breadcrumb" aria-label="breadcrumbs">
-          {{ block "breadcrumb" . }}
-          <li class="breadcrumb-item"><a href="/">Home</a></li>
-          {{ end }}
-        </ol>
-        <!-- <h2 class="page-title">{{ block "pageTitle" . }}Page Title{{ end }}</h2> -->
-      </div>
-    </div>
+<!-- Page Header -->
+<div class="row g-2 align-items-center">
+  <div class="col">
+    <ol class="breadcrumb" aria-label="breadcrumbs">
+      {{ block "breadcrumb" . }}
+      <li class="breadcrumb-item"><a href="/">Home</a></li>
+      {{ end }}
+    </ol>
+    <h1>{{ block "pageTitle" . }}Page Title{{ end }}</h1>
   </div>
 </div>
+<!-- End Page Header -->

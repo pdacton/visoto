@@ -1,0 +1,31 @@
+
+/* Tabler CSS overrides to customize the Tabler theme */
+
+/* --- Topbar adjustments --- */
+
+/* Remove default margins/padding from html and body to prevent gray space in topbar */
+html {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* --- Sidebar positioning --- */
+
+/* Make sidebar shorter by the height of the topbar on desktop, so they do not overlap */
+.navbar-vertical {
+    margin-top: 56px; /* Adjust if your topbar is taller */
+    min-height: calc(100vh - 56px);
+    position: static;
+
+    padding: 0px;  /* override .navbar --tblr-navbar-padding-y in tabler.css because it added extra space in mobile view */
+}
+
+/* Reset sidebar positioning on mobile - below Bootstrap's lg breakpoint (992px) */
+@media (max-width: 991.98px) {
+    .navbar-vertical {
+        margin-top: 0;
+        min-height: 0;
+    }
+}
+
+

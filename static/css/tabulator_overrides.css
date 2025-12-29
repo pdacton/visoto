@@ -1,0 +1,43 @@
+
+/* Tabulator bootstrap 5 CSS overrides, we override settings from "https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css"
+   to match tabler formatting. Overriding makes it easiert for later migrations, if tabulator should change their CSS.
+*/
+
+.tabulator {
+  font-size: 0.875rem;
+
+  border-color: var(--tblr-table-border-color);
+  border-color: var(--tblr-border-color-translucent);
+}
+
+/* --- table header formatting --- */
+.tabulator .tabulator-header {
+    border-top: 0;
+    border-bottom-width: 1px;
+    color: var(--tblr-secondary);
+    font-size: .75rem;
+    text-transform: uppercase;
+    font-weight: var(--tblr-font-weight-medium);
+}
+
+.tabulator .tabulator-header .tabulator-col {
+    background: var(--tblr-bg-surface-tertiary);
+}
+
+/* .tabulator .tabulator-header .tabulator-col .tabulator-col-content {
+    padding-top: 8px;
+    padding-bottom: 8px;
+} */
+
+
+/* --- table row formatting --- */
+
+/* row striping */
+.tabulator-row.tabulator-row-even {
+    background-color: var(--tblr-table-striped-color);
+}
+
+/* row hover */
+.tabulator-row.tabulator-selectable:hover {
+    background-color: var(--tblr-bg-surface-tertiary);
+}
