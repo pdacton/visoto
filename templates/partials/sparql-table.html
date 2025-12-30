@@ -25,23 +25,20 @@
       Query failed: {{ $result.Error }}
     </div>
   {{ else }}
+
     <!-- table header with search box -->
-    <div class="mb-3 d-flex align-items-center gap-3">
-      <span>Found {{ len $result.Bindings }} results</span>
-      {{ if $id }}
-        <input type="text" id="search-{{ $id }}" class="search-table form-control" placeholder="Search table..." style="max-width: 300px;">
-      {{ else }}
-        <input type="text" class="search-table form-control" placeholder="Search table..." style="max-width: 300px;">
-      {{ end }}
-    </div>
+
 
     <!-- card -->
     <div class="card">
-      <div class="card-header">
+      <div class="card-header d-flex align-items-center justify-content-between">
         {{ if $title }}
-          <h3 class="card-title">{{ $title }}</h3>
+          <h3 class="card-title mb-0">{{ $title }}</h3>
         {{ else }}
-          <h3 class="card-title">Query Results</h3>
+          <h3 class="card-title mb-0">Query Results</h3>
+        {{ end }}
+        {{ if $id }}
+          <input type="text" id="search-{{ $id }}" class="search-table form-control" placeholder="Search table..." style="width: 300px;">
         {{ end }}
       </div>
       <div class="table-responsive">
@@ -76,12 +73,23 @@
       <script>
         /* eslint-disable */
         document.addEventListener('DOMContentLoaded', function() {
-          var table = new Tabulator("#{{ $id }}-table", {
+          var rowCount = {{ len $result.Bindings }};
+          var tableConfig = {
             layout: "fitData",
             resizableColumnFit: true,
             renderHorizontal: "virtual",
             movableColumns: true,
-          });
+          };
+
+          // Only enable pagination if more than 10 rows
+          if (rowCount > 10) {
+            tableConfig.pagination = true;
+            tableConfig.paginationSize = 25;
+            tableConfig.paginationSizeSelector = [10, 25, 50, 100, true];
+            tableConfig.paginationCounter = "rows";
+          }
+
+          var table = new Tabulator("#{{ $id }}-table", tableConfig);
 
           // Global search - filter across all columns
           var searchInput = document.getElementById("search-{{ $id }}");
