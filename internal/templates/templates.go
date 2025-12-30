@@ -28,6 +28,12 @@ func Load(templatesDir string) multitemplate.Renderer {
 		panic(err.Error())
 	}
 
+	// Compile list of partial templates
+	partials, err := filepath.Glob(templatesDir + "/partials/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
 	// Compile list of page templates
 	pages, err := filepath.Glob(templatesDir + "/pages/*.html")
 	if err != nil {
@@ -51,11 +57,11 @@ func Load(templatesDir string) multitemplate.Renderer {
 	allTemplates = append(allTemplates, instances...)
 
 	// Generate templates map: one template set for each page
-	// Each page gets combined with all layouts
+	// Each page gets combined with all layouts and partials
 	for _, page := range allTemplates {
 		layoutCopy := make([]string, len(layouts))
 		copy(layoutCopy, layouts)
-		files := append(layoutCopy, page)
+		files := append(append(layoutCopy, partials...), page)
 		// AddFromFilesFuncs takes a name, funcMap, and files to include
 		r.AddFromFilesFuncs(filepath.Base(page), funcMap, files...)
 	}
@@ -67,6 +73,7 @@ func Load(templatesDir string) multitemplate.Renderer {
 	log := logger.Get()
 	log.Debug("templates loaded",
 		slog.Int("layouts", len(layouts)),
+		slog.Int("partials", len(partials)),
 		slog.Int("pages", len(pages)),
 		slog.Int("classes", len(classes)),
 		slog.Int("instances", len(instances)))

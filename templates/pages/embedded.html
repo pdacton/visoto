@@ -17,33 +17,7 @@
     } LIMIT 1000
   </sparql-query>
 
-  {{ if .QueryResults.outgoing.Error }}
-    <div class="alert alert-danger">
-      <i class="bi bi-exclamation-triangle"></i>
-      Query failed: {{ .QueryResults.outgoing.Error }}
-    </div>
-  {{ else }}
-    <p>Found {{ len .QueryResults.outgoing.Bindings }} results</p>
-
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          {{ range .QueryResults.outgoing.Vars }}
-            <th>{{ . }}</th>
-          {{ end }}
-        </tr>
-      </thead>
-      <tbody>
-        {{ range .QueryResults.outgoing.Bindings }}
-          <tr>
-            <td>{{ render .s }}</td>
-            <td>{{ render .p }}</td>
-            <td>{{ render .o }}</td>
-          </tr>
-        {{ end }}
-      </tbody>
-    </table>
-  {{ end }}
+  {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships") }}
 
   <h2>Incoming Relationships</h2>
 
@@ -54,33 +28,7 @@
     } LIMIT 1000
   </sparql-query>
 
-  {{ if .QueryResults.incoming.Error }}
-    <div class="alert alert-danger">
-      <i class="bi bi-exclamation-triangle"></i>
-      Query failed: {{ .QueryResults.incoming.Error }}
-    </div>
-  {{ else }}
-    <p>Found {{ len .QueryResults.incoming.Bindings }} results</p>
-
-    <table class="table table-bordered">
-      <thead>
-        <tr>
-          {{ range .QueryResults.incoming.Vars }}
-            <th>{{ . }}</th>
-          {{ end }}
-        </tr>
-      </thead>
-      <tbody>
-        {{ range .QueryResults.incoming.Bindings }}
-          <tr>
-            <td>{{ render .s }}</td>
-            <td>{{ render .p }}</td>
-            <td>{{ render .o }}</td>
-          </tr>
-        {{ end }}
-      </tbody>
-    </table>
-  {{ end }}
+  {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships") }}
 
 </div>
 

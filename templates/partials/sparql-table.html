@@ -1,0 +1,101 @@
+<!--
+  Partial template for rendering SPARQL query results in a table
+
+  Usage:
+    {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships") }}
+
+  Parameters (via dict):
+    - result: QueryResult object with .Vars, .Bindings, .Error
+    - id: (optional) table identifier for Tabulator.js
+    - title: (optional) card title
+
+  Note: .Vars and .Bindings do not have the same order!
+-->
+
+ <!-- TODO: refactor this to use Tabulator.js properly, or create custom element -->
+
+{{ define "sparqlTable" }}
+  {{ $result := .result }}
+  {{ $id := .id }}
+  {{ $title := .title }}
+
+  {{ if $result.Error }}
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle"></i>
+      Query failed: {{ $result.Error }}
+    </div>
+  {{ else }}
+    <!-- table header with search box -->
+    <div class="mb-3 d-flex align-items-center gap-3">
+      <span>Found {{ len $result.Bindings }} results</span>
+      {{ if $id }}
+        <input type="text" id="search-{{ $id }}" class="search-table form-control" placeholder="Search table..." style="max-width: 300px;">
+      {{ else }}
+        <input type="text" class="search-table form-control" placeholder="Search table..." style="max-width: 300px;">
+      {{ end }}
+    </div>
+
+    <!-- card -->
+    <div class="card">
+      <div class="card-header">
+        {{ if $title }}
+          <h3 class="card-title">{{ $title }}</h3>
+        {{ else }}
+          <h3 class="card-title">Query Results</h3>
+        {{ end }}
+      </div>
+      <div class="table-responsive">
+
+        <!-- the table itself  -->
+        <table{{ if $id }} id="{{ $id }}-table"{{ else }} class="table"{{ end }}>
+          <thead>
+            <tr>
+              {{ range $result.Vars }}
+                <th tabulator-formatter="html" tabulator-sorter="string">{{ . }}</th>
+              {{ end }}
+            </tr>
+          </thead>
+          <tbody>
+            {{ range $binding := $result.Bindings }}
+              <tr>
+                <!-- Iterate using .Vars order to ensure cells match headers,
+                    since .Bindings is a map with randomized iteration order -->
+                {{ range $var := $result.Vars }}
+                  <td>{{ render (index $binding $var) }}</td>
+                {{ end }}
+              </tr>
+            {{ end }}
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+
+    {{ if $id }}
+      <!-- Tabulator.js initialization for this table -->
+      <script>
+        /* eslint-disable */
+        document.addEventListener('DOMContentLoaded', function() {
+          var table = new Tabulator("#{{ $id }}-table", {
+            layout: "fitData",
+            resizableColumnFit: true,
+            renderHorizontal: "virtual",
+            movableColumns: true,
+          });
+
+          // Global search - filter across all columns
+          var searchInput = document.getElementById("search-{{ $id }}");
+          if (searchInput) {
+            searchInput.addEventListener("input", function(e) {
+              var filters = [];
+              {{ range $result.Vars }}
+              filters.push({field: "{{ . }}", type: "like", value: e.target.value});
+              {{ end }}
+              table.setFilter([filters]);
+            });
+          }
+        });
+      </script>
+    {{ end }}
+  {{ end }}
+{{ end }}
