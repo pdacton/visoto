@@ -28,4 +28,12 @@ html {
     }
 }
 
+/* --- Table styling --- */ 
 
+/* Table footer overrides, to match the header styling */
+.tabulator .tabulator-footer {
+    background-color: #f9fafb;
+    border-top: 0px solid #dee2e6;
+    color: var(--tblr-secondary);
+    font-weight: var(--tblr-font-weight-medium);
+}

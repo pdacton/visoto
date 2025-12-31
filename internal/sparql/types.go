@@ -2,12 +2,15 @@ package sparql
 
 import (
 	"time"
+
+	"hutzli.org/visoto/internal/config"
 )
 
 // Config holds configuration for the SPARQL preprocessor
 type Config struct {
-	EndpointURL string        // SPARQL endpoint URL
-	Timeout     time.Duration // Global timeout for all queries
+	EndpointURL string          // SPARQL endpoint URL
+	Timeout     time.Duration   // Global timeout for all queries
+	Prefixes    []config.Prefix // RDF prefix declarations
 }
 
 // QueryResult stores simplified SPARQL results for template consumption

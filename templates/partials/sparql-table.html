@@ -31,41 +31,44 @@
 
     <!-- card -->
     <div class="card">
+
+      <!-- card header with title and search box -->
       <div class="card-header d-flex align-items-center justify-content-between">
         {{ if $title }}
           <h3 class="card-title mb-0">{{ $title }}</h3>
-        {{ else }}
-          <h3 class="card-title mb-0">Query Results</h3>
         {{ end }}
         {{ if $id }}
           <input type="text" id="search-{{ $id }}" class="search-table form-control" placeholder="Search table..." style="width: 300px;">
         {{ end }}
       </div>
-      <div class="table-responsive">
 
-        <!-- the table itself  -->
-        <table{{ if $id }} id="{{ $id }}-table"{{ else }} class="table"{{ end }}>
-          <thead>
+      <!-- the table itself  -->
+      <table{{ if $id }} id="{{ $id }}-table"{{ else }} class="table"{{ end }}>
+        <thead>
+          <tr>
+            {{ range $index, $var := $result.Vars }}
+              <th 
+                tabulator-field="{{ $var }}"
+                tabulator-formatter="html" 
+                tabulator-sorter="string">
+                {{ $var }}
+              </th>
+            {{ end }}
+          </tr>
+        </thead>
+        <tbody>
+          {{ range $binding := $result.Bindings }}
             <tr>
-              {{ range $result.Vars }}
-                <th tabulator-formatter="html" tabulator-sorter="string">{{ . }}</th>
+              <!-- Iterate using .Vars order to ensure cells match headers,
+                  since .Bindings is a map with randomized iteration order -->
+              {{ range $var := $result.Vars }}
+                <td>{{ render (index $binding $var) }}</td>
               {{ end }}
             </tr>
-          </thead>
-          <tbody>
-            {{ range $binding := $result.Bindings }}
-              <tr>
-                <!-- Iterate using .Vars order to ensure cells match headers,
-                    since .Bindings is a map with randomized iteration order -->
-                {{ range $var := $result.Vars }}
-                  <td>{{ render (index $binding $var) }}</td>
-                {{ end }}
-              </tr>
-            {{ end }}
-          </tbody>
-        </table>
+          {{ end }}
+        </tbody>
+      </table>
 
-      </div>
     </div>
 
     {{ if $id }}
@@ -75,7 +78,7 @@
         document.addEventListener('DOMContentLoaded', function() {
           var rowCount = {{ len $result.Bindings }};
           var tableConfig = {
-            layout: "fitData",
+            layout: "fitDataStretch",
             resizableColumnFit: true,
             renderHorizontal: "virtual",
             movableColumns: true,
@@ -83,7 +86,7 @@
 
           // Only enable pagination if more than 10 rows
           if (rowCount > 10) {
-            tableConfig.pagination = true;
+            tableConfig.pagination = "local";
             tableConfig.paginationSize = 25;
             tableConfig.paginationSizeSelector = [10, 25, 50, 100, true];
             tableConfig.paginationCounter = "rows";

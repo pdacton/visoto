@@ -153,6 +153,7 @@ func main() {
 	sparqlPreproc = sparql.New(sparql.Config{
 		EndpointURL: cfg.Application.SparqlEndpoint,
 		Timeout:     cfg.GetTimeout(),
+		Prefixes:    cfg.RDF.ParsedPrefixes,
 	})
 
 	// Create router

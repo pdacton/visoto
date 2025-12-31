@@ -240,7 +240,7 @@ func extractLastSegment(iri string) string {
 }
 
 // fetchLabels queries endpoint for labels and returns IRI→label mapping
-func fetchLabels(endpointURL string, iris []string, languages []string) map[string]string {
+func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages []string) map[string]string {
 	// Check cache first
 	uncachedIRIs := make([]string, 0, len(iris))
 	labelMap := make(map[string]string)
@@ -260,7 +260,7 @@ func fetchLabels(endpointURL string, iris []string, languages []string) map[stri
 
 	// Build and execute label query
 	query := buildLabelQuery(uncachedIRIs, languages)
-	response, err := querySparqlEndpoint(endpointURL, query)
+	response, err := p.querySparqlEndpoint(endpointURL, query)
 	if err != nil {
 		log := logger.Get()
 		log.Warn("label query failed, using fallback",

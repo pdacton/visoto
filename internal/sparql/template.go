@@ -42,11 +42,8 @@ func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLa
 		queries[i].Query = strings.ReplaceAll(queries[i].Query, "??", fmt.Sprintf("<%s>", iri))
 	}
 
-	fmt.Println("=== SPARQL Query ===")
-	fmt.Println(string(queries[0].Query))
-
 	// Execute queries in parallel with language preference
-	results := executeQueriesParallel(p.config.EndpointURL, queries, p.config.Timeout, acceptLanguage)
+	results := p.executeQueriesParallel(p.config.EndpointURL, queries, p.config.Timeout, acceptLanguage)
 
 	// Create TemplateData with results
 	data := TemplateData{QueryResults: results}

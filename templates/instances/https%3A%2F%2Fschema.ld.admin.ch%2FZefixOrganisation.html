@@ -2,12 +2,7 @@
 
 {{ define "pageContent" }}
 
-<!-- TODO: sparql-table template -->
-
-<div class="container py-4">
-
-  <h2>Outgoing Relationships</h2>
-
+<div class="mt-3">
   <sparql-query id="outgoing" style="display: none;">
     SELECT * WHERE {
       BIND (?? AS ?s)
@@ -15,9 +10,9 @@
     } LIMIT 1000
   </sparql-query>
   {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships") }}
+</div>
 
-  <h2>Incoming Relationships</h2>
-
+<div class="mt-3">
   <sparql-query id="incoming" style="display: none;">
     SELECT * WHERE {
       BIND (?? AS ?o)
@@ -25,7 +20,6 @@
     } LIMIT 1000
   </sparql-query>
   {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships") }}
-
 </div>
 
 <div class="container py-4">

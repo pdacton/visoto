@@ -12,18 +12,73 @@ import (
 	"sync"
 	"time"
 
+	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
 )
 
+// buildPrefixBlock generates SPARQL PREFIX declarations from config
+func buildPrefixBlock(prefixes []config.Prefix) string {
+	if len(prefixes) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	for _, prefix := range prefixes {
+		sb.WriteString("PREFIX ")
+		sb.WriteString(prefix.Name)
+		sb.WriteString(": <")
+		sb.WriteString(strings.Trim(prefix.URI, "<>"))
+		sb.WriteString(">\n")
+	}
+	sb.WriteString("\n")
+	return sb.String()
+}
+
+// hasExistingPrefixes checks if query already contains PREFIX declarations
+func hasExistingPrefixes(query string) bool {
+	trimmed := strings.TrimSpace(query)
+	return strings.HasPrefix(strings.ToUpper(trimmed), "PREFIX")
+}
+
+// queryNeedsPrefixes checks if a query uses any prefixed names (e.g., rdf:type, schema:name)
+// Returns true if the query contains patterns like "word:word" that aren't URLs
+// TODO: I don't think this is a very robust implementation
+func queryNeedsPrefixes(query string) bool {
+	// Simple heuristic: look for common SPARQL prefixed names
+	// Matches patterns like "rdf:type", "schema:name", etc.
+	// But excludes "http:", "https:", "file:" which are URLs
+	commonPrefixes := []string{
+		"rdf:", "rdfs:", "owl:", "xsd:",
+		"schema:", "foaf:", "dc:", "dcterms:",
+		"skos:", "sch:", "regch:", "ref:",
+	}
+
+	queryUpper := strings.ToUpper(query)
+	for _, prefix := range commonPrefixes {
+		if strings.Contains(queryUpper, strings.ToUpper(prefix)) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // querySparqlEndpoint sends a SPARQL query to the specified endpoint and returns the response
-func querySparqlEndpoint(endpointURL, query string) ([]byte, error) {
+func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, error) {
+
+	// prepend the query with PREFIX declarations if missing and needed
+	if !hasExistingPrefixes(query) && queryNeedsPrefixes(query) {
+		query = buildPrefixBlock(p.config.Prefixes) + query
+	}
+
 	// Prepare the request parameters
 	params := url.Values{}
 	params.Set("query", query)
 	params.Set("format", "application/sparql-results+json")
+	encodedParams := params.Encode()
 
 	// Create the HTTP request
-	req, err := http.NewRequest("POST", endpointURL, strings.NewReader(params.Encode()))
+	req, err := http.NewRequest("POST", endpointURL, strings.NewReader(encodedParams))
 	if err != nil {
 		log := logger.Get()
 		log.Error("failed to create HTTP request",
@@ -35,6 +90,16 @@ func querySparqlEndpoint(endpointURL, query string) ([]byte, error) {
 	// Set appropriate headers
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/sparql-results+json")
+
+	// Log the full request details at debug level
+	log := logger.Get()
+	log.Debug("HTTP request details",
+		slog.String("method", req.Method),
+		slog.String("url", req.URL.String()),
+		slog.String("content-type", req.Header.Get("Content-Type")),
+		slog.String("accept", req.Header.Get("Accept")),
+		slog.String("body", encodedParams),
+		slog.Int("body_length", len(encodedParams)))
 
 	// Execute the request
 	client := &http.Client{}
@@ -56,6 +121,16 @@ func querySparqlEndpoint(endpointURL, query string) ([]byte, error) {
 			slog.Int("status_code", resp.StatusCode),
 			slog.String("status", resp.Status),
 			slog.String("endpoint", endpointURL))
+
+		// Log the encoded parameters for debugging
+		log.Debug("encoded query parameters",
+			slog.String("encoded_length", fmt.Sprintf("%d bytes", len(encodedParams))))
+
+		// Log the query at debug level
+		log.Debug("executing SPARQL query",
+			slog.String("endpoint", endpointURL),
+			slog.String("query", query))
+
 		return nil, fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
 	}
 
@@ -103,8 +178,8 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 }
 
 // executeQuery executes a single SPARQL query and returns simplified result
-func executeQuery(endpointURL, query string, resolveLabels bool, acceptLanguage string) QueryResult {
-	response, err := querySparqlEndpoint(endpointURL, query)
+func (p *Preprocessor) executeQuery(endpointURL, query string, resolveLabels bool, acceptLanguage string) QueryResult {
+	response, err := p.querySparqlEndpoint(endpointURL, query)
 	if err != nil {
 		return QueryResult{Error: fmt.Sprintf("Query execution failed: %v", err)}
 	}
@@ -123,7 +198,7 @@ func executeQuery(endpointURL, query string, resolveLabels bool, acceptLanguage 
 		iris := extractIRIs(result)
 		if len(iris) > 0 {
 			languages := parseAcceptLanguage(acceptLanguage)
-			labelMap := fetchLabels(endpointURL, iris, languages)
+			labelMap := fetchLabels(p, endpointURL, iris, languages)
 			enrichWithLabels(&result, labelMap)
 		}
 	}
@@ -138,7 +213,7 @@ func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 	query := fmt.Sprintf("SELECT ?type WHERE { <%s> a ?type }", iri)
 
 	// Execute query
-	response, err := querySparqlEndpoint(p.config.EndpointURL, query)
+	response, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query types for IRI %s: %w", iri, err)
 	}
@@ -161,7 +236,7 @@ func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 }
 
 // executeQueriesParallel executes multiple queries concurrently with timeout
-func executeQueriesParallel(endpointURL string, queries []extractedQuery, timeout time.Duration, acceptLanguage string) map[string]QueryResult {
+func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extractedQuery, timeout time.Duration, acceptLanguage string) map[string]QueryResult {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -186,7 +261,7 @@ func executeQueriesParallel(endpointURL string, queries []extractedQuery, timeou
 			}
 
 			// Execute query with label resolution flag
-			result := executeQuery(endpointURL, query.Query, query.ResolveLabels, acceptLanguage)
+			result := p.executeQuery(endpointURL, query.Query, query.ResolveLabels, acceptLanguage)
 			resultsChan <- queryExecutionResult{ID: query.ID, Result: result}
 		}(q)
 	}
