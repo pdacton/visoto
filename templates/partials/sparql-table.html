@@ -15,6 +15,7 @@
  <!-- TODO: refactor this to use Tabulator.js properly, or create custom element -->
 
 {{ define "sparqlTable" }}
+
   {{ $result := .result }}
   {{ $id := .id }}
   {{ $title := .title }}
@@ -24,12 +25,14 @@
       <i class="bi bi-exclamation-triangle"></i>
       Query failed: {{ $result.Error }}
     </div>
+  {{ else if eq (len $result.Bindings) 0 }}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i>
+      {{ $title }}: No results found.
+    </div>
   {{ else }}
 
-    <!-- table header with search box -->
-
-
-    <!-- card -->
+    <!-- card to enclose the table -->
     <div class="card">
 
       <!-- card header with title and search box -->
@@ -38,7 +41,7 @@
           <h3 class="card-title mb-0">{{ $title }}</h3>
         {{ end }}
         {{ if $id }}
-          <input type="text" id="search-{{ $id }}" class="search-table form-control" placeholder="Search table..." style="width: 300px;">
+          <input type="text" id="search-{{ $id }}" class="search-table form-control" placeholder="Search table..." style="width: 30%; min-width: 100px;">
         {{ end }}
       </div>
 
@@ -71,8 +74,8 @@
 
     </div>
 
+    <!-- Tabulator.js initialization for this table -->
     {{ if $id }}
-      <!-- Tabulator.js initialization for this table -->
       <script>
         /* eslint-disable */
         document.addEventListener('DOMContentLoaded', function() {
@@ -87,7 +90,7 @@
           // Only enable pagination if more than 10 rows
           if (rowCount > 10) {
             tableConfig.pagination = "local";
-            tableConfig.paginationSize = 25;
+            tableConfig.paginationSize = 10;
             tableConfig.paginationSizeSelector = [10, 25, 50, 100, true];
             tableConfig.paginationCounter = "rows";
           }
@@ -108,5 +111,6 @@
         });
       </script>
     {{ end }}
+
   {{ end }}
 {{ end }}

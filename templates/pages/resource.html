@@ -1,37 +1,100 @@
-{{ define "pageTitle" }}Resource SPARQL Query Demo{{ end }}
+<!-- Default Class Template, for any resource which doesn't have a specific template -->
+
+{{ define "pageTitle" }}
+  <sparql-query id="pageTitle" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+  {{ if .QueryResults.pageTitle.Bindings }}{{ (index .QueryResults.pageTitle.Bindings 0).title.Value }}{{ end }}
+{{ end }}
+
+{{ define "pageClasses" }}
+  <sparql-query id="pageClasses" class="d-none">
+    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
+  </sparql-query>
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}
+  <sparql-query id="pageSubtitle" class="d-none">
+    SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }
+  </sparql-query>
+  {{ if .QueryResults.pageSubtitle.Bindings }}{{ (index .QueryResults.pageSubtitle.Bindings 0).description.Value }}{{ end }}
+{{ end }}
 
 {{ define "pageContent" }}
 
-<!-- TODO: sparql-table template -->
+<div class="container-fluid">
+  <div class="row">
 
-<h1>{{ template "pageTitle" }}</h1>
+      <!-- outgoing relationships -->
 
-<div class="container py-4">
+      <div class="col-xxl mt-3">
+        <sparql-query id="outgoing" class="d-none">
+          SELECT ?s ?p ?o WHERE {
+            BIND (?? AS ?s)
+            ?s ?p ?o .
+          } LIMIT 100
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+              "result" .QueryResults.outgoing 
+              "id" "outgoing" 
+              "title" "Outgoing Relationships") }}
+      </div>
 
-  <h2>Outgoing Relationships</h2>
+      <!-- incoming relationships -->
 
-  <sparql-query id="outgoing" style="display: none;">
-    SELECT * WHERE {
-      BIND (?? AS ?s)
-      ?s ?p ?o .
-    } LIMIT 1000
-  </sparql-query>
+      <div class="col-xxl mt-3">
+        <sparql-query id="incoming" class="d-none">
+          SELECT ?s ?p ?o WHERE {
+            BIND (?? AS ?o)
+            ?s ?p ?o .
+            FILTER (?p != rdf:type)
+          } LIMIT 100
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+            "result" .QueryResults.incoming 
+            "id" "incoming" 
+            "title" "Incoming Relationships") 
+        }}
+      </div> 
+    </div>  
+    <div class="row">
 
-  {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships") }}
+      <!-- subclasses of this class -->
 
-  <h2>Incoming Relationships</h2>
+      <div class="col-xxl mt-3">
+        <sparql-query id="subclasses" class="d-none">
+          SELECT ?subclass ?description WHERE {
+            ?? rdfs:subClassOf ?class .
+            OPTIONAL { ?? (rdfs:comment|schema:description) ?description . }
+          } LIMIT 50
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+            "result" .QueryResults.subclasses 
+            "id" "subclasses" 
+            "title" "Subclasses of this Class") 
+        }}
+      </div>
 
-  <sparql-query id="incoming" style="display: none;">
-    SELECT * WHERE {
-      BIND (?? AS ?o)
-      ?s ?p ?o .
-    } LIMIT 1000
-  </sparql-query>
+      <!-- instances of this class -->
 
-  {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships") }}
+      <div class="col-xxl mt-3">
+        <sparql-query id="instances" class="d-none">
+          SELECT ?org ?description WHERE {
+            BIND (?? AS ?class)
+            ?org (rdf:type|owl:type) ?class .
+            OPTIONAL { ?org schema:description ?description . }
+          } LIMIT 5000
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+            "result" .QueryResults.instances 
+            "id" "instances" 
+            "title" "Instances of this Class") 
+        }}
 
+    </div>  
+  </div>
 </div>
 
-{{ . }}
-
 {{ end }}
+

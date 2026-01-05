@@ -1,5 +1,17 @@
 <!-- footer.html -->
-<div class="row text-center align-items-center">
+<div class="row align-items-center">
+
+    <!-- raw template data for debugging purposes -->
+    <div class="container py-4">
+        <a class="d-flex align-items-center text-decoration-none" data-bs-toggle="collapse" href="#rawDataCollapse" role="button" aria-expanded="false" aria-controls="rawDataCollapse">
+            <i class="bi bi-chevron-down me-2"></i>
+            <span>Raw data</span>
+        </a>
+        <div class="collapse mt-2" id="rawDataCollapse">
+            <pre class="bg-light p-3 rounded border" style="white-space: pre-wrap; word-wrap: break-word;"><code class="language-go">{{ . }}</code></pre>
+        </div>
+    </div>
+
     <div class="col-12 col-lg-auto mt-3 mt-lg-0">
     <p class="mb-0">&copy; 2025 My Site. All rights reserved.</p>
     </div>

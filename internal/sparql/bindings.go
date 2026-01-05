@@ -14,11 +14,10 @@ type Binding struct {
 }
 
 // RenderHTML returns an HTML link if the type is "uri", otherwise returns plain text
-// TODO: think about link generation, if /embedded/ is the best choice
 func (b Binding) RenderHTML() template.HTML {
 	// return link if uri type
 	if b.Type == "uri" {
-		return template.HTML(`<a href="/embedded/` + template.HTMLEscapeString(b.Value) + `">` + template.HTMLEscapeString(b.Lol) + `</a>`)
+		return template.HTML(`<a href="/resource/` + template.HTMLEscapeString(b.Value) + `">` + template.HTMLEscapeString(b.Lol) + `</a>`)
 	}
 
 	// return plain text otherwise

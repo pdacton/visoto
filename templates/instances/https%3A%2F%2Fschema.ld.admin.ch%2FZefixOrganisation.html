@@ -1,35 +1,53 @@
-{{ define "pageTitle" }}Zefix Organization Instance{{ end }}
+<!-- Instance template for Zefix OrganisationS -->
+
+{{ define "pageTitle" }}
+  <sparql-query id="title" class="d-none">
+    SELECT ?title WHERE { ?? (rdfs:label|schema:name) ?title . } LIMIT 1
+  </sparql-query>
+  <i data-lucide="building" class="mr-3"></i> {{ (index .QueryResults.title.Bindings 0).title.Value }}
+{{ end }}
+
+{{ define "pageClasses" }}
+  <sparql-query id="pageClasses" class="d-none">
+    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
+  </sparql-query>
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
 
 {{ define "pageContent" }}
 
 <div class="mt-3">
+  <sparql-query id="attributes" style="display: none;">
+    SELECT ?attribute ?value WHERE {
+      ?? ?attribute ?value .
+      FILTER ( isLiteral( ?value ) )
+    } LIMIT 100
+  </sparql-query>
+  {{ template "sparqlTable" (dict "result" .QueryResults.attributes "id" "attributes" "title" "Attributes") }}
+</div>
+
+<div class="mt-3">
   <sparql-query id="outgoing" style="display: none;">
-    SELECT * WHERE {
+    SELECT ?objectProperty ?object WHERE {
       BIND (?? AS ?s)
-      ?s ?p ?o .
-    } LIMIT 1000
+      ?s ?objectProperty ?object .
+      FILTER (isIRI( ?object))
+      FILTER (?objectProperty != rdf:type)
+    } LIMIT 100
   </sparql-query>
   {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships") }}
 </div>
 
 <div class="mt-3">
   <sparql-query id="incoming" style="display: none;">
-    SELECT * WHERE {
-      BIND (?? AS ?o)
-      ?s ?p ?o .
+    SELECT ?incomingObject ?objectProperty WHERE {
+      BIND (?? AS ?s)
+      ?incomingObject ?objectProperty ?s .
     } LIMIT 1000
   </sparql-query>
   {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships") }}
-</div>
-
-<div class="container py-4">
-  <a class="d-flex align-items-center text-decoration-none" data-bs-toggle="collapse" href="#detailedDataCollapse" role="button" aria-expanded="false" aria-controls="detailedDataCollapse">
-    <i class="bi bi-chevron-down me-2"></i>
-    <span>Detailed Data</span>
-  </a>
-  <div class="collapse mt-2" id="detailedDataCollapse">
-    {{ . }}
-  </div>
 </div>
 
 {{ end }}

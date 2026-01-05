@@ -8,7 +8,7 @@
     <title>visoto visualizer</title>
     <link rel="icon" type="image/svg+xml" href="/static/img/favicon.svg">
 
-    <!-- bootstrap, tabler, tabulator includes -->
+    <!-- bootstrap, tabler, tabulator, google material icon includes -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/css/tabler.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css">
@@ -16,6 +16,9 @@
     <!-- overrides -->
     <link rel="stylesheet" href="/static/css/tabler_overrides.css">
     <link rel="stylesheet" href="/static/css/tabulator_overrides.css">
+
+    <!-- highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
 
   </head>
 
@@ -56,6 +59,17 @@
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
     <script src="/static/js/darkmode.js"></script>
     <script src="/static/js/sidebar.js"></script>
+
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+
+    <!-- highlight.js for syntax highlighting -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
     {{ block "pageScripts" . }}{{ end }}
 
   </body>

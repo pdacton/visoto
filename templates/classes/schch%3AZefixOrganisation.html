@@ -4,7 +4,16 @@
   <sparql-query id="title" class="d-none">
     SELECT ?label WHERE { ?? rdfs:label ?label . }
   </sparql-query>
-  {{ (index .QueryResults.title.Bindings 0).label.Value }}
+  <i data-lucide="building" class="me-2"></i> {{ (index .QueryResults.title.Bindings 0).label.Value }}
+{{ end }}
+
+{{ define "pageClasses" }}
+  <sparql-query id="pageClasses" class="d-none">
+    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
+  </sparql-query>
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
 {{ end }}
 
 {{ define "pageSubtitle" }}
@@ -20,12 +29,11 @@
 
   <div class="mt-0">
     <sparql-query id="instances" class="d-none">
-      SELECT ?org ?name ?description WHERE {
+      SELECT ?org ?description WHERE {
         BIND (?? AS ?class)
         ?org (rdf:type|owl:type) ?class .
-        OPTIONAL { ?org schema:name ?name . }
         OPTIONAL { ?org schema:description ?description . }
-      } LIMIT 10000
+      } LIMIT 10
     </sparql-query>
     {{ template "sparqlTable" (dict 
         "result" .QueryResults.instances 

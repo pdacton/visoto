@@ -173,14 +173,14 @@ func buildLabelQuery(iris []string, languages []string) string {
 	}
 	valuesClause.WriteString("}")
 
-	// Build FILTER clause for languages
-	var langFilter string
+	// Build dynamic BIND/COALESCE clause for languages
+	var userLangPrio string
 	if len(languages) > 0 {
 		langParts := make([]string, len(languages))
 		for i, lang := range languages {
-			langParts[i] = fmt.Sprintf("lang(?labelRaw) = '%s'", strings.ToLower(lang))
+			langParts[i] = fmt.Sprintf("IF(?lang = '%s', '%d', 1/0),", strings.ToLower(lang), i+1)
 		}
-		langFilter = fmt.Sprintf("FILTER(%s)", strings.Join(langParts, " || "))
+		userLangPrio = strings.Join(langParts, "\n          ")
 	}
 
 	query := fmt.Sprintf(`
@@ -190,37 +190,63 @@ PREFIX schema: <http://schema.org/>
 PREFIX dc: <http://purl.org/dc/terms/>
 
 SELECT ?iri ?label WHERE {
+
+  # 1. VALUES clause with list of IRIs
   %s
 
+  # 2. Subquery to rank labels by property and language priority
   {
-    ?iri rdfs:label ?labelRaw .
-    BIND(1 AS ?priority)
-  } UNION {
-    ?iri skos:prefLabel ?labelRaw .
-    BIND(2 AS ?priority)
-  } UNION {
-    ?iri schema:name ?labelRaw .
-    BIND(3 AS ?priority)
-  } UNION {
-    ?iri dc:title ?labelRaw .
-    BIND(4 AS ?priority)
+    SELECT ?iri (MIN(?rankedLabel) AS ?bestEntry) WHERE {
+      # same VALUES clause with same IRIs in subquery for join optimization (reduce result size of subquery)
+	  %s
+
+      # A. Define Property Priority (10-40)
+	  # more properties can be added here...
+      VALUES (?prop ?pPrio) {
+        (rdfs:label "1")
+        (skos:prefLabel "2")
+        (schema:name "3")
+        (dc:title "4")
+      }
+      
+      ?iri ?prop ?val .
+      BIND(lang(?val) AS ?lang)
+
+	  # B. Define Language Priority (1-9)
+      BIND(
+        COALESCE(
+          # dynamic language priority based on browser language settings
+          %s
+          # hardcoded language priority if no language preferences are provided
+          IF(?lang = "de", "4", 1/0),
+          IF(?lang = "fr", "5", 1/0),
+          IF(?lang = "it", "6", 1/0),
+          IF(?lang = "en", "7", 1/0),
+          IF(?lang = "rm", "8", 1/0),
+          "9" # Default/Fallback
+        ) 
+	  AS ?lPrio)
+
+      # C. Create the sortable rank: "14LabelText" (PropPrio=1, LangPrio=4)
+      BIND(CONCAT(?pPrio, ?lPrio, STR(?val)) AS ?rankedLabel)
+    }
+    GROUP BY ?iri
   }
 
-  %s
+  # 3. Remove the two-digit prefix from the subquery (PropPrio + LangPrio) to get the clean label
+  BIND(SUBSTR(?bestEntry, 3) AS ?label)
 
-  BIND(STR(?labelRaw) AS ?label)
-}
-ORDER BY ?iri ?priority
-`, valuesClause.String(), langFilter)
+}`, valuesClause.String(), valuesClause.String(), userLangPrio)
 
 	return query
 }
 
 // extractLastSegment extracts the last path segment from an IRI as fallback label
 // Examples:
-//   http://example.com/resource/Person -> "Person"
-//   http://example.com/ns#property -> "property"
-//   http://example.com/path/to/resource/ -> "resource"
+//
+//	http://example.com/resource/Person -> "Person"
+//	http://example.com/ns#property -> "property"
+//	http://example.com/path/to/resource/ -> "resource"
 func extractLastSegment(iri string) string {
 	// Remove trailing slash
 	iri = strings.TrimRight(iri, "/")
@@ -240,6 +266,8 @@ func extractLastSegment(iri string) string {
 }
 
 // fetchLabels queries endpoint for labels and returns IRI→label mapping
+// TODO: split up queries if more than 5k IRIs, LINDAS returns 403 error (too many entries) for 10k labels
+// TODO: verify error handling when query fails - do not write into cache in that case
 func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages []string) map[string]string {
 	// Check cache first
 	uncachedIRIs := make([]string, 0, len(iris))
@@ -260,6 +288,10 @@ func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages [
 
 	// Build and execute label query
 	query := buildLabelQuery(uncachedIRIs, languages)
+
+	// DEBUG: print the query
+	fmt.Printf("LABEL QUERY:\n%s\n", query)
+
 	response, err := p.querySparqlEndpoint(endpointURL, query)
 	if err != nil {
 		log := logger.Get()
@@ -289,11 +321,22 @@ func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages [
 		return labelMap
 	}
 
+	// DEBUG: print sparqlResp
+	fmt.Printf("LABEL RESPONSE: %+v\n", sparqlResp)
+
 	// Build mapping from results (first label per IRI due to ORDER BY)
 	seenIRIs := make(map[string]bool)
 	for _, binding := range sparqlResp.Results.Bindings {
 		iriValue := binding["iri"].Value
 		labelValue := binding["label"].Value
+
+		// DEBUG: print fetched labels
+		fmt.Printf("iri - label: %s - %s\n", iriValue, labelValue)
+
+		// Skip empty labels - let fallback logic handle it
+		if labelValue == "" {
+			continue
+		}
 
 		if !seenIRIs[iriValue] {
 			labelMap[iriValue] = labelValue
