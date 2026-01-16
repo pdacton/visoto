@@ -1,0 +1,28 @@
+{{ define "pageTitle" }}Classes{{ end }}
+{{ define "pageDescription" }}A list of all classes in the triple store.{{ end }}
+
+{{ define "pageContent" }}
+    <div class="container-fluid">
+        <div class="row">
+        <div class="col">
+    
+            <!-- classes -->
+            <div class="mb-3">
+                <sparql-query id="allClasses" class="d-none">
+                    SELECT ?class ?iri (COUNT(?s) AS ?instances) WHERE {
+                        ?s (rdf:type|owl:type) ?class .
+                        BIND (STR(?class) AS ?iri)
+                    } GROUP BY ?class ?iri
+                </sparql-query>
+                {{ template "sparqlTable" (dict 
+                        "result" .QueryResults.allClasses 
+                        "id" "allClasses"
+                        "title" "Classes"
+                        "icon" "layer-group")
+                }}
+            </div>       
+
+        </div>
+        </div>  
+    </div>
+{{ end}}

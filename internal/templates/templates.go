@@ -1,7 +1,5 @@
 package templates
 
-// TODO: change embedded link prefix from "/embedded/" to "/resource/" in renderBinding function
-
 import (
 	"log/slog"
 	"path/filepath"
@@ -63,7 +61,9 @@ func Load(templatesDir string) multitemplate.Renderer {
 		copy(layoutCopy, layouts)
 		files := append(append(layoutCopy, partials...), page)
 		// AddFromFilesFuncs takes a name, funcMap, and files to include
-		r.AddFromFilesFuncs(filepath.Base(page), funcMap, files...)
+		// Use directory/filename to avoid collisions between classes/ and instances/
+		templateName := filepath.Join(filepath.Base(filepath.Dir(page)), filepath.Base(page))
+		r.AddFromFilesFuncs(templateName, funcMap, files...)
 	}
 
 	// Store in singleton

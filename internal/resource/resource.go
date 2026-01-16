@@ -86,9 +86,11 @@ func (r *Resource) ResolveTemplate(preprocessor *sparql.Preprocessor, typePriori
 	tryTemplate := func(dir, template, reason string) bool {
 		path := dir + template
 		if templateExists(path) {
-			r.TemplateName = template
+			// Extract directory name (e.g., "classes" or "instances") for template name
+			dirName := strings.TrimPrefix(strings.TrimSuffix(dir, "/"), "templates/")
+			r.TemplateName = dirName + "/" + template
 			r.TemplatePath = path
-			log.Debug("resolved template "+reason, slog.String("iri", r.IRI), slog.String("template", template))
+			log.Debug("resolved template "+reason, slog.String("iri", r.IRI), slog.String("template", r.TemplateName))
 			return true
 		}
 		return false
@@ -122,7 +124,7 @@ func (r *Resource) ResolveTemplate(preprocessor *sparql.Preprocessor, typePriori
 	}
 
 	// 4. Fallback to default template
-	r.TemplateName = "resource.html"
+	r.TemplateName = "pages/resource.html"
 	r.TemplatePath = "templates/pages/resource.html"
 	log.Debug("using fallback template", slog.String("iri", r.IRI), slog.String("template", r.TemplateName))
 	return nil

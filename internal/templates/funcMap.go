@@ -1,16 +1,20 @@
 package templates
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 
+	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/sparql"
 )
 
 // funcMap defines custom template functions available in all templates
 var funcMap = template.FuncMap{
-	"render": sparql.Binding.RenderHTML,
-	"dict":   makeDict,
+	"render":       sparql.Binding.RenderHTML,
+	"dict":         makeDict,
+	"resourceIcon": resource.GetIconForResource,
+	"toJSON":       toJSON,
 }
 
 // makeDict creates a map from alternating key-value pairs
@@ -29,4 +33,14 @@ func makeDict(values ...interface{}) (map[string]interface{}, error) {
 		dict[key] = values[i+1]
 	}
 	return dict, nil
+}
+
+// toJSON converts any value to pretty-printed JSON
+// Usage in templates: {{ toJSON . }}
+func toJSON(v interface{}) (string, error) {
+	jsonBytes, err := json.MarshalIndent(v, "", "  ")
+	if err != nil {
+		return "", err
+	}
+	return string(jsonBytes), nil
 }

@@ -210,7 +210,7 @@ func (p *Preprocessor) executeQuery(endpointURL, query string, resolveLabels boo
 // Returns a slice of type URIs
 func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 	// Construct SPARQL query to get all types
-	query := fmt.Sprintf("SELECT ?type WHERE { <%s> a ?type }", iri)
+	query := fmt.Sprintf("SELECT ?type WHERE { <%s> (a|owl:type) ?type }", iri)
 
 	// Execute query
 	response, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
@@ -279,4 +279,20 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 	}
 
 	return results
+}
+
+// ExecuteQuery executes a raw SPARQL query and returns simplified results
+// This method is useful for executing queries without template processing
+func (p *Preprocessor) ExecuteQuery(query string) (QueryResult, error) {
+	response, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
+	if err != nil {
+		return QueryResult{Error: err.Error()}, err
+	}
+
+	var sparqlResp sparqlResponse
+	if err := json.Unmarshal(response, &sparqlResp); err != nil {
+		return QueryResult{Error: err.Error()}, err
+	}
+
+	return simplifyBindings(sparqlResp), nil
 }

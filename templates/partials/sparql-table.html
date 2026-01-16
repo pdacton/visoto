@@ -8,6 +8,7 @@
     - result: QueryResult object with .Vars, .Bindings, .Error
     - id: (optional) table identifier for Tabulator.js
     - title: (optional) card title
+    - icon: (optional) Lucid icon name to display before the title
 
   Note: .Vars and .Bindings do not have the same order!
 -->
@@ -19,6 +20,7 @@
   {{ $result := .result }}
   {{ $id := .id }}
   {{ $title := .title }}
+  {{ $icon := .icon }}
 
   {{ if $result.Error }}
     <div class="alert alert-danger">
@@ -37,11 +39,20 @@
 
       <!-- card header with title and search box -->
       <div class="card-header d-flex align-items-center justify-content-between">
-        {{ if $title }}
-          <h3 class="card-title mb-0">{{ $title }}</h3>
-        {{ end }}
+        <div class="d-flex align-items-center gap-2">
+          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
+        </div>
         {{ if $id }}
-          <input type="text" id="search-{{ $id }}" class="search-table form-control" placeholder="Search table..." style="width: 30%; min-width: 100px;">
+          <div class="d-flex align-items-center gap-2">
+            <select id="groupby-{{ $id }}" class="form-select" style="width: auto; min-width: 150px;">
+              <option value="">No grouping</option>
+              {{ range $result.Vars }}
+              <option value="{{ . }}">{{ . }}</option>
+              {{ end }}
+            </select>
+            <input type="text" id="search-{{ $id }}" class="search-table form-control" placeholder="Search table..." style="width: 30%; min-width: 200px;">
+          </div>
         {{ end }}
       </div>
 
@@ -50,9 +61,12 @@
         <thead>
           <tr>
             {{ range $index, $var := $result.Vars }}
-              <th 
+              {{ $firstBinding := index $result.Bindings 0 }}
+              {{ $bindingType := (index $firstBinding $var).Type }}
+              <th
                 tabulator-field="{{ $var }}"
-                tabulator-formatter="html" 
+                tabulator-formatter="{{ if eq $bindingType "literal" }}textarea{{ else }}html{{ end }}"
+                {{ if eq $bindingType "literal" }}tabulator-variable-height="true"{{ end }}
                 tabulator-sorter="string">
                 {{ $var }}
               </th>
@@ -106,6 +120,45 @@
               filters.push({field: "{{ . }}", type: "like", value: e.target.value});
               {{ end }}
               table.setFilter([filters]);
+            });
+          }
+
+          // GroupBy dropdown handler - with localStorage persistence
+          var groupBySelect = document.getElementById("groupby-{{ $id }}");
+          if (groupBySelect) {
+            // Restore saved grouping from localStorage
+            try {
+              var savedGroupBy = localStorage.getItem("tabulator-groupby-{{ $id }}");
+              if (savedGroupBy !== null) {
+                groupBySelect.value = savedGroupBy;
+                if (savedGroupBy === "") {
+                  table.setGroupBy(false);
+                } else {
+                  table.setGroupBy(savedGroupBy);
+                }
+              }
+            } catch (e) {
+              console.warn("localStorage unavailable:", e);
+            }
+
+            // Handle dropdown changes
+            groupBySelect.addEventListener("change", function(e) {
+              var selectedField = e.target.value;
+
+              if (selectedField === "") {
+                // Clear grouping
+                table.setGroupBy(false);
+              } else {
+                // Apply grouping to selected column
+                table.setGroupBy(selectedField);
+              }
+
+              // Save selection to localStorage
+              try {
+                localStorage.setItem("tabulator-groupby-{{ $id }}", selectedField);
+              } catch (e) {
+                console.warn("localStorage unavailable:", e);
+              }
             });
           }
         });

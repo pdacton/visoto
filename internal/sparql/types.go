@@ -22,6 +22,7 @@ type QueryResult struct {
 
 // PageData wraps all data retrieved for a resource
 type TemplateData struct {
+	ResourceIRI  string                 // The IRI of the resource being rendered
 	QueryResults map[string]QueryResult // Results indexed by query ID defined in template
 }
 

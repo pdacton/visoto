@@ -46,7 +46,10 @@ func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLa
 	results := p.executeQueriesParallel(p.config.EndpointURL, queries, p.config.Timeout, acceptLanguage)
 
 	// Create TemplateData with results
-	data := TemplateData{QueryResults: results}
+	data := TemplateData{
+		ResourceIRI:  iri,
+		QueryResults: results,
+	}
 
 	return data, nil
 }

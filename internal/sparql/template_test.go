@@ -356,7 +356,7 @@ func TestExtractQueries_ResolveLabelsDefault(t *testing.T) {
 }
 
 func TestExtractQueries_Integration(t *testing.T) {
-	// Test with a realistic template similar to embedded.html
+	// Test with a realistic template similar to resource.html
 	// Note: Current regex only supports id and resolve-labels attributes, not style/class
 	template := `
 <!DOCTYPE html>
@@ -435,7 +435,7 @@ func TestExtractQueries_Integration(t *testing.T) {
 func containsSubstring(s, substr string) bool {
 	return len(s) >= len(substr) &&
 		(s == substr ||
-		 (len(s) > len(substr) && indexOfSubstring(s, substr) >= 0))
+			(len(s) > len(substr) && indexOfSubstring(s, substr) >= 0))
 }
 
 func indexOfSubstring(s, substr string) int {

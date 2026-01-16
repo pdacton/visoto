@@ -1,0 +1,61 @@
+<!--
+  Partial template for rendering SPARQL query results in a datagrid
+
+  Usage:
+    {{ template "sparqlGrid" (dict "result" .QueryResults.baseinfo "id" "baseinfo" "title" "Base info") }}
+
+  Parameters (via dict):
+    - result: QueryResult object with .Vars, .Bindings, .Error
+    - id: (optional) identifier for the datagrid
+    - title: (optional) card title
+    - icon: (optional) Lucid icon name to display before the title
+
+  Note: .Vars and .Bindings do not have the same order!
+-->
+
+{{ define "sparqlGrid" }}
+
+  {{ $result := .result }}
+  {{ $id := .id }}
+  {{ $title := .title }}
+  {{ $icon := .icon }}
+
+  {{ if $result.Error }}
+    <div class="alert alert-danger">
+      <i class="bi bi-exclamation-triangle"></i>
+      Query failed: {{ $result.Error }}
+    </div>
+  {{ else if eq (len $result.Bindings) 0 }}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i>
+      {{ $title }}: No results found.
+    </div>
+  {{ else }}
+
+    <!-- card to enclose the datagrid -->
+    <div class="card">
+
+      <!-- card header with title -->
+      <div class="card-header">
+        <div class="d-flex align-items-center gap-2">
+          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
+        </div>
+      </div>
+
+      <!-- card body with datagrid -->
+      <div class="card-body">
+        <div class="datagrid">
+          {{ range $binding := $result.Bindings }}
+            <div class="datagrid-item">
+              <div class="datagrid-title text-uppercase">{{ render (index $binding "property") }}</div>
+              <div class="datagrid-content">{{ render (index $binding "value") }}</div>
+            </div>
+          {{ end }}
+        </div>
+      </div>
+
+    </div>
+
+  {{ end }}
+{{ end }}

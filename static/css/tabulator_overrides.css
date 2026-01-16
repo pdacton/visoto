@@ -32,12 +32,23 @@
 
 /* --- table row formatting --- */
 
-/* row striping */
+/* default row background */
+.tabulator .tabulator-row {
+    background-color: var(--tblr-bg-surface);
+}
+
+/* row striping - disabled, use same color for all rows */
 .tabulator-row.tabulator-row-even {
-    background-color: var(--tblr-table-striped-color);
+    background-color: var(--tblr-bg-surface);
 }
 
 /* row hover */
 .tabulator-row.tabulator-selectable:hover {
     background-color: var(--tblr-bg-surface-tertiary);
+}
+
+/* table cell text color */
+.tabulator .tabulator-cell {
+    color: var(--tblr-body-color);
+    border-color: var(--tblr-border-color-translucent);
 }

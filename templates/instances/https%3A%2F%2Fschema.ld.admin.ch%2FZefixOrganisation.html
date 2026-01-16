@@ -4,7 +4,9 @@
   <sparql-query id="title" class="d-none">
     SELECT ?title WHERE { ?? (rdfs:label|schema:name) ?title . } LIMIT 1
   </sparql-query>
-  <i data-lucide="building" class="mr-3"></i> {{ (index .QueryResults.title.Bindings 0).title.Value }}
+  {{ if gt (len .QueryResults.title.Bindings) 0 }}
+    {{ (index .QueryResults.title.Bindings 0).title.Value }}
+  {{ end }}
 {{ end }}
 
 {{ define "pageClasses" }}
@@ -25,7 +27,7 @@
       FILTER ( isLiteral( ?value ) )
     } LIMIT 100
   </sparql-query>
-  {{ template "sparqlTable" (dict "result" .QueryResults.attributes "id" "attributes" "title" "Attributes") }}
+  {{ template "sparqlTable" (dict "result" .QueryResults.attributes "id" "attributes" "title" "Attributes" "icon" "tags") }}
 </div>
 
 <div class="mt-3">
@@ -37,7 +39,7 @@
       FILTER (?objectProperty != rdf:type)
     } LIMIT 100
   </sparql-query>
-  {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships") }}
+  {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships" "icon" "expand") }}
 </div>
 
 <div class="mt-3">
@@ -47,7 +49,7 @@
       ?incomingObject ?objectProperty ?s .
     } LIMIT 1000
   </sparql-query>
-  {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships") }}
+  {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships" "icon" "shrink") }}
 </div>
 
 {{ end }}

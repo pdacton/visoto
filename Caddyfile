@@ -1,0 +1,3 @@
+visoto.hutzli.org {
+    reverse_proxy visoto:8060
+}

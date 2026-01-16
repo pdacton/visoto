@@ -1,0 +1,52 @@
+<!-- Municipality Class Template, listing all instances of this class -->
+
+{{ define "pageTitle" }}
+  <sparql-query id="title" class="d-none">
+    SELECT ?label WHERE { ?? rdfs:label ?label . }
+  </sparql-query>
+  {{ (index .QueryResults.title.Bindings 0).label.Value }}
+{{ end }}
+
+{{ define "pageClasses" }}
+  <sparql-query id="pageClasses" class="d-none">
+    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
+  </sparql-query>
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}
+  <sparql-query id="description" class="d-none">
+    SELECT ?description WHERE { ?? rdfs:comment ?description . }
+  </sparql-query>
+  {{ (index .QueryResults.description.Bindings 0).description.Value }}
+{{ end }}
+
+{{ define "pageContent" }}
+
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-query id="instances" class="d-none">
+      SELECT ?municipality ?name ?canton ?identifier (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
+      WHERE {
+        BIND (?? AS ?class)
+        ?municipality (rdf:type|owl:type) ?class .
+        OPTIONAL { ?municipality schema:name ?name . }
+        OPTIONAL { ?municipality schema:isPartOf ?canton . }
+        OPTIONAL { ?municipality schema:identifier ?identifier . }
+        OPTIONAL { ?municipality schema:postalCode ?postalCode . }
+      }
+      GROUP BY ?municipality ?name ?canton ?identifier
+      LIMIT 10000
+    </sparql-query>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.instances
+        "id" "instances"
+        "title" "Municipalities"
+        "icon" "layout-list")
+
+    }}
+  </div>
+
+{{ end }}

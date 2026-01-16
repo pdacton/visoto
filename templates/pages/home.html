@@ -1,4 +1,42 @@
+{{ define "pageTitle" }}Visoto{{ end }}
+{{ define "pageSubtitle" }}Welcome to Visoto, another graph explorer{{ end }}
+
 {{ define "pageContent" }}
-<h1>Home Page</h1>
-This is the homepage home.html content here.
+<style>
+    .home-background {
+        position: fixed;
+        top: 40%;
+        left: 70%;
+        width: 100vmin;
+        height: 100vmin;
+        background-image: url('/static/img/page_background.svg');
+        background-size: 100vmin 100vmin;
+        background-repeat: no-repeat;
+        z-index: -1;
+        pointer-events: none;
+        animation: gentle-spin 180s linear infinite;
+        mask-image: radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 70%);
+        -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 70%);
+    }
+
+    @keyframes gentle-spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+</style>
+<div class="home-background"></div>
+<p>Use visoto to explore and visualize RDF graphs.</p>
+
+<p>Thanks go to </p>
+
+<ul>
+    <li>the crew at <a href="https://en.wikipedia.org/wiki/Fluid_Operations">fluidOps</a> for the concept, namely the Information Workbench.</li> 
+    <li><a href="https://go.dev/">Go</a> for the programming language.</li>
+    <li><a href="https://gin-gonic.com/en/">gin</a> for the web framework.</li>
+    <li><a href="https://tabulator.info/">Tabulator</a> for the interactive data tables.</li>
+    <li><a href="https://tabler.io/">Tabler</a> for the admin dashboard template.</li>
+    <li><a href="https://getbootstrap.com/">Bootstrap</a> for the CSS framework.</li>
+    <li><a href="https://lucide.dev/">Lucide</a> for the icons used in the UI.</li>
+    <li>and to Claude Code for writing 98% of the code.</li>
+</ul>
 {{ end }}

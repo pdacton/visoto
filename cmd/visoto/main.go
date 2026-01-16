@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 
@@ -15,6 +14,7 @@ import (
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
 	"hutzli.org/visoto/internal/resource"
+	"hutzli.org/visoto/internal/search"
 	"hutzli.org/visoto/internal/sparql"
 	"hutzli.org/visoto/internal/templates"
 )
@@ -40,10 +40,19 @@ var sparqlPreproc *sparql.Preprocessor
 // Package-level config instance
 var cfg *config.Config
 
+// Package-level search instance
+var searcher *search.Searcher
+
 func homeHandler(c *gin.Context) {
 
-	// native gin template rendering
-	c.HTML(http.StatusOK, "home.html", "")
+	log := logger.Get()
+	log.Debug("processing home request")
+
+	// Set the page parameter to home.html
+	c.Params = append(c.Params, gin.Param{Key: "page", Value: "home.html"})
+
+	// Delegate to staticPageHandler
+	staticPageHandler(c)
 }
 
 func resourceHandler(c *gin.Context) {
@@ -53,7 +62,7 @@ func resourceHandler(c *gin.Context) {
 
 	// log request
 	log := logger.Get()
-	log.Debug("processing resource request",
+	log.Debug("----> processing resource request",
 		slog.String("path", c.Param("path")),
 		slog.String("iri", iri))
 
@@ -67,7 +76,7 @@ func resourceHandler(c *gin.Context) {
 	}
 
 	// Get language preference from request
-	//acceptLanguage := c.GetHeader("Accept-Language")
+	acceptLanguage := c.GetHeader("Accept-Language")
 
 	// Resolve template based on IRI and RDF types
 	if err := r.ResolveTemplate(sparqlPreproc, cfg.RDF.TypePriority, cfg.RDF.ParsedPrefixes); err != nil {
@@ -79,7 +88,7 @@ func resourceHandler(c *gin.Context) {
 
 	// TODO: refactor, move into Resource method
 	// extract SPARQL query from template and retrieve data
-	r.Data, err = sparqlPreproc.ProcessTemplateFile(r.TemplatePath, iri, "")
+	r.Data, err = sparqlPreproc.ProcessTemplateFile(r.TemplatePath, r.GetIRI(), acceptLanguage)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
 		return
@@ -91,37 +100,55 @@ func resourceHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, r.TemplateName, r.Data)
 }
 
-func embeddedHandler(c *gin.Context) {
-
-	// extract iri from path & validate
-	iri := strings.TrimPrefix(c.Param("path"), "/")
-	if _, err := url.ParseRequestURI(iri); err != nil {
-		c.String(http.StatusBadRequest, "incorrect resource iri: %v", iri)
-		return
-	}
+func staticPageHandler(c *gin.Context) {
 
 	log := logger.Get()
-	log.Debug("processing embedded request",
-		slog.String("path", c.Param("path")),
-		slog.String("iri", iri))
+	log.Debug("processing static page request")
+
+	// Extract page name from URL parameter
+	pageName := c.Param("page")
+
+	// Validate: must end with .html
+	if !strings.HasSuffix(pageName, ".html") {
+		c.String(http.StatusNotFound, "Page not found")
+		return
+	}
 
 	// Get language preference from request
 	acceptLanguage := c.GetHeader("Accept-Language")
 
-	// TODO: resolve template written for resource
-	// either direct match over IRI, or resolve for rdf:type and then match
+	// Construct template paths
+	templatePath := "templates/pages/" + pageName
+	templateName := "pages/" + pageName
 
-	// extract SPARQL query from template and retrieve data
-	data, err := sparqlPreproc.ProcessTemplateFile("templates/pages/embedded.html", iri, acceptLanguage)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
+	log.Debug("processing static page request",
+		slog.String("page", pageName),
+		slog.String("templatePath", templatePath),
+		slog.String("templateName", templateName))
+
+	// Check if template file exists
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		log.Debug("template not found", slog.String("path", templatePath))
+		c.String(http.StatusNotFound, "Page not found")
 		return
 	}
 
-	log.Debug("SPARQL data retrieved", slog.Any("data", data))
+	// Process SPARQL queries in template (WITHOUT IRI substitution)
+	data, err := sparqlPreproc.ProcessTemplateFile(templatePath, "", acceptLanguage)
+	if err != nil {
+		log.Error("SPARQL processing failed",
+			slog.String("page", pageName),
+			slog.String("error", err.Error()))
+		c.String(http.StatusInternalServerError, "Error processing page: %v", err)
+		return
+	}
 
-	// native gin template rendering
-	c.HTML(http.StatusOK, "embedded.html", data)
+	log.Debug("rendering static page",
+		slog.String("templateName", templateName),
+		slog.Int("queryResults", len(data.QueryResults)))
+
+	// Render template
+	c.HTML(http.StatusOK, templateName, data)
 }
 
 func main() {
@@ -156,6 +183,16 @@ func main() {
 		Prefixes:    cfg.RDF.ParsedPrefixes,
 	})
 
+	// Initialize search with Stardog provider
+	searcher = search.New(sparqlPreproc, "stardog")
+	search.SetDefaultProvider("stardog")
+
+	// Initialize icon cache
+	if err := resource.InitIconCache("./static/img/resource"); err != nil {
+		log.Warn("failed to initialize icon cache",
+			slog.String("error", err.Error()))
+	}
+
 	// Create router
 	router := gin.Default()
 
@@ -166,17 +203,18 @@ func main() {
 	router.StaticFile("/favicon.ico", "./static/img/favicon.svg")
 	router.Static("/static", "static")
 	router.GET("/", homeHandler)
-	router.GET("/home", homeHandler)
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
+	router.GET("/search", searcher.Handler())
 	router.GET("/resource/*path", resourceHandler)
-	router.GET("/embedded/*path", embeddedHandler)
+	router.GET("/:page", staticPageHandler)
 
 	// Start server with configured port
+	// Bind to 0.0.0.0 to allow connections from outside (required for Docker)
 	log.Info("server starting",
-		slog.String("address", "127.0.0.1"+cfg.GetPort()),
-		slog.String("url", "http://127.0.0.1"+cfg.GetPort()))
+		slog.String("address", "0.0.0.0"+cfg.GetPort()),
+		slog.String("url", "http://localhost"+cfg.GetPort()))
 
-	if err := router.Run("127.0.0.1" + cfg.GetPort()); err != nil {
+	if err := router.Run("0.0.0.0" + cfg.GetPort()); err != nil {
 		log.Error("server failed to start",
 			slog.String("error", err.Error()))
 		os.Exit(1)

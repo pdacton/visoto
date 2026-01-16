@@ -34,7 +34,10 @@
         <!-- Header -->
         <div class="page-header">
           <div class="container-fluid">
-            {{ template "header.html" . }}
+            <!-- we allow other templates to override this, so we use block instead of template -->
+            {{ block "header" . }}
+              {{ template "header.html" . }}
+            {{ end }}
           </div>
         </div>
         
@@ -59,6 +62,7 @@
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
     <script src="/static/js/darkmode.js"></script>
     <script src="/static/js/sidebar.js"></script>
+    <script src="/static/js/search.js"></script>
 
     <!-- Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>

@@ -1,0 +1,135 @@
+<!-- Default Class Template, for any resource which doesn't have a specific template -->
+
+{{ define "pageTitle" }}
+  <sparql-query id="pageTitle" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+  {{ if .QueryResults.pageTitle.Bindings }}{{ (index .QueryResults.pageTitle.Bindings 0).title.Value }}{{ end }}
+{{ end }}
+
+{{ define "pageClasses" }}
+  <sparql-query id="pageClasses" class="d-none">
+    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
+  </sparql-query>
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}
+  <sparql-query id="pageSubtitle" class="d-none">
+    SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }
+  </sparql-query>
+  {{ if .QueryResults.pageSubtitle.Bindings }}{{ (index .QueryResults.pageSubtitle.Bindings 0).description.Value }}{{ end }}
+{{ end }}
+
+{{ define "pageContent" }}
+
+<div class="container-fluid">
+
+  <div class="row mb-3">
+
+    <!-- Attributes -->
+
+    <div class="col-lg mt-3">
+      <sparql-query id="attributes" class="d-none">
+        SELECT ?property ?value WHERE {
+          BIND (?? AS ?s)
+          ?s ?property ?value .
+          FILTER (isLiteral(?value))
+          FILTER (?property != schema:postalCode)
+        } LIMIT 1000
+      </sparql-query>
+      {{ template "sparqlGrid" (dict
+            "result" .QueryResults.attributes
+            "id" "attributes"
+            "title" "Attributes"
+            "icon" "tags")
+      }}
+    </div>    
+
+    <!-- Postal Codes -->
+
+    <div class="col-lg mt-3">
+      <sparql-query id="postals" class="d-none">
+        SELECT ?postalCode WHERE {
+          BIND (?? AS ?s)
+          ?s schema:postalCode ?postalCode .
+        } LIMIT 1000
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.postals
+            "id" "postals"
+            "title" "Postal Codes"
+            "icon" "mail") 
+      }}
+    </div>      
+
+    <!-- Stationen -->
+
+    <div class="col-lg mt-3">
+      <sparql-query id="stationen" class="d-none">
+        SELECT ?station WHERE {
+          ?station ?property ?? .
+          ?station a gtfs:Station .
+          FILTER (?property != rdf:type)
+          FILTER (?property != rdfs:subClassOf)
+        } LIMIT 5000
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+          "result" .QueryResults.stationen
+          "id" "stationen"
+          "title" "Stationen"
+          "icon" "train")
+      }}
+    </div>     
+  </div>
+
+  <div class="row mb-3">
+    <div class="col-lg-6">
+
+      <!-- outgoing relationships -->
+      <div class="mb-3">
+        <sparql-query id="outgoing" class="d-none">
+          SELECT ?property ?object WHERE {
+            BIND (?? AS ?s)
+            ?s ?property ?object .
+            FILTER (isIRI(?object))
+            FILTER (?property != rdf:type)
+            FILTER (?property != rdfs:subClassOf) 
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+              "result" .QueryResults.outgoing 
+              "id" "outgoing" 
+              "title" "Outgoing Relationships"
+              "icon" "expand") 
+        }}
+      </div>
+
+    </div>
+
+    <div class="col-lg-6">
+
+      <!-- incoming relationships -->
+      <div class="mb-3">
+        <sparql-query id="incoming" class="d-none">
+          SELECT ?property ?subject WHERE {
+            BIND (?? AS ?o)
+            ?subject ?property ?o .
+            FILTER (?property != rdf:type)
+            FILTER (?property != rdfs:subClassOf)
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+            "result" .QueryResults.incoming 
+            "id" "incoming" 
+            "title" "Incoming Relationships" 
+            "icon" "shrink") 
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{{ end }}
+

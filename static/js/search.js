@@ -1,0 +1,47 @@
+/**
+ * Search functionality for visoto
+ * Handles topbar search box submission and advanced filter UX
+ */
+
+document.addEventListener('DOMContentLoaded', function() {
+
+  // Topbar search form - submit on Enter key
+  const topbarForm = document.getElementById('topbar-search-form');
+  const topbarInput = document.getElementById('topbar-search-input');
+
+  if (topbarForm && topbarInput) {
+    // On search page, populate topbar with current query
+    const searchPageInput = document.getElementById('search-query');
+    if (searchPageInput && searchPageInput.value) {
+      topbarInput.value = searchPageInput.value;
+    }
+
+    topbarInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        if (topbarInput.value.trim()) {
+          topbarForm.submit();
+        }
+      }
+    });
+  }
+
+  // Search page - auto-expand advanced filters if any filter is selected
+  const searchPage = document.getElementById('search-form');
+  if (searchPage) {
+    const classFilter = document.getElementById('class-filter');
+    const propertyFilter = document.getElementById('property-filter');
+    const filterContent = document.getElementById('filter-content');
+
+    if (classFilter && propertyFilter && filterContent) {
+      // Auto-expand accordion if filters are set
+      if (classFilter.value !== '' || propertyFilter.value !== '') {
+        // Use Bootstrap's Collapse API to show the accordion
+        const bsCollapse = new bootstrap.Collapse(filterContent, {
+          toggle: true
+        });
+      }
+    }
+  }
+
+});

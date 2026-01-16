@@ -17,7 +17,15 @@
 
     <!-- search field -->
     <div class="nav-item mx-auto" style="width: 50%;">
-      <input type="text" class="form-control" placeholder="Search..." aria-label="Search">
+      <form action="/search" method="GET" id="topbar-search-form">
+        <input
+          type="text"
+          name="q"
+          id="topbar-search-input"
+          class="form-control"
+          placeholder="Search (Lucene syntax)..."
+          aria-label="Search">
+      </form>
     </div>
 
     <!-- darkmode button -->
