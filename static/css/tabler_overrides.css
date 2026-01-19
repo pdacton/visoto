@@ -28,6 +28,17 @@ html {
     }
 }
 
+/* --- Card collapse styling --- */
+
+/* Rotate chevron icon when card is collapsed */
+.btn-icon[data-bs-toggle="collapse"] svg {
+    transition: transform 0.2s ease;
+}
+
+.btn-icon[data-bs-toggle="collapse"].collapsed svg {
+    transform: rotate(180deg);
+}
+
 /* --- Table styling --- */
 
 /* Table footer overrides, to match the header styling */

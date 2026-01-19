@@ -1,0 +1,175 @@
+<!-- Canton Instance Template -->
+
+{{ define "pageIcon" }}
+  <sparql-query id="pageIcon" class="d-none">
+    PREFIX schema: &lt;http://schema.org/&gt;
+    PREFIX wdt: &lt;http://www.wikidata.org/prop/direct/&gt;
+    PREFIX wd: &lt;http://www.wikidata.org/entity/&gt;
+    SELECT ?coatOfArms WHERE {
+      ?? schema:alternateName ?alternateName .
+      SERVICE &lt;https://query.wikidata.org/sparql&gt; {
+        ?wdCanton wdt:P31 wd:Q23058 ;
+                  wdt:P8119 ?iso31662 ;
+                  wdt:P94 ?coatOfArms .
+      }
+      BIND(CONCAT("CH.", ?alternateName) AS ?isoCode)
+      FILTER(?iso31662 = ?isoCode)
+    }
+  </sparql-query>
+  {{ $coatOfArms := "" }}
+  {{ if .QueryResults.pageIcon.Bindings }}
+    {{ with (index .QueryResults.pageIcon.Bindings 0).coatOfArms }}
+      {{ $coatOfArms = .Value }}
+    {{ end }}
+  {{ end }}
+  {{ if $coatOfArms }}
+    <img src="{{ $coatOfArms }}" alt="Canton coat of arms" width="64" height="64" style="object-fit: contain;">
+  {{ else }}
+    <img src="{{ resourceIcon . }}" alt="Page icon" width="48" height="48">
+  {{ end }}
+{{ end }}
+
+{{ define "pageTitle" }}
+  <sparql-query id="pageTitle" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+  {{ if .QueryResults.pageTitle.Bindings }}{{ (index .QueryResults.pageTitle.Bindings 0).title.Value }}{{ end }}
+{{ end }}
+
+{{ define "pageClasses" }}
+  <sparql-query id="pageClasses" class="d-none">
+    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
+  </sparql-query>
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}
+  <sparql-query id="pageSubtitle" class="d-none">
+    SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }
+  </sparql-query>
+  {{ if .QueryResults.pageSubtitle.Bindings }}{{ (index .QueryResults.pageSubtitle.Bindings 0).description.Value }}{{ end }}
+{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <div class="row mb-3">
+
+    <!-- Attributes -->
+    <div class="col-lg mt-3">
+      <sparql-query id="attributes" class="d-none">
+        SELECT ?property ?value WHERE {
+          BIND (?? AS ?s)
+          ?s ?property ?value .
+          FILTER (isLiteral(?value))
+        } LIMIT 1000
+      </sparql-query>
+      {{ template "sparqlGrid" (dict
+            "result" .QueryResults.attributes
+            "id" "attributes"
+            "title" "Attributes"
+            "icon" "tags")
+      }}
+    </div>
+
+  </div>
+  <div class="row mb-3">
+
+    <!-- Districts -->
+    <div class="col-lg mt-3">
+      <sparql-query id="districts" class="d-none">
+        SELECT ?district ?identifier (COUNT(?municipality) AS ?municipalities) WHERE {
+          ?? schema:hasPart ?district .
+          ?district a schch:District .
+          OPTIONAL { ?district schema:identifier ?identifier . }
+          OPTIONAL { ?municipality schema:containedInPlace ?district . }
+        }
+        GROUP BY ?district ?identifier  
+        LIMIT 5000
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.districts
+            "id" "districts"
+            "title" "Districts"
+            "icon" "map-pinned")
+      }}
+    </div>
+
+    <!-- Municipalities -->
+    <div class="col-lg mt-3">
+      <sparql-query id="municipalities" class="d-none">
+        SELECT ?municipality ?identifier ?district WHERE {
+          ?municipality schema:containedInPlace ?? .
+          ?municipality a schch:Municipality .
+          OPTIONAL { ?municipality schema:identifier ?identifier . }
+          OPTIONAL { ?municipality schema:containedInPlace ?district . ?district a schch:District . }
+        } LIMIT 5000
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.municipalities
+            "id" "municipalities"
+            "title" "Municipalities"
+            "icon" "map-pinned")
+      }}
+    </div>
+
+  </div>
+
+  <div class="row mb-3">
+
+      <!-- incoming relationships -->
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <sparql-query id="incoming" class="d-none">
+            SELECT ?source ?property WHERE {
+              BIND (?? AS ?o)
+              ?source ?property ?o .
+              FILTER (?property != rdf:type)
+              FILTER (?property != rdfs:subClassOf)
+              FILTER (?property NOT IN (
+                schema:rangeIncludes,
+                schema:domainIncludes,
+                rdfs:range,
+                rdfs:domain,
+                owl:equivalentClass,
+                owl:disjointWith,
+                owl:unionOf,
+                owl:intersectionOf
+              ))
+              FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+            } LIMIT 1000
+          </sparql-query>
+          {{ template "sparqlTable" (dict 
+              "result" .QueryResults.incoming 
+              "id" "incoming" 
+              "title" "Incoming Relationships" 
+              "icon" "shrink"
+              "collapsed" true) 
+          }}
+        </div>
+      </div>
+      
+      <!-- outgoing relationships -->
+      <div class="col-lg-6">
+        <div class="mb-3">
+          <sparql-query id="outgoing" class="d-none">
+            SELECT ?property ?destination WHERE {
+              BIND (?? AS ?s)
+              ?s ?property ?destination .
+              FILTER (isIRI(?destination))
+              FILTER (?property != rdf:type)
+              FILTER (?property != rdfs:subClassOf) 
+            } LIMIT 1000
+          </sparql-query>
+          {{ template "sparqlTable" (dict 
+                "result" .QueryResults.outgoing 
+                "id" "outgoing" 
+                "title" "Outgoing Relationships"
+                "icon" "expand"
+                "collapsed" true) 
+          }}
+        </div>
+      </div>
+
+  </div>
+</div>
+{{ end }}

@@ -1,0 +1,48 @@
+<!-- Canton Class Template, listing all instances of this class -->
+
+{{ define "pageTitle" }}
+  Kantone
+{{ end }}
+
+{{ define "pageClasses" }}
+  <sparql-query id="pageClasses" class="d-none">
+    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
+  </sparql-query>
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}
+  Schweizer Kantone
+{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-query id="instances" class="d-none">
+      SELECT ?canton ?identifier ?name_de ?name_fr ?name_it ?name_rm ?name_en
+      WHERE {
+        BIND (?? AS ?class)
+        ?canton (rdf:type|owl:type) ?class .
+        OPTIONAL { ?canton schema:identifier ?identifier . }
+        OPTIONAL { ?canton schema:name ?name_de . FILTER(lang(?name_de) = "de") }
+        OPTIONAL { ?canton schema:name ?name_fr . FILTER(lang(?name_fr) = "fr") }
+        OPTIONAL { ?canton schema:name ?name_it . FILTER(lang(?name_it) = "it") }
+        OPTIONAL { ?canton schema:name ?name_rm . FILTER(lang(?name_rm) = "rm") }
+        OPTIONAL { ?canton schema:name ?name_en . FILTER(lang(?name_en) = "en") }
+      }
+      ORDER BY ?identifier
+      LIMIT 10000
+    </sparql-query>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.instances
+        "id" "instances"
+        "title" "Cantons"
+        "icon" "layout-list")
+
+    }}
+  </div>
+</div>
+{{ end }}

@@ -2,26 +2,24 @@
 {{ define "pageDescription" }}A list of all properties used in the triple store.{{ end }}
 
 {{ define "pageContent" }}
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col">
+<div class="row">
+    <div class="col">
 
-                <!-- properties -->
-                <div class="mb-3">
-                    <sparql-query id="allProperties" class="d-none">
-                        SELECT DISTINCT ?property (COUNT(?s) AS ?occurences) WHERE {
-                            ?s ?property ?o .
-                        } GROUP BY ?property
-                    </sparql-query>
-                    {{ template "sparqlTable" (dict 
-                            "result" .QueryResults.allProperties 
-                            "id" "allProperties"
-                            "title" "Properties"
-                            "icon" "layer-group")
-                    }}
-                </div>            
+        <!-- properties -->
+        <div class="mb-3">
+            <sparql-query id="allProperties" class="d-none">
+                SELECT DISTINCT ?property (COUNT(?s) AS ?occurences) WHERE {
+                    ?s ?property ?o .
+                } GROUP BY ?property
+            </sparql-query>
+            {{ template "sparqlTable" (dict 
+                    "result" .QueryResults.allProperties 
+                    "id" "allProperties"
+                    "title" "Properties"
+                    "icon" "layer-group")
+            }}
+        </div>            
 
-            </div>
-        </div>  
     </div>
+</div>  
 {{ end}}

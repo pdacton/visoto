@@ -6,7 +6,9 @@
 </ol>
 <div class="mt-3 d-flex flex-column flex-sm-row align-items-start gap-3">
   <div class="flex-shrink-0">
+    {{ block "pageIcon" . }}
     <img src="{{ resourceIcon . }}" alt="Page icon" width="48" height="48">
+    {{ end }}
   </div>
   <div>
     <h1>{{ block "pageTitle" . }}Page Title{{ end }}{{ if .ResourceIRI }} <a href="{{ .ResourceIRI }}" target="_blank"><i data-lucide="external-link" style="width: 0.6em;"></i></a>{{ end }}</h1>

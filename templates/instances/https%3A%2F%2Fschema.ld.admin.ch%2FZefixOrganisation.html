@@ -1,4 +1,4 @@
-<!-- Instance template for Zefix OrganisationS -->
+<!-- Zefix Organisation Instance -->
 
 {{ define "pageTitle" }}
   <sparql-query id="title" class="d-none">
@@ -19,37 +19,39 @@
 {{ end }}
 
 {{ define "pageContent" }}
+<div>
 
-<div class="mt-3">
-  <sparql-query id="attributes" style="display: none;">
-    SELECT ?attribute ?value WHERE {
-      ?? ?attribute ?value .
-      FILTER ( isLiteral( ?value ) )
-    } LIMIT 100
-  </sparql-query>
-  {{ template "sparqlTable" (dict "result" .QueryResults.attributes "id" "attributes" "title" "Attributes" "icon" "tags") }}
+  <div class="mt-3">
+    <sparql-query id="attributes" style="display: none;">
+      SELECT ?attribute ?value WHERE {
+        ?? ?attribute ?value .
+        FILTER ( isLiteral( ?value ) )
+      } LIMIT 100
+    </sparql-query>
+    {{ template "sparqlTable" (dict "result" .QueryResults.attributes "id" "attributes" "title" "Attributes" "icon" "tags") }}
+  </div>
+
+  <div class="mt-3">
+    <sparql-query id="outgoing" style="display: none;">
+      SELECT ?relationship ?destination WHERE {
+        BIND (?? AS ?s)
+        ?s ?relationship ?destination .
+        FILTER (isIRI( ?destination))
+        FILTER (?relationship != rdf:type)
+      } LIMIT 100
+    </sparql-query>
+    {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships" "icon" "expand") }}
+  </div>
+
+  <div class="mt-3">
+    <sparql-query id="incoming" style="display: none;">
+      SELECT ?source ?relationship WHERE {
+        BIND (?? AS ?s)
+        ?source ?relationship ?s .
+      } LIMIT 1000
+    </sparql-query>
+    {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships" "icon" "shrink") }}
+  </div>
+
 </div>
-
-<div class="mt-3">
-  <sparql-query id="outgoing" style="display: none;">
-    SELECT ?objectProperty ?object WHERE {
-      BIND (?? AS ?s)
-      ?s ?objectProperty ?object .
-      FILTER (isIRI( ?object))
-      FILTER (?objectProperty != rdf:type)
-    } LIMIT 100
-  </sparql-query>
-  {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships" "icon" "expand") }}
-</div>
-
-<div class="mt-3">
-  <sparql-query id="incoming" style="display: none;">
-    SELECT ?incomingObject ?objectProperty WHERE {
-      BIND (?? AS ?s)
-      ?incomingObject ?objectProperty ?s .
-    } LIMIT 1000
-  </sparql-query>
-  {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships" "icon" "shrink") }}
-</div>
-
 {{ end }}

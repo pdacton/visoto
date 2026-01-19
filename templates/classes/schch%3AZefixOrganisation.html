@@ -28,26 +28,26 @@
 {{ end }}
 
 {{ define "pageContent" }}
+<div>
 
   <!-- instances of this class -->
-
   <div class="mt-0">
     <sparql-query id="instances" class="d-none">
       SELECT ?org ?description WHERE {
         BIND (?? AS ?class)
-        ?org (rdf:type|owl:type) ?class .
+        ?org rdf:type ?class .
         OPTIONAL { ?org schema:description ?description . }
       } LIMIT 5000
     </sparql-query>
     {{ template "sparqlTable" (dict 
         "result" .QueryResults.instances 
         "id" "instances" 
-        "title" "Instances of this Class") 
+        "title" "Instances of this Class"
+        "icon" "squircle") 
     }}
   </div>
 
   <!-- outgoing relationships -->
-
   <div class="mt-3">
     <sparql-query id="outgoing" class="d-none">
       SELECT ?s ?p ?o WHERE {
@@ -58,11 +58,12 @@
     {{ template "sparqlTable" (dict 
           "result" .QueryResults.outgoing 
           "id" "outgoing" 
-          "title" "Outgoing Relationships") }}
+          "title" "Outgoing Relationships"
+          "icon" "expand") 
+    }}
   </div>
 
   <!-- incoming relationships -->
-
   <div class="mt-3">
     <sparql-query id="incoming" class="d-none">
       SELECT ?s ?p ?o WHERE {
@@ -74,8 +75,9 @@
     {{ template "sparqlTable" (dict 
         "result" .QueryResults.incoming 
         "id" "incoming" 
-        "title" "Incoming Relationships") 
+        "title" "Incoming Relationships"
+        "icon" "shrink") 
     }}
   </div> 
-
+</div>
 {{ end }}

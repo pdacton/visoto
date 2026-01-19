@@ -1,4 +1,33 @@
-<!-- Default Class Template, for any resource which doesn't have a specific template -->
+<!-- Municipality instance template -->
+
+{{ define "pageIcon" }}
+  <sparql-query id="pageIcon" class="d-none">
+    PREFIX schema: &lt;http://schema.org/&gt;
+    PREFIX wdt: &lt;http://www.wikidata.org/prop/direct/&gt;
+    SELECT ?flagURL WHERE {
+      ?? schema:identifier ?bfsCodeInt .
+      BIND(STR(?bfsCodeInt) AS ?bfsCode)
+      SERVICE &lt;https://query.wikidata.org/sparql&gt; {
+        ?wikidataMuni wdt:P771 ?bfsCode .
+        OPTIONAL { ?wikidataMuni wdt:P41 ?flag . }
+        OPTIONAL { ?wikidataMuni wdt:P94 ?coa . }
+        BIND(COALESCE(?flag, ?coa) AS ?image)
+        BIND(STR(?image) AS ?flagURL)
+      }
+    }
+  </sparql-query>
+  {{ $flagURL := "" }}
+  {{ if .QueryResults.pageIcon.Bindings }}
+    {{ with (index .QueryResults.pageIcon.Bindings 0).flagURL }}
+      {{ $flagURL = .Value }}
+    {{ end }}
+  {{ end }}
+  {{ if $flagURL }}
+    <img src="{{ $flagURL }}" alt="Municipality flag" width="64" height="64" style="object-fit: contain;">
+  {{ else }}
+    <img src="{{ resourceIcon . }}" alt="Page icon" width="48" height="48">
+  {{ end }}
+{{ end }}
 
 {{ define "pageTitle" }}
   <sparql-query id="pageTitle" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
@@ -22,9 +51,7 @@
 {{ end }}
 
 {{ define "pageContent" }}
-
-<div class="container-fluid">
-
+<div>
   <div class="row mb-3">
 
     <!-- Attributes -->
@@ -46,8 +73,10 @@
       }}
     </div>    
 
-    <!-- Postal Codes -->
+  </div>  
+  <div class="row mb-3">
 
+    <!-- Postal Codes -->
     <div class="col-lg mt-3">
       <sparql-query id="postals" class="d-none">
         SELECT ?postalCode WHERE {
@@ -64,14 +93,12 @@
     </div>      
 
     <!-- Stationen -->
-
     <div class="col-lg mt-3">
       <sparql-query id="stationen" class="d-none">
-        SELECT ?station WHERE {
+        SELECT ?station ?provider WHERE {
           ?station ?property ?? .
           ?station a gtfs:Station .
-          FILTER (?property != rdf:type)
-          FILTER (?property != rdfs:subClassOf)
+          OPTIONAL { ?station schema:provider ?provider . }   
         } LIMIT 5000
       </sparql-query>
       {{ template "sparqlTable" (dict
@@ -80,19 +107,71 @@
           "title" "Stationen"
           "icon" "train")
       }}
-    </div>     
+    </div>    
+
+    <!-- Zefix Organisationen -->
+    <div class="col-lg mt-3">
+      <sparql-query id="Organisationen" class="d-none">
+        SELECT ?zefix_Organisation ?form WHERE {
+          ?zefix_Organisation schch:municipality ?? .
+          ?zefix_Organisation a schema:Organization .
+          OPTIONAL { ?zefix_Organisation schema:additionalType ?form . }
+        } LIMIT 5000
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+          "result" .QueryResults.Organisationen
+          "id" "Organisationen"
+          "title" "Zefix Organisationen"
+          "icon" "users")
+      }}
+    </div>    
+
   </div>
 
   <div class="row mb-3">
-    <div class="col-lg-6">
 
-      <!-- outgoing relationships -->
+  <!-- relationships -->
+  <div class="row">
+
+    <!-- incoming relationships -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="incoming" class="d-none">
+          SELECT ?source ?property WHERE {
+            BIND (?? AS ?o)
+            ?source ?property ?o .
+            FILTER (?property != rdf:type)
+            FILTER (?property != rdfs:subClassOf)
+            FILTER (?property NOT IN (
+              schema:rangeIncludes,
+              schema:domainIncludes,
+              rdfs:range,
+              rdfs:domain,
+              owl:equivalentClass,
+              owl:disjointWith,
+              owl:unionOf,
+              owl:intersectionOf
+            ))
+            FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+            "result" .QueryResults.incoming 
+            "id" "incoming" 
+            "title" "Incoming Relationships" 
+            "icon" "shrink") 
+        }}
+      </div>
+    </div>
+    
+    <!-- outgoing relationships -->
+    <div class="col-lg-6">
       <div class="mb-3">
         <sparql-query id="outgoing" class="d-none">
-          SELECT ?property ?object WHERE {
+          SELECT ?property ?destination WHERE {
             BIND (?? AS ?s)
-            ?s ?property ?object .
-            FILTER (isIRI(?object))
+            ?s ?property ?destination .
+            FILTER (isIRI(?destination))
             FILTER (?property != rdf:type)
             FILTER (?property != rdfs:subClassOf) 
           } LIMIT 1000
@@ -104,32 +183,11 @@
               "icon" "expand") 
         }}
       </div>
-
     </div>
 
-    <div class="col-lg-6">
-
-      <!-- incoming relationships -->
-      <div class="mb-3">
-        <sparql-query id="incoming" class="d-none">
-          SELECT ?property ?subject WHERE {
-            BIND (?? AS ?o)
-            ?subject ?property ?o .
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf)
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict 
-            "result" .QueryResults.incoming 
-            "id" "incoming" 
-            "title" "Incoming Relationships" 
-            "icon" "shrink") 
-        }}
-      </div>
-    </div>
   </div>
 
+  </div>
 </div>
-
 {{ end }}
 

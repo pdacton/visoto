@@ -3,6 +3,7 @@
 
 {{ define "pageContent" }}
 <style>
+    /* page background animation with the slowly spinning mandala */
     .home-background {
         position: fixed;
         top: 40%;
@@ -24,19 +25,89 @@
         to { transform: rotate(360deg); }
     }
 </style>
+
 <div class="home-background"></div>
-<p>Use visoto to explore and visualize RDF graphs.</p>
+<p>Use visoto to explore and visualize knowledge graphs.</p>
 
-<p>Thanks go to </p>
+<div class="row row-deck row-cards">
+    <!-- classes card -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card">
+            <div class="card-body">
+                <sparql-query id="classCount" class="d-none">
+                    SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
+                        { ?class a owl:Class } 
+                        UNION
+                        { ?class a rdfs:Class }
+                    }
+                </sparql-query>
+                <div class="d-flex align-items-center">
+                    <div class="subheader">Classes</div>
+                </div>
+                <div class="h1 mb-3">
+                    {{ if .QueryResults.classCount.Bindings }}{{ (index .QueryResults.classCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
+                </div>
+                <p class="text-secondary">Distinct classes (<a href="/resource/owl:Class">owl:Class</a>, <a href="/resource/rdfs:Class">rdfs:Class</a>) defined in the graph.</p>
+            </div>
+        </div>
+    </div>
+    <!-- properties card -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card">
+            <div class="card-body">
+                <sparql-query id="tripleCount" class="d-none">
+                    SELECT (COUNT(DISTINCT ?p) AS ?count) WHERE {
+                        ?s ?p ?o .
+                    }
+                </sparql-query>
+                <div class="d-flex align-items-center">
+                    <div class="subheader">Properties</div>
+                </div>
+                <div class="h1 mb-3">
+                    {{ if .QueryResults.tripleCount.Bindings }}{{ (index .QueryResults.tripleCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
+                </div>
+                <p class="text-secondary">Distinct properties used in the graph.</p>
+            </div>
+        </div>
+    </div>
+    <!-- concepts card -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card">
+            <div class="card-body">
+                <sparql-query id="conceptCount" class="d-none">
+                    SELECT (COUNT(DISTINCT ?concept) AS ?count) WHERE {
+                        ?concept a skos:Concept .
+                    }
+                </sparql-query>
+                <div class="d-flex align-items-center">
+                    <div class="subheader">Concepts</div>
+                </div>
+                <div class="h1 mb-3">
+                    {{ if .QueryResults.conceptCount.Bindings }}{{ (index .QueryResults.conceptCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
+                </div>
+                <p class="text-secondary"><a href="/resource/skos:Concept">SKOS concepts</a> defined in the graph.</p>
+            </div>
+        </div>
+    </div>
+    <!-- defined terms card -->
+    <div class="col-sm-6 col-lg-3">
+        <div class="card">
+            <div class="card-body">
+                <sparql-query id="termCount" class="d-none">
+                    SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
+                        ?term a schema:DefinedTerm .
+                    }
+                </sparql-query>
+                <div class="d-flex align-items-center">
+                    <div class="subheader">Defined Terms</div>
+                </div>
+                <div class="h1 mb-3">
+                    {{ if .QueryResults.termCount.Bindings }}{{ (index .QueryResults.termCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
+                </div>
+                <p class="text-secondary"><a href="/resource/schema:DefinedTerm">Defined terms</a> in the graph.</p>
+            </div>
+        </div>
+    </div>
+</div>
 
-<ul>
-    <li>the crew at <a href="https://en.wikipedia.org/wiki/Fluid_Operations">fluidOps</a> for the concept, namely the Information Workbench.</li> 
-    <li><a href="https://go.dev/">Go</a> for the programming language.</li>
-    <li><a href="https://gin-gonic.com/en/">gin</a> for the web framework.</li>
-    <li><a href="https://tabulator.info/">Tabulator</a> for the interactive data tables.</li>
-    <li><a href="https://tabler.io/">Tabler</a> for the admin dashboard template.</li>
-    <li><a href="https://getbootstrap.com/">Bootstrap</a> for the CSS framework.</li>
-    <li><a href="https://lucide.dev/">Lucide</a> for the icons used in the UI.</li>
-    <li>and to Claude Code for writing 98% of the code.</li>
-</ul>
 {{ end }}

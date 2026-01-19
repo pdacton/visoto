@@ -24,21 +24,21 @@
 {{ end }}
 
 {{ define "pageContent" }}
-
+<div>
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-query id="instances" class="d-none">
-      SELECT ?municipality ?name ?canton ?identifier (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
+      SELECT ?municipality ?identifier ?district ?canton (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
       WHERE {
         BIND (?? AS ?class)
         ?municipality (rdf:type|owl:type) ?class .
-        OPTIONAL { ?municipality schema:name ?name . }
-        OPTIONAL { ?municipality schema:isPartOf ?canton . }
-        OPTIONAL { ?municipality schema:identifier ?identifier . }
+        ?municipality schema:identifier ?identifier . # data issue LINDAS: there are many municipalities without identifier?
+        OPTIONAL { ?municipality schema:containedInPlace ?district . ?district a schch:District . }
+        OPTIONAL { ?canton schema:hasPart ?district . ?canton a schch:Canton . }
         OPTIONAL { ?municipality schema:postalCode ?postalCode . }
       }
-      GROUP BY ?municipality ?name ?canton ?identifier
-      LIMIT 10000
+      GROUP BY ?municipality ?district ?canton ?identifier
+      LIMIT 20000
     </sparql-query>
     {{ template "sparqlTable" (dict
         "result" .QueryResults.instances
@@ -48,5 +48,5 @@
 
     }}
   </div>
-
+</div>
 {{ end }}

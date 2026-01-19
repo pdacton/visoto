@@ -201,6 +201,7 @@ func main() {
 
 	// Define routing rules
 	router.StaticFile("/favicon.ico", "./static/img/favicon.svg")
+	router.StaticFile("/robots.txt", "./static/robots.txt")
 	router.Static("/static", "static")
 	router.GET("/", homeHandler)
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
