@@ -1,31 +1,18 @@
 <!-- Zefix Class Template, listing all instances of this class -->
 
-{{ define "pageTitle" }}
-  <sparql-query id="title" class="d-none">
-    SELECT ?label WHERE { ?? rdfs:label ?label . }
-  </sparql-query>
-  {{ if gt (len .QueryResults.title.Bindings) 0 }}
-    {{ (index .QueryResults.title.Bindings 0).label.Value }}
-  {{ end }}
-{{ end }}
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
-  <sparql-query id="pageClasses" class="d-none">
-    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
-  </sparql-query>
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}
-  <sparql-query id="description" class="d-none">
-    SELECT ?description WHERE { ?? rdfs:comment ?description . }
-  </sparql-query>
-  {{ if gt (len .QueryResults.description.Bindings) 0 }}
-    {{ (index .QueryResults.description.Bindings 0).description.Value }}
-  {{ end }}
-{{ end }}
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 {{ define "pageContent" }}
 <div>
@@ -37,7 +24,7 @@
         BIND (?? AS ?class)
         ?org rdf:type ?class .
         OPTIONAL { ?org schema:description ?description . }
-      } LIMIT 5000
+      } LIMIT 20000
     </sparql-query>
     {{ template "sparqlTable" (dict 
         "result" .QueryResults.instances 

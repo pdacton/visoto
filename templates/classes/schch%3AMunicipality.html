@@ -1,27 +1,23 @@
 <!-- Municipality Class Template, listing all instances of this class -->
 
-{{ define "pageTitle" }}
-  <sparql-query id="title" class="d-none">
-    SELECT ?label WHERE { ?? rdfs:label ?label . }
-  </sparql-query>
-  {{ (index .QueryResults.title.Bindings 0).label.Value }}
-{{ end }}
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">  <a href="/resource/schema:Country">Country</a></li>
+  <li class="breadcrumb-item">  <a href="/resource/schch:Canton">Canton</a></li>
+{{ end}}
 
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
-  <sparql-query id="pageClasses" class="d-none">
-    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
-  </sparql-query>
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}
-  <sparql-query id="description" class="d-none">
-    SELECT ?description WHERE { ?? rdfs:comment ?description . }
-  </sparql-query>
-  {{ (index .QueryResults.description.Bindings 0).description.Value }}
-{{ end }}
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 {{ define "pageContent" }}
 <div>

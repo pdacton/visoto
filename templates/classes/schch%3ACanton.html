@@ -1,21 +1,21 @@
 <!-- Canton Class Template, listing all instances of this class -->
 
-{{ define "pageTitle" }}
-  Kantone
-{{ end }}
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">  <a href="/resource/http://schema.org/Country">Countries</a></li>
+{{ end}}
 
+{{ define "pageTitle" }}Kantone{{ end }}
+{{ define "metaTitle" }}Kantone{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
-  <sparql-query id="pageClasses" class="d-none">
-    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
-  </sparql-query>
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}
-  Schweizer Kantone
-{{ end }}
+{{ define "pageSubtitle" }}Schweizer Kantone{{ end }}
+
 
 {{ define "pageContent" }}
 <div>

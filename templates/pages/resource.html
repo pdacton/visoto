@@ -1,29 +1,20 @@
 <!-- Default Class Template, for any resource which doesn't have a specific template -->
 
-{{ define "pageTitle" }}
-  <sparql-query id="pageTitle" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
-  {{ if .QueryResults.pageTitle.Bindings }}{{ (index .QueryResults.pageTitle.Bindings 0).title.Value }}{{ end }}
-{{ end }}
-<sparql-query id="metaTitle" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
-{{ define "metaTitle" }}
-  {{ if .QueryResults.metaTitle.Bindings }}{{ (index .QueryResults.metaTitle.Bindings 0).title.Value }}{{ end }}
-{{ end }}
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
-  <sparql-query id="pageClasses" class="d-none">
-    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
-  </sparql-query>
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}
-  <sparql-query id="pageSubtitle" class="d-none">
-    SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }
-  </sparql-query>
-  {{ if .QueryResults.pageSubtitle.Bindings }}{{ (index .QueryResults.pageSubtitle.Bindings 0).description.Value }}{{ end }}
-{{ end }}
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
 
 {{ define "pageContent" }}
 <div>

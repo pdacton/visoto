@@ -15,6 +15,7 @@ var funcMap = template.FuncMap{
 	"dict":         makeDict,
 	"resourceIcon": resource.GetIconForResource,
 	"toJSON":       toJSON,
+	"firstValue":   firstValue,
 }
 
 // makeDict creates a map from alternating key-value pairs
@@ -35,12 +36,26 @@ func makeDict(values ...interface{}) (map[string]interface{}, error) {
 	return dict, nil
 }
 
-// toJSON converts any value to pretty-printed JSON
+// toJSON converts any value to JSON for embedding in script tags
+// Returns template.HTML to prevent any escaping
 // Usage in templates: {{ toJSON . }}
-func toJSON(v interface{}) (string, error) {
-	jsonBytes, err := json.MarshalIndent(v, "", "  ")
+func toJSON(v interface{}) (template.HTML, error) {
+	jsonBytes, err := json.Marshal(v)
 	if err != nil {
 		return "", err
 	}
-	return string(jsonBytes), nil
+	return template.HTML(jsonBytes), nil
+}
+
+// firstValue extracts the first value from a QueryResult for a given variable name
+// Returns empty string if no bindings exist or variable not found
+// Usage: {{ firstValue .QueryResults.pageTitle "title" }}
+func firstValue(result sparql.QueryResult, varName string) string {
+	if len(result.Bindings) == 0 {
+		return ""
+	}
+	if binding, ok := result.Bindings[0][varName]; ok {
+		return binding.Value
+	}
+	return ""
 }

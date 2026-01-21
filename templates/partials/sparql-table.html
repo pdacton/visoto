@@ -1,5 +1,5 @@
 <!--
-  Partial template for rendering SPARQL query results in a table
+  Partial template for rendering SPARQL query results in a table using Tabulator.js
 
   Usage:
     {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships") }}
@@ -10,11 +10,7 @@
     - title: (optional) card title
     - icon: (optional) Lucid icon name to display before the title
     - collapsed: (optional) if true, card starts in collapsed state
-
-  Note: .Vars and .Bindings do not have the same order!
 -->
-
- <!-- TODO: refactor this to use Tabulator.js properly, or create custom element -->
 
 {{ define "sparqlTable" }}
 
@@ -26,7 +22,7 @@
 
   {{ if $result.Error }}
     <div class="alert alert-danger">
-      <i class="bi bi-exclamation-triangle"></i>
+      <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
       Query failed: {{ $result.Error }}
     </div>
   {{ else if eq (len $result.Bindings) 0 }}
@@ -43,7 +39,7 @@
       <div id="collapse-{{ $id }}" class="collapse">
         <div class="card-body">
           <div class="alert alert-info mb-0">
-            <i class="bi bi-info-circle"></i>
+            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
             No results found.
           </div>
         </div>
@@ -76,36 +72,15 @@
         </div>
       </div>
 
-      <!-- the table itself  -->
+      <!-- table container and inline JSON data -->
       <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
         <div class="card-body p-0">
-          <table{{ if $id }} id="{{ $id }}-table"{{ else }} class="table"{{ end }}>
-            <thead>
-              <tr>
-                {{ range $index, $var := $result.Vars }}
-                  {{ $firstBinding := index $result.Bindings 0 }}
-                  {{ $bindingType := (index $firstBinding $var).Type }}
-                  <th
-                    tabulator-field="{{ $var }}"
-                    tabulator-formatter="{{ if eq $bindingType "literal" }}textarea{{ else }}html{{ end }}"
-                    {{ if eq $bindingType "literal" }}tabulator-variable-height="true"{{ end }}>
-                    {{ $var }}
-                  </th>
-                {{ end }}
-              </tr>
-            </thead>
-            <tbody>
-              {{ range $binding := $result.Bindings }}
-                <tr>
-                  <!-- Iterate using .Vars order to ensure cells match headers,
-                      since .Bindings is a map with randomized iteration order -->
-                  {{ range $var := $result.Vars }}
-                    <td>{{ render (index $binding $var) }}</td>
-                  {{ end }}
-                </tr>
-              {{ end }}
-            </tbody>
-          </table>
+          <!-- Empty div for Tabulator to render into -->
+          <div id="{{ $id }}-table"></div>
+
+          <!-- Inline JSON data: vars is array of column names, bindings is array of row objects -->
+          <template id="{{ $id }}-vars">{{ toJSON $result.Vars }}</template>
+          <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
         </div>
       </div>
 
@@ -116,40 +91,104 @@
       <script>
         /* eslint-disable */
         document.addEventListener('DOMContentLoaded', function() {
-          var rowCount = {{ len $result.Bindings }};
+          // Parse embedded JSON data from template elements
+          var vars = JSON.parse(document.getElementById("{{ $id }}-vars").innerHTML.trim());
+          var bindings = JSON.parse(document.getElementById("{{ $id }}-bindings").innerHTML.trim());
+          var rowCount = bindings.length;
 
-          // Custom sorter that extracts text from HTML for comparison
-          var htmlTextSorter = function(a, b, aRow, bRow, column, dir, sorterParams) {
-            // Create a temporary element to extract text from HTML
-            var tmp = document.createElement("div");
-            tmp.innerHTML = a || "";
-            var textA = tmp.textContent || tmp.innerText || "";
-            tmp.innerHTML = b || "";
-            var textB = tmp.textContent || tmp.innerText || "";
+          // HTML escape helper
+          function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+          }
+
+          // Render a binding value as HTML (replicates Go's RenderHTML)
+          function renderBinding(binding) {
+            if (!binding) return '';
+            if (binding.Type === 'uri') {
+              var display = escapeHtml(binding.Lol || binding.Value);
+              var href = '/resource/' + encodeURIComponent(binding.Value);
+              return '<a href="' + href + '">' + display + '</a>';
+            }
+            return escapeHtml(binding.Lol || binding.Value);
+          }
+
+          // Transform bindings to Tabulator row format
+          var tableData = bindings.map(function(binding) {
+            var row = {};
+            vars.forEach(function(varName) {
+              var b = binding[varName];
+              if (b) {
+                row[varName] = {
+                  html: renderBinding(b),
+                  value: b.Lol || b.Value,
+                  type: b.Type
+                };
+              } else {
+                row[varName] = null;
+              }
+            });
+            return row;
+          });
+
+          // Custom sorter using display value
+          function valueSorter(a, b) {
+            var valA = a && a.value ? a.value : '';
+            var valB = b && b.value ? b.value : '';
 
             // Try numeric comparison first
-            var numA = parseFloat(textA);
-            var numB = parseFloat(textB);
+            var numA = parseFloat(valA);
+            var numB = parseFloat(valB);
             if (!isNaN(numA) && !isNaN(numB)) {
               return numA - numB;
             }
 
-            // Fall back to string comparison
-            return textA.localeCompare(textB);
-          };
+            return String(valA).localeCompare(String(valB));
+          }
 
+          // Custom formatter that renders pre-generated HTML
+          function htmlCellFormatter(cell) {
+            var value = cell.getValue();
+            return value ? value.html || '' : '';
+          }
+
+          // Helper to create groupBy function for a field
+          function makeGroupByFn(field) {
+            return function(data) {
+              var val = data[field];
+              return val && val.value ? val.value : '';
+            };
+          }
+
+          // Build column definitions from vars and first binding
+          var firstBinding = bindings[0] || {};
+          var columns = vars.map(function(varName) {
+            var binding = firstBinding[varName];
+            var isLiteral = binding && binding.Type === 'literal';
+
+            return {
+              title: varName,
+              field: varName,
+              formatter: htmlCellFormatter,
+              variableHeight: isLiteral,
+              sorter: valueSorter
+            };
+          });
+
+          // Tabulator configuration
           var tableConfig = {
+            data: tableData,
+            columns: columns,
             layout: "fitDataStretch",
             resizableColumnFit: true,
             renderHorizontal: "virtual",
             movableColumns: true,
-            sortMode: "local",
-            columnDefaults: {
-              sorter: htmlTextSorter
-            },
+            sortMode: "local"
           };
 
-          // Only enable pagination if more than 10 rows
+          // Enable pagination for larger datasets
           if (rowCount > 10) {
             tableConfig.pagination = "local";
             tableConfig.paginationSize = 10;
@@ -159,51 +198,61 @@
 
           var table = new Tabulator("#{{ $id }}-table", tableConfig);
 
-          // Global search - filter across all columns
+          // Search filter with debounce
           var searchInput = document.getElementById("search-{{ $id }}");
           if (searchInput) {
+            var searchTimeout;
             searchInput.addEventListener("input", function(e) {
-              var filters = [];
-              {{ range $result.Vars }}
-              filters.push({field: "{{ . }}", type: "like", value: e.target.value});
-              {{ end }}
-              table.setFilter([filters]);
+              clearTimeout(searchTimeout);
+              searchTimeout = setTimeout(function() {
+                var searchValue = e.target.value.toLowerCase();
+                if (!searchValue) {
+                  table.clearFilter();
+                  return;
+                }
+
+                table.setFilter(function(data) {
+                  for (var key in data) {
+                    if (data[key] && data[key].value) {
+                      if (String(data[key].value).toLowerCase().indexOf(searchValue) !== -1) {
+                        return true;
+                      }
+                    }
+                  }
+                  return false;
+                });
+              }, 150);
             });
           }
 
-          // GroupBy dropdown handler - with localStorage persistence
+          // GroupBy dropdown with localStorage persistence
           var groupBySelect = document.getElementById("groupby-{{ $id }}");
           if (groupBySelect) {
-            // Restore saved grouping from localStorage after table is built
+            function applyGroupBy(field) {
+              if (field === "") {
+                table.setGroupBy(false);
+              } else {
+                table.setGroupBy(makeGroupByFn(field));
+              }
+            }
+
+            // Restore saved grouping after table is built
             table.on("tableBuilt", function() {
               try {
                 var savedGroupBy = localStorage.getItem("tabulator-groupby-{{ $id }}");
                 if (savedGroupBy !== null) {
                   groupBySelect.value = savedGroupBy;
-                  if (savedGroupBy === "") {
-                    table.setGroupBy(false);
-                  } else {
-                    table.setGroupBy(savedGroupBy);
-                  }
+                  applyGroupBy(savedGroupBy);
                 }
               } catch (e) {
                 console.warn("localStorage unavailable:", e);
               }
             });
 
-            // Handle dropdown changes
             groupBySelect.addEventListener("change", function(e) {
               var selectedField = e.target.value;
+              applyGroupBy(selectedField);
 
-              if (selectedField === "") {
-                // Clear grouping
-                table.setGroupBy(false);
-              } else {
-                // Apply grouping to selected column
-                table.setGroupBy(selectedField);
-              }
-
-              // Save selection to localStorage
               try {
                 localStorage.setItem("tabulator-groupby-{{ $id }}", selectedField);
               } catch (e) {

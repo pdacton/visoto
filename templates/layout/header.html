@@ -1,8 +1,9 @@
 <!-- Page Header -->
 <ol class="breadcrumb" aria-label="breadcrumbs">
-  {{ block "breadcrumb" . }}
   <li class="breadcrumb-item"><a href="/">Home</a></li>
+  {{ block "breadcrumb" . }}
   {{ end }}
+  <li class="breadcrumb-item active">{{ template "pageTitle" . }}</li>
 </ol>
 <div class="mt-3 d-flex flex-column flex-sm-row align-items-start gap-3">
   <div class="flex-shrink-0">

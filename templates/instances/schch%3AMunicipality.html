@@ -1,5 +1,34 @@
 <!-- Municipality instance template -->
 
+<sparql-query id="breadcrumbs" class="d-none">
+  SELECT ?canton ?country ?district WHERE 
+  { 
+    ?? schema:containedInPlace ?district . ?district a schch:District .
+    ?district schema:containedInPlace ?canton . ?canton a schch:Canton .
+    ?canton schema:containedInPlace ?country . ?country a schema:Country .
+  }
+</sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "country") }}</li>
+  <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "canton") }}</li>
+  <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "district") }}</li>
+{{ end}}
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+
 {{ define "pageIcon" }}
   <sparql-query id="pageIcon" class="d-none">
     PREFIX schema: &lt;http://schema.org/&gt;
@@ -29,26 +58,6 @@
   {{ end }}
 {{ end }}
 
-{{ define "pageTitle" }}
-  <sparql-query id="pageTitle" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
-  {{ if .QueryResults.pageTitle.Bindings }}{{ (index .QueryResults.pageTitle.Bindings 0).title.Value }}{{ end }}
-{{ end }}
-
-{{ define "pageClasses" }}
-  <sparql-query id="pageClasses" class="d-none">
-    SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }
-  </sparql-query>
-  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
-    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
-  {{ end }}
-{{ end }}
-
-{{ define "pageSubtitle" }}
-  <sparql-query id="pageSubtitle" class="d-none">
-    SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }
-  </sparql-query>
-  {{ if .QueryResults.pageSubtitle.Bindings }}{{ (index .QueryResults.pageSubtitle.Bindings 0).description.Value }}{{ end }}
-{{ end }}
 
 {{ define "pageContent" }}
 <div>
