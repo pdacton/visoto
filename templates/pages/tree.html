@@ -1,0 +1,30 @@
+{{ define "pageTitle" }}Tree{{ end }}
+{{ define "pageDescription" }}SKOS concept hierarchy tree.{{ end }}
+
+{{ define "pageContent" }}
+
+<div class="row">
+  <div class="col">
+
+    <div class="mb-3">
+      <sparql-query id="conceptTree" class="d-none">
+        SELECT ?node ?parent ?notation WHERE {
+          ?node skos:inScheme &lt;https://register.ld.admin.ch/i14y/concept/nogaCode/version/2.0.0&gt; .
+          ?node a skos:Concept .
+          OPTIONAL { ?node skos:broader ?parent . }
+          OPTIONAL { ?node skos:notation ?notation . }
+        }
+      </sparql-query>
+      {{ template "sparqlTree" (dict
+          "result" .QueryResults.conceptTree
+          "id" "conceptTree"
+          "title" "NOGA Code Hierarchy"
+          "icon" "list-tree"
+          "treeExpanded" false)
+      }}
+    </div>
+
+  </div>
+</div>
+
+{{ end }}

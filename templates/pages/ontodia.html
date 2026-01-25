@@ -1,0 +1,77 @@
+
+{{ define "pageTitle" }}Graph Explorer{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Graph Explorer Icon" / width="40px">{{ end }}
+{{ define "metaIcon" }}/static/img/graphexplorer.svg{{ end }}
+
+{{ define "pageContent" }}
+<div id="graph-explorer-root" style="height: calc(100vh - 200px); width: 100%; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius);"></div>
+{{ end }}
+
+{{ define "pageScripts" }}
+<script src="https://cdn.jsdelivr.net/npm/graph-explorer@1.3.0/dist/graph-explorer-full.min.js"></script>
+<script>
+(function() {
+  'use strict';
+
+  var GE = window.GraphExplorer;
+  var container = document.getElementById('graph-explorer-root');
+
+  if (!GE || !GE.Workspace || !GE.SparqlDataProvider) {
+    container.innerHTML = '<div class="alert alert-danger m-3">Failed to load Graph Explorer library</div>';
+    return;
+  }
+
+  // Starting resource IRI - Swisscom AG
+  var startIRI = 'https://register.ld.admin.ch/zefix/company/CHE-105.805.080';
+
+  function onWorkspaceMounted(workspace) {
+    if (!workspace) return;
+
+    var dataProvider = new GE.SparqlDataProvider(
+      {
+        endpointUrl: 'https://ld.admin.ch/query/',
+        queryMethod: GE.SparqlQueryMethod.POST,
+      },
+      GE.OWLRDFSSettings
+    );
+
+    workspace.getModel().importLayout({
+      dataProvider: dataProvider,
+      preloadedElements: {},
+      layoutData: undefined,
+    });
+
+    // Load the starting element
+    dataProvider.elementInfo({ elementIds: [startIRI] }).then(function(elementInfos) {
+      var elementInfo = elementInfos[startIRI];
+      if (elementInfo) {
+        var model = workspace.getModel();
+        var element = model.createElement(startIRI);
+        if (element) {
+          element.setPosition({ x: 400, y: 300 });
+          model.requestElementData([element]);
+          setTimeout(function() {
+            workspace.forceLayout();
+            workspace.zoomToFit();
+          }, 1000);
+        }
+      }
+    }).catch(function(err) {
+      console.error('Failed to load element:', err);
+    });
+  }
+
+  var props = {
+    ref: onWorkspaceMounted,
+    viewOptions: {
+      onIriClick: function(iriEvent) {
+        var iri = iriEvent.iri || iriEvent;
+        window.open('/resource/' + encodeURIComponent(iri), '_blank');
+      },
+    },
+  };
+
+  GE.renderTo(GE.Workspace, container, props);
+})();
+</script>
+{{ end }}

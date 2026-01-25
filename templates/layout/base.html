@@ -18,10 +18,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/css/tabler.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/wunderbaum@0/dist/wunderbaum.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
 
     <!-- overrides -->
     <link rel="stylesheet" href="/static/css/tabler_overrides.css">
     <link rel="stylesheet" href="/static/css/tabulator_overrides.css">
+    <link rel="stylesheet" href="/static/css/wunderbaum_overrides.css">
 
   </head>
 
@@ -63,6 +66,17 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/js/tabler.js"></script>
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/wunderbaum@0/dist/wunderbaum.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script>
+      hljs.highlightAll();
+      document.querySelectorAll('code.language-json .hljs-attr').forEach(function(el) {
+        var text = el.textContent.replace(/"/g, '');
+        if (text === 'Vars' || text === 'Bindings') {
+          el.style.backgroundColor = 'yellow';
+        }
+      });
+    </script>
     <script src="/static/js/darkmode.js"></script>
     <script src="/static/js/sidebar.js"></script>
     <script src="/static/js/search.js"></script>

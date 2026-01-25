@@ -15,6 +15,7 @@ var funcMap = template.FuncMap{
 	"dict":         makeDict,
 	"resourceIcon": resource.GetIconForResource,
 	"toJSON":       toJSON,
+	"toJSONPretty": toJSONPretty,
 	"firstValue":   firstValue,
 }
 
@@ -41,6 +42,16 @@ func makeDict(values ...interface{}) (map[string]interface{}, error) {
 // Usage in templates: {{ toJSON . }}
 func toJSON(v interface{}) (template.HTML, error) {
 	jsonBytes, err := json.Marshal(v)
+	if err != nil {
+		return "", err
+	}
+	return template.HTML(jsonBytes), nil
+}
+
+// toJSONPretty converts any value to indented JSON for display
+// Usage in templates: {{ toJSONPretty . }}
+func toJSONPretty(v interface{}) (template.HTML, error) {
+	jsonBytes, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
 		return "", err
 	}

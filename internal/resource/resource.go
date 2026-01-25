@@ -93,6 +93,7 @@ func (r *Resource) ResolveTemplate(preprocessor *sparql.Preprocessor, typePriori
 			log.Debug("resolved template "+reason, slog.String("iri", r.IRI), slog.String("template", r.TemplateName))
 			return true
 		}
+		log.Debug("template not found "+reason, slog.String("iri", r.IRI), slog.String("path", path))
 		return false
 	}
 
