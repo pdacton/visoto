@@ -3,16 +3,25 @@
 /* see https://github.com/mar10/wunderbaum/blob/main/src/wunderbaum.scss */
 
 .wunderbaum {
+    /* border color */
     --wb-border-color: transparent;
     --wb-focus-border-color: transparent;
     --wb-active-border-color: transparent;
-    --wb-active-hover-border-color: transparent;
-    --wb-active-cell-color: transparent;
-    --wb-active-column-color: transparent;
-    --wb-active-color-grayscale: transparent;
     --wb-active-border-color-grayscale: transparent;
+    --wb-active-hover-border-color: transparent;
+
+    /* cells: this makes the active cell stand out, for instance when we 
+       show a skos:Concept page, the instance is highlighted in the tree 
+    */
+    --wb-active-cell-color: var(--tblr-bg-surface-tertiary);
+    --wb-active-cell-color-grayscale: var(--tblr-bg-surface-tertiary);
+
+    /* columns and cells */
+    --wb-active-color-grayscale: transparent;
     --wb-active-hover-color-grayscale: transparent;
-    --wb-active-cell-color-grayscale: transparent;
+    --wb-active-column-color: transparent;
+
+    /* header */
     --wb-header-color: transparent;
     --wb-active-header-column-color: transparent;
     outline: none;

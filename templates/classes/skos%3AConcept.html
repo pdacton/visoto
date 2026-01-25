@@ -1,18 +1,18 @@
-<!-- Default Class Template, for any resource which doesn't have a specific template -->
+<!-- SKOS Concept Class Template -->
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title" class="d-none">SELECT ?title { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses" class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
@@ -54,7 +54,7 @@
         {{ template "sparqlTable" (dict 
             "result" .QueryResults.instances 
             "id" "instances" 
-            "title" "Instances of this Class"
+            "title" "Available SKOS Concepts"
             "icon" "squircle") 
         }}
       </div>

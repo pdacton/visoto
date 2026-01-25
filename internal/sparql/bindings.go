@@ -4,6 +4,7 @@ package sparql
 
 import (
 	"html/template"
+	"net/url"
 )
 
 // Binding represents a SPARQL query result binding
@@ -17,7 +18,7 @@ type Binding struct {
 func (b Binding) RenderHTML() template.HTML {
 	// return link if uri type
 	if b.Type == "uri" {
-		return template.HTML(`<a href="/resource/` + template.HTMLEscapeString(b.Value) + `">` + template.HTMLEscapeString(b.Lol) + `</a>`)
+		return template.HTML(`<a href="/resource/` + url.QueryEscape(b.Value) + `">` + template.HTMLEscapeString(b.Lol) + `</a>`)
 	}
 
 	// return plain text otherwise

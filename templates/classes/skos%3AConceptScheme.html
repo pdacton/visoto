@@ -1,4 +1,4 @@
-<!-- Template for skos:ConceptScheme -->
+<!-- SKOS Concept Scheme Class Template -->
 
 {{ define "pageTitle" }}SKOS Concept Scheme{{ end }}
 {{ define "metaTitle" }}SKOS Concept Scheme{{ end }}
@@ -50,7 +50,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.instances
             "id" "instances"
-            "title" "Concepts in this Scheme"
+            "title" "Available SKOS Concept Schemas"
             "icon" "squircle")
         }}
       </div>

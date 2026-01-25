@@ -1,3 +1,9 @@
+<!-- Concept Scheme Instance Template  -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource/skos:ConceptScheme">Concept Scheme</a></li>
+{{ end }}
+
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
