@@ -1,0 +1,277 @@
+<!--
+  Partial template for rendering SPARQL query results as a tree using Wunderbaum
+
+  Usage:
+    {{ template "sparqlTree" (dict "result" .QueryResults.classTree "id" "classTree" "title" "Class Hierarchy" "icon" "git-branch") }}
+
+  Parameters (via dict):
+    - result: QueryResult object with .Vars, .Bindings, .Error
+              Bindings MUST contain "node" and "parent" variables.
+              Additional variables are stored as node.data attributes.
+    - id: tree identifier
+    - title: (optional) card title
+    - icon: (optional) Lucide icon name to display before the title
+    - collapsed: (optional) if true, card starts in collapsed state
+    - treeExpanded: (optional) if true (default), tree nodes start expanded; if false, only roots visible
+-->
+
+{{ define "sparqlTree" }}
+
+  {{ $result := .result }}
+  {{ $id := .id }}
+  {{ $title := .title }}
+  {{ $icon := .icon }}
+  {{ $collapsed := .collapsed }}
+  {{ $expanded := .treeExpanded }}
+
+  {{ if $result.Error }}
+    <div class="alert alert-danger">
+      <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
+      Query failed: {{ $result.Error }}
+    </div>
+  {{ else if eq (len $result.Bindings) 0 }}
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
+        </div>
+        <a class="btn btn-icon btn-sm collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
+          <i data-lucide="chevron-up"></i>
+        </a>
+      </div>
+      <div id="collapse-{{ $id }}" class="collapse">
+        <div class="card-body">
+          <div class="alert alert-info mb-0">
+            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
+            No results found.
+          </div>
+        </div>
+      </div>
+    </div>
+  {{ else }}
+
+    <!-- card to enclose the tree -->
+    <div class="card">
+
+      <!-- card header with title, filter, and tree controls -->
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 justify-content-end">
+          {{ if $id }}
+            <input type="text" id="search-{{ $id }}" class="form-control w-auto flex-grow-1" style="min-width: 150px; max-width: 300px;" placeholder="Filter tree...">
+            <button id="expand-{{ $id }}" class="btn btn-icon btn-sm" title="Expand all">
+              <i data-lucide="list-chevrons-up-down"></i>
+            </button>
+            <button id="collapse-tree-{{ $id }}" class="btn btn-icon btn-sm" title="Collapse all">
+              <i data-lucide="list-chevrons-down-up"></i>
+            </button>
+          {{ end }}
+          <a class="btn btn-icon btn-sm{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+            <i data-lucide="chevron-up"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- tree container and inline JSON data -->
+      <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
+        <div class="card-body p-0">
+          <!-- Wunderbaum renders into this div -->
+          <div id="{{ $id }}-tree" class="wb-skeleton wb-initializing wb-fade-expander"></div>
+
+          <!-- Inline JSON data for JavaScript consumption -->
+          <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
+          <template id="{{ $id }}-expanded">{{ if eq $expanded false }}false{{ else }}true{{ end }}</template>
+          <template id="{{ $id }}-vars">{{ toJSON $result.Vars }}</template>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Wunderbaum initialization for this tree -->
+    {{ if $id }}
+      <script>
+        /* eslint-disable */
+        document.addEventListener('DOMContentLoaded', function() {
+
+          // Parse embedded JSON data
+          var bindings = JSON.parse(document.getElementById("{{ $id }}-bindings").innerHTML.trim());
+          var startExpanded = document.getElementById("{{ $id }}-expanded").innerHTML.trim() === "true";
+          var vars = JSON.parse(document.getElementById("{{ $id }}-vars").innerHTML.trim());
+          var extraVars = vars.filter(function(v) { return v !== "node" && v !== "parent"; });
+
+          // --- arrayToTree: Convert flat SPARQL bindings to Wunderbaum tree structure ---
+          function arrayToTree(bindings, expanded) {
+            var nodeMap = {};  // key (IRI) -> tree node object
+            var roots = [];    // nodes with no parent
+            var childKeys = {}; // track which keys are children
+
+            // First pass: create all nodes
+            bindings.forEach(function(binding) {
+              var nodeBinding = binding["node"];
+              if (!nodeBinding) return;
+
+              var key = nodeBinding.Value;
+              var title = nodeBinding.Lol || nodeBinding.Value;
+
+              if (nodeMap[key]) return; // skip duplicates
+
+              // Collect extra data (all variables except node and parent)
+              var data = { iri: key };
+              for (var varName in binding) {
+                if (varName === "node" || varName === "parent") continue;
+                if (binding[varName]) {
+                  data[varName] = {
+                    value: binding[varName].Value,
+                    label: binding[varName].Lol || binding[varName].Value,
+                    type: binding[varName].Type
+                  };
+                  // DEBUGGING
+                  // console.log("data[" + varName + "]:", data[varName]);
+                }
+              }
+
+              nodeMap[key] = {
+                title: title,
+                key: key,
+                icon: false,
+                children: [],
+                data: data,
+                expanded: expanded
+              };
+            });
+
+            // Second pass: establish parent-child relationships
+            bindings.forEach(function(binding) {
+              var nodeBinding = binding["node"];
+              var parentBinding = binding["parent"];
+              if (!nodeBinding) return;
+
+              var childKey = nodeBinding.Value;
+              var child = nodeMap[childKey];
+              if (!child) return;
+
+              if (!parentBinding || !parentBinding.Value || parentBinding.Value === "") {
+                // No parent = root node
+                if (roots.indexOf(child) === -1) {
+                  roots.push(child);
+                }
+              } else {
+                var parentKey = parentBinding.Value;
+                var parent = nodeMap[parentKey];
+                if (parent) {
+                  // Avoid duplicate children
+                  var alreadyChild = parent.children.some(function(c) {
+                    return c.key === childKey;
+                  });
+                  if (!alreadyChild) {
+                    parent.children.push(child);
+                    childKeys[childKey] = true;
+                  }
+                } else {
+                  // Parent not in dataset = treat as root
+                  if (roots.indexOf(child) === -1) {
+                    roots.push(child);
+                  }
+                }
+              }
+            });
+
+            // Find orphans: nodes that are neither roots nor children
+            for (var key in nodeMap) {
+              if (roots.indexOf(nodeMap[key]) === -1 && !childKeys[key]) {
+                roots.push(nodeMap[key]);
+              }
+            }
+
+            return roots;
+          }
+
+          // Build the tree data structure
+          var treeData = arrayToTree(bindings, startExpanded);
+
+          // Build column definitions for treegrid mode
+          var columns = null;
+          if (extraVars.length > 0) {
+            columns = [{ id: "*", title: "BEZEICHNUNG", width: "*" }];
+            extraVars.forEach(function(varName) {
+              columns.push({ id: varName, title: varName.toUpperCase(), width: "150px" });
+            });
+          }
+
+          // Initialize Wunderbaum
+          var tree = new mar10.Wunderbaum({
+            element: document.getElementById("{{ $id }}-tree"),
+            source: treeData,
+            columns: columns,
+            rowHeightPx: 44, // static row height required by wunderbaum, must be same as --wb-header-height CSS variable in css override file
+            filter: {
+              autoApply: true,
+              mode: "hide"
+            },
+            render: function(e) {
+                // because wunderbaum escapes HTML in titles for security reasons,
+                // we have to add the links dynamically here before they are rendered in the DOM
+                const titleWithLink = "<a href='/resource/" + e.node.key + "'>" + e.node.title + "</a>";
+                const titleSpan = e.nodeElem.querySelector(".wb-title");
+                if (titleSpan) {
+                    titleSpan.innerHTML = titleWithLink;
+                }
+
+                console.log("Rendering:", e.node.data);  
+
+                // Render column data
+                if (e.renderColInfosById) {
+                  for (const col of Object.values(e.renderColInfosById)) {
+                    if (col.id === "*") continue;
+                    const nodeData = e.node.data.data || e.node.data;
+                    const colData = nodeData[col.id];
+                    col.elem.textContent = colData ? (colData.label || colData.value || "") : "";
+                  }
+                }
+            },
+          });
+
+          // --- Filter with debounce ---
+          var searchInput = document.getElementById("search-{{ $id }}");
+          if (searchInput) {
+            var filterTimeout;
+            searchInput.addEventListener("input", function(e) {
+              clearTimeout(filterTimeout);
+              filterTimeout = setTimeout(function() {
+                var searchValue = e.target.value.trim();
+                if (!searchValue) {
+                  tree.clearFilter();
+                } else {
+                  tree.filterNodes(searchValue);
+                }
+              }, 300);
+            });
+          }
+
+          // --- Expand All button ---
+          var expandBtn = document.getElementById("expand-{{ $id }}");
+          if (expandBtn) {
+            expandBtn.addEventListener("click", function() {
+              tree.expandAll();
+            });
+          }
+
+          // --- Collapse All button ---
+          var collapseBtn = document.getElementById("collapse-tree-{{ $id }}");
+          if (collapseBtn) {
+            collapseBtn.addEventListener("click", function() {
+              tree.visit(function(node) {
+                node.setExpanded(false);
+              });
+            });
+          }
+
+        });
+        </script>
+      {{ end }}
+  {{ end }}
+{{ end }}

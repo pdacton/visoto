@@ -1,0 +1,74 @@
+
+/* Wunderbaum tree overrides to match Tabler styling */
+/* see https://github.com/mar10/wunderbaum/blob/main/src/wunderbaum.scss */
+
+.wunderbaum {
+    --wb-border-color: transparent;
+    --wb-focus-border-color: transparent;
+    --wb-active-border-color: transparent;
+    --wb-active-hover-border-color: transparent;
+    --wb-active-cell-color: transparent;
+    --wb-active-column-color: transparent;
+    --wb-active-color-grayscale: transparent;
+    --wb-active-border-color-grayscale: transparent;
+    --wb-active-hover-color-grayscale: transparent;
+    --wb-active-cell-color-grayscale: transparent;
+    --wb-header-color: transparent;
+    --wb-active-header-column-color: transparent;
+    outline: none;
+}
+
+.wunderbaum,
+.wunderbaum span.wb-title {
+    font-family: var(--tblr-font-sans-serif);
+    font-size: var(--tblr-font-size);
+}
+
+[data-bs-theme="dark"] .wunderbaum {
+    color: var(--tblr-body-color);
+    background-color: var(--tblr-bg-surface);
+}
+
+[data-bs-theme="dark"] .wunderbaum span.wb-node.wb-active {
+    background-color: var(--tblr-primary);
+    color: #fff;
+}
+
+[data-bs-theme="dark"] .wunderbaum span.wb-node:hover {
+    background-color: var(--tblr-bg-surface-tertiary);
+}
+
+div.wunderbaum span.wb-col {
+    padding-left: 0.75rem;
+}
+
+.wunderbaum div.wb-row.wb-level-0 {
+    border-bottom: 1px solid var(--tblr-border-color-translucent);
+}
+
+.wunderbaum div.wb-row.wb-level-0 span.wb-title {
+    font-weight: var(--tblr-font-weight-medium);
+    color: var(--tblr-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+/* Fix header overlap by setting the header height variable */
+/* must be same height as rowHeightPx option in JS */
+.wunderbaum {
+    --wb-header-height: 44px;
+}
+
+/* Match Tabler table header styling */
+div.wunderbaum div.wb-header {
+    background-color: var(--tblr-bg-surface-tertiary) !important;
+    color: var(--tblr-secondary);
+    font-size: .75rem;
+    text-transform: uppercase;
+    font-weight: var(--tblr-font-weight-medium);
+}
+
+/* Ensure header columns stay with the same background when tree loses focus */
+div.wunderbaum div.wb-header span.wb-col {
+    background-color: var(--tblr-bg-surface-tertiary) !important;
+}
