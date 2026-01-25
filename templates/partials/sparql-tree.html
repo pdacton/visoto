@@ -2,7 +2,7 @@
   Partial template for rendering SPARQL query results as a tree using Wunderbaum
 
   Usage:
-    {{ template "sparqlTree" (dict "result" .QueryResults.classTree "id" "classTree" "title" "Class Hierarchy" "icon" "git-branch") }}
+    {{ template "sparqlTree" (dict "result" .QueryResults.classTree "id" "classTree" "title" "Class Hierarchy" "icon" "git-branch" "ResourceIRI" .ResourceIRI) }}
 
   Parameters (via dict):
     - result: QueryResult object with .Vars, .Bindings, .Error
@@ -13,6 +13,16 @@
     - icon: (optional) Lucide icon name to display before the title
     - collapsed: (optional) if true, card starts in collapsed state
     - treeExpanded: (optional) if true (default), tree nodes start expanded; if false, only roots visible
+    - ResourceIRI: (optional) IRI/key of node to expand to and activate after tree initialization
+
+    Wunderbaum documentation: 
+    https://mar10.github.io/wunderbaum/
+    properties and methods:
+    https://mar10.github.io/wunderbaum/api/classes/wb_node.WunderbaumNode.html
+    all tree initialization options:
+    https://mar10.github.io/wunderbaum/api/interfaces/wb_options.InitWunderbaumOptions.html
+
+
 -->
 
 {{ define "sparqlTree" }}
@@ -23,6 +33,7 @@
   {{ $icon := .icon }}
   {{ $collapsed := .collapsed }}
   {{ $expanded := .treeExpanded }}
+  {{ $resourceIRI := .ResourceIRI }}
 
   {{ if $result.Error }}
     <div class="alert alert-danger">
@@ -86,6 +97,7 @@
           <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
           <template id="{{ $id }}-expanded">{{ if eq $expanded false }}false{{ else }}true{{ end }}</template>
           <template id="{{ $id }}-vars">{{ toJSON $result.Vars }}</template>
+          <template id="{{ $id }}-resourceIRI">{{ $resourceIRI }}</template>
         </div>
       </div>
 
@@ -102,6 +114,7 @@
           var startExpanded = document.getElementById("{{ $id }}-expanded").innerHTML.trim() === "true";
           var vars = JSON.parse(document.getElementById("{{ $id }}-vars").innerHTML.trim());
           var extraVars = vars.filter(function(v) { return v !== "node" && v !== "parent"; });
+          var resourceIRI = document.getElementById("{{ $id }}-resourceIRI").innerHTML.trim();
 
           // --- arrayToTree: Convert flat SPARQL bindings to Wunderbaum tree structure ---
           function arrayToTree(bindings, expanded) {
@@ -212,26 +225,48 @@
               autoApply: true,
               mode: "hide"
             },
+            init: function(e) {
+              console.log("Wunderbaum '{{ $id }}' initialized with", bindings.length, "nodes");
+              console.log("resourceIRI:", resourceIRI);
+              // Expand to specific ResourceIRI if provided (after tree is fully initialized)
+              if (resourceIRI) {
+                console.log("Expanding tree to resource IRI:", resourceIRI);
+                var targetNode = tree.findFirst(function(node) {
+                  return node.key === resourceIRI;
+                });
+                if (targetNode) {
+                  targetNode.makeVisible().then(function() {
+                    targetNode.setActive();
+                  });
+                } else {
+                  console.log("Node with key '" + resourceIRI + "' not found in tree");
+                }
+              }
+            },
             render: function(e) {
-                // because wunderbaum escapes HTML in titles for security reasons,
-                // we have to add the links dynamically here before they are rendered in the DOM
-                const titleWithLink = "<a href='/resource/" + e.node.key + "'>" + e.node.title + "</a>";
-                const titleSpan = e.nodeElem.querySelector(".wb-title");
-                if (titleSpan) {
-                    titleSpan.innerHTML = titleWithLink;
-                }
+              // because wunderbaum escapes HTML in titles for security reasons,
+              // we have to add the links dynamically here before they are rendered in the DOM
 
-                console.log("Rendering:", e.node.data);  
+              // Use titleWithHighlight if available (when filtering), otherwise use title
+              let displayTitle = e.node.titleWithHighlight || e.node.title;
 
-                // Render column data
-                if (e.renderColInfosById) {
-                  for (const col of Object.values(e.renderColInfosById)) {
-                    if (col.id === "*") continue;
-                    const nodeData = e.node.data.data || e.node.data;
-                    const colData = nodeData[col.id];
-                    col.elem.textContent = colData ? (colData.label || colData.value || "") : "";
-                  }
+              const titleWithLink = "<a href='/resource/" + encodeURIComponent(e.node.key) + "'>" + displayTitle + "</a>";
+              const titleSpan = e.nodeElem.querySelector(".wb-title");
+              if (titleSpan) {
+                titleSpan.innerHTML = titleWithLink;
+              }
+
+              // console.log("Rendering:", e.node.data);  
+
+              // Render column data
+              if (e.renderColInfosById) {
+                for (const col of Object.values(e.renderColInfosById)) {
+                  if (col.id === "*") continue;
+                  const nodeData = e.node.data.data || e.node.data;
+                  const colData = nodeData[col.id];
+                  col.elem.textContent = colData ? (colData.label || colData.value || "") : "";
                 }
+              }
             },
           });
 
