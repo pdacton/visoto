@@ -1,0 +1,71 @@
+{{ define "pageTitle" }}Mermaid Flow Test{{ end }}
+{{ define "metaTitle" }}Mermaid Flow Test{{ end }}
+{{ define "metaIcon" }}git-branch{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  <!-- Mermaid Flow Diagram Test -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="versionflow" class="d-none">
+          PREFIX schch: &lt;https://schema.ld.admin.ch/&gt;
+          PREFIX vl: &lt;https://version.link/&gt;
+          SELECT ?from ?predicate ?to ?fromType ?toType WHERE {
+            {
+              BIND (&lt;https://ld.admin.ch/municipality/3871&gt; AS ?from)
+              &lt;https://ld.admin.ch/municipality/3871&gt; vl:version ?to .
+              BIND (vl:version AS ?predicate)
+              BIND (&lt;https://schema.ld.admin.ch/Municipality&gt; AS ?fromType)
+              BIND (vl:Version AS ?toType)
+
+            } UNION {
+              &lt;https://ld.admin.ch/municipality/3871&gt; vl:version ?current .
+              ?current vl:predecessor* ?to .
+              ?from vl:predecessor ?to .
+              BIND (vl:predecessor AS ?predicate)
+              ?from rdf:type ?fromType . FILTER (?fromType = schch:Municipality || ?fromType = vl:Version || ?fromType = vl:ChangeEvent)
+              ?to   rdf:type ?toType .   FILTER (?toType = schch:Municipality || ?toType = vl:Version || ?toType = vl:ChangeEvent)
+            } UNION {
+              &lt;https://ld.admin.ch/municipality/3871&gt; vl:version ?current .
+              ?current vl:predecessor* ?to .
+              ?from vl:successor ?to .
+              BIND (vl:successor AS ?predicate)
+              ?from rdf:type ?fromType . FILTER (?fromType = schch:Municipality || ?fromType = vl:Version || ?fromType = vl:ChangeEvent)
+              ?to   rdf:type ?toType .   FILTER (?toType = schch:Municipality || ?toType = vl:Version || ?toType = vl:ChangeEvent)
+            }
+          }
+        </sparql-query>
+
+        <!-- Configuration for the mermaid diagram -->
+        <script type="application/json" id="versionflow-config">
+        {
+          "typeMap": {
+            "ChangeEvent": { "cssClass": "changeEvent", "shape": "hexagon" },
+            "Version": { "cssClass": "version", "shape": "stadium" },
+            "Municipality": { "cssClass": "municipality", "shape": "rectangle" }
+          },
+          "classDefs": [
+            "classDef changeEvent fill:#ffcccb, stroke:#ff6b6b, stroke-width:2px",
+            "classDef version fill:#add8e6, stroke:#4a90e2, stroke-width:2px",
+            "classDef municipality fill:#1e3a8a, stroke:#1e40af, stroke-width:2px, color:#fff"
+          ],
+          "reversePredicates": ["predecessor"],
+          "defaultShape": "rounded"
+        }
+        </script>
+
+        {{ template "sparqlMermaidFlow" (dict
+              "result" .QueryResults.versionflow
+              "id" "versionflow"
+              "title" "Version Flow for Municipality 3871"
+              "icon" "history"
+              "direction" "LR")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

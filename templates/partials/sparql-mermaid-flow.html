@@ -1,0 +1,602 @@
+<!--
+  Partial template for rendering SPARQL query results as Mermaid flowcharts
+
+  Usage (with inline JSON config):
+    <script type="application/json" id="flow-config">
+    { "typeMap": {...}, "styleConfig": {...} }
+    </script>
+    {{ template "sparqlMermaidFlow" (dict "result" .QueryResults.flow "id" "flow" "title" "Relationship Flow" "direction" "LR") }}
+
+  OR (with Go template config parameter - define your own config variable first):
+    {{ template "sparqlMermaidFlow" (dict "result" .QueryResults.flow "id" "flow" "title" "Relationship Flow" "direction" "LR" "config" .YourConfigVariable) }}
+
+  Parameters (via dict):
+    - result: QueryResult object with .Vars, .Bindings, .Error
+    - id: (required) unique identifier for the diagram
+    - title: (optional) card title
+    - icon: (optional) Lucide icon name to display before the title
+    - collapsed: (optional) if true, card starts in collapsed state
+    - direction: (optional) diagram direction: "LR" (left-right, default), "TD" (top-down), or "graph"
+    - config: (optional) configuration object for node styling, shapes, and behavior
+              OR provide inline as: <script type="application/json" id="{id}-config">{...}</script>
+
+  Configuration Object Structure:
+    {
+      "typeMap": {
+        "TypeName": { "cssClass": "className", "shape": "shapeName" }
+      },
+      "classDefs": [
+        "classDef changeEvent fill:#ffcccb,stroke:#ff6b6b,stroke-width:2px",
+        "classDef version fill:#add8e6,stroke:#4a90e2,stroke-width:2px",
+        "classDef municipality fill:#1e3a8a,stroke:#1e40af,stroke-width:2px,color:#fff"
+      ],
+      "reversePredicates": ["predecessor", "partOf"],  // Predicates that reverse edge direction
+      "defaultShape": "rounded"                        // Shape for nodes without type mapping
+    }
+
+  Available Shapes:
+    rectangle, rounded, stadium, subroutine, cylindrical, circle, asymmetric,
+    rhombus, hexagon, parallelogram, parallelogram_alt, trapezoid, trapezoid_alt, double_circle
+
+  Default Behavior (no config):
+    - All nodes render as rounded rectangles with neutral gray styling (default classDef)
+    - No edge reversal
+    - Node clicks navigate to /resource/{uri}
+
+  SPARQL Query Requirements:
+    - Must return at least three variables: ?from, ?predicate, ?to
+    - All three must be URIs
+    - Optional: ?fromType and ?toType for node styling based on RDF type
+-->
+
+{{ define "sparqlMermaidFlow" }}
+
+  {{ $result := .result }}
+  {{ $id := .id }}
+  {{ $title := .title }}
+  {{ $icon := .icon }}
+  {{ $collapsed := .collapsed }}
+  {{ $direction := .direction }}
+  {{ $config := .config }}
+
+  {{ if $result.Error }}
+    <div class="alert alert-danger">
+      <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
+      Query failed: {{ $result.Error }}
+    </div>
+  {{ else if eq (len $result.Bindings) 0 }}
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
+        </div>
+        <a class="btn btn-icon btn-sm collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
+          <i data-lucide="chevron-up"></i>
+        </a>
+      </div>
+      <div id="collapse-{{ $id }}" class="collapse">
+        <div class="card-body">
+          <div class="alert alert-info mb-0">
+            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
+            No results found.
+          </div>
+        </div>
+      </div>
+    </div>
+  {{ else }}
+
+    <!-- card to enclose the diagram -->
+    <div class="card">
+
+      <!-- card header with title and direction selector -->
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
+        </div>
+        <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 justify-content-end">
+          {{ if $id }}
+            <select id="direction-{{ $id }}" class="form-select w-auto">
+              <option value="LR"{{ if or (eq $direction "LR") (not $direction) }} selected{{ end }}>Left to Right</option>
+              <option value="TD"{{ if eq $direction "TD" }} selected{{ end }}>Top Down</option>
+              <option value="graph"{{ if eq $direction "graph" }} selected{{ end }}>Graph</option>
+            </select>
+            <!-- Zoom controls -->
+            <div class="btn-group" role="group">
+              <button id="zoom-out-{{ $id }}" class="btn btn-icon btn-sm" type="button" title="Zoom out">
+                <i data-lucide="zoom-out"></i>
+              </button>
+              <button id="zoom-reset-{{ $id }}" class="btn btn-icon btn-sm" type="button" title="Reset zoom">
+                <i data-lucide="maximize"></i>
+              </button>
+              <button id="zoom-in-{{ $id }}" class="btn btn-icon btn-sm" type="button" title="Zoom in">
+                <i data-lucide="zoom-in"></i>
+              </button>
+            </div>
+          {{ end }}
+          <a class="btn btn-icon btn-sm{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+            <i data-lucide="chevron-up"></i>
+          </a>
+        </div>
+      </div>
+
+      <!-- diagram container and inline JSON data -->
+      <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
+        <div id="{{ $id }}-card-body" class="card-body" style="position: relative; min-height: 200px; height: 500px; overflow: hidden; display: flex;">
+          <!-- Mermaid diagram container (no 'mermaid' class initially to prevent auto-render) -->
+          <div id="{{ $id }}-diagram" style="flex: 1; min-height: 0;"></div>
+
+          <!-- Inline JSON data: bindings is array of row objects -->
+          <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
+
+          <!-- Config data (if provided via template parameter) -->
+          {{ if $config }}
+            <template id="{{ $id }}-config">{{ toJSON $config }}</template>
+          {{ end }}
+
+          <!-- Resize handle -->
+          <div id="{{ $id }}-resize-handle" style="position: absolute; bottom: 8px; right: 8px; width: 20px; height: 20px; cursor: nwse-resize; z-index: 1000;">
+            <svg width="20" height="20" viewBox="0 0 20 20" style="opacity: 0.5; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
+              <line x1="20" y1="0" x2="0" y2="20" stroke="var(--tblr-border-color, #cbd5e1)" stroke-width="2"/>
+              <line x1="20" y1="7" x2="7" y2="20" stroke="var(--tblr-border-color, #cbd5e1)" stroke-width="2"/>
+              <line x1="20" y1="14" x2="14" y2="20" stroke="var(--tblr-border-color, #cbd5e1)" stroke-width="2"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Mermaid diagram initialization for this flowchart -->
+    {{ if $id }}
+      <script>
+        /* eslint-disable */
+        (function() {
+          // Wrap in IIFE to avoid variable name collisions between multiple diagrams
+          var diagramId = "{{ $id }}";
+          var panZoomInstance = null;
+
+          window.addEventListener('load', function() {
+            // ========================================
+            // Variables
+            // ========================================
+            var bindings = JSON.parse(document.getElementById(diagramId + "-bindings").innerHTML.trim());
+            var initialDirection = document.getElementById("direction-" + diagramId).value || "{{ $direction }}" || "LR";
+            var mapping = null;
+            var configElement = document.getElementById(diagramId + "-config");
+            var config = configElement ? JSON.parse(configElement.innerHTML.trim()) : getDefaultConfig();
+
+            // ========================================
+            // Constants
+            // ========================================
+
+            // Mermaid shape templates
+            var SHAPE_TEMPLATES = {
+              'rectangle': '["LABEL"]',
+              'rounded': '("LABEL")',
+              'stadium': '(["LABEL"])',
+              'subroutine': '[["LABEL"]]',
+              'cylindrical': '[("LABEL")]',
+              'circle': '(("LABEL"))',
+              'asymmetric': '>"LABEL"]',
+              'rhombus': '{LABEL}',
+              'hexagon': '{{ "{{LABEL}}" }}',
+              'parallelogram': '[/"LABEL"/]',
+              'parallelogram_alt': '[\\"LABEL"\\]',
+              'trapezoid': '[/"LABEL"\\]',
+              'trapezoid_alt': '[\\"LABEL"/]',
+              'double_circle': '((("LABEL")))'
+            };
+
+            // ========================================
+            // Helper Functions
+            // ========================================
+
+            // Return default configuration
+            function getDefaultConfig() {
+              return {
+                typeMap: {},
+                classDefs: [
+                  'classDef default fill:#f0f0f0,stroke:#999999,stroke-width:2px'
+                ],
+                reversePredicates: [],
+                defaultShape: 'rounded'
+              };
+            }
+
+            // Escape special characters in labels for Mermaid syntax
+            function escapeLabel(text) {
+              if (!text) return '';
+              // Replace special characters that could break Mermaid syntax
+              // Use HTML entities and escaped characters
+              return text
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/\n/g, '<br>');
+            }
+
+            // Map RDF type URI to CSS class name for node styling
+            function getNodeClass(typeUri) {
+              if (!typeUri || !config.typeMap) return 'default';
+
+              // Check each type in typeMap for a match
+              for (var typeName in config.typeMap) {
+                if (typeUri.includes(typeName)) {
+                  return config.typeMap[typeName].cssClass || 'default';
+                }
+              }
+
+              return 'default';
+            }
+
+            // Get node shape based on RDF type
+            function getNodeShape(typeUri, label) {
+              var shapeName = config.defaultShape || 'rounded';
+
+              // Look up shape from typeMap if type is recognized
+              if (typeUri && config.typeMap) {
+                for (var typeName in config.typeMap) {
+                  if (typeUri.includes(typeName)) {
+                    shapeName = config.typeMap[typeName].shape || shapeName;
+                    break;
+                  }
+                }
+              }
+
+              // Get shape template and substitute label
+              var template = SHAPE_TEMPLATES[shapeName] || SHAPE_TEMPLATES['rounded'];
+              return template.replace('LABEL', label);
+            }
+
+            // ========================================
+            // Data Processing Functions
+            // ========================================
+
+            // Get CSS class definitions from config (native Mermaid syntax)
+            function buildClassDefs() {
+              // Return classDefs array from config, or empty array if not provided
+              return config.classDefs || [];
+            }
+
+            // Build URI to node ID mapping with type information (simple index: node1, node2, etc.)
+            function buildNodeMapping(bindings) {
+              var uriToId = {};
+              var idToUri = {};
+              var idToType = {};
+              var index = 1;
+
+              bindings.forEach(function(binding) {
+                // Skip bindings without required fields
+                if (!binding.from || !binding.to) return;
+
+                if (!uriToId[binding.from.Value]) {
+                  var id = 'node' + index++;
+                  uriToId[binding.from.Value] = id;
+                  idToUri[id] = binding.from.Value;
+                  // Store fromType if available
+                  if (binding.fromType && binding.fromType.Lol) {
+                    idToType[id] = binding.fromType.Lol;
+                  } else if (binding.fromType && binding.fromType.Value) {
+                    idToType[id] = binding.fromType.Value;
+                  }
+                }
+                if (!uriToId[binding.to.Value]) {
+                  var id = 'node' + index++;
+                  uriToId[binding.to.Value] = id;
+                  idToUri[id] = binding.to.Value;
+                  // Store toType if available
+                  if (binding.toType && binding.toType.Lol) {
+                    idToType[id] = binding.toType.Lol;
+                  } else if (binding.toType && binding.toType.Value) {
+                    idToType[id] = binding.toType.Value;
+                  }
+                }
+              });
+
+              return { uriToId: uriToId, idToUri: idToUri, idToType: idToType };
+            }
+
+            // Build Mermaid diagram syntax
+            function buildMermaidDiagram(bindings, direction, uriToId, idToType) {
+              var header = direction === "graph" ? "graph LR" : "flowchart " + direction;
+              var nodeLines = [];
+              var edgeLines = [];
+              var styleLines = [];
+              var nodesDefined = {};
+
+              // Collect all unique nodes and edges
+              bindings.forEach(function(binding) {
+                // Skip bindings without required fields
+                if (!binding.from || !binding.to || !binding.predicate) return;
+
+                var fromId = uriToId[binding.from.Value];
+                var toId = uriToId[binding.to.Value];
+                var fromLabel = escapeLabel(binding.from.Lol || binding.from.Value);
+                var toLabel = escapeLabel(binding.to.Lol || binding.to.Value);
+                var edgeLabel = escapeLabel(binding.predicate.Lol || binding.predicate.Value);
+
+                // Build node label with type if available
+                var fromNodeLabel = fromLabel;
+                if (idToType[fromId]) {
+                  fromNodeLabel = fromLabel + '<br><small>' + escapeLabel(idToType[fromId]) + '</small>';
+                }
+
+                var toNodeLabel = toLabel;
+                if (idToType[toId]) {
+                  toNodeLabel = toLabel + '<br><small>' + escapeLabel(idToType[toId]) + '</small>';
+                }
+
+                // Collect unique nodes with styling
+                if (!nodesDefined[fromId]) {
+                  nodeLines.push(fromId + getNodeShape(idToType[fromId], fromNodeLabel));
+
+                  // Add style if type is recognized
+                  var fromClass = getNodeClass(idToType[fromId]);
+                  if (fromClass) {
+                    styleLines.push(fromId + ':::' + fromClass);
+                  }
+
+                  nodesDefined[fromId] = true;
+                }
+                if (!nodesDefined[toId]) {
+                  nodeLines.push(toId + getNodeShape(idToType[toId], toNodeLabel));
+
+                  // Add style if type is recognized
+                  var toClass = getNodeClass(idToType[toId]);
+                  if (toClass) {
+                    styleLines.push(toId + ':::' + toClass);
+                  }
+
+                  nodesDefined[toId] = true;
+                }
+
+                // Collect edge with direction based on predicate type
+                var predicateValue = binding.predicate.Value || '';
+                var isPredecessor = config.reversePredicates && config.reversePredicates.some(function(pred) {
+                  return predicateValue.includes(pred);
+                });
+
+                // Debug: Log predicate matching
+                if (edgeLines.length === 0) {
+                  console.log('[Mermaid Debug - ' + diagramId + '] Predicate reversal check:');
+                  console.log('  reversePredicates config:', config.reversePredicates);
+                  console.log('  First predicate value:', predicateValue);
+                  console.log('  First predicate label:', edgeLabel);
+                  console.log('  isPredecessor:', isPredecessor);
+                }
+
+                if (isPredecessor) {
+                  // Reverse edge direction for configured predicates (e.g., predecessors point upward)
+                  edgeLines.push(toId + ' -->|' + edgeLabel + '| ' + fromId);
+                } else {
+                  // Normal edge direction
+                  edgeLines.push(fromId + ' -->|' + edgeLabel + '| ' + toId);
+                }
+              });
+
+              // Build CSS class definitions dynamically from config
+              var classDefs = buildClassDefs();
+
+              // Build final output: header, class definitions, nodes, styles, edges
+              var mermaidSyntax = [header].concat(classDefs, nodeLines, styleLines, edgeLines).join('\n');
+
+              // Debug: Log the final Mermaid syntax
+              console.log('[Mermaid Debug - ' + diagramId + '] Final Mermaid Syntax:');
+              console.log(mermaidSyntax);
+              console.log('[Mermaid Debug - ' + diagramId + '] Components:');
+              console.log('  Header:', header);
+              console.log('  Class Definitions:', classDefs);
+              console.log('  Node Lines:', nodeLines);
+              console.log('  Style Lines:', styleLines);
+              console.log('  Edge Lines:', edgeLines);
+
+              return mermaidSyntax;
+            }
+
+            // ========================================
+            // Rendering Functions
+            // ========================================
+
+            // Render diagram
+            function renderDiagram(direction) {
+              var mermaidCode = buildMermaidDiagram(bindings, direction, mapping.uriToId, mapping.idToType);
+              var container = document.getElementById(diagramId + "-diagram");
+
+              container.innerHTML = mermaidCode;
+              container.classList.add('mermaid');
+              container.removeAttribute('data-processed');
+
+              try {
+                return mermaid.run({ nodes: [container] }).then(function() {
+                  // Add click handlers and zoom/pan after Mermaid renders
+                  setTimeout(function() {
+                    addClickHandlers(mapping.idToUri);
+                    initPanZoom();
+                  }, 100);
+                });
+              } catch (err) {
+                console.error('[Mermaid Error]', err);
+                container.classList.remove('mermaid');
+                container.innerHTML = '<div class="alert alert-danger">Mermaid syntax error. Check console for details.</div>';
+                return Promise.resolve();
+              }
+            }
+
+            // ========================================
+            // Interaction Functions
+            // ========================================
+
+            // Make nodes clickable to navigate to resource pages (using event delegation)
+            function addClickHandlers(idToUri) {
+              var svgElement = document.querySelector("#" + diagramId + "-diagram svg");
+              if (!svgElement) return;
+
+              svgElement.style.cursor = 'pointer';
+              svgElement.addEventListener('click', function(e) {
+                var target = e.target;
+                while (target && target !== svgElement) {
+                  var nodeId = Object.keys(idToUri).find(function(id) {
+                    return target.id && target.id.indexOf(id) !== -1;
+                  });
+                  if (nodeId) {
+                    var url = '/resource/' + encodeURIComponent(idToUri[nodeId]);
+                    if (e.ctrlKey || e.metaKey) {
+                      // Ctrl/Cmd+Click: open in new tab
+                      window.open(url, '_blank');
+                    } else {
+                      // Normal click: navigate in current window
+                      window.location.href = url;
+                    }
+                    return;
+                  }
+                  target = target.parentElement;
+                }
+              });
+            }
+
+            // Initialize svg-pan-zoom after Mermaid renders
+            function initPanZoom() {
+              var svgElement = document.querySelector("#" + diagramId + "-diagram svg");
+              if (!svgElement) return;
+
+              // Destroy existing instance if re-rendering
+              if (panZoomInstance) {
+                panZoomInstance.destroy();
+                panZoomInstance = null;
+              }
+
+              // Initialize svg-pan-zoom
+              panZoomInstance = svgPanZoom(svgElement, {
+                zoomEnabled: true,
+                controlIconsEnabled: false,
+                fit: true,
+                center: true,
+                minZoom: 0.1,
+                maxZoom: 10,
+                zoomScaleSensitivity: 0.3,
+                panEnabled: true,
+                dblClickZoomEnabled: false
+              });
+
+              // Wire up custom zoom controls
+              var zoomInBtn = document.getElementById("zoom-in-" + diagramId);
+              var zoomOutBtn = document.getElementById("zoom-out-" + diagramId);
+              var zoomResetBtn = document.getElementById("zoom-reset-" + diagramId);
+
+              if (zoomInBtn) {
+                zoomInBtn.onclick = function() {
+                  panZoomInstance.zoomIn();
+                };
+              }
+              if (zoomOutBtn) {
+                zoomOutBtn.onclick = function() {
+                  panZoomInstance.zoomOut();
+                };
+              }
+              if (zoomResetBtn) {
+                zoomResetBtn.onclick = function() {
+                  panZoomInstance.resetZoom();
+                  panZoomInstance.center();
+                  panZoomInstance.fit();
+                };
+              }
+            }
+
+            // ========================================
+            // Initialization
+            // ========================================
+
+            // Build node mapping
+            mapping = buildNodeMapping(bindings);
+
+            // Add resize functionality
+            var resizeHandle = document.getElementById(diagramId + "-resize-handle");
+            var cardBody = document.getElementById(diagramId + "-card-body");
+            var isResizing = false;
+            var startY = 0;
+            var startHeight = 0;
+
+            if (resizeHandle && cardBody) {
+              resizeHandle.addEventListener('mousedown', function(e) {
+                isResizing = true;
+                startY = e.clientY;
+                startHeight = cardBody.offsetHeight;
+                e.preventDefault();
+              });
+
+              document.addEventListener('mousemove', function(e) {
+                if (!isResizing) return;
+                var deltaY = e.clientY - startY;
+                var newHeight = Math.max(200, startHeight + deltaY);
+                cardBody.style.height = newHeight + 'px';
+
+                // Resize svg-pan-zoom viewport if initialized (without resetting zoom)
+                if (panZoomInstance) {
+                  panZoomInstance.resize();
+                }
+              });
+
+              document.addEventListener('mouseup', function() {
+                if (isResizing) {
+                  isResizing = false;
+                  // Save height preference
+                  try {
+                    localStorage.setItem("mermaid-height-" + diagramId, cardBody.style.height);
+                  } catch (err) {
+                    // localStorage unavailable
+                  }
+                }
+              });
+
+              // Restore saved height preference
+              try {
+                var savedHeight = localStorage.getItem("mermaid-height-" + diagramId);
+                if (savedHeight) {
+                  cardBody.style.height = savedHeight;
+                }
+              } catch (err) {
+                // localStorage unavailable
+              }
+            }
+
+            // Initialize diagram (Mermaid should be loaded since we're in window.load event)
+            var directionSelect = document.getElementById("direction-" + diagramId);
+
+            // Restore saved direction preference or use initial
+            var savedDirection = null;
+            try {
+              savedDirection = localStorage.getItem("mermaid-direction-" + diagramId);
+            } catch (err) {
+              // localStorage unavailable
+            }
+
+            var direction = savedDirection || initialDirection;
+            if (directionSelect && savedDirection) {
+              directionSelect.value = savedDirection;
+            }
+
+            // Initial render
+            renderDiagram(direction);
+
+            // Direction selector with localStorage persistence
+            if (directionSelect) {
+              directionSelect.addEventListener("change", function(e) {
+                var direction = e.target.value;
+                renderDiagram(direction);
+                try {
+                  localStorage.setItem("mermaid-direction-" + diagramId, direction);
+                } catch (err) {
+                  // localStorage unavailable
+                }
+              });
+            }
+          });
+        })();
+      </script>
+    {{ end }}
+
+  {{ end }}
+{{ end }}
