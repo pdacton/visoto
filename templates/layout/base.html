@@ -25,6 +25,7 @@
     <link rel="stylesheet" href="/static/css/tabler_overrides.css">
     <link rel="stylesheet" href="/static/css/tabulator_overrides.css">
     <link rel="stylesheet" href="/static/css/wunderbaum_overrides.css">
+    <link rel="stylesheet" href="/static/css/mermaid_overrides.css">
 
   </head>
 
@@ -77,6 +78,58 @@
         }
       });
     </script>
+    <script type="module">
+      // Import Mermaid and ELK layout as ES modules
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+      import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
+
+      // Register ELK layout loaders
+      mermaid.registerLayoutLoaders(elkLayouts);
+
+      // Make mermaid available globally for other scripts
+      window.mermaid = mermaid;
+
+      // Initialize Mermaid with dark mode support and ELK as default renderer
+      (function() {
+        var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: isDark ? 'dark' : 'default',
+          securityLevel: 'loose',
+          flowchart: {
+            defaultRenderer: 'elk'
+          },
+          elk: {
+            mergeEdges: true,
+            nodePlacementStrategy: 'LINEAR_SEGMENTS'
+          }
+        });
+
+        // Re-initialize on theme change
+        var observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'data-bs-theme') {
+              var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
+              mermaid.initialize({
+                startOnLoad: false,
+                theme: isDark ? 'dark' : 'default',
+                securityLevel: 'loose',
+                flowchart: {
+                  defaultRenderer: 'elk'
+                }
+              });
+              // Re-render all mermaid diagrams
+              document.querySelectorAll('.mermaid').forEach(function(elem) {
+                elem.removeAttribute('data-processed');
+              });
+              mermaid.run();
+            }
+          });
+        });
+        observer.observe(document.documentElement, { attributes: true });
+      })();
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
     <script src="/static/js/darkmode.js"></script>
     <script src="/static/js/sidebar.js"></script>
     <script src="/static/js/search.js"></script>

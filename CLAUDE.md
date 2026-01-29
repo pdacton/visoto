@@ -39,11 +39,21 @@
 - Follow best practices for accessibility (ARIA attributes, semantic HTML).
 - Document any custom logic or non-obvious code in comments.
 
+### Graph Explorer Integration
+- The project uses [Graph Explorer](https://github.com/zazuko/graph-explorer) (a fork of Ontodia) for RDF graph visualization.
+- Graph Explorer is loaded from CDN: `graph-explorer@1.3.0`
+- Local files:
+  - `templates/pages/ontodia.html` - Main Graph Explorer page
+  - `static/css/ontodia_overrides.css` - Custom CSS overrides
+- **For detailed customization reference**, see the `graph-explorer-customization` skill in `.claude/skills/graph-explorer/`
+
 ## References
 - [Tabler Documentation](https://tabler.io/docs/)
+- [Tabler SCSS Variables](https://github.com/tabler/tabler/blob/dev/core/scss/_variables.scss) - Box shadows, colors, spacing
 - [Tabulator Documentation](https://tabulator.info/docs/6.3/quickstart)
 - [Go Templates Documentation](https://pkg.go.dev/html/template)
 - [Bootstrap 5 Documentation](https://getbootstrap.com/docs/5.0/getting-started/introduction/)
+- [Graph Explorer Repository](https://github.com/zazuko/graph-explorer)
 
 ---
 For any new features, follow the established structure and use Bootstrap 5, Tabler, and Tabulator for UI consistency.

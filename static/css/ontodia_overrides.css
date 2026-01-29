@@ -1,0 +1,117 @@
+/* Graph Explorer CSS Overrides */
+
+/* ========================================
+   HALO (selection overlay with buttons)
+   Original color is #d8956d (orange/tan)
+   ======================================== */
+.graph-explorer-halo {
+  border: none !important;
+  /* Tabler-style elevation shadow to make selection "rise" */
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+/* ========================================
+   TOOLBAR - Tabler styling
+   ======================================== */
+.graph-explorer-toolbar {
+  background: var(--tblr-bg-surface) !important;
+  border-bottom: 1px solid var(--tblr-border-color) !important;
+  padding: 0.5rem 0.75rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.25rem !important;
+  flex-wrap: wrap !important;
+  height: auto !important;
+  min-height: 40px !important;
+}
+
+/* Button group styling */
+.graph-explorer-toolbar .btn-group,
+.graph-explorer-toolbar__layout-group {
+  display: inline-flex !important;
+  gap: 2px !important;
+  margin-right: 0.5rem !important;
+}
+
+/* All toolbar buttons */
+.graph-explorer-toolbar button {
+  font-size: 13px !important;
+  padding: 0.25rem 0.5rem !important;
+  border-radius: var(--tblr-border-radius) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  min-width: 32px !important;
+  height: 32px !important;
+  background-image: none !important;
+}
+
+/* Remove any SVG background images from original buttons */
+.graph-explorer-toolbar button svg:not([data-lucide]) {
+  display: none !important;
+}
+
+/* Ensure Lucide icons display properly */
+.graph-explorer-toolbar button svg[data-lucide] {
+  width: 16px !important;
+  height: 16px !important;
+  stroke-width: 2 !important;
+}
+
+/* Add separator after zoom buttons */
+.graph-explorer-toolbar__layout-group::after {
+  content: '';
+  display: inline-block;
+  width: 1px;
+  height: 20px;
+  background: var(--tblr-border-color);
+  margin-left: 0.5rem;
+}
+
+/* Language selector styling */
+.graph-explorer-toolbar__language-selector {
+  display: inline-flex !important;
+  align-items: center !important;
+  margin-left: auto !important;
+  gap: 0.5rem !important;
+}
+
+.graph-explorer-toolbar__language-selector label {
+  font-size: 13px !important;
+  color: var(--tblr-muted) !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
+
+.graph-explorer-toolbar__language-selector select {
+  font-size: 13px !important;
+  padding: 0.25rem 0.5rem !important;
+  border: 1px solid var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius) !important;
+  background: var(--tblr-bg-surface) !important;
+  height: 32px !important;
+}
+
+/* Hide panel toggle buttons (the oval shapes) */
+.graph-explorer-toolbar__toggle {
+  display: none !important;
+}
+
+/* Hide any buttons with original graph-explorer styling that weren't converted */
+.graph-explorer-toolbar .graph-explorer-btn {
+  background-image: none !important;
+}
+
+/* Ensure Font Awesome icons in unconverted buttons are hidden (we replace with Lucide) */
+.graph-explorer-toolbar .fa {
+  display: none !important;
+}
+
+/* ========================================
+   NAVIGATOR (minimap in bottom-right)
+   ======================================== */
+/* Hide the navigator/overview minimap */
+.graph-explorer-navigator {
+  display: none !important;
+}

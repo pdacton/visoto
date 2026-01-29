@@ -1,6 +1,11 @@
 
 /* Tabler CSS overrides to customize the Tabler theme */
 
+/* tabler settings are defined in
+   https://github.com/tabler/tabler/blob/dev/core/scss/_variables.scss
+   https://github.com/tabler/tabler/blob/dev/core/scss/_variables-dark.scss  
+   */
+
 /* --- Topbar adjustments --- */
 
 /* Remove default margins/padding from html and body to prevent gray space in topbar */

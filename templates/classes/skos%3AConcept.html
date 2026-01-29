@@ -49,7 +49,7 @@
             BIND (?? AS ?class)
             ?instance (rdf:type|owl:type) ?class .
             OPTIONAL { ?instance schema:description ?description . }
-          } LIMIT 5000
+          } LIMIT 50000
         </sparql-query>
         {{ template "sparqlTable" (dict 
             "result" .QueryResults.instances 
