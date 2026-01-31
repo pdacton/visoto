@@ -65,11 +65,11 @@ func hasIcon(name string) bool {
 // extractClassName extracts the class name from a full URI
 // Examples:
 //   https://schema.ld.admin.ch/Canton -> Canton
-//   http://schema.org/Person#type -> Person
+//   http://www.w3.org/2004/02/skos/core#ConceptScheme -> ConceptScheme
 func extractClassName(uri string) string {
-	// Remove fragment if present
+	// Check for fragment first (the part after #)
 	if idx := strings.LastIndex(uri, "#"); idx != -1 {
-		uri = uri[:idx]
+		return uri[idx+1:]
 	}
 
 	// Extract last segment after final /

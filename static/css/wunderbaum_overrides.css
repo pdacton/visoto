@@ -3,47 +3,96 @@
 /* see https://github.com/mar10/wunderbaum/blob/main/src/wunderbaum.scss */
 
 .wunderbaum {
-    /* border color */
-    --wb-border-color: transparent;
+    /* Base colors and typography - aligned with Tabler */
+    color: var(--tblr-body-color);
+    background-color: var(--tblr-bg-surface);
+    font-family: var(--tblr-font-sans-serif);
+    font-size: var(--tblr-font-size);
+    outline: none;
+    border: none;
+
+    /* Override Wunderbaum's base color variables */
+    --wb-node-text-color: var(--tblr-body-color);
+    --wb-background-color: var(--tblr-bg-surface);
+
+    /* Borders - use Tabler's border color */
+    --wb-border-color: var(--tblr-border-color);
     --wb-focus-border-color: transparent;
     --wb-active-border-color: transparent;
     --wb-active-border-color-grayscale: transparent;
     --wb-active-hover-border-color: transparent;
+    --wb-grid-color: var(--tblr-border-color-translucent);
+    --wb-grid-color-grayscale: var(--tblr-border-color-translucent);
 
-    /* cells: this makes the active cell stand out, for instance when we 
-       show a skos:Concept page, the instance is highlighted in the tree 
-    */
-    --wb-active-cell-color: var(--tblr-bg-surface-tertiary);
-    --wb-active-cell-color-grayscale: var(--tblr-bg-surface-tertiary);
-
-    /* columns and cells */
-    --wb-active-color-grayscale: transparent;
-    --wb-active-hover-color-grayscale: transparent;
+    /* Active and hover states - use Tabler colors */
+    --wb-hover-color: var(--tblr-bg-surface-tertiary);
+    --wb-hover-border-color: transparent;
+    --wb-active-color: var(--tblr-active-bg);
+    --wb-active-hover-color: var(--tblr-active-bg);
+    --wb-active-cell-color: var(--tblr-active-bg);
+    --wb-active-cell-color-grayscale: var(--tblr-active-bg);
+    --wb-active-color-grayscale: var(--tblr-active-bg);
+    --wb-active-hover-color-grayscale: var(--tblr-active-bg);
     --wb-active-column-color: transparent;
 
-    /* header */
-    --wb-header-color: transparent;
-    --wb-active-header-column-color: transparent;
-    outline: none;
+    /* Header colors - use Tabler's surface tertiary */
+    --wb-header-color: var(--tblr-bg-surface-tertiary);
+    --wb-active-header-column-color: var(--tblr-bg-surface-tertiary);
+
+    /* Alternate row colors - subtle variation */
+    --wb-alternate-row-color: var(--tblr-bg-surface);
+    --wb-alternate-row-color-hover: var(--tblr-bg-surface-tertiary);
+
+    /* Filter and highlight colors */
+    --wb-bg-highlight-color: var(--tblr-primary);
+    --wb-filter-dim-color: var(--tblr-secondary);
+    --wb-dim-color: var(--tblr-secondary);
 }
 
-.wunderbaum,
+div.wunderbaum {
+    border: none;
+}
+
+/* Ensure title spans inherit typography */
 .wunderbaum span.wb-title {
-    font-family: var(--tblr-font-sans-serif);
-    font-size: var(--tblr-font-size);
+    font-family: inherit;
+    font-size: inherit;
 }
 
-[data-bs-theme="dark"] .wunderbaum {
-    color: var(--tblr-body-color);
-    background-color: var(--tblr-bg-surface);
+/* Link styling - use Tabler's link colors */
+.wunderbaum a {
+    color: var(--tblr-link-color);
+    text-decoration: none;
 }
 
-[data-bs-theme="dark"] .wunderbaum span.wb-node.wb-active {
-    background-color: var(--tblr-primary);
-    color: #fff;
+.wunderbaum a:hover {
+    color: var(--tblr-link-hover-color);
 }
 
-[data-bs-theme="dark"] .wunderbaum span.wb-node:hover {
+/* Active node styling */
+/* .wunderbaum span.wb-node.wb-active {
+    background-color: var(--tblr-active-bg) !important;
+} */
+
+/* .wunderbaum div.wb-row span.wb-node.wb-active {
+    background-color: var(--tblr-active-bg) !important;
+} */
+
+.wunderbaum span.wb-node.wb-active a {
+    color: var(--tblr-link-color) !important;
+    font-weight: inherit;
+}
+
+.wunderbaum span.wb-node.wb-active a:hover {
+    color: var(--tblr-link-hover-color) !important;
+}
+
+/* Hover state - use Tabler's tertiary surface color */
+.wunderbaum span.wb-node:hover {
+    background-color: var(--tblr-bg-surface-tertiary);
+}
+
+.wunderbaum div.wb-row:hover {
     background-color: var(--tblr-bg-surface-tertiary);
 }
 
@@ -80,4 +129,10 @@ div.wunderbaum div.wb-header {
 /* Ensure header columns stay with the same background when tree loses focus */
 div.wunderbaum div.wb-header span.wb-col {
     background-color: var(--tblr-bg-surface-tertiary) !important;
+}
+
+/* a selected row had a white border, hiding it here */
+div.wunderbaum.wb-grid:not(:focus-within) div.wb-node-list div.wb-row, 
+div.wunderbaum.wb-grid:not(:focus) div.wb-node-list div.wb-row {
+    border-bottom: 0px;
 }

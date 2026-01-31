@@ -26,9 +26,9 @@
         "TypeName": { "cssClass": "className", "shape": "shapeName" }
       },
       "classDefs": [
-        "classDef changeEvent fill:#ffcccb,stroke:#ff6b6b,stroke-width:2px",
-        "classDef version fill:#add8e6,stroke:#4a90e2,stroke-width:2px",
-        "classDef municipality fill:#1e3a8a,stroke:#1e40af,stroke-width:2px,color:#fff"
+        "classDef changeEvent fill:#ffe8cc,stroke:#fd7e14,stroke-width:2px,color:#fd7e14",
+        "classDef version fill:#d1ecf1,stroke:#17a2b8,stroke-width:2px,color:#17a2b8",
+        "classDef municipality fill:#4263eb,stroke:#4263eb,stroke-width:2px,color:#fff"
       ],
       "reversePredicates": ["predecessor", "partOf"],  // Predicates that reverse edge direction
       "defaultShape": "rounded"                        // Shape for nodes without type mapping
@@ -153,6 +153,11 @@
       <script>
         /* eslint-disable */
         (function() {
+          // Initialize global registry for Mermaid diagram renderers
+          if (!window.mermaidDiagramRenderers) {
+            window.mermaidDiagramRenderers = {};
+          }
+
           // Wrap in IIFE to avoid variable name collisions between multiple diagrams
           var diagramId = "{{ $id }}";
           var panZoomInstance = null;
@@ -405,24 +410,51 @@
               var mermaidCode = buildMermaidDiagram(bindings, direction, mapping.uriToId, mapping.idToType);
               var container = document.getElementById(diagramId + "-diagram");
 
-              container.innerHTML = mermaidCode;
-              container.classList.add('mermaid');
-              container.removeAttribute('data-processed');
+              // Add transition class for smoother re-renders
+              container.style.transition = 'opacity 0.15s ease-in-out';
 
-              try {
-                return mermaid.run({ nodes: [container] }).then(function() {
-                  // Add click handlers and zoom/pan after Mermaid renders
-                  setTimeout(function() {
-                    addClickHandlers(mapping.idToUri);
-                    initPanZoom();
-                  }, 100);
-                });
-              } catch (err) {
-                console.error('[Mermaid Error]', err);
-                container.classList.remove('mermaid');
-                container.innerHTML = '<div class="alert alert-danger">Mermaid syntax error. Check console for details.</div>';
-                return Promise.resolve();
+              // Fade out old diagram
+              var isReRender = container.querySelector('svg') !== null;
+              if (isReRender) {
+                container.style.opacity = '0';
               }
+
+              // Small delay for fade out, then render
+              var renderDelay = isReRender ? 150 : 0;
+
+              return new Promise(function(resolve) {
+                setTimeout(function() {
+                  container.innerHTML = mermaidCode;
+                  container.classList.add('mermaid');
+                  container.removeAttribute('data-processed');
+
+                  try {
+                    mermaid.run({ nodes: [container] }).then(function() {
+                      // Fade in new diagram
+                      container.style.opacity = '1';
+
+                      // Add click handlers and zoom/pan after Mermaid renders
+                      setTimeout(function() {
+                        addClickHandlers(mapping.idToUri);
+                        initPanZoom();
+                      }, 100);
+                      resolve();
+                    }).catch(function(err) {
+                      console.error('[Mermaid Error]', err);
+                      container.classList.remove('mermaid');
+                      container.innerHTML = '<div class="alert alert-danger">Mermaid syntax error. Check console for details.</div>';
+                      container.style.opacity = '1';
+                      resolve();
+                    });
+                  } catch (err) {
+                    console.error('[Mermaid Error]', err);
+                    container.classList.remove('mermaid');
+                    container.innerHTML = '<div class="alert alert-danger">Mermaid syntax error. Check console for details.</div>';
+                    container.style.opacity = '1';
+                    resolve();
+                  }
+                }, renderDelay);
+              });
             }
 
             // ========================================
@@ -580,6 +612,16 @@
 
             // Initial render
             renderDiagram(direction);
+
+            // Register render function globally for theme change re-rendering
+            window.mermaidDiagramRenderers[diagramId] = {
+              render: function() {
+                // Get current direction from selector or use saved direction
+                var currentDirection = directionSelect ? directionSelect.value : direction;
+                return renderDiagram(currentDirection);
+              },
+              id: diagramId
+            };
 
             // Direction selector with localStorage persistence
             if (directionSelect) {

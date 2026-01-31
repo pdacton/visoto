@@ -58,13 +58,19 @@
         </div>
         <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 justify-content-end">
           {{ if $id }}
-            <select id="groupby-{{ $id }}" class="form-select w-auto">
-              <option value="">No grouping</option>
+            <select id="groupby-{{ $id }}" class="form-select w-auto text-muted">
+              <option value="" class="text-muted">Group by...</option>
               {{ range $result.Vars }}
               <option value="{{ . }}">{{ . }}</option>
               {{ end }}
             </select>
-            <input type="text" id="search-{{ $id }}" class="search-table form-control w-auto flex-grow-1" style="min-width: 150px; max-width: 300px;" placeholder="Search table...">
+            <input type="text" id="search-{{ $id }}" class="search-table form-control w-auto flex-grow-1" style="min-width: 150px; max-width: 300px;" placeholder="Search...">
+            <button id="expand-groups-{{ $id }}" class="btn btn-icon btn-sm" title="Expand all groups">
+              <i data-lucide="list-chevrons-up-down"></i>
+            </button>
+            <button id="collapse-groups-{{ $id }}" class="btn btn-icon btn-sm" title="Collapse all groups">
+              <i data-lucide="list-chevrons-down-up"></i>
+            </button>
           {{ end }}
           <a class="btn btn-icon btn-sm{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
             <i data-lucide="chevron-up"></i>
@@ -257,6 +263,36 @@
                 localStorage.setItem("tabulator-groupby-{{ $id }}", selectedField);
               } catch (e) {
                 console.warn("localStorage unavailable:", e);
+              }
+            });
+          }
+
+          // Expand all groups button
+          var expandGroupsBtn = document.getElementById("expand-groups-{{ $id }}");
+          if (expandGroupsBtn) {
+            expandGroupsBtn.addEventListener("click", function() {
+              table.blockRedraw();
+              try {
+                table.getGroups().forEach(function(group) {
+                  group.show();
+                });
+              } finally {
+                table.restoreRedraw();
+              }
+            });
+          }
+
+          // Collapse all groups button
+          var collapseGroupsBtn = document.getElementById("collapse-groups-{{ $id }}");
+          if (collapseGroupsBtn) {
+            collapseGroupsBtn.addEventListener("click", function() {
+              table.blockRedraw();
+              try {
+                table.getGroups().forEach(function(group) {
+                  group.hide();
+                });
+              } finally {
+                table.restoreRedraw();
               }
             });
           }

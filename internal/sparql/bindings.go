@@ -11,7 +11,7 @@ import (
 type Binding struct {
 	Type  string
 	Value string
-	Lol   string
+	Lol   string // label or literal
 }
 
 // RenderHTML returns an HTML link if the type is "uri", otherwise returns plain text

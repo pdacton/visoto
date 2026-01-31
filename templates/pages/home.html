@@ -1,113 +1,183 @@
 {{ define "pageTitle" }}Visoto{{ end }}
-{{ define "pageSubtitle" }}Welcome to Visoto, another graph explorer{{ end }}
+{{ define "pageSubtitle" }}Welcome to visoto, the adaptive knowledge graph explorer, here visualizing the contents of LINDAS.{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/visoto_light.svg" alt="Page icon" width="48" height="48">{{ end }}
 
 {{ define "pageContent" }}
 <style>
-    /* page background animation with the slowly spinning mandala */
-    .home-background {
-        position: fixed;
-        top: 40%;
-        left: 70%;
-        width: 100vmin;
-        height: 100vmin;
-        background-image: url('/static/img/page_background.svg');
-        background-size: 100vmin 100vmin;
-        background-repeat: no-repeat;
-        z-index: -1;
-        pointer-events: none;
-        animation: gentle-spin 180s linear infinite;
-        mask-image: radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 70%);
-        -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 70%);
-    }
+  /* page background animation with the slowly spinning mandala */
+  .home-background {
+    position: fixed;
+    top: 40%;
+    left: 70%;
+    width: 100vmin;
+    height: 100vmin;
+    background-image: url('/static/img/page_background.svg');
+    background-size: 100vmin 100vmin;
+    background-repeat: no-repeat;
+    z-index: -1;
+    pointer-events: none;
+    animation: gentle-spin 180s linear infinite;
+    mask-image: radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 70%);
+    -webkit-mask-image: radial-gradient(circle at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 70%);
+  }
 
-    @keyframes gentle-spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
+  @keyframes gentle-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
 </style>
 
 <div class="home-background"></div>
-<p>Use visoto to explore and visualize knowledge graphs.</p>
+
+<div class="row row-deck row-cards mb-3">
+
+  <!-- Klosters card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/3/37/Blick_aus_dem_Zug_auf_Klosters-Dorf_%282006%29.jpg" class="card-img-top" alt="View of Klosters-Dorf from the train" style="height: 200px; object-fit: cover;">
+      <div class="card-body d-flex flex-column">
+        <div class="subheader">Municipalities</div>
+        <p class="text-secondary mt-auto">Check out the <a href="http://localhost:8060/resource/https%3A%2F%2Fld.admin.ch%2Fmunicipality%2F3871">change history of Klosters</a>, visualized here.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINDAS card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100">
+      <img src="https://lindas.admin.ch/static-assets/img/lindaslogo_web.png" class="card-img-top" alt="LINDAS logo" style="height: 200px; object-fit: contain; background-color: white; padding: 1rem;">
+      <div class="card-body d-flex flex-column">
+        <div class="subheader">LINDAS Knowledge Graph</div>
+        <p class="text-secondary mt-auto">You are currently seeing the contents of the public LINDAS knowledge graph provided by the Swiss Federal Archives (Bundesarchiv).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOGA card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100">
+      <img src="https://www.bkw.ch/fileadmin/user_upload/02_Gebaeude/02_04_Gebaeudetechnik/Elektro/Elektro__c__BKW_Building_Solutions_AG_51.jpg" class="card-img-top" alt="Industrial building" style="height: 200px; object-fit: cover;">
+      <div class="card-body d-flex flex-column">
+        <div class="subheader">NOGA Codes</div>
+        <p class="text-secondary mt-auto">Ever wondered what kind of categories exist for companies? Browse the <a href="http://localhost:8060/resource/https%3A%2F%2Fregister.ld.admin.ch%2Fi14y%2Fconcept%2FnogaCode%2Fversion%2F2.0.0">NOGA nomenclature</a> here.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Development card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card h-100">
+      <img src="/static/img/ricepattern.png" class="card-img-top" alt="Rice pattern" style="height: 200px; object-fit: cover;">
+      <div class="card-body d-flex flex-column">
+        <div class="subheader">Under Development</div>
+        <p class="text-secondary mt-auto">Visoto is under current development, check back soon to see what's new.</p>
+      </div>
+    </div>
+  </div>
+
+
+  
+</div>
 
 <div class="row row-deck row-cards">
-    <!-- classes card -->
-    <div class="col-sm-6 col-lg-3">
-        <div class="card">
-            <div class="card-body">
-                <sparql-query id="classCount" class="d-none">
-                    SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
-                        { ?class a owl:Class } 
-                        UNION
-                        { ?class a rdfs:Class }
-                    }
-                </sparql-query>
-                <div class="d-flex align-items-center">
-                    <div class="subheader">Classes</div>
-                </div>
-                <div class="h1 mb-3">
-                    {{ if .QueryResults.classCount.Bindings }}{{ (index .QueryResults.classCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-                </div>
-                <p class="text-secondary">Distinct classes (<a href="/resource/owl:Class">owl:Class</a>, <a href="/resource/rdfs:Class">rdfs:Class</a>) defined in the graph.</p>
-            </div>
+
+  <!-- classes card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <sparql-query id="classCount" class="d-none">
+          SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
+            { ?class a owl:Class }
+            UNION
+            { ?class a rdfs:Class }
+          }
+        </sparql-query>
+        <div class="d-flex align-items-center">
+          <div class="subheader">Classes</div>
         </div>
-    </div>
-    <!-- properties card -->
-    <div class="col-sm-6 col-lg-3">
-        <div class="card">
-            <div class="card-body">
-                <sparql-query id="tripleCount" class="d-none">
-                    SELECT (COUNT(DISTINCT ?p) AS ?count) WHERE {
-                        ?s ?p ?o .
-                    }
-                </sparql-query>
-                <div class="d-flex align-items-center">
-                    <div class="subheader">Properties</div>
-                </div>
-                <div class="h1 mb-3">
-                    {{ if .QueryResults.tripleCount.Bindings }}{{ (index .QueryResults.tripleCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-                </div>
-                <p class="text-secondary">Distinct properties used in the graph.</p>
-            </div>
+        <div class="h1 mb-3">
+          {{ if .QueryResults.classCount.Bindings }}{{ (index .QueryResults.classCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
         </div>
+        <p class="text-secondary">Distinct classes (<a href="/resource/owl:Class">owl:Class</a>, <a href="/resource/rdfs:Class">rdfs:Class</a>) declared in the graph.</p>
+      </div>
     </div>
-    <!-- concepts card -->
-    <div class="col-sm-6 col-lg-3">
-        <div class="card">
-            <div class="card-body">
-                <sparql-query id="conceptCount" class="d-none">
-                    SELECT (COUNT(DISTINCT ?concept) AS ?count) WHERE {
-                        ?concept a skos:Concept .
-                    }
-                </sparql-query>
-                <div class="d-flex align-items-center">
-                    <div class="subheader">Concepts</div>
-                </div>
-                <div class="h1 mb-3">
-                    {{ if .QueryResults.conceptCount.Bindings }}{{ (index .QueryResults.conceptCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-                </div>
-                <p class="text-secondary"><a href="/resource/skos:Concept">SKOS concepts</a> defined in the graph.</p>
-            </div>
+  </div>
+  <!-- properties card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <sparql-query id="tripleCount" class="d-none">
+          SELECT (COUNT(DISTINCT ?p) AS ?count) WHERE {
+            ?s ?p ?o .
+          }
+        </sparql-query>
+        <div class="d-flex align-items-center">
+          <div class="subheader">Properties</div>
         </div>
-    </div>
-    <!-- defined terms card -->
-    <div class="col-sm-6 col-lg-3">
-        <div class="card">
-            <div class="card-body">
-                <sparql-query id="termCount" class="d-none">
-                    SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
-                        ?term a schema:DefinedTerm .
-                    }
-                </sparql-query>
-                <div class="d-flex align-items-center">
-                    <div class="subheader">Defined Terms</div>
-                </div>
-                <div class="h1 mb-3">
-                    {{ if .QueryResults.termCount.Bindings }}{{ (index .QueryResults.termCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-                </div>
-                <p class="text-secondary"><a href="/resource/schema:DefinedTerm">Defined terms</a> in the graph.</p>
-            </div>
+        <div class="h1 mb-3">
+          {{ if .QueryResults.tripleCount.Bindings }}{{ (index .QueryResults.tripleCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
         </div>
+        <p class="text-secondary">Distinct properties used in the graph.</p>
+      </div>
     </div>
+  </div>
+  <!-- concepts card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <sparql-query id="conceptCount" class="d-none">
+          SELECT (COUNT(DISTINCT ?concept) AS ?count) WHERE {
+            ?concept a skos:Concept .
+          }
+        </sparql-query>
+        <div class="d-flex align-items-center">
+          <div class="subheader">Concepts</div>
+        </div>
+        <div class="h1 mb-3">
+          {{ if .QueryResults.conceptCount.Bindings }}{{ (index .QueryResults.conceptCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
+        </div>
+        <p class="text-secondary"><a href="/resource/skos:Concept">SKOS concepts</a> defined in the graph.</p>
+      </div>
+    </div>
+  </div>
+  <!-- defined terms card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <sparql-query id="termCount" class="d-none">
+          SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
+            ?term a schema:DefinedTerm .
+          }
+        </sparql-query>
+        <div class="d-flex align-items-center">
+          <div class="subheader">Defined Terms</div>
+        </div>
+        <div class="h1 mb-3">
+          {{ if .QueryResults.termCount.Bindings }}{{ (index .QueryResults.termCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
+        </div>
+        <p class="text-secondary"><a href="/resource/schema:DefinedTerm">Defined terms</a> in the graph.</p>
+      </div>
+    </div>
+  </div>
+  <!-- defined term sets card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <sparql-query id="termSetCount" class="d-none">
+          SELECT (COUNT(DISTINCT ?termSet) AS ?count) WHERE {
+            ?termSet a schema:DefinedTermSet .
+          }
+        </sparql-query>
+        <div class="d-flex align-items-center">
+          <div class="subheader">Defined Term Sets</div>
+        </div>
+        <div class="h1 mb-3">
+          {{ if .QueryResults.termSetCount.Bindings }}{{ (index .QueryResults.termSetCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
+        </div>
+        <p class="text-secondary"><a href="/resource/schema:DefinedTermSet">Defined term sets</a> in the graph.</p>
+      </div>
+    </div>
+  </div>
 </div>
 
 {{ end }}

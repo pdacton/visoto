@@ -1,25 +1,42 @@
-{{ define "pageTitle" }}Properties{{ end }}
+{{ define "pageTitle" }}Property Overview{{ end }}
 {{ define "pageDescription" }}A list of all properties used in the triple store.{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Graph Infos" width="48" height="48">{{end}}
 
 {{ define "pageContent" }}
 <div class="row">
-    <div class="col">
+  <div class="col">
 
-        <!-- properties -->
-        <div class="mb-3">
-            <sparql-query id="allProperties" class="d-none">
-                SELECT DISTINCT ?property (COUNT(?s) AS ?occurences) WHERE {
-                    ?s ?property ?o .
-                } GROUP BY ?property
-            </sparql-query>
-            {{ template "sparqlTable" (dict 
-                    "result" .QueryResults.allProperties 
-                    "id" "allProperties"
-                    "title" "Properties"
-                    "icon" "layer-group")
-            }}
-        </div>            
+    <!-- properties -->
+    <div class="mb-3">
+      <sparql-query id="allProperties" class="d-none">
+        SELECT DISTINCT ?property ?iri ?domain WHERE {
+          {
+            # subquery to pick up all properties (declared and used)
+            SELECT DISTINCT ?property WHERE {
+              { ?property a rdf:Property } 
+              UNION { ?property rdfs:subPropertyOf ?p}
+              UNION { ?property a owl:ObjectProperty } 
+              UNION { ?property a owl:ValueProperty } 
+              UNION { ?s ?property ?o } .
+            }
+          }
+          OPTIONAL { ?property rdfs:label ?label }
+          OPTIONAL { ?property a ?type }
+          BIND (STR(?property) AS ?iri)
+          BIND(
+            IF(CONTAINS(?iri, "http://") || CONTAINS(?iri, "https://"),
+              REPLACE(REPLACE(?iri, "^https?://", ""), "/.*$", ""), "NO DOMAIN") AS ?domain )
+        }
+      </sparql-query>
+      {{ template "sparqlTable" (dict 
+           "result" .QueryResults.allProperties 
+           "id" "allProperties"
+           "title" "Properties"
+           "icon" "tag")
+      }}
+    </div>            
 
-    </div>
+  </div>
 </div>  
+
 {{ end}}

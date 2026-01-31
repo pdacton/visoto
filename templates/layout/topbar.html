@@ -11,7 +11,8 @@
 
     <!-- logo and title -->
     <a href="/" class="navbar-brand navbar-brand-autodark ms-3 mb-0 d-flex align-items-center text-decoration-none">
-      <img src="/static/img/visoto_light.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-1">
+      <img src="/static/img/visoto_light.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-1 logo-light">
+      <img src="/static/img/visoto_dark.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-1 logo-dark">
       <span class="d-none d-md-inline">visoto</span>
     </a>
 
@@ -33,6 +34,13 @@
       <div class="nav-item">
         <button id="theme-toggle" class="nav-link px-0" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Enable dark mode" data-bs-original-title="Enable dark mode">
           <i id="theme-icon" class="bi bi-moon" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      <!-- right sidebar toggle button -->
+      <div class="nav-item ms-2">
+        <button id="right-sidebar-toggle" class="nav-link px-0" type="button" aria-label="Toggle right sidebar">
+          <i data-lucide="sparkle" style="width: 1rem; height: 1rem;"></i>
         </button>
       </div>
     </div>

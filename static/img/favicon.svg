@@ -1,18 +1,1 @@
-<?xml version="1.0"?>
-<svg width="674" height="684" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg" xml:space="preserve">
- <defs>
-  <linearGradient id="fill0" spreadMethod="reflect" x1="1" x2="0" y1="1" y2="0">
-   <stop offset="0" stop-color="#E97132"/>
-   <stop offset="0.17" stop-color="#E97132"/>
-   <stop offset="1" stop-color="#FFC000"/>
-  </linearGradient>
- </defs>
- <g class="layer" display="inline">
-  <title>Layer 1</title>
-  <g id="svg_1" transform="translate(-0.0882303 0.959693) scale(1.34323 1.36594) translate(0.0882303 -0.959693) translate(-0.0480042 1) matrix(0.959774 0 0 0.959693 -264.852 -319.578)">
-   <path d="m277,593.5c0,-207.6 52,-259.5 260,-259.5c208,0 260,51.9 260,259.5c0,207.6 -52,259.5 -260,259.5c-208,0 -260,-51.9 -260,-259.5" fill="url(#fill0)" fill-rule="evenodd" id="svg_2"/>
-   <text fill="#FFFFFF" font-family="Aptos,Aptos_MSFontService,sans-serif" font-size="248" font-weight="700" id="svg_3" transform="matrix(1 0 0 1 276.952 585)">vis</text>
-   <text fill="#FFFFFF" font-family="Aptos,Aptos_MSFontService,sans-serif" font-size="248" font-weight="700" id="svg_4" transform="matrix(1 0 0 1 315.91 748)">oto</text>
-  </g>
- </g>
-</svg>
+<svg width="520" height="519" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" overflow="hidden"><defs><clipPath id="clip0"><rect x="3707" y="822" width="520" height="519"/></clipPath><linearGradient x1="4226.5" y1="1341.5" x2="3707.5" y2="821.5" gradientUnits="userSpaceOnUse" spreadMethod="reflect" id="fill1"><stop offset="0" stop-color="#E97132"/><stop offset="0.17" stop-color="#E97132"/><stop offset="1" stop-color="#FFC000"/></linearGradient></defs><g clip-path="url(#clip0)" transform="translate(-3707 -822)"><path d="M3707 1081.5C3707 873.9 3759 822 3967 822 4175 822 4227 873.9 4227 1081.5 4227 1289.1 4175 1341 3967 1341 3759 1341 3707 1289.1 3707 1081.5" fill="url(#fill1)" fill-rule="evenodd"/><path d="M3787.66 1039.36C3792.05 1025.69 3834.38 1027.07 3882.21 1042.44 3930.03 1057.81 3965.24 1081.34 3960.85 1095 3956.46 1108.67 3914.14 1107.29 3866.31 1091.92 3818.49 1076.56 3783.27 1053.02 3787.66 1039.36Z" fill="#000000" fill-rule="evenodd" fill-opacity="0.501961"/><path d="M3975.89 1110.21C3968.01 1098.21 3995.66 1066.13 4037.65 1038.56 4079.64 1010.98 4120.06 998.354 4127.94 1010.35 4135.82 1022.35 4108.17 1054.43 4066.18 1082 4024.19 1109.58 3983.77 1122.21 3975.89 1110.21Z" fill="#000000" fill-rule="evenodd" fill-opacity="0.501961"/><path d="M3813.65 1117.32C3818.04 1103.65 3860.37 1105.03 3908.2 1120.4 3956.02 1135.77 3991.23 1159.3 3986.84 1172.96 3982.45 1186.63 3940.12 1185.25 3892.3 1169.88 3844.47 1154.52 3809.26 1130.98 3813.65 1117.32Z" fill="#000000" fill-rule="evenodd" fill-opacity="0.501961"/><path d="M4001.88 1188.17C3994 1176.17 4021.65 1144.1 4063.64 1116.52 4105.63 1088.94 4146.05 1076.32 4153.93 1088.31 4161.81 1100.31 4134.16 1132.39 4092.17 1159.96 4050.18 1187.54 4009.76 1200.17 4001.88 1188.17Z" fill="#000000" fill-rule="evenodd" fill-opacity="0.501961"/><path d="M3813.65 1195.28C3818.04 1181.62 3860.37 1183 3908.2 1198.36 3956.02 1213.73 3991.23 1237.26 3986.84 1250.93 3982.45 1264.59 3940.12 1263.21 3892.3 1247.84 3844.47 1232.48 3809.26 1208.94 3813.65 1195.28Z" fill="#000000" fill-rule="evenodd" fill-opacity="0.501961"/><path d="M4001.88 1266.13C3994 1254.14 4021.65 1222.06 4063.64 1194.48 4105.63 1166.91 4146.05 1154.28 4153.93 1166.27 4161.81 1178.27 4134.16 1210.35 4092.17 1237.92 4050.18 1265.5 4009.76 1278.13 4001.88 1266.13Z" fill="#000000" fill-rule="evenodd" fill-opacity="0.501961"/><path d="M3966.06 1052.43C3952.22 1048.62 3951.81 1006.27 3965.15 957.841 3978.49 909.411 4000.52 873.24 4014.36 877.051 4028.19 880.862 4028.6 923.212 4015.26 971.642 4001.92 1020.07 3979.89 1056.24 3966.06 1052.43Z" fill="#000000" fill-rule="evenodd" fill-opacity="0.501961"/></g></svg>

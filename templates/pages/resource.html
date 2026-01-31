@@ -167,8 +167,8 @@
       <div class="mb-3">
         <sparql-query id="ontology" class="d-none">
           SELECT ?subject ?property ?object WHERE {
-            BIND (?? AS ?o)
-            ?s ?property ?o .
+            BIND (?? AS ?object)
+            ?subject ?property ?object .
             FILTER (?property IN (
               schema:rangeIncludes,
               schema:domainIncludes,

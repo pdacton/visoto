@@ -53,3 +53,135 @@
     color: var(--tblr-body-color);
     border-color: var(--tblr-border-color-translucent);
 }
+
+
+/* --- group row formatting --- */
+
+/* group-by row background */
+.tabulator .tabulator-row.tabulator-group {
+    background-color: var(--tblr-bg-surface-tertiary);
+    border-top: none;
+    border-bottom: 1px solid var(--tblr-border-color-translucent);
+    border-left: none;
+    border-right: none;
+    display: flex;
+    align-items: center;
+}
+
+
+/* --- table footer formatting --- */
+
+.tabulator .tabulator-footer {
+    background-color: var(--tblr-bg-surface-tertiary);
+    border-top: 1px solid var(--tblr-border-color-translucent);
+    color: var(--tblr-body-color);
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+}
+
+.tabulator .tabulator-footer-contents {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Page counter text */
+.tabulator .tabulator-page-counter {
+    color: var(--tblr-secondary);
+    font-size: 0.875rem;
+}
+
+/* Paginator container */
+.tabulator .tabulator-paginator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Page size dropdown label */
+.tabulator .tabulator-paginator label {
+    color: var(--tblr-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 0;
+    margin-right: 0.25rem;
+}
+
+/* Page size select dropdown - match Tabler form-select */
+.tabulator .tabulator-page-size {
+    padding: 0.375rem 2rem 0.375rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 400;
+    line-height: 1.4285714286;
+    color: var(--tblr-body-color);
+    background-color: var(--tblr-bg-forms);
+    border: 1px solid var(--tblr-border-color);
+    border-radius: var(--tblr-border-radius);
+    appearance: none;
+    background-image: var(--tblr-icon-chevron-down);
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1rem 1rem;
+    transition: border-color .15s ease-in-out, box-shadow .15s ease-in-out;
+    margin-right: 0.5rem;
+}
+
+.tabulator .tabulator-page-size:focus {
+    border-color: var(--tblr-primary);
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(var(--tblr-primary-rgb), 0.25);
+}
+
+/* Pagination buttons - match Tabler pagination style */
+.tabulator .tabulator-page {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.25rem 0.5rem;
+    margin-left: 2px;
+    font-size: 0.875rem;
+    color: var(--tblr-secondary);
+    text-decoration: none;
+    background-color: transparent;
+    border: 1px solid var(--tblr-border-color);
+    border-radius: var(--tblr-border-radius);
+    transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out;
+    cursor: pointer;
+    min-width: 2rem;
+}
+
+.tabulator .tabulator-page:hover:not(:disabled) {
+    color: var(--tblr-primary);
+    background-color: var(--tblr-hover-bg);
+    border-color: var(--tblr-border-color);
+}
+
+.tabulator .tabulator-page:focus {
+    outline: 0;
+    box-shadow: 0 0 0 0.25rem rgba(var(--tblr-primary-rgb), 0.25);
+}
+
+/* Active page button */
+.tabulator .tabulator-page.active {
+    color: var(--tblr-primary);
+    background-color: var(--tblr-active-bg);
+    border-color: var(--tblr-primary);
+    font-weight: var(--tblr-font-weight-medium);
+}
+
+/* Disabled pagination buttons */
+.tabulator .tabulator-page:disabled {
+    color: var(--tblr-disabled-color);
+    pointer-events: none;
+    background-color: var(--tblr-bg-surface);
+    border-color: var(--tblr-border-color);
+    opacity: 0.5;
+}
+
+/* Page numbers container */
+.tabulator .tabulator-pages {
+    display: inline-flex;
+    gap: 2px;
+}

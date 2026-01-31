@@ -40,12 +40,17 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Load theme from localStorage if available
   const savedTheme = localStorage.getItem('bs-theme');
+  const currentTheme = html.getAttribute('data-bs-theme');
+
   if (savedTheme) {
-    html.setAttribute('data-bs-theme', savedTheme);
+    // Only set attribute if it's different from current value to avoid triggering MutationObserver unnecessarily
+    if (savedTheme !== currentTheme) {
+      html.setAttribute('data-bs-theme', savedTheme);
+    }
     updateThemeToggle(savedTheme);
   } else {
     // Set icon based on current theme (default)
-    updateThemeToggle(html.getAttribute('data-bs-theme'));
+    updateThemeToggle(currentTheme);
   }
 
   themeToggle?.addEventListener('click', function () {

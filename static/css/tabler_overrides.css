@@ -44,12 +44,122 @@ html {
     transform: rotate(180deg);
 }
 
-/* --- Table styling --- */
+/* --- Theme-aware logo switching --- */
 
-/* Table footer overrides, to match the header styling */
-.tabulator .tabulator-footer {
-    background-color: #f9fafb;
-    border-top: 0px solid #dee2e6;
-    color: var(--tblr-secondary);
-    font-weight: var(--tblr-font-weight-medium);
+/* Disable Tabler's automatic invert filter since we provide separate light/dark logos */
+[data-bs-theme="dark"] .navbar-brand-autodark .navbar-brand-image {
+    filter: none !important;
+}
+
+/* Show light logo in light mode, hide dark logo */
+[data-bs-theme="light"] .logo-light {
+    display: inline-block;
+}
+
+[data-bs-theme="light"] .logo-dark {
+    display: none;
+}
+
+/* Show dark logo in dark mode, hide light logo */
+[data-bs-theme="dark"] .logo-light {
+    display: none;
+}
+
+[data-bs-theme="dark"] .logo-dark {
+    display: inline-block;
+}
+
+/* --- Right Sidebar Positioning --- */
+
+aside.right-sidebar {
+    position: fixed !important;
+    right: 0 !important;
+    left: auto !important;
+    top: 56px; /* topbar height */
+    height: calc(100vh - 56px);
+    width: 250px; /* default width, overridden by JS */
+    z-index: 1040; /* higher than left sidebar, below modals */
+    background-color: var(--tblr-bg-surface);
+    border-left: 1px solid var(--tblr-border-color);
+    overflow-y: auto;
+}
+
+@media (max-width: 991.98px) {
+    .right-sidebar {
+        top: 0;
+        height: 100vh;
+        width: 250px !important; /* fixed width on mobile */
+    }
+}
+
+/* Resize handle (desktop only) */
+.right-sidebar-resize-handle {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    cursor: ew-resize;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+    z-index: 10; /* above sidebar content */
+}
+
+.right-sidebar-resize-handle:hover {
+    background-color: var(--tblr-primary);
+    opacity: 0.5;
+}
+
+/* Hide resize handle on mobile */
+@media (max-width: 991.98px) {
+    .right-sidebar-resize-handle {
+        display: none;
+    }
+}
+
+/* Mobile overlay mode */
+.right-sidebar-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    right: 0;
+    height: 100vh !important;
+    width: 250px !important;
+    z-index: 1050;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+.right-sidebar-overlay.show {
+    transform: translateX(0);
+}
+
+/* Mobile backdrop */
+.right-sidebar-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1045;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.right-sidebar-backdrop.show {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Dual sidebar support */
+.page-wrapper {
+    transition: margin-left 0.3s cubic-bezier(.4,0,.2,1),
+                margin-right 0.3s cubic-bezier(.4,0,.2,1);
+}
+
+/* Prevent text selection during resize */
+body.resizing {
+    user-select: none;
+    cursor: ew-resize !important;
 }

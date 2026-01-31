@@ -1,5 +1,6 @@
-{{ define "pageTitle" }}Classes{{ end }}
+{{ define "pageTitle" }}Class overview{{ end }}
 {{ define "pageDescription" }}A list of all classes in the triple store.{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Graph Infos" width="48" height="48">{{end}}
 
 {{ define "pageContent" }}
 
@@ -8,19 +9,31 @@
 
     <!-- classes -->
     <div class="mb-3">
-        <sparql-query id="allClasses" class="d-none">
-            SELECT ?class ?iri (COUNT(?s) AS ?instances) WHERE {
-                ?s (rdf:type|owl:type) ?class .
-                BIND (STR(?class) AS ?iri)
-            } GROUP BY ?class ?iri
-        </sparql-query>
-        {{ template "sparqlTable" (dict 
-                "result" .QueryResults.allClasses 
-                "id" "allClasses"
-                "title" "Classes"
-                "icon" "layer-group")
-        }}
-    </div>       
+      <sparql-query id="allClasses" class="d-none">
+        SELECT ?class (SAMPLE(?label) AS ?sampled_label) ?type ?instances ?iri ?domain WHERE {
+          {
+            # subquery to count instances
+            SELECT DISTINCT ?class (COUNT(?instance) AS ?instances) WHERE {
+              { ?class a rdf:Class } UNION { ?class a owl:Class } UNION { ?instance a ?class } .
+            } GROUP BY ?class
+          }
+          OPTIONAL { ?class rdfs:label ?label }
+          OPTIONAL { ?class a ?type }
+          BIND (STR(?class) AS ?iri)
+          BIND(
+            IF(CONTAINS(?iri, "http://") || CONTAINS(?iri, "https://"),
+              REPLACE(REPLACE(?iri, "^https?://", ""), "/.*$", ""),
+              "NO DOMAIN") AS ?domain)
+
+        } GROUP BY ?class ?type ?instances ?iri ?domain
+      </sparql-query>
+      {{ template "sparqlTable" (dict 
+          "result" .QueryResults.allClasses 
+          "id" "allClasses"
+          "title" "Classes"
+          "icon" "squircle")
+      }}
+    </div>
 
   </div>
 </div>  

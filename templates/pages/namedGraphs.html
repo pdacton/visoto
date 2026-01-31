@@ -1,0 +1,30 @@
+{{ define "pageTitle" }}Named Graphs Overview{{ end }}
+{{ define "pageDescription" }}A list of all named graphs in the triple store and their classes.{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Graph Infos" width="48" height="48">{{end}}
+
+{{ define "pageContent" }}
+
+<div class="row">
+  <div class="col">
+
+    <!-- named graphs -->
+    <div class="mb-3">
+      <sparql-query id="namedGraphs" class="d-none">
+        SELECT ?graph ?class (STR(?class) AS ?iri) WHERE {
+          GRAPH ?graph {
+            OPTIONAL { ?instance a ?class . }
+          }
+        } GROUP BY ?graph ?class 
+      </sparql-query>
+      {{ template "sparqlTable" (dict 
+          "result" .QueryResults.namedGraphs 
+          "id" "namedGraphs"
+          "title" "Named Graphs"
+          "icon" "container")
+      }}
+    </div>  
+
+  </div>
+</div>  
+
+{{ end}}
