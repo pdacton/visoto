@@ -18,6 +18,7 @@ type QueryResult struct {
 	Vars     []string             // Variable names from head.vars
 	Bindings []map[string]Binding // bindings: value and type
 	Error    string               // Error message if query failed
+	Query    string               // The finalized SPARQL query sent to endpoint (with PREFIXes)
 }
 
 // PageData wraps all data retrieved for a resource

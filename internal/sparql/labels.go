@@ -292,7 +292,7 @@ func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages [
 	// DEBUG: print the query
 	fmt.Printf("LABEL QUERY:\n%s\n", query)
 
-	response, err := p.querySparqlEndpoint(endpointURL, query)
+	response, _, err := p.querySparqlEndpoint(endpointURL, query)
 	if err != nil {
 		log := logger.Get()
 		log.Warn("label query failed, using fallback",

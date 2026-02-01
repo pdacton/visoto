@@ -64,16 +64,19 @@ func queryNeedsPrefixes(query string) bool {
 }
 
 // querySparqlEndpoint sends a SPARQL query to the specified endpoint and returns the response
-func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, error) {
+func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, string, error) {
+
+	// Store original query as finalized
+	finalizedQuery := query
 
 	// prepend the query with PREFIX declarations if missing and needed
 	if !hasExistingPrefixes(query) && queryNeedsPrefixes(query) {
-		query = buildPrefixBlock(p.config.Prefixes) + query
+		finalizedQuery = buildPrefixBlock(p.config.Prefixes) + query
 	}
 
 	// Prepare the request parameters
 	params := url.Values{}
-	params.Set("query", query)
+	params.Set("query", finalizedQuery)
 	params.Set("format", "application/sparql-results+json")
 	encodedParams := params.Encode()
 
@@ -84,7 +87,7 @@ func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, e
 		log.Error("failed to create HTTP request",
 			slog.String("error", err.Error()),
 			slog.String("endpoint", endpointURL))
-		return nil, fmt.Errorf("failed to create request: %w", err)
+		return nil, "", fmt.Errorf("failed to create request: %w", err)
 	}
 
 	// Set appropriate headers
@@ -109,7 +112,7 @@ func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, e
 		log.Error("failed to execute HTTP request",
 			slog.String("error", err.Error()),
 			slog.String("endpoint", endpointURL))
-		return nil, fmt.Errorf("failed to execute request: %w", err)
+		return nil, "", fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -129,9 +132,9 @@ func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, e
 		// Log the query at debug level
 		log.Debug("executing SPARQL query",
 			slog.String("endpoint", endpointURL),
-			slog.String("query", query))
+			slog.String("query", finalizedQuery))
 
-		return nil, fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
+		return nil, "", fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
 	}
 
 	// Read the response body
@@ -141,14 +144,14 @@ func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, e
 		log.Error("failed to read response body",
 			slog.String("error", err.Error()),
 			slog.String("endpoint", endpointURL))
-		return nil, fmt.Errorf("failed to read response body: %w", err)
+		return nil, "", fmt.Errorf("failed to read response body: %w", err)
 	}
 
 	// fmt.Println("=== SPARQL Response Body ===")
 	// fmt.Println(string(body))
 	// fmt.Println("=== End SPARQL Response Body ===")
 
-	return body, nil
+	return body, finalizedQuery, nil
 }
 
 // simplifyBindings converts sparqlResponse to simplified QueryResult format
@@ -179,7 +182,7 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 
 // executeQuery executes a single SPARQL query and returns simplified result
 func (p *Preprocessor) executeQuery(endpointURL, query string, resolveLabels bool, acceptLanguage string) QueryResult {
-	response, err := p.querySparqlEndpoint(endpointURL, query)
+	response, finalizedQuery, err := p.querySparqlEndpoint(endpointURL, query)
 	if err != nil {
 		return QueryResult{Error: fmt.Sprintf("Query execution failed: %v", err)}
 	}
@@ -190,6 +193,7 @@ func (p *Preprocessor) executeQuery(endpointURL, query string, resolveLabels boo
 	}
 
 	result := simplifyBindings(sparqlResp)
+	result.Query = finalizedQuery
 
 	// Perform label enrichment if requested
 	if resolveLabels {
@@ -213,7 +217,7 @@ func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 	query := fmt.Sprintf("SELECT ?type WHERE { <%s> (a|owl:type) ?type }", iri)
 
 	// Execute query
-	response, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
+	response, _, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query types for IRI %s: %w", iri, err)
 	}
@@ -284,7 +288,7 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 // ExecuteQuery executes a raw SPARQL query and returns simplified results
 // This method is useful for executing queries without template processing
 func (p *Preprocessor) ExecuteQuery(query string) (QueryResult, error) {
-	response, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
+	response, finalizedQuery, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
 	if err != nil {
 		return QueryResult{Error: err.Error()}, err
 	}
@@ -294,5 +298,7 @@ func (p *Preprocessor) ExecuteQuery(query string) (QueryResult, error) {
 		return QueryResult{Error: err.Error()}, err
 	}
 
-	return simplifyBindings(sparqlResp), nil
+	result := simplifyBindings(sparqlResp)
+	result.Query = finalizedQuery
+	return result, nil
 }

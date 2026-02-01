@@ -14,6 +14,22 @@ html {
     padding: 0 !important;
 }
 
+/* Navbar icon-only nav-link buttons - square with hover background */
+.navbar .nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
+    padding: 0.5rem 0;
+    border-radius: var(--tblr-border-radius);
+    transition: color 0.3s ease, background-color 0.3s ease;
+}
+
+.navbar .nav-link:hover {
+    background-color: var(--tblr-bg-surface-secondary);
+}
+
 /* --- Sidebar positioning --- */
 
 /* Make sidebar shorter by the height of the topbar on desktop, so they do not overlap */
@@ -162,4 +178,11 @@ aside.right-sidebar {
 body.resizing {
     user-select: none;
     cursor: ew-resize !important;
+}
+
+/* --- Tabulator table styling --- */
+
+/* Align Tabulator row borders with Tabler's border color (adapts to light/dark mode) */
+.tabulator .tabulator-row {
+    border-bottom: 1px solid var(--tblr-border-color);
 }
