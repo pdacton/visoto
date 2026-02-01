@@ -94,10 +94,13 @@ aside.right-sidebar {
     top: 56px; /* topbar height */
     height: calc(100vh - 56px);
     width: 250px; /* default width, overridden by JS */
+    margin-right: -250px; /* start closed by default */
     z-index: 1040; /* higher than left sidebar, below modals */
     background-color: var(--tblr-bg-surface);
     border-left: 1px solid var(--tblr-border-color);
     overflow-y: auto;
+    /* Prevent transitions on page load */
+    transition: none;
 }
 
 @media (max-width: 991.98px) {

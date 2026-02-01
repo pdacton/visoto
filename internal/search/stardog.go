@@ -24,7 +24,8 @@ func (s *StardogProvider) BuildQuery(params SearchParams) (string, error) {
 	// Add PREFIX for Stardog FTS
 	queryParts = append(queryParts, "PREFIX fts: <tag:stardog:api:search:>")
 	queryParts = append(queryParts, "")
-	queryParts = append(queryParts, "SELECT * WHERE {")
+	// Start SELECT clause, we're excluding highlight from the results, maybe add later for highlighting
+	queryParts = append(queryParts, "SELECT ?class ?subject ?property ?matchedText ?score WHERE {")
 
 	// Bind search text
 	queryParts = append(queryParts, fmt.Sprintf(`  BIND ("%s" AS ?textSearch)`, escapeString(params.Query)))

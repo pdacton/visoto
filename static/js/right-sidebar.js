@@ -13,21 +13,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (!rightSidebar || !pageWrapper || !rightSidebarToggle) return;
 
-  // Add transition classes for smooth sliding
-  rightSidebar.style.transition = 'margin-right 0.3s cubic-bezier(.4,0,.2,1), transform 0.3s cubic-bezier(.4,0,.2,1)';
-  pageWrapper.style.transition = pageWrapper.style.transition || 'margin-left 0.3s cubic-bezier(.4,0,.2,1), margin-right 0.3s cubic-bezier(.4,0,.2,1)';
+  // Disable transitions initially to prevent flash on page load
+  rightSidebar.style.transition = 'none';
+  pageWrapper.style.transition = 'none';
 
   // Width constraints
   const MIN_WIDTH = 200;
   const MAX_WIDTH = 600;
   const DEFAULT_WIDTH = 250;
+  const TRANSITION_DELAY = 100; // ms to wait before enabling transitions after page load
+  const TRANSITION_STYLE = 'margin-right 0.3s cubic-bezier(.4,0,.2,1), transform 0.3s cubic-bezier(.4,0,.2,1)';
+  const PAGE_WRAPPER_TRANSITION = 'margin-left 0.3s cubic-bezier(.4,0,.2,1), margin-right 0.3s cubic-bezier(.4,0,.2,1)';
+
+  // Safe localStorage wrapper
+  function getLocalStorage(key, defaultValue = null) {
+    try {
+      return localStorage.getItem(key);
+    } catch (e) {
+      console.warn('localStorage access failed:', e);
+      return defaultValue;
+    }
+  }
+
+  function setLocalStorage(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (e) {
+      console.warn('localStorage write failed:', e);
+    }
+  }
 
   // Restore saved width from localStorage or use default
-  let sidebarWidth = parseInt(localStorage.getItem('rightSidebarWidth')) || DEFAULT_WIDTH;
+  let sidebarWidth = parseInt(getLocalStorage('rightSidebarWidth')) || DEFAULT_WIDTH;
   sidebarWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, sidebarWidth));
 
   // Restore saved open/closed state from localStorage (default: CLOSED)
-  let rightSidebarOpen = localStorage.getItem('rightSidebarOpen') === 'true';
+  let rightSidebarOpen = getLocalStorage('rightSidebarOpen') === 'true';
   const MOBILE_BREAKPOINT = 992;
 
   function isMobile() {
@@ -41,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function () {
     pageWrapper.style.marginRight = sidebarWidth + 'px';
     rightSidebar.classList.remove('right-sidebar-overlay');
     rightSidebarOpen = true;
-    localStorage.setItem('rightSidebarOpen', 'true');
+    setLocalStorage('rightSidebarOpen', 'true');
   }
 
   function closeRightSidebarDesktop() {
@@ -51,7 +72,7 @@ document.addEventListener('DOMContentLoaded', function () {
     pageWrapper.style.marginRight = '0';
     rightSidebar.classList.remove('right-sidebar-overlay');
     rightSidebarOpen = false;
-    localStorage.setItem('rightSidebarOpen', 'false');
+    setLocalStorage('rightSidebarOpen', 'false');
   }
 
   function openRightSidebarMobile() {
@@ -67,7 +88,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Add backdrop
     addBackdrop();
     rightSidebarOpen = true;
-    localStorage.setItem('rightSidebarOpen', 'true');
+    setLocalStorage('rightSidebarOpen', 'true');
   }
 
   function closeRightSidebarMobile() {
@@ -79,11 +100,20 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     removeBackdrop();
     rightSidebarOpen = false;
-    localStorage.setItem('rightSidebarOpen', 'false');
+    setLocalStorage('rightSidebarOpen', 'false');
   }
+
+  let backdropRemovalTimeout = null;
 
   function addBackdrop() {
     let backdrop = document.querySelector('.right-sidebar-backdrop');
+
+    // Cancel any pending removal
+    if (backdropRemovalTimeout) {
+      clearTimeout(backdropRemovalTimeout);
+      backdropRemovalTimeout = null;
+    }
+
     if (!backdrop) {
       backdrop = document.createElement('div');
       backdrop.className = 'right-sidebar-backdrop';
@@ -99,7 +129,10 @@ document.addEventListener('DOMContentLoaded', function () {
     const backdrop = document.querySelector('.right-sidebar-backdrop');
     if (backdrop) {
       backdrop.classList.remove('show');
-      setTimeout(() => backdrop.remove(), 300);
+      backdropRemovalTimeout = setTimeout(() => {
+        backdrop.remove();
+        backdropRemovalTimeout = null;
+      }, 300);
     }
   }
 
@@ -128,6 +161,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
   initializeRightSidebar();
 
+  // Enable transitions after initialization
+  setTimeout(() => {
+    rightSidebar.style.transition = TRANSITION_STYLE;
+    pageWrapper.style.transition = PAGE_WRAPPER_TRANSITION;
+  }, TRANSITION_DELAY);
+
   // Toggle handler
   rightSidebarToggle.addEventListener('click', function (e) {
     e.preventDefault();
@@ -146,14 +185,34 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Close button handler (inside sidebar)
+  const rightSidebarClose = document.getElementById('right-sidebar-close');
+  if (rightSidebarClose) {
+    rightSidebarClose.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (isMobile()) {
+        closeRightSidebarMobile();
+      } else {
+        closeRightSidebarDesktop();
+      }
+    });
+  }
+
   // Handle resize - reinitialize on breakpoint change
   let wasMobile = isMobile();
   window.addEventListener('resize', function() {
     const nowMobile = isMobile();
     if (wasMobile !== nowMobile) {
-      // Breakpoint changed
+      // Breakpoint changed - disable transitions during reinitialization
       wasMobile = nowMobile;
+      rightSidebar.style.transition = 'none';
+      pageWrapper.style.transition = 'none';
       initializeRightSidebar();
+      // Re-enable transitions after a short delay
+      setTimeout(() => {
+        rightSidebar.style.transition = TRANSITION_STYLE;
+        pageWrapper.style.transition = PAGE_WRAPPER_TRANSITION;
+      }, 50);
     }
   });
 
@@ -204,8 +263,8 @@ document.addEventListener('DOMContentLoaded', function () {
       isResizing = false;
 
       // Re-enable transitions
-      rightSidebar.style.transition = '';
-      pageWrapper.style.transition = '';
+      rightSidebar.style.transition = TRANSITION_STYLE;
+      pageWrapper.style.transition = PAGE_WRAPPER_TRANSITION;
 
       // Restore cursor and text selection
       document.body.style.cursor = '';
@@ -213,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function () {
       document.body.classList.remove('resizing');
 
       // Save width to localStorage
-      localStorage.setItem('rightSidebarWidth', sidebarWidth);
+      setLocalStorage('rightSidebarWidth', sidebarWidth);
     });
   }
 });

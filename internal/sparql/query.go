@@ -180,35 +180,6 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 	return result
 }
 
-// executeQuery executes a single SPARQL query and returns simplified result
-func (p *Preprocessor) executeQuery(endpointURL, query string, resolveLabels bool, acceptLanguage string) QueryResult {
-	response, finalizedQuery, err := p.querySparqlEndpoint(endpointURL, query)
-	if err != nil {
-		return QueryResult{Error: fmt.Sprintf("Query execution failed: %v", err)}
-	}
-
-	var sparqlResp sparqlResponse
-	if err := json.Unmarshal(response, &sparqlResp); err != nil {
-		return QueryResult{Error: fmt.Sprintf("Failed to parse response: %v", err)}
-	}
-
-	result := simplifyBindings(sparqlResp)
-	result.Query = finalizedQuery
-
-	// Perform label enrichment if requested
-	if resolveLabels {
-		initLabelCache() // Ensure cleanup goroutine started
-
-		iris := extractIRIs(result)
-		if len(iris) > 0 {
-			languages := parseAcceptLanguage(acceptLanguage)
-			labelMap := fetchLabels(p, endpointURL, iris, languages)
-			enrichWithLabels(&result, labelMap)
-		}
-	}
-
-	return result
-}
 
 // QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI
 // Returns a slice of type URIs
@@ -265,8 +236,11 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 			}
 
 			// Execute query with label resolution flag
-			result := p.executeQuery(endpointURL, query.Query, query.ResolveLabels, acceptLanguage)
-			resultsChan <- queryExecutionResult{ID: query.ID, Result: result}
+			queryResult, err := p.ExecuteQuery(query.Query, query.ResolveLabels, acceptLanguage)
+			if err != nil {
+				queryResult = QueryResult{Error: fmt.Sprintf("Query execution failed: %v", err)}
+			}
+			resultsChan <- queryExecutionResult{ID: query.ID, Result: queryResult}
 		}(q)
 	}
 
@@ -287,7 +261,7 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 
 // ExecuteQuery executes a raw SPARQL query and returns simplified results
 // This method is useful for executing queries without template processing
-func (p *Preprocessor) ExecuteQuery(query string) (QueryResult, error) {
+func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string) (QueryResult, error) {
 	response, finalizedQuery, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
 	if err != nil {
 		return QueryResult{Error: err.Error()}, err
@@ -300,5 +274,18 @@ func (p *Preprocessor) ExecuteQuery(query string) (QueryResult, error) {
 
 	result := simplifyBindings(sparqlResp)
 	result.Query = finalizedQuery
+
+	// Perform label enrichment if requested
+	if resolveLabels {
+		initLabelCache() // Ensure cleanup goroutine started
+
+		iris := extractIRIs(result)
+		if len(iris) > 0 {
+			languages := parseAcceptLanguage(acceptLanguage)
+			labelMap := fetchLabels(p, p.config.EndpointURL, iris, languages)
+			enrichWithLabels(&result, labelMap)
+		}
+	}
+
 	return result, nil
 }

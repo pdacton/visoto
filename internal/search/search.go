@@ -49,7 +49,7 @@ func ParseParams(c *gin.Context) SearchParams {
 }
 
 // Execute performs the search and returns results
-func (s *Searcher) Execute(params SearchParams) SearchResult {
+func (s *Searcher) Execute(params SearchParams, acceptLanguage string) SearchResult {
 	log := logger.Get()
 
 	result := SearchResult{
@@ -76,8 +76,8 @@ func (s *Searcher) Execute(params SearchParams) SearchResult {
 		slog.String("property", params.Property),
 		slog.String("sparql", query))
 
-	// Execute via SPARQL preprocessor
-	queryResult, err := s.preprocessor.ExecuteQuery(query)
+	// Execute via SPARQL preprocessor with label enrichment enabled
+	queryResult, err := s.preprocessor.ExecuteQuery(query, true, acceptLanguage)
 	if err != nil {
 		log.Error("search query execution failed",
 			slog.String("error", err.Error()),
@@ -112,7 +112,8 @@ func (s *Searcher) Handler() gin.HandlerFunc {
 		}
 
 		// Execute search
-		result := s.Execute(params)
+		acceptLanguage := c.Request.Header.Get("Accept-Language")
+		result := s.Execute(params, acceptLanguage)
 
 		// Render results
 		c.HTML(http.StatusOK, "pages/search.html", gin.H{
