@@ -9,6 +9,9 @@ main
 *.so
 *.dylib
 
+# config files (have potentially API keys)
+visoto.config
+
 # Test binary, built with `go test -c`
 *.test
 

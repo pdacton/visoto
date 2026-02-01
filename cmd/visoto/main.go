@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"hutzli.org/visoto/internal/chat"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
 	"hutzli.org/visoto/internal/resource"
@@ -176,6 +177,13 @@ func main() {
 			slog.Int("prefixes", len(cfg.RDF.ParsedPrefixes)))
 	}
 
+	// Validate Gemini API key
+	if cfg.Application.GeminiAPIKey == "" {
+		log.Warn("Gemini API key not configured - chat feature will not work",
+			slog.String("config_key", "application.gemini_api_key"),
+			slog.String("config_file", "visoto.config"))
+	}
+
 	// Initialize SPARQL preprocessor with config values
 	sparqlPreproc = sparql.New(sparql.Config{
 		EndpointURL: cfg.Application.SparqlEndpoint,
@@ -206,6 +214,7 @@ func main() {
 	router.GET("/", homeHandler)
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.GET("/search", searcher.Handler())
+	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey))
 	router.GET("/resource/*path", resourceHandler)
 	router.GET("/:page", staticPageHandler)
 

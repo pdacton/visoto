@@ -1,6 +1,6 @@
 <!-- Default Class Template, for any resource which doesn't have a specific template -->
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|rico:title) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}

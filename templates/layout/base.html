@@ -33,6 +33,7 @@
     <link rel="stylesheet" href="/static/css/tabulator_overrides.css">
     <link rel="stylesheet" href="/static/css/wunderbaum_overrides.css">
     <link rel="stylesheet" href="/static/css/mermaid_overrides.css">
+    <link rel="stylesheet" href="/static/css/chat.css">
 
   </head>
 
@@ -75,6 +76,15 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.3.2/dist/js/tabler.js"></script>
+    <script>
+      // Initialize Bootstrap tooltips - required for Bootstrap 5
+      // Tooltips must be explicitly initialized as they are opt-in for performance reasons
+      // See: https://getbootstrap.com/docs/5.0/components/tooltips/#example-enable-tooltips-everywhere
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl)
+      })
+    </script>
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/wunderbaum@0/dist/wunderbaum.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
@@ -156,6 +166,16 @@
     <script src="/static/js/sidebar.js"></script>
     <script src="/static/js/right-sidebar.js"></script>
     <script src="/static/js/search.js"></script>
+
+    <!-- Embed resource data for chat -->
+    {{ if .ResourceIRI }}
+    <script id="resource-data" type="application/json">
+      {{ toJSON . }}
+    </script>
+    {{ end }}
+
+    <!-- Chat functionality -->
+    <script src="/static/js/chat.js"></script>
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>

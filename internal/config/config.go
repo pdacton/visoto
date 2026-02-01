@@ -28,7 +28,8 @@ type Config struct {
 type ApplicationConfig struct {
 	Port           int    `toml:"port"`
 	SparqlEndpoint string `toml:"sparqlEndpoint"`
-	Timeout        int    `toml:"timeout"` // timeout in seconds
+	Timeout        int    `toml:"timeout"`      // timeout in seconds
+	GeminiAPIKey   string `toml:"gemini_api_key"` // API key for Google Gemini
 }
 
 // RDFConfig holds RDF-related settings

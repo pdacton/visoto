@@ -26,8 +26,8 @@ document.addEventListener('DOMContentLoaded', function () {
   let sidebarWidth = parseInt(localStorage.getItem('rightSidebarWidth')) || DEFAULT_WIDTH;
   sidebarWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, sidebarWidth));
 
-  // Set initial state - CLOSED by default
-  let rightSidebarOpen = false;
+  // Restore saved open/closed state from localStorage (default: CLOSED)
+  let rightSidebarOpen = localStorage.getItem('rightSidebarOpen') === 'true';
   const MOBILE_BREAKPOINT = 992;
 
   function isMobile() {
@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
     pageWrapper.style.marginRight = sidebarWidth + 'px';
     rightSidebar.classList.remove('right-sidebar-overlay');
     rightSidebarOpen = true;
+    localStorage.setItem('rightSidebarOpen', 'true');
   }
 
   function closeRightSidebarDesktop() {
@@ -50,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
     pageWrapper.style.marginRight = '0';
     rightSidebar.classList.remove('right-sidebar-overlay');
     rightSidebarOpen = false;
+    localStorage.setItem('rightSidebarOpen', 'false');
   }
 
   function openRightSidebarMobile() {
@@ -65,6 +67,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Add backdrop
     addBackdrop();
     rightSidebarOpen = true;
+    localStorage.setItem('rightSidebarOpen', 'true');
   }
 
   function closeRightSidebarMobile() {
@@ -76,6 +79,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     removeBackdrop();
     rightSidebarOpen = false;
+    localStorage.setItem('rightSidebarOpen', 'false');
   }
 
   function addBackdrop() {
@@ -99,10 +103,10 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  // Initialize sidebar state based on screen size
+  // Initialize sidebar state based on screen size and saved state
   function initializeRightSidebar() {
     if (isMobile()) {
-      // Clear any inline styles from desktop mode
+      // On mobile, always start closed (overlay mode doesn't persist across pages)
       rightSidebar.style.marginRight = '';
       rightSidebar.style.transform = '';
       rightSidebar.style.width = '';
@@ -113,8 +117,12 @@ document.addEventListener('DOMContentLoaded', function () {
       }
       rightSidebarOpen = false;
     } else {
-      // Desktop: CLOSED by default (key difference from left sidebar)
-      closeRightSidebarDesktop();
+      // Desktop: restore saved state or default to CLOSED
+      if (rightSidebarOpen) {
+        openRightSidebarDesktop();
+      } else {
+        closeRightSidebarDesktop();
+      }
     }
   }
 

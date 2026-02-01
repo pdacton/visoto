@@ -39,6 +39,7 @@ func makeDict(values ...interface{}) (map[string]interface{}, error) {
 
 // toJSON converts any value to JSON for embedding in script tags
 // Returns template.HTML to prevent any escaping
+// HTML escaping (< > &) is kept for safety when embedding in <script> tags
 // Usage in templates: {{ toJSON . }}
 func toJSON(v interface{}) (template.HTML, error) {
 	jsonBytes, err := json.Marshal(v)
@@ -49,6 +50,7 @@ func toJSON(v interface{}) (template.HTML, error) {
 }
 
 // toJSONPretty converts any value to indented JSON for display
+// HTML escaping (< > &) is kept for safety when embedding in HTML
 // Usage in templates: {{ toJSONPretty . }}
 func toJSONPretty(v interface{}) (template.HTML, error) {
 	jsonBytes, err := json.MarshalIndent(v, "", "  ")

@@ -4,10 +4,40 @@
 
   <div class="container-fluid">
     <div class="collapse navbar-collapse" id="right-sidebar-menu">
-      <ul class="navbar-nav pt-lg-3">
-        <!-- Empty content for now -->
-        <!-- Future: AI assistant, notifications, contextual help -->
-      </ul>
+      <div class="chat-container d-flex flex-column h-100">
+        <!-- Chat header with clear button -->
+        <div class="chat-header p-3 border-bottom d-flex justify-content-between align-items-center">
+          <h3 class="mb-0">Resource Assistant</h3>
+          <button id="chat-clear" class="btn btn-sm btn-ghost-secondary"
+                  title="Clear chat history" aria-label="Clear chat history">
+            <i data-lucide="trash-2"></i>
+          </button>
+        </div>
+
+        <!-- Messages area (scrollable) -->
+        <div id="chat-messages" class="flex-grow-1 overflow-auto p-3">
+          <!-- Initial state: loading -->
+          <div id="chat-initial" class="text-muted text-center mt-5">
+            <div class="spinner-border spinner-border-sm mb-2" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p>Analyzing resource...</p>
+          </div>
+        </div>
+
+        <!-- Input area (fixed at bottom) -->
+        <div class="chat-input p-3 border-top">
+          <form id="chat-form">
+            <div class="input-group">
+              <input type="text" id="chat-input" class="form-control"
+                     placeholder="Ask a question..." autocomplete="off">
+              <button type="submit" class="btn btn-primary" id="chat-send">
+                <i data-lucide="send"></i>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   </div>
 </aside>
