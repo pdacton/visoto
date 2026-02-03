@@ -16,6 +16,14 @@ import (
 	"hutzli.org/visoto/internal/logger"
 )
 
+// finalizeQuery adds PREFIX declarations to query if needed
+func (p *Preprocessor) finalizeQuery(query string) string {
+	if !hasExistingPrefixes(query) && queryNeedsPrefixes(query) {
+		return buildPrefixBlock(p.config.Prefixes) + query
+	}
+	return query
+}
+
 // buildPrefixBlock generates SPARQL PREFIX declarations from config
 func buildPrefixBlock(prefixes []config.Prefix) string {
 	if len(prefixes) == 0 {
@@ -66,13 +74,8 @@ func queryNeedsPrefixes(query string) bool {
 // querySparqlEndpoint sends a SPARQL query to the specified endpoint and returns the response
 func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, string, error) {
 
-	// Store original query as finalized
-	finalizedQuery := query
-
-	// prepend the query with PREFIX declarations if missing and needed
-	if !hasExistingPrefixes(query) && queryNeedsPrefixes(query) {
-		finalizedQuery = buildPrefixBlock(p.config.Prefixes) + query
-	}
+	// Finalize query with PREFIX declarations if needed
+	finalizedQuery := p.finalizeQuery(query)
 
 	// Prepare the request parameters
 	params := url.Values{}
@@ -229,7 +232,10 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 			case <-ctx.Done():
 				resultsChan <- queryExecutionResult{
 					ID:     query.ID,
-					Result: QueryResult{Error: "Query timeout exceeded"},
+					Result: QueryResult{
+						Error: "Query timeout exceeded",
+						Query: p.finalizeQuery(query.Query),
+					},
 				}
 				return
 			default:
@@ -238,7 +244,8 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 			// Execute query with label resolution flag
 			queryResult, err := p.ExecuteQuery(query.Query, query.ResolveLabels, acceptLanguage)
 			if err != nil {
-				queryResult = QueryResult{Error: fmt.Sprintf("Query execution failed: %v", err)}
+				// Preserve the Query field from queryResult while updating the error message
+				queryResult.Error = fmt.Sprintf("Query execution failed: %v", err)
 			}
 			resultsChan <- queryExecutionResult{ID: query.ID, Result: queryResult}
 		}(q)
@@ -262,14 +269,17 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 // ExecuteQuery executes a raw SPARQL query and returns simplified results
 // This method is useful for executing queries without template processing
 func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string) (QueryResult, error) {
-	response, finalizedQuery, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
+	// Finalize query with PREFIX declarations if needed (done early so it's available in error cases)
+	finalizedQuery := p.finalizeQuery(query)
+
+	response, _, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
 	if err != nil {
-		return QueryResult{Error: err.Error()}, err
+		return QueryResult{Error: err.Error(), Query: finalizedQuery}, err
 	}
 
 	var sparqlResp sparqlResponse
 	if err := json.Unmarshal(response, &sparqlResp); err != nil {
-		return QueryResult{Error: err.Error()}, err
+		return QueryResult{Error: err.Error(), Query: finalizedQuery}, err
 	}
 
 	result := simplifyBindings(sparqlResp)

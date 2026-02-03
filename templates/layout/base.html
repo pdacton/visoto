@@ -116,10 +116,12 @@
           theme: isDark ? 'dark' : 'default',
           securityLevel: 'loose',
           flowchart: {
-            defaultRenderer: 'elk'
+            defaultRenderer: 'elk',
+            curve: 'linear',
+            htmlLabels: true
           },
           elk: {
-            mergeEdges: true,
+            mergeEdges: false,
             nodePlacementStrategy: 'LINEAR_SEGMENTS'
           }
         });
@@ -134,12 +136,12 @@
             theme: isDark ? 'dark' : 'default',
             securityLevel: 'loose',
             flowchart: {
-              useMaxWidth: true,
+              defaultRenderer: 'elk',
+              curve: 'linear',
               htmlLabels: true,
-              defaultRenderer: 'elk'
             },
             elk: {
-              mergeEdges: true,
+              mergeEdges: false,
               nodePlacementStrategy: 'LINEAR_SEGMENTS'
             }
           });

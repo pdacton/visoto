@@ -37,7 +37,7 @@
       <img src="https://upload.wikimedia.org/wikipedia/commons/3/37/Blick_aus_dem_Zug_auf_Klosters-Dorf_%282006%29.jpg" class="card-img-top" alt="View of Klosters-Dorf from the train" style="height: 200px; object-fit: cover;">
       <div class="card-body d-flex flex-column">
         <div class="subheader">Municipalities</div>
-        <p class="text-secondary mt-auto">Check out the <a href="http://localhost:8060/resource/https%3A%2F%2Fld.admin.ch%2Fmunicipality%2F3871">change history of Klosters</a>, visualized here.</p>
+        <p class="text-secondary mt-auto">Check out the <a href="/resource/https%3A%2F%2Fld.admin.ch%2Fmunicipality%2F3871">change history of Klosters</a>, visualized here.</p>
       </div>
     </div>
   </div>
@@ -59,7 +59,7 @@
       <img src="https://www.bkw.ch/fileadmin/user_upload/02_Gebaeude/02_04_Gebaeudetechnik/Elektro/Elektro__c__BKW_Building_Solutions_AG_51.jpg" class="card-img-top" alt="Industrial building" style="height: 200px; object-fit: cover;">
       <div class="card-body d-flex flex-column">
         <div class="subheader">NOGA Codes</div>
-        <p class="text-secondary mt-auto">Ever wondered what kind of categories exist for companies? Browse the <a href="http://localhost:8060/resource/https%3A%2F%2Fregister.ld.admin.ch%2Fi14y%2Fconcept%2FnogaCode%2Fversion%2F2.0.0">NOGA nomenclature</a> here.</p>
+        <p class="text-secondary mt-auto">Ever wondered what kind of categories exist for companies? Browse the <a href="/resource/https%3A%2F%2Fregister.ld.admin.ch%2Fi14y%2Fconcept%2FnogaCode%2Fversion%2F2.0.0">NOGA nomenclature</a> here.</p>
       </div>
     </div>
   </div>
@@ -102,6 +102,7 @@
       </div>
     </div>
   </div>
+  
   <!-- properties card -->
   <div class="col-sm-6 col-lg-3">
     <div class="card">
@@ -121,6 +122,7 @@
       </div>
     </div>
   </div>
+
   <!-- concepts card -->
   <div class="col-sm-6 col-lg-3">
     <div class="card">
@@ -140,6 +142,7 @@
       </div>
     </div>
   </div>
+
   <!-- defined terms card -->
   <div class="col-sm-6 col-lg-3">
     <div class="card">
@@ -159,6 +162,7 @@
       </div>
     </div>
   </div>
+
   <!-- defined term sets card -->
   <div class="col-sm-6 col-lg-3">
     <div class="card">
@@ -175,6 +179,26 @@
           {{ if .QueryResults.termSetCount.Bindings }}{{ (index .QueryResults.termSetCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
         </div>
         <p class="text-secondary"><a href="/resource/schema:DefinedTermSet">Defined term sets</a> in the graph.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- terminology collections card -->
+  <div class="col-sm-6 col-lg-3">
+    <div class="card">
+      <div class="card-body">
+        <sparql-query id="terminologyCollectionCount" class="d-none">
+          SELECT (COUNT(DISTINCT ?collection) AS ?count) WHERE {
+            ?collection a schch:TerminologyCollection .
+          }
+        </sparql-query>
+        <div class="d-flex align-items-center">
+          <div class="subheader">Terminology Collections</div>
+        </div>
+        <div class="h1 mb-3">
+          {{ if .QueryResults.terminologyCollectionCount.Bindings }}{{ (index .QueryResults.terminologyCollectionCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
+        </div>
+        <p class="text-secondary"><a href="/resource/schch:TerminologyCollection">Terminology collections</a> in the graph.</p>
       </div>
     </div>
   </div>

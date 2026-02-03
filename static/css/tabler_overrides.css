@@ -182,10 +182,3 @@ body.resizing {
     user-select: none;
     cursor: ew-resize !important;
 }
-
-/* --- Tabulator table styling --- */
-
-/* Align Tabulator row borders with Tabler's border color (adapts to light/dark mode) */
-.tabulator .tabulator-row {
-    border-bottom: 1px solid var(--tblr-border-color);
-}

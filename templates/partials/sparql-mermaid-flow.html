@@ -374,10 +374,10 @@
                 }
 
                 if (isPredecessor) {
-                  // Reverse edge direction for configured predicates (e.g., predecessors point upward)
-                  edgeLines.push(toId + ' -->|' + edgeLabel + '| ' + fromId);
+                  // Reverse edge direction with dotted arrow for visual distinction
+                  edgeLines.push(toId + ' -.->|' + edgeLabel + '| ' + fromId);
                 } else {
-                  // Normal edge direction
+                  // Normal edge direction with solid arrow
                   edgeLines.push(fromId + ' -->|' + edgeLabel + '| ' + toId);
                 }
               });
@@ -466,27 +466,91 @@
               var svgElement = document.querySelector("#" + diagramId + "-diagram svg");
               if (!svgElement) return;
 
-              svgElement.style.cursor = 'pointer';
-              svgElement.addEventListener('click', function(e) {
-                var target = e.target;
-                while (target && target !== svgElement) {
-                  var nodeId = Object.keys(idToUri).find(function(id) {
-                    return target.id && target.id.indexOf(id) !== -1;
-                  });
-                  if (nodeId) {
-                    var url = '/resource/' + encodeURIComponent(idToUri[nodeId]);
-                    if (e.ctrlKey || e.metaKey) {
-                      // Ctrl/Cmd+Click: open in new tab
-                      window.open(url, '_blank');
-                    } else {
-                      // Normal click: navigate in current window
-                      window.location.href = url;
-                    }
-                    return;
-                  }
-                  target = target.parentElement;
+              // Track mouse position to detect dragging vs clicking
+              var mouseDownX = 0;
+              var mouseDownY = 0;
+              var isDragging = false;
+
+              svgElement.addEventListener('mousedown', function(e) {
+                mouseDownX = e.clientX;
+                mouseDownY = e.clientY;
+                isDragging = false;
+              });
+
+              svgElement.addEventListener('mousemove', function(e) {
+                // If mouse moved more than 5px, consider it a drag
+                var deltaX = Math.abs(e.clientX - mouseDownX);
+                var deltaY = Math.abs(e.clientY - mouseDownY);
+                if (deltaX > 5 || deltaY > 5) {
+                  isDragging = true;
                 }
               });
+
+              // Smart cursor: only show pointer when hovering over nodes
+              svgElement.addEventListener('mouseover', function(e) {
+                var nodeId = findNodeId(e.target);
+                svgElement.style.cursor = nodeId ? 'pointer' : 'default';
+              });
+
+              svgElement.addEventListener('click', function(e) {
+                // Don't navigate if user was dragging
+                if (isDragging) {
+                  return;
+                }
+
+                var nodeId = findNodeId(e.target);
+                if (nodeId) {
+                  e.preventDefault();
+                  e.stopPropagation();
+
+                  var url = '/resource/' + encodeURIComponent(idToUri[nodeId]);
+                  if (e.ctrlKey || e.metaKey) {
+                    // Ctrl/Cmd+Click: open in new tab
+                    window.open(url, '_blank');
+                  } else {
+                    // Normal click: navigate in current window
+                    window.location.href = url;
+                  }
+                }
+              });
+
+              // Helper function to find node ID from clicked element
+              // Mermaid generates IDs like "flowchart-node1-123" or similar
+              function findNodeId(element) {
+                var target = element;
+                while (target && target !== svgElement) {
+                  if (target.id) {
+                    // Try exact match first (for direct node elements)
+                    if (idToUri[target.id]) {
+                      return target.id;
+                    }
+
+                    // Try to extract node ID from Mermaid-generated IDs
+                    // Mermaid typically uses patterns like "flowchart-nodeX-..." or "nodeX-..."
+                    for (var nodeId in idToUri) {
+                      // Use word boundary matching to avoid "node1" matching "node10"
+                      var pattern = new RegExp('\\b' + nodeId + '\\b');
+                      if (pattern.test(target.id)) {
+                        return nodeId;
+                      }
+                    }
+                  }
+
+                  // Check for data attributes or class names that might contain node info
+                  if (target.className && target.className.baseVal) {
+                    var classes = target.className.baseVal;
+                    for (var nodeId in idToUri) {
+                      var pattern = new RegExp('\\b' + nodeId + '\\b');
+                      if (pattern.test(classes)) {
+                        return nodeId;
+                      }
+                    }
+                  }
+
+                  target = target.parentElement;
+                }
+                return null;
+              }
             }
 
             // Initialize svg-pan-zoom after Mermaid renders

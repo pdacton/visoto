@@ -191,7 +191,21 @@
             resizableColumnFit: true,
             renderHorizontal: "virtual",
             movableColumns: true,
-            sortMode: "local"
+            sortMode: "local",
+            langs: {
+              "default": {
+                "pagination": {
+                  "first": "<i data-lucide='chevrons-left'></i>",
+                  "first_title": "First Page",
+                  "prev": "<i data-lucide='chevron-left'></i>",
+                  "prev_title": "Prev Page",
+                  "next": "<i data-lucide='chevron-right'></i>",
+                  "next_title": "Next Page",
+                  "last": "<i data-lucide='chevrons-right'></i>",
+                  "last_title": "Last Page"
+                }
+              }
+            }
           };
 
           // Enable pagination for larger datasets
@@ -203,6 +217,13 @@
           }
 
           var table = new Tabulator("#{{ $id }}-table", tableConfig);
+
+          // Initialize Lucide icons after table is built
+          table.on("tableBuilt", function() {
+            if (window.lucide) {
+              lucide.createIcons();
+            }
+          });
 
           // Search filter with debounce
           var searchInput = document.getElementById("search-{{ $id }}");
