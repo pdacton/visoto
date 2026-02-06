@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -16,59 +17,123 @@ import (
 	"hutzli.org/visoto/internal/logger"
 )
 
-// finalizeQuery adds PREFIX declarations to query if needed
-func (p *Preprocessor) finalizeQuery(query string) string {
-	if !hasExistingPrefixes(query) && queryNeedsPrefixes(query) {
-		return buildPrefixBlock(p.config.Prefixes) + query
+// extractDeclaredPrefixes parses query and returns a set of prefix names already declared
+// Returns map[string]bool where keys are prefix names (e.g., "rdf", "schema")
+func extractDeclaredPrefixes(query string) map[string]bool {
+	declared := make(map[string]bool)
+
+	// Regex to match PREFIX declarations in SPARQL format
+	// Matches: PREFIX name: <uri> or PREFIX name: uri
+	// Case-insensitive for PREFIX keyword
+	re := regexp.MustCompile(`(?i)PREFIX\s+(\w+):\s*<[^>]+>`)
+
+	matches := re.FindAllStringSubmatch(query, -1)
+	for _, match := range matches {
+		if len(match) >= 2 {
+			prefixName := strings.TrimSpace(match[1])
+			declared[prefixName] = true
+		}
 	}
-	return query
+
+	return declared
 }
 
-// buildPrefixBlock generates SPARQL PREFIX declarations from config
-func buildPrefixBlock(prefixes []config.Prefix) string {
+// extractUsedPrefixes scans query and returns a set of prefix names that are used
+// (e.g., finds "rdf:type", "schema:name" and extracts "rdf", "schema")
+// Excludes http:, https:, file: which are not prefixes
+func extractUsedPrefixes(query string) map[string]bool {
+	used := make(map[string]bool)
+
+	// Regex to match prefixed names: word followed by colon and word/path
+	// Matches: rdf:type, schema:name, skos:broader, etc.
+	// But NOT http:, https:, file: (common URL schemes)
+	re := regexp.MustCompile(`\b(\w+):(?:[a-zA-Z_]|\/)`)
+
+	matches := re.FindAllStringSubmatch(query, -1)
+	for _, match := range matches {
+		if len(match) >= 2 {
+			prefixName := match[1]
+
+			// Exclude URL schemes
+			lowerPrefix := strings.ToLower(prefixName)
+			if lowerPrefix == "http" || lowerPrefix == "https" || lowerPrefix == "file" {
+				continue
+			}
+
+			used[prefixName] = true
+		}
+	}
+
+	return used
+}
+
+// buildNeededPrefixBlock generates PREFIX declarations for prefixes that are:
+// 1. Actually used in the query (in usedSet)
+// 2. Not already declared in the query (not in declaredSet)
+// 3. Available in the configuration
+func buildNeededPrefixBlock(prefixes []config.Prefix, usedSet map[string]bool, declaredSet map[string]bool) string {
 	if len(prefixes) == 0 {
 		return ""
 	}
 
 	var sb strings.Builder
+	addedAny := false
+
 	for _, prefix := range prefixes {
+		// Skip if this prefix is not used in the query
+		if !usedSet[prefix.Name] {
+			continue
+		}
+
+		// Skip if this prefix is already declared in the query
+		if declaredSet[prefix.Name] {
+			continue
+		}
+
 		sb.WriteString("PREFIX ")
 		sb.WriteString(prefix.Name)
 		sb.WriteString(": <")
 		sb.WriteString(strings.Trim(prefix.URI, "<>"))
 		sb.WriteString(">\n")
+		addedAny = true
 	}
-	sb.WriteString("\n")
+
+	// Only add blank line if we actually added prefixes
+	if addedAny {
+		sb.WriteString("\n")
+	}
+
 	return sb.String()
 }
 
-// hasExistingPrefixes checks if query already contains PREFIX declarations
-func hasExistingPrefixes(query string) bool {
-	trimmed := strings.TrimSpace(query)
-	return strings.HasPrefix(strings.ToUpper(trimmed), "PREFIX")
+// finalizeQuery adds PREFIX declarations to query if needed
+func (p *Preprocessor) finalizeQuery(query string) string {
+	// Extract which prefixes are already declared in the query
+	declaredPrefixes := extractDeclaredPrefixes(query)
+
+	// Extract which prefixes are actually used in the query
+	usedPrefixes := extractUsedPrefixes(query)
+
+	// Build prefix block with only needed (used but not declared) prefixes
+	prefixBlock := buildNeededPrefixBlock(p.config.Prefixes, usedPrefixes, declaredPrefixes)
+
+	return prefixBlock + query
 }
 
-// queryNeedsPrefixes checks if a query uses any prefixed names (e.g., rdf:type, schema:name)
-// Returns true if the query contains patterns like "word:word" that aren't URLs
-// TODO: I don't think this is a very robust implementation
-func queryNeedsPrefixes(query string) bool {
-	// Simple heuristic: look for common SPARQL prefixed names
-	// Matches patterns like "rdf:type", "schema:name", etc.
-	// But excludes "http:", "https:", "file:" which are URLs
-	commonPrefixes := []string{
-		"rdf:", "rdfs:", "owl:", "xsd:",
-		"schema:", "foaf:", "dc:", "dcterms:",
-		"skos:", "sch:", "regch:", "ref:",
+// resolveEndpoint determines which endpoint URL to use
+// Priority: 1) Direct URL, 2) Named endpoint lookup, 3) Default
+func (p *Preprocessor) resolveEndpoint(endpointAttr string) string {
+	if endpointAttr == "" {
+		return p.config.EndpointURL // Use default
 	}
 
-	queryUpper := strings.ToUpper(query)
-	for _, prefix := range commonPrefixes {
-		if strings.Contains(queryUpper, strings.ToUpper(prefix)) {
-			return true
-		}
+	// Check if it's a named endpoint
+	if url, exists := p.config.NamedEndpoints[endpointAttr]; exists {
+		return url
 	}
 
-	return false
+	// Treat as direct URL (allows full URLs in templates)
+	return endpointAttr
 }
 
 // querySparqlEndpoint sends a SPARQL query to the specified endpoint and returns the response
@@ -233,16 +298,17 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 				resultsChan <- queryExecutionResult{
 					ID:     query.ID,
 					Result: QueryResult{
-						Error: "Query timeout exceeded",
-						Query: p.finalizeQuery(query.Query),
+						Error:    "Query timeout exceeded",
+						Query:    p.finalizeQuery(query.Query),
+						Endpoint: p.resolveEndpoint(query.Endpoint),
 					},
 				}
 				return
 			default:
 			}
 
-			// Execute query with label resolution flag
-			queryResult, err := p.ExecuteQuery(query.Query, query.ResolveLabels, acceptLanguage)
+			// Execute query with label resolution flag and endpoint from query
+			queryResult, err := p.ExecuteQuery(query.Query, query.ResolveLabels, acceptLanguage, query.Endpoint)
 			if err != nil {
 				// Preserve the Query field from queryResult while updating the error message
 				queryResult.Error = fmt.Sprintf("Query execution failed: %v", err)
@@ -268,22 +334,26 @@ func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extr
 
 // ExecuteQuery executes a raw SPARQL query and returns simplified results
 // This method is useful for executing queries without template processing
-func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string) (QueryResult, error) {
+func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
+	// Resolve endpoint (empty string = use default)
+	targetEndpoint := p.resolveEndpoint(endpoint)
+
 	// Finalize query with PREFIX declarations if needed (done early so it's available in error cases)
 	finalizedQuery := p.finalizeQuery(query)
 
-	response, _, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
+	response, _, err := p.querySparqlEndpoint(targetEndpoint, query)
 	if err != nil {
-		return QueryResult{Error: err.Error(), Query: finalizedQuery}, err
+		return QueryResult{Error: err.Error(), Query: finalizedQuery, Endpoint: targetEndpoint}, err
 	}
 
 	var sparqlResp sparqlResponse
 	if err := json.Unmarshal(response, &sparqlResp); err != nil {
-		return QueryResult{Error: err.Error(), Query: finalizedQuery}, err
+		return QueryResult{Error: err.Error(), Query: finalizedQuery, Endpoint: targetEndpoint}, err
 	}
 
 	result := simplifyBindings(sparqlResp)
 	result.Query = finalizedQuery
+	result.Endpoint = targetEndpoint
 
 	// Perform label enrichment if requested
 	if resolveLabels {
@@ -292,7 +362,7 @@ func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLang
 		iris := extractIRIs(result)
 		if len(iris) > 0 {
 			languages := parseAcceptLanguage(acceptLanguage)
-			labelMap := fetchLabels(p, p.config.EndpointURL, iris, languages)
+			labelMap := fetchLabels(p, targetEndpoint, iris, languages)
 			enrichWithLabels(&result, labelMap)
 		}
 	}

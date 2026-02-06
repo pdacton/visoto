@@ -76,8 +76,8 @@ func (s *Searcher) Execute(params SearchParams, acceptLanguage string) SearchRes
 		slog.String("property", params.Property),
 		slog.String("sparql", query))
 
-	// Execute via SPARQL preprocessor with label enrichment enabled
-	queryResult, err := s.preprocessor.ExecuteQuery(query, true, acceptLanguage)
+	// Execute via SPARQL preprocessor with label enrichment enabled (empty endpoint = use default)
+	queryResult, err := s.preprocessor.ExecuteQuery(query, true, acceptLanguage, "")
 	if err != nil {
 		log.Error("search query execution failed",
 			slog.String("error", err.Error()),

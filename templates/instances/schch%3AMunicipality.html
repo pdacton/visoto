@@ -26,7 +26,24 @@
 {{ end }}
 
 <sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
-{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+<sparql-query id="municipalityValidity" class="d-none">
+  SELECT * WHERE {
+    ?? vl:version ?version .
+    ?version schema:validFrom ?validFrom .
+    OPTIONAL { ?version schema:validThrough ?validThrough . }
+  }
+</sparql-query>
+{{ define "pageSubtitle" }}
+  {{ $description := firstValue .QueryResults.pageSubtitle "description" }}
+  {{ if $description }}{{ $description }}{{ end }}
+  {{ with .QueryResults.municipalityValidity }}
+    {{ $validFrom := firstValue . "validFrom" }}
+    {{ $validThrough := firstValue . "validThrough" }}
+    {{ if $validFrom }}
+      <small class="text-muted">Valid from {{ $validFrom }}{{ if $validThrough }} until {{ $validThrough }}{{ end }}</small>
+    {{ end }}
+  {{ end }}
+{{ end }}
 
 
 {{ define "pageIcon" }}
@@ -138,35 +155,47 @@
 
   </div>
 
-  <!-- Mermaid Flow Diagram Test -->
+  <!-- Version Flow Diagram -->
   <div class="row mb-3">
     <div class="col">
       <div class="mb-0">
         <sparql-query id="versionflow" class="d-none">
-          PREFIX schch: &lt;https://schema.ld.admin.ch/&gt;
-          PREFIX vl: &lt;https://version.link/&gt;
-          SELECT ?from ?predicate ?to ?fromType ?toType WHERE {
+          SELECT DISTINCT ?from ?predicate ?to ?fromType ?toType ?fromValidFrom ?toValidFrom WHERE {
+            # starting point: the municipalitys latest version
             {
+              # find latest version for the municipality (Municipality --version-> LatestVersion)
               BIND (?? AS ?from)
-              ?from vl:version ?to .
               BIND (vl:version AS ?predicate)
-              ?from rdf:type ?fromType . FILTER (?fromType = schch:Municipality || ?fromType = vl:Version || ?fromType = vl:ChangeEvent)
-              ?to   rdf:type ?toType .   FILTER (?toType = schch:Municipality || ?toType = vl:Version || ?toType = vl:ChangeEvent)
-            } UNION {
-              ?? vl:version ?current .
-              ?current vl:predecessor* ?to .
-              ?from vl:predecessor ?to .
-              BIND (vl:predecessor AS ?predicate)
-              ?from rdf:type ?fromType . FILTER (?fromType = schch:Municipality || ?fromType = vl:Version || ?fromType = vl:ChangeEvent)
-              ?to   rdf:type ?toType .   FILTER (?toType = schch:Municipality || ?toType = vl:Version || ?toType = vl:ChangeEvent)
-            } UNION {
-              ?? vl:version ?current .
-              ?current vl:predecessor* ?to .
+              ?from ?predicate ?to .
+              ?from rdf:type ?fromType . FILTER (?fromType IN (schch:Municipality))
+              ?to   rdf:type ?toType .   FILTER (?toType   IN (vl:Version))
+            } 
+            UNION
+            # follow successors backwards and pick up successor links (Version|ChangeEvent --successor-> Version)
+            {
+              ?? vl:version ?latest .
+              ?latest ^vl:successor* ?from . # all the steps backward
               ?from vl:successor ?to .
               BIND (vl:successor AS ?predicate)
-              ?from rdf:type ?fromType . FILTER (?fromType = schch:Municipality || ?fromType = vl:Version || ?fromType = vl:ChangeEvent)
-              ?to   rdf:type ?toType .   FILTER (?toType = schch:Municipality || ?toType = vl:Version || ?toType = vl:ChangeEvent)
-            }
+              ?from rdf:type ?fromType . FILTER (?fromType IN (vl:Version, vl:ChangeEvent))
+              ?to   rdf:type ?toType .   FILTER (?toType   IN (vl:Version, vl:ChangeEvent))
+              OPTIONAL { ?from schema:validFrom ?fromValidFrom . }
+              OPTIONAL { ?to schema:validFrom ?toValidFrom . }
+            } 
+            UNION 
+            # follow successors backwards and pick up predecessor links (ChangeEvent --successor-> Version)
+            {
+              # follow backchain backwards (pick up predecessor links)
+              ?? vl:version ?latest .
+              ?latest ^vl:successor* ?from . # all the steps backward
+              ?from vl:predecessor ?to .
+              BIND (vl:predecessor AS ?predicate)
+              ?from rdf:type ?fromType . FILTER (?fromType IN (vl:Version, vl:ChangeEvent))
+              ?to   rdf:type ?toType .   FILTER (?toType   IN (vl:Version, vl:ChangeEvent))
+              OPTIONAL { ?from schema:validFrom ?fromValidFrom . }
+              OPTIONAL { ?to schema:validFrom ?toValidFrom . }
+            } 
+
           }
         </sparql-query>
 
@@ -192,7 +221,8 @@
               "id" "versionflow"
               "title" "Version Flow for Municipality"
               "icon" "history"
-              "direction" "LR")
+              "direction" "LR"
+              "extraField" "validFrom")
         }}
       </div>
     </div>
@@ -252,8 +282,6 @@
         }}
       </div>
     </div>
-
-  </div>
 
   </div>
 </div>

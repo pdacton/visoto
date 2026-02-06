@@ -1,0 +1,34 @@
+{{ define "pageTitle" }}Data Quality Issues{{ end }}
+{{ define "pageDescription" }}Overview of data quality issues in the triple store.{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/warning.svg" alt="Data Issues" width="48" height="48">{{end}}
+
+{{ define "pageContent" }}
+
+<div class="row">
+  <div class="col">
+
+    <p>The following tables list potential data quality issues in the knowledge graph.</p>
+    
+    <!-- Municipalities without identifiers -->
+    <div class="mb-3">
+      <sparql-query id="municipalitiesWithoutIdentifier" class="d-none">
+        SELECT ?municipality ?name ?graph WHERE {
+          GRAPH ?graph {
+            ?municipality a schch:Municipality .
+          }
+          OPTIONAL { ?municipality (rdfs:label|skos:prefLabel|schema:name) ?name }
+          FILTER NOT EXISTS { ?municipality schema:identifier ?identifier }
+        }
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+          "result" .QueryResults.municipalitiesWithoutIdentifier
+          "id" "municipalitiesWithoutIdentifier"
+          "title" "Municipalities without schema:identifier (Zombies)"
+          "icon" "alert-triangle")
+      }}
+    </div>
+
+  </div>
+</div>
+
+{{ end}}

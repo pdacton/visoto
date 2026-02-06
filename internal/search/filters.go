@@ -8,6 +8,7 @@ func GetClassFilters() []Filter {
 		{Label: "Organization (schema)", IRI: "http://schema.org/Organization"},
 		{Label: "Person (schema)", IRI: "http://schema.org/Person"},
 		{Label: "Zefix Organisation", IRI: "https://schema.ld.admin.ch/ZefixOrganisation"},
+		{Label: "Municipality", IRI: "https://schema.ld.admin.ch/Municipality"},
 		{Label: "Defined Term", IRI: "http://schema.org/DefinedTerm"},
 		{Label: "OWL Class", IRI: "http://www.w3.org/2002/07/owl#Class"},
 		{Label: "RDFS Class", IRI: "http://www.w3.org/2000/01/rdf-schema#Class"},

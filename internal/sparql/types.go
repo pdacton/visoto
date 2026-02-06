@@ -8,9 +8,10 @@ import (
 
 // Config holds configuration for the SPARQL preprocessor
 type Config struct {
-	EndpointURL string          // SPARQL endpoint URL
-	Timeout     time.Duration   // Global timeout for all queries
-	Prefixes    []config.Prefix // RDF prefix declarations
+	EndpointURL     string            // Default SPARQL endpoint URL
+	Timeout         time.Duration     // Global timeout for all queries
+	Prefixes        []config.Prefix   // RDF prefix declarations
+	NamedEndpoints  map[string]string // Named endpoints: name -> URL mapping
 }
 
 // QueryResult stores simplified SPARQL results for template consumption
@@ -19,12 +20,14 @@ type QueryResult struct {
 	Bindings []map[string]Binding // bindings: value and type
 	Error    string               // Error message if query failed
 	Query    string               // The finalized SPARQL query sent to endpoint (with PREFIXes)
+	Endpoint string               // The endpoint URL used for this query
 }
 
 // PageData wraps all data retrieved for a resource
 type TemplateData struct {
-	ResourceIRI  string                 // The IRI of the resource being rendered
-	QueryResults map[string]QueryResult // Results indexed by query ID defined in template
+	ResourceIRI      string                   // The IRI of the resource being rendered
+	QueryResults     map[string]QueryResult   // Results indexed by query ID defined in template
+	SparqlEndpoints  []config.SparqlEndpoint  // SPARQL endpoints for menu (no sensitive data)
 }
 
 // extractedQuery represents a SPARQL query found in template (internal use)
@@ -32,6 +35,7 @@ type extractedQuery struct {
 	ID            string // Query identifier
 	Query         string // SPARQL query text
 	ResolveLabels bool   // Whether to perform IRI label enrichment
+	Endpoint      string // Optional endpoint override from template attribute
 }
 
 // queryExecutionResult holds the result of executing one query (internal use)

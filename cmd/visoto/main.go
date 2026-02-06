@@ -41,8 +41,37 @@ var sparqlPreproc *sparql.Preprocessor
 // Package-level config instance
 var cfg *config.Config
 
-// Package-level search instance
-var searcher *search.Searcher
+// getSelectedEndpoint reads user's endpoint selection from cookie
+// Returns empty string if none selected (use default)
+func getSelectedEndpoint(c *gin.Context) string {
+	endpoint, err := c.Cookie("selectedEndpoint")
+	if err != nil {
+		return "" // No selection, use default
+	}
+	return endpoint
+}
+
+// createPreprocessorForRequest creates a preprocessor with user-selected default endpoint
+func createPreprocessorForRequest(c *gin.Context) *sparql.Preprocessor {
+	selectedName := getSelectedEndpoint(c)
+
+	// Determine default endpoint for this request
+	defaultEndpoint := cfg.Application.SparqlEndpoint
+	if selectedName != "" {
+		// Look up named endpoint
+		if url, exists := cfg.Application.GetNamedEndpointsMap()[selectedName]; exists {
+			defaultEndpoint = url
+		}
+	}
+
+	// Create preprocessor with custom default
+	return sparql.New(sparql.Config{
+		EndpointURL:    defaultEndpoint, // User selection or config default
+		Timeout:        cfg.GetTimeout(),
+		Prefixes:       cfg.RDF.ParsedPrefixes,
+		NamedEndpoints: cfg.Application.GetNamedEndpointsMap(),
+	})
+}
 
 func homeHandler(c *gin.Context) {
 
@@ -79,8 +108,11 @@ func resourceHandler(c *gin.Context) {
 	// Get language preference from request
 	acceptLanguage := c.GetHeader("Accept-Language")
 
-	// Resolve template based on IRI and RDF types
-	if err := r.ResolveTemplate(sparqlPreproc, cfg.RDF.TypePriority, cfg.RDF.ParsedPrefixes); err != nil {
+	// Create preprocessor with user-selected endpoint
+	preprocessor := createPreprocessorForRequest(c)
+
+	// Resolve template based on IRI and RDF types (use per-request preprocessor)
+	if err := r.ResolveTemplate(preprocessor, cfg.RDF.TypePriority, cfg.RDF.ParsedPrefixes); err != nil {
 		log.Error("template resolution failed",
 			slog.String("iri", iri),
 			slog.String("error", err.Error()))
@@ -88,12 +120,15 @@ func resourceHandler(c *gin.Context) {
 	}
 
 	// TODO: refactor, move into Resource method
-	// extract SPARQL query from template and retrieve data
-	r.Data, err = sparqlPreproc.ProcessTemplateFile(r.TemplatePath, r.GetIRI(), acceptLanguage)
+	// extract SPARQL query from template and retrieve data (use per-request preprocessor)
+	r.Data, err = preprocessor.ProcessTemplateFile(r.TemplatePath, r.GetIRI(), acceptLanguage)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
 		return
 	}
+
+	// Add endpoints to template data for menu rendering (no sensitive data)
+	r.Data.SparqlEndpoints = cfg.Application.SparqlEndpoints
 
 	// log.Debug("SPARQL data retrieved", slog.Any("data", r.Data))
 
@@ -134,8 +169,11 @@ func staticPageHandler(c *gin.Context) {
 		return
 	}
 
-	// Process SPARQL queries in template (WITHOUT IRI substitution)
-	data, err := sparqlPreproc.ProcessTemplateFile(templatePath, "", acceptLanguage)
+	// Create preprocessor with user-selected endpoint
+	preprocessor := createPreprocessorForRequest(c)
+
+	// Process SPARQL queries in template (WITHOUT IRI substitution, use per-request preprocessor)
+	data, err := preprocessor.ProcessTemplateFile(templatePath, "", acceptLanguage)
 	if err != nil {
 		log.Error("SPARQL processing failed",
 			slog.String("page", pageName),
@@ -144,12 +182,53 @@ func staticPageHandler(c *gin.Context) {
 		return
 	}
 
+	// Add endpoints to template data for menu rendering (no sensitive data)
+	data.SparqlEndpoints = cfg.Application.SparqlEndpoints
+
 	log.Debug("rendering static page",
 		slog.String("templateName", templateName),
 		slog.Int("queryResults", len(data.QueryResults)))
 
 	// Render template
 	c.HTML(http.StatusOK, templateName, data)
+}
+
+func searchHandler(c *gin.Context) {
+	// Create preprocessor with user-selected endpoint
+	preprocessor := createPreprocessorForRequest(c)
+
+	// Create searcher instance for this request
+	searcher := search.New(preprocessor, "stardog")
+
+	// Parse search parameters
+	params := search.ParseParams(c)
+
+	// Validate required query parameter
+	if params.Query == "" {
+		c.HTML(http.StatusOK, "pages/search.html", gin.H{
+			"ClassFilters":    search.GetClassFilters(),
+			"PropertyFilters": search.GetPropertyFilters(),
+			"Error":           "",
+			"SparqlEndpoints": cfg.Application.SparqlEndpoints,
+		})
+		return
+	}
+
+	// Execute search
+	acceptLanguage := c.Request.Header.Get("Accept-Language")
+	result := searcher.Execute(params, acceptLanguage)
+
+	// Render results
+	c.HTML(http.StatusOK, "pages/search.html", gin.H{
+		"Query":            result.Query,
+		"ClassFilters":     search.GetClassFilters(),
+		"PropertyFilters":  search.GetPropertyFilters(),
+		"SelectedClass":    params.Class,
+		"SelectedProperty": params.Property,
+		"SearchResults":    result.Results,
+		"Provider":         result.Provider,
+		"SparqlEndpoints":  cfg.Application.SparqlEndpoints,
+	})
 }
 
 func main() {
@@ -184,15 +263,16 @@ func main() {
 			slog.String("config_file", "visoto.config"))
 	}
 
-	// Initialize SPARQL preprocessor with config values
+	// Initialize SPARQL preprocessor with config values and named endpoints
 	sparqlPreproc = sparql.New(sparql.Config{
-		EndpointURL: cfg.Application.SparqlEndpoint,
-		Timeout:     cfg.GetTimeout(),
-		Prefixes:    cfg.RDF.ParsedPrefixes,
+		EndpointURL:    cfg.Application.SparqlEndpoint,
+		Timeout:        cfg.GetTimeout(),
+		Prefixes:       cfg.RDF.ParsedPrefixes,
+		NamedEndpoints: cfg.Application.GetNamedEndpointsMap(),
 	})
 
-	// Initialize search with Stardog provider
-	searcher = search.New(sparqlPreproc, "stardog")
+	// Note: searcher is no longer initialized as singleton
+	// Each search request creates its own searcher with user-selected endpoint
 	search.SetDefaultProvider("stardog")
 
 	// Initialize icon cache
@@ -213,7 +293,7 @@ func main() {
 	router.Static("/static", "static")
 	router.GET("/", homeHandler)
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
-	router.GET("/search", searcher.Handler())
+	router.GET("/search", searchHandler)
 	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey))
 	router.GET("/resource/*path", resourceHandler)
 	router.GET("/:page", staticPageHandler)

@@ -26,10 +26,18 @@ type Config struct {
 
 // ApplicationConfig holds application-level settings
 type ApplicationConfig struct {
-	Port           int    `toml:"port"`
-	SparqlEndpoint string `toml:"sparqlEndpoint"`
-	Timeout        int    `toml:"timeout"`      // timeout in seconds
-	GeminiAPIKey   string `toml:"gemini_api_key"` // API key for Google Gemini
+	Port            int               `toml:"port"`
+	SparqlEndpoint  string            `toml:"sparqlEndpoint"`   // Default SPARQL endpoint
+	SparqlEndpoints []SparqlEndpoint  `toml:"sparqlEndpoints"`  // Named endpoints for menu
+	Timeout         int               `toml:"timeout"`          // timeout in seconds
+	GeminiAPIKey    string            `toml:"gemini_api_key"`   // API key for Google Gemini
+}
+
+// SparqlEndpoint represents a named SPARQL endpoint configuration
+type SparqlEndpoint struct {
+	Name    string `toml:"name"`    // Display name (e.g., "LINDAS", "Wikidata")
+	URL     string `toml:"url"`     // Full endpoint URL
+	Default bool   `toml:"default"` // Optional: mark as default
 }
 
 // RDFConfig holds RDF-related settings
@@ -93,6 +101,15 @@ func (c *Config) GetTimeout() time.Duration {
 // GetPort returns the formatted port string ":8080" instead of int for router.Run()
 func (c *Config) GetPort() string {
 	return fmt.Sprintf(":%d", c.Application.Port)
+}
+
+// GetNamedEndpointsMap returns SPARQL endpoints as a map[name]url for quick lookup
+func (a *ApplicationConfig) GetNamedEndpointsMap() map[string]string {
+	m := make(map[string]string)
+	for _, ep := range a.SparqlEndpoints {
+		m[ep.Name] = ep.URL
+	}
+	return m
 }
 
 // ParsePrefixStrings parses an array of prefix strings into Prefix structs

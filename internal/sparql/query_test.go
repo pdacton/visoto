@@ -7,154 +7,223 @@ import (
 	"hutzli.org/visoto/internal/config"
 )
 
-func TestBuildPrefixBlock(t *testing.T) {
-	tests := []struct {
-		name     string
-		prefixes []config.Prefix
-		want     string
-	}{
-		{
-			name:     "empty prefix list",
-			prefixes: []config.Prefix{},
-			want:     "",
-		},
-		{
-			name: "single prefix",
-			prefixes: []config.Prefix{
-				{Name: "rdf", URI: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"},
-			},
-			want: "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\n",
-		},
-		{
-			name: "multiple prefixes",
-			prefixes: []config.Prefix{
-				{Name: "rdf", URI: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"},
-				{Name: "rdfs", URI: "http://www.w3.org/2000/01/rdf-schema#"},
-				{Name: "schema", URI: "http://schema.org/"},
-			},
-			want: "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-				"PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
-				"PREFIX schema: <http://schema.org/>\n\n",
-		},
-		{
-			name: "prefix with angle brackets",
-			prefixes: []config.Prefix{
-				{Name: "rdf", URI: "<http://www.w3.org/1999/02/22-rdf-syntax-ns#>"},
-			},
-			want: "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\n",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := buildPrefixBlock(tt.prefixes)
-			if got != tt.want {
-				t.Errorf("buildPrefixBlock() =\n%q\nwant\n%q", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestHasExistingPrefixes(t *testing.T) {
+func TestExtractDeclaredPrefixes(t *testing.T) {
 	tests := []struct {
 		name  string
 		query string
-		want  bool
+		want  map[string]bool
 	}{
 		{
 			name:  "query with PREFIX",
 			query: "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nSELECT * WHERE { ?s ?p ?o }",
-			want:  true,
+			want:  map[string]bool{"rdf": true},
 		},
 		{
-			name:  "query with lowercase prefix",
+			name:  "query with lowercase prefix keyword",
 			query: "prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nSELECT * WHERE { ?s ?p ?o }",
-			want:  true,
+			want:  map[string]bool{"rdf": true},
 		},
 		{
-			name:  "query with PREFIX and leading whitespace",
-			query: "  \n\tPREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nSELECT * WHERE { ?s ?p ?o }",
-			want:  true,
+			name:  "query with multiple prefixes",
+			query: "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX schema: <http://schema.org/>\nSELECT * WHERE { ?s ?p ?o }",
+			want:  map[string]bool{"rdf": true, "schema": true},
 		},
 		{
 			name:  "query without PREFIX",
 			query: "SELECT * WHERE { ?s rdf:type schema:Person }",
-			want:  false,
-		},
-		{
-			name:  "query with PREFIX in middle",
-			query: "SELECT * WHERE { ?s PREFIX ?o }",
-			want:  false,
+			want:  map[string]bool{},
 		},
 		{
 			name:  "empty query",
 			query: "",
-			want:  false,
+			want:  map[string]bool{},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := hasExistingPrefixes(tt.query)
-			if got != tt.want {
-				t.Errorf("hasExistingPrefixes() = %v, want %v for query:\n%s", got, tt.want, tt.query)
+			got := extractDeclaredPrefixes(tt.query)
+			if len(got) != len(tt.want) {
+				t.Errorf("extractDeclaredPrefixes() returned %d prefixes, want %d", len(got), len(tt.want))
+			}
+			for prefix := range tt.want {
+				if !got[prefix] {
+					t.Errorf("extractDeclaredPrefixes() missing prefix %q", prefix)
+				}
 			}
 		})
 	}
 }
 
-func TestPrefixPrepending(t *testing.T) {
-	// Create test prefixes
+func TestExtractUsedPrefixes(t *testing.T) {
+	tests := []struct {
+		name  string
+		query string
+		want  map[string]bool
+	}{
+		{
+			name:  "query with single prefix usage",
+			query: "SELECT * WHERE { ?s rdf:type ?o }",
+			want:  map[string]bool{"rdf": true},
+		},
+		{
+			name:  "query with multiple prefix usages",
+			query: "SELECT * WHERE { ?s rdf:type schema:Person . ?s skos:prefLabel ?label }",
+			want:  map[string]bool{"rdf": true, "schema": true, "skos": true},
+		},
+		{
+			name:  "query with URL (should exclude http/https)",
+			query: "SELECT * WHERE { ?s ?p <http://example.com/resource> }",
+			want:  map[string]bool{},
+		},
+		{
+			name:  "query with both prefixes and URLs",
+			query: "SELECT * WHERE { ?s rdf:type <https://example.com/Person> }",
+			want:  map[string]bool{"rdf": true},
+		},
+		{
+			name:  "empty query",
+			query: "",
+			want:  map[string]bool{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractUsedPrefixes(tt.query)
+			if len(got) != len(tt.want) {
+				t.Errorf("extractUsedPrefixes() returned %d prefixes, want %d. Got: %v", len(got), len(tt.want), got)
+			}
+			for prefix := range tt.want {
+				if !got[prefix] {
+					t.Errorf("extractUsedPrefixes() missing prefix %q", prefix)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildNeededPrefixBlock(t *testing.T) {
+	prefixes := []config.Prefix{
+		{Name: "rdf", URI: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"},
+		{Name: "rdfs", URI: "http://www.w3.org/2000/01/rdf-schema#"},
+		{Name: "schema", URI: "http://schema.org/"},
+		{Name: "skos", URI: "http://www.w3.org/2004/02/skos/core#"},
+	}
+
+	tests := []struct {
+		name        string
+		usedSet     map[string]bool
+		declaredSet map[string]bool
+		wantContain []string
+		wantOmit    []string
+	}{
+		{
+			name:        "all prefixes used, none declared",
+			usedSet:     map[string]bool{"rdf": true, "schema": true},
+			declaredSet: map[string]bool{},
+			wantContain: []string{"PREFIX rdf:", "PREFIX schema:"},
+			wantOmit:    []string{"PREFIX rdfs:", "PREFIX skos:"},
+		},
+		{
+			name:        "some prefixes already declared",
+			usedSet:     map[string]bool{"rdf": true, "schema": true},
+			declaredSet: map[string]bool{"rdf": true},
+			wantContain: []string{"PREFIX schema:"},
+			wantOmit:    []string{"PREFIX rdf:", "PREFIX rdfs:", "PREFIX skos:"},
+		},
+		{
+			name:        "all prefixes declared",
+			usedSet:     map[string]bool{"rdf": true, "schema": true},
+			declaredSet: map[string]bool{"rdf": true, "schema": true},
+			wantContain: []string{},
+			wantOmit:    []string{"PREFIX rdf:", "PREFIX schema:"},
+		},
+		{
+			name:        "no prefixes used",
+			usedSet:     map[string]bool{},
+			declaredSet: map[string]bool{},
+			wantContain: []string{},
+			wantOmit:    []string{"PREFIX rdf:", "PREFIX schema:"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := buildNeededPrefixBlock(prefixes, tt.usedSet, tt.declaredSet)
+			for _, want := range tt.wantContain {
+				if !strings.Contains(got, want) {
+					t.Errorf("buildNeededPrefixBlock() should contain %q, got:\n%s", want, got)
+				}
+			}
+			for _, omit := range tt.wantOmit {
+				if strings.Contains(got, omit) {
+					t.Errorf("buildNeededPrefixBlock() should not contain %q, got:\n%s", omit, got)
+				}
+			}
+		})
+	}
+}
+
+func TestFinalizeQuery(t *testing.T) {
 	prefixes := []config.Prefix{
 		{Name: "rdf", URI: "http://www.w3.org/1999/02/22-rdf-syntax-ns#"},
 		{Name: "schema", URI: "http://schema.org/"},
+		{Name: "schch", URI: "https://schema.ld.admin.ch/"},
 	}
 
-	// Create a test preprocessor
 	preproc := New(Config{
 		EndpointURL: "http://example.com/sparql",
 		Prefixes:    prefixes,
 	})
 
 	tests := []struct {
-		name          string
-		query         string
-		shouldPrepend bool
+		name        string
+		query       string
+		wantContain []string
+		wantOmit    []string
 	}{
 		{
-			name:          "query without PREFIX should get prefixes prepended",
-			query:         "SELECT * WHERE { ?s rdf:type schema:Person }",
-			shouldPrepend: true,
+			name:        "query without prefixes should get needed prefixes added",
+			query:       "SELECT * WHERE { ?s rdf:type schema:Person }",
+			wantContain: []string{"PREFIX rdf:", "PREFIX schema:", "SELECT * WHERE"},
+			wantOmit:    []string{"PREFIX schch:"},
 		},
 		{
-			name: "query with existing PREFIX should not get duplicates",
-			query: `PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-SELECT * WHERE { ?s rdf:type schema:Person }`,
-			shouldPrepend: false,
+			name:        "query with schch prefix usage",
+			query:       "SELECT * WHERE { ?s a schch:TerminologyCollection }",
+			wantContain: []string{"PREFIX schch:", "SELECT * WHERE"},
+			wantOmit:    []string{"PREFIX rdf:", "PREFIX schema:"},
+		},
+		{
+			name:        "query with existing prefix should not duplicate",
+			query:       "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nSELECT * WHERE { ?s rdf:type schema:Person }",
+			wantContain: []string{"PREFIX schema:", "PREFIX rdf:", "SELECT * WHERE"},
+			wantOmit:    []string{"PREFIX schch:"},
+		},
+		{
+			name:        "query with all needed prefixes declared",
+			query:       "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\nPREFIX schema: <http://schema.org/>\nSELECT * WHERE { ?s rdf:type schema:Person }",
+			wantContain: []string{"PREFIX rdf:", "PREFIX schema:", "SELECT * WHERE"},
+			wantOmit:    []string{"PREFIX schch:"},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// We can't directly call querySparqlEndpoint as it makes HTTP requests
-			// But we can test the helper functions
-			hasPrefixes := hasExistingPrefixes(tt.query)
-
-			if tt.shouldPrepend && hasPrefixes {
-				t.Error("Expected query to not have prefixes, but hasExistingPrefixes returned true")
-			}
-			if !tt.shouldPrepend && !hasPrefixes {
-				t.Error("Expected query to have prefixes, but hasExistingPrefixes returned false")
-			}
-
-			// Test that buildPrefixBlock would produce valid output
-			if tt.shouldPrepend {
-				prefixBlock := buildPrefixBlock(preproc.config.Prefixes)
-				if !strings.Contains(prefixBlock, "PREFIX rdf:") {
-					t.Error("Expected prefix block to contain 'PREFIX rdf:'")
+			got := preproc.finalizeQuery(tt.query)
+			for _, want := range tt.wantContain {
+				if !strings.Contains(got, want) {
+					t.Errorf("finalizeQuery() should contain %q, got:\n%s", want, got)
 				}
-				if !strings.Contains(prefixBlock, "PREFIX schema:") {
-					t.Error("Expected prefix block to contain 'PREFIX schema:'")
+			}
+			for _, omit := range tt.wantOmit {
+				// Count occurrences - if prefix was in original query, that's OK
+				// We just don't want it added if it wasn't there
+				originalCount := strings.Count(tt.query, omit)
+				finalCount := strings.Count(got, omit)
+				if finalCount > originalCount {
+					t.Errorf("finalizeQuery() should not add %q, got:\n%s", omit, got)
 				}
 			}
 		})

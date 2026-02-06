@@ -12,13 +12,15 @@ document.addEventListener('DOMContentLoaded', function () {
     // switch the icon
     if (themeIcon) {
       if (theme === 'dark') {
-        themeIcon.classList.remove('bi-moon');
-        themeIcon.classList.add('bi-sun');
+        themeIcon.setAttribute('data-lucide', 'sun');
         themeIcon.setAttribute('aria-label', 'Switch to light mode');
       } else {
-        themeIcon.classList.remove('bi-sun');
-        themeIcon.classList.add('bi-moon');
+        themeIcon.setAttribute('data-lucide', 'moon');
         themeIcon.setAttribute('aria-label', 'Switch to dark mode');
+      }
+      // Re-initialize lucide icons after changing the data-lucide attribute
+      if (window.lucide) {
+        window.lucide.createIcons();
       }
     }
 
@@ -32,8 +34,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     
     // If using Bootstrap tooltips, update the tooltip if already initialized
-    if (window.bootstrap && window.bootstrap.Tooltip) {
-      const tooltip = window.bootstrap.Tooltip.getInstance(themeToggle);
+    // Note: Tabler exposes Bootstrap under tabler.bootstrap
+    if (window.tabler && window.tabler.bootstrap && window.tabler.bootstrap.Tooltip) {
+      const tooltip = window.tabler.bootstrap.Tooltip.getInstance(themeToggle);
       if (tooltip) tooltip.setContent({ '.tooltip-inner': themeToggle.getAttribute('data-bs-original-title') });
     }
   }

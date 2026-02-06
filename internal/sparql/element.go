@@ -4,6 +4,7 @@ package sparql
 import (
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"hutzli.org/visoto/internal/logger"
 )
@@ -32,9 +33,16 @@ func (e ExtractedElement) AsQuery() (extractedQuery, error) {
 		resolveLabels = val != "false"
 	}
 
+	// Parse optional endpoint attribute
+	endpoint := ""
+	if val, exists := e.Attributes["endpoint"]; exists {
+		endpoint = strings.TrimSpace(val)
+	}
+
 	return extractedQuery{
 		ID:            e.ID,
 		Query:         e.Content,
 		ResolveLabels: resolveLabels,
+		Endpoint:      endpoint,
 	}, nil
 }

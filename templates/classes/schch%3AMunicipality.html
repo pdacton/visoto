@@ -24,16 +24,21 @@
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-query id="instances" class="d-none">
-      SELECT ?municipality ?identifier ?district ?canton (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
+      SELECT ?municipality ?identifier ?district ?canton ?validFrom ?validThrough (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
       WHERE {
         BIND (?? AS ?class)
         ?municipality (rdf:type|owl:type) ?class .
         ?municipality schema:identifier ?identifier . # data issue LINDAS: there are many municipalities without identifier?
         OPTIONAL { ?municipality schema:containedInPlace ?district . ?district a schch:District . }
         OPTIONAL { ?canton schema:hasPart ?district . ?canton a schch:Canton . }
+        OPTIONAL { 
+          ?municipality vl:version ?version .
+          ?version schema:validFrom ?validFrom .
+          OPTIONAL { ?version schema:validThrough ?validThrough . }
+        }
         OPTIONAL { ?municipality schema:postalCode ?postalCode . }
       }
-      GROUP BY ?municipality ?district ?canton ?identifier
+      GROUP BY ?municipality ?district ?canton ?identifier ?validFrom ?validThrough
       LIMIT 20000
     </sparql-query>
     {{ template "sparqlTable" (dict

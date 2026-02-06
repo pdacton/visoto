@@ -44,61 +44,41 @@
               </div>
             </div>
 
-            <!-- Advanced Filters (Collapsible) -->
-            <div class="accordion mb-3" id="advanced-filters">
-              <div class="accordion-item">
-                <h2 class="accordion-header">
-                  <button
-                    class="accordion-button collapsed"
-                    type="button"
-                    data-bs-toggle="collapse"
-                    data-bs-target="#filter-content"
-                    aria-expanded="false"
-                    aria-controls="filter-content">
-                    Advanced Filters (Optional)
-                  </button>
-                </h2>
-                <div id="filter-content" class="accordion-collapse collapse">
-                  <div class="accordion-body">
-                    <div class="row">
+            <div class="row mb-3">
 
-                      <!-- Class Filter -->
-                      <div class="col-md-6 mb-3">
-                        <label for="class-filter" class="form-label">RDF Class</label>
-                        <select name="class" id="class-filter" class="form-select">
-                          {{ range .ClassFilters }}
-                            <option value="{{ .IRI }}"
-                              {{ if eq .IRI $.SelectedClass }}selected{{ end }}>
-                              {{ .Label }}
-                            </option>
-                          {{ end }}
-                        </select>
-                        <div class="form-text">Filter results by RDF type/class</div>
-                      </div>
-
-                      <!-- Property Filter -->
-                      <div class="col-md-6 mb-3">
-                        <label for="property-filter" class="form-label">RDF Property</label>
-                        <select name="property" id="property-filter" class="form-select">
-                          {{ range .PropertyFilters }}
-                            <option value="{{ .IRI }}"
-                              {{ if eq .IRI $.SelectedProperty }}selected{{ end }}>
-                              {{ .Label }}
-                            </option>
-                          {{ end }}
-                        </select>
-                        <div class="form-text">Search only within specific property</div>
-                      </div>
-
-                    </div>
-                  </div>
-                </div>
+              <!-- Class Filter -->
+              <div class="col-md-6 mb-3">
+                <label for="class-filter" class="form-label">RDF Class</label>
+                <select name="class" id="class-filter" class="form-select">
+                  {{ range .ClassFilters }}
+                    <option value="{{ .IRI }}"
+                      {{ if eq .IRI $.SelectedClass }}selected{{ end }}>
+                      {{ .Label }}
+                    </option>
+                  {{ end }}
+                </select>
+                <div class="form-text">Filter results by RDF type/class</div>
               </div>
+
+              <!-- Property Filter -->
+              <div class="col-md-6 mb-3">
+                <label for="property-filter" class="form-label">RDF Property</label>
+                <select name="property" id="property-filter" class="form-select">
+                  {{ range .PropertyFilters }}
+                    <option value="{{ .IRI }}"
+                      {{ if eq .IRI $.SelectedProperty }}selected{{ end }}>
+                      {{ .Label }}
+                    </option>
+                  {{ end }}
+                </select>
+                <div class="form-text">Search only within specific property</div>
+              </div>
+
             </div>
 
             <!-- Search Button -->
             <button type="submit" class="btn btn-primary">
-              <i class="bi bi-search"></i> Search
+              <i data-lucide="search" class="me-2" style="width: 16px; height: 16px;"></i> Search
             </button>
 
           </form>

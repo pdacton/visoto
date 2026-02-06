@@ -80,9 +80,10 @@
       // Initialize Bootstrap tooltips - required for Bootstrap 5
       // Tooltips must be explicitly initialized as they are opt-in for performance reasons
       // See: https://getbootstrap.com/docs/5.0/components/tooltips/#example-enable-tooltips-everywhere
+      // Note: Tabler exposes Bootstrap under tabler.bootstrap
       var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
       var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl)
+        return new tabler.bootstrap.Tooltip(tooltipTriggerEl)
       })
     </script>
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
@@ -178,6 +179,9 @@
 
     <!-- Chat functionality -->
     <script src="/static/js/chat.js"></script>
+
+    <!-- Endpoint switcher -->
+    <script src="/static/js/endpoint-switcher.js"></script>
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>

@@ -58,6 +58,7 @@
   {{ $collapsed := .collapsed }}
   {{ $direction := .direction }}
   {{ $config := .config }}
+  {{ $extraField := .extraField }}
 
   {{ if $result.Error }}
     <div class="alert alert-danger">
@@ -135,6 +136,9 @@
             <template id="{{ $id }}-config">{{ toJSON $config }}</template>
           {{ end }}
 
+          <!-- Extra field name (if provided via template parameter) -->
+          <template id="{{ $id }}-extraField">{{ if $extraField }}{{ $extraField }}{{ end }}</template>
+
           <!-- Resize handle -->
           <div id="{{ $id }}-resize-handle" style="position: absolute; bottom: 8px; right: 8px; width: 20px; height: 20px; cursor: nwse-resize; z-index: 1000;">
             <svg width="20" height="20" viewBox="0 0 20 20" style="opacity: 0.5; transition: opacity 0.2s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.5'">
@@ -171,6 +175,8 @@
             var mapping = null;
             var configElement = document.getElementById(diagramId + "-config");
             var config = configElement ? JSON.parse(configElement.innerHTML.trim()) : getDefaultConfig();
+            var extraFieldElement = document.getElementById(diagramId + "-extraField");
+            var extraField = extraFieldElement && extraFieldElement.innerHTML.trim() ? extraFieldElement.innerHTML.trim() : null;
 
             // ========================================
             // Constants
@@ -271,6 +277,7 @@
               var uriToId = {};
               var idToUri = {};
               var idToType = {};
+              var idToExtraField = {};
               var index = 1;
 
               bindings.forEach(function(binding) {
@@ -301,11 +308,57 @@
                 }
               });
 
-              return { uriToId: uriToId, idToUri: idToUri, idToType: idToType };
+              // Second pass: collect extraField values for all nodes
+              // Check for both 'from' and 'to' specific fields (fromValidFrom, toValidFrom)
+              // or a single shared field (validFrom)
+              if (extraField) {
+                var fromFieldName = 'from' + extraField.charAt(0).toUpperCase() + extraField.slice(1);
+                var toFieldName = 'to' + extraField.charAt(0).toUpperCase() + extraField.slice(1);
+
+                bindings.forEach(function(binding) {
+                  if (!binding.from || !binding.to) return;
+
+                  var fromUri = binding.from.Value;
+                  var toUri = binding.to.Value;
+                  var fromId = uriToId[fromUri];
+                  var toId = uriToId[toUri];
+
+                  // Check for from-specific field (e.g., fromValidFrom)
+                  if (binding[fromFieldName]) {
+                    var fromValue = binding[fromFieldName].Lol || binding[fromFieldName].Value;
+                    if (fromValue && fromId && !idToExtraField[fromId]) {
+                      idToExtraField[fromId] = fromValue;
+                    }
+                  }
+
+                  // Check for to-specific field (e.g., toValidFrom)
+                  if (binding[toFieldName]) {
+                    var toValue = binding[toFieldName].Lol || binding[toFieldName].Value;
+                    if (toValue && toId && !idToExtraField[toId]) {
+                      idToExtraField[toId] = toValue;
+                    }
+                  }
+
+                  // Fallback: check for single shared field (e.g., validFrom)
+                  if (binding[extraField]) {
+                    var extraValue = binding[extraField].Lol || binding[extraField].Value;
+                    if (extraValue) {
+                      if (fromId && !idToExtraField[fromId]) {
+                        idToExtraField[fromId] = extraValue;
+                      }
+                      if (toId && !idToExtraField[toId]) {
+                        idToExtraField[toId] = extraValue;
+                      }
+                    }
+                  }
+                });
+              }
+
+              return { uriToId: uriToId, idToUri: idToUri, idToType: idToType, idToExtraField: idToExtraField };
             }
 
             // Build Mermaid diagram syntax
-            function buildMermaidDiagram(bindings, direction, uriToId, idToType) {
+            function buildMermaidDiagram(bindings, direction, uriToId, idToType, idToExtraField) {
               var header = direction === "graph" ? "graph LR" : "flowchart " + direction;
               var nodeLines = [];
               var edgeLines = [];
@@ -328,10 +381,18 @@
                 if (idToType[fromId]) {
                   fromNodeLabel = fromLabel + '<br><small>' + escapeLabel(idToType[fromId]) + '</small>';
                 }
+                // Add extra field if available
+                if (idToExtraField && idToExtraField[fromId]) {
+                  fromNodeLabel = fromNodeLabel + '<br><small>' + escapeLabel(idToExtraField[fromId]) + '</small>';
+                }
 
                 var toNodeLabel = toLabel;
                 if (idToType[toId]) {
                   toNodeLabel = toLabel + '<br><small>' + escapeLabel(idToType[toId]) + '</small>';
+                }
+                // Add extra field if available
+                if (idToExtraField && idToExtraField[toId]) {
+                  toNodeLabel = toNodeLabel + '<br><small>' + escapeLabel(idToExtraField[toId]) + '</small>';
                 }
 
                 // Collect unique nodes with styling
@@ -407,7 +468,7 @@
 
             // Render diagram
             function renderDiagram(direction) {
-              var mermaidCode = buildMermaidDiagram(bindings, direction, mapping.uriToId, mapping.idToType);
+              var mermaidCode = buildMermaidDiagram(bindings, direction, mapping.uriToId, mapping.idToType, mapping.idToExtraField);
               var container = document.getElementById(diagramId + "-diagram");
 
               // Add transition class for smoother re-renders
