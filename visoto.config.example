@@ -1,0 +1,65 @@
+# This is the configuration file for the visoto application
+# Copy this file to visoto.config and fill in your actual values
+
+# application settings
+[application]
+port = 8060
+sparqlEndpoint = "https://ld.admin.ch/query/"  # Default endpoint
+timeout = 30 # timeout in seconds
+gemini_api_key = "YOUR_GEMINI_API_KEY_HERE" # Get from: https://aistudio.google.com/app/apikey
+
+# Named SPARQL endpoints for the menu
+[[application.sparqlEndpoints]]
+name = "LINDAS prod"
+url = "https://ld.admin.ch/query/"
+default = true
+
+[[application.sparqlEndpoints]]
+name = "LINDAS int"
+url = "https://int.lindas.admin.ch/query/"
+
+[[application.sparqlEndpoints]]
+name = "LINDAS test"
+url = "https://test.lindas.admin.ch/query/"
+
+[[application.sparqlEndpoints]]
+name = "LINDASnext prod"
+url = "https://lindas.cz-aws.net/query/"
+
+[[application.sparqlEndpoints]]
+name = "LINDASnext int"
+url = "https://lindas.int.cz-aws.net/query/"
+
+
+# RDF settings
+[rdf]
+# static prefixes, one per line, enclosed by quotes and terminated by a comma
+# use either SPARQL or turtle notation, both are accepted
+# TODO: 'xmlns' triggers the firewall (WAF) of LINDAS, so for now leaving out foaf
+#   "@prefix foaf:   <http://xmlns.com/foaf/0.1/> .",
+prefixes = [
+  "PREFIX  rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+  "PREFIX  rdfs:   <http://www.w3.org/2000/01/rdf-schema#>",
+  "PREFIX  owl:    <http://www.w3.org/2002/07/owl#>",
+  "PREFIX  skos:   <http://www.w3.org/2004/02/skos/core#>",
+  "@prefix schema: <http://schema.org/> .",
+  "PREFIX  schch:  <https://schema.ld.admin.ch/>",
+  "PREFIX  gtfs:   <http://vocab.gtfs.org/terms#>",
+  "PREFIX  vl:     <https://version.link/>",
+  "PREFIX  rico:   <https://www.ica.org/standards/RiC/ontology#>",
+  "regch:  https://register.ld.admin.ch/",
+  "refch:  https://reference.data.admin.ch/"
+]
+
+# if a resource has several rdf:type this list is used to prioritize the matching templates
+type_priority = [
+  "https://schema.ld.admin.ch/ZefixOrganisation",
+  "http://schema.org/Organization",
+  "http://schema.org/DefinedTerm"
+]
+
+# Logging configuration
+[logging]
+level = "DEBUG"   # DEBUG, INFO, WARN, ERROR
+format = "text"  # json, text
+output = "stdout" # stdout, stderr, or file path
