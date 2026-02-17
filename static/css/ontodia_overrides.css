@@ -1,117 +1,433 @@
 /* Graph Explorer CSS Overrides */
 
-/* ========================================
-   HALO (selection overlay with buttons)
-   Original color is #d8956d (orange/tan)
-   ======================================== */
-.graph-explorer-halo {
-  border: none !important;
-  /* Tabler-style elevation shadow to make selection "rise" */
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
+/* Dark Mode Support
+ * Using Tabler/Bootstrap 5 CSS variables from:
+ * https://github.com/tabler/tabler/blob/dev/core/scss/_variables.scss
+ * https://github.com/tabler/tabler/blob/dev/core/scss/_variables-dark.scss
+ */
 
-/* ========================================
-   TOOLBAR - Tabler styling
-   ======================================== */
-.graph-explorer-toolbar {
-  background: var(--tblr-bg-surface) !important;
-  border-bottom: 1px solid var(--tblr-border-color) !important;
-  padding: 0.5rem 0.75rem !important;
-  display: flex !important;
-  align-items: center !important;
-  gap: 0.25rem !important;
-  flex-wrap: wrap !important;
-  height: auto !important;
-  min-height: 40px !important;
-}
-
-/* Button group styling */
-.graph-explorer-toolbar .btn-group,
-.graph-explorer-toolbar__layout-group {
-  display: inline-flex !important;
-  gap: 2px !important;
-  margin-right: 0.5rem !important;
-}
-
-/* All toolbar buttons */
-.graph-explorer-toolbar button {
-  font-size: 13px !important;
-  padding: 0.25rem 0.5rem !important;
-  border-radius: var(--tblr-border-radius) !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  gap: 4px !important;
-  min-width: 32px !important;
-  height: 32px !important;
-  background-image: none !important;
-}
-
-/* Remove any SVG background images from original buttons */
-.graph-explorer-toolbar button svg:not([data-lucide]) {
-  display: none !important;
-}
-
-/* Ensure Lucide icons display properly */
-.graph-explorer-toolbar button svg[data-lucide] {
-  width: 16px !important;
-  height: 16px !important;
-  stroke-width: 2 !important;
-}
-
-/* Add separator after zoom buttons */
-.graph-explorer-toolbar__layout-group::after {
-  content: '';
-  display: inline-block;
-  width: 1px;
-  height: 20px;
-  background: var(--tblr-border-color);
-  margin-left: 0.5rem;
-}
-
-/* Language selector styling */
-.graph-explorer-toolbar__language-selector {
-  display: inline-flex !important;
-  align-items: center !important;
-  margin-left: auto !important;
-  gap: 0.5rem !important;
-}
-
-.graph-explorer-toolbar__language-selector label {
-  font-size: 13px !important;
-  color: var(--tblr-muted) !important;
-  margin: 0 !important;
-  white-space: nowrap !important;
-}
-
-.graph-explorer-toolbar__language-selector select {
-  font-size: 13px !important;
-  padding: 0.25rem 0.5rem !important;
-  border: 1px solid var(--tblr-border-color) !important;
-  border-radius: var(--tblr-border-radius) !important;
-  background: var(--tblr-bg-surface) !important;
-  height: 32px !important;
-}
-
-/* Hide panel toggle buttons (the oval shapes) */
-.graph-explorer-toolbar__toggle {
-  display: none !important;
-}
-
-/* Hide any buttons with original graph-explorer styling that weren't converted */
-.graph-explorer-toolbar .graph-explorer-btn {
-  background-image: none !important;
-}
-
-/* Ensure Font Awesome icons in unconverted buttons are hidden (we replace with Lucide) */
-.graph-explorer-toolbar .fa {
-  display: none !important;
-}
-
-/* ========================================
-   NAVIGATOR (minimap in bottom-right)
-   ======================================== */
 /* Hide the navigator/overview minimap */
 .graph-explorer-navigator {
   display: none !important;
+}
+
+/* Hide the "Data Language - " label text in the language selector */
+.graph-explorer-toolbar__language-selector .graph-explorer-label span {
+  display: none !important;
+}
+
+/* HALO (selection overlay with buttons) */
+/* Remove dotted line and orange shadow, add light grey shadow */
+.graph-explorer-halo {
+  border: none !important;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+
+
+/* Replace Font Awesome icons with Lucide icons using mask-image */
+/* Base styles for all FA icons - use mask-image with Lucide SVGs */
+.fa {
+  font-family: inherit !important;
+  font-style: normal;
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  vertical-align: middle;
+  margin: -0.125em 0;
+}
+
+/* Icon mappings: Font Awesome -> Lucide */
+.fa-search {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+}
+
+.fa-trash {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6'/%3E%3Cpath d='M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 6h18'/%3E%3Cpath d='M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6'/%3E%3Cpath d='M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2'/%3E%3C/svg%3E");
+}
+
+.fa-sitemap {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='8' height='8' x='3' y='3' rx='2'/%3E%3Cpath d='M7 11v4a2 2 0 0 0 2 2h4'/%3E%3Crect width='8' height='8' x='13' y='13' rx='2'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='8' height='8' x='3' y='3' rx='2'/%3E%3Cpath d='M7 11v4a2 2 0 0 0 2 2h4'/%3E%3Crect width='8' height='8' x='13' y='13' rx='2'/%3E%3C/svg%3E");
+}
+
+.fa-search-plus {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3Cline x1='11' x2='11' y1='8' y2='14'/%3E%3Cline x1='8' x2='14' y1='11' y2='11'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3Cline x1='11' x2='11' y1='8' y2='14'/%3E%3Cline x1='8' x2='14' y1='11' y2='11'/%3E%3C/svg%3E");
+}
+
+.fa-search-minus {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3Cline x1='8' x2='14' y1='11' y2='11'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3Cline x1='8' x2='14' y1='11' y2='11'/%3E%3C/svg%3E");
+}
+
+.fa-arrows-alt {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 15 6 6'/%3E%3Cpath d='m15 9 6-6'/%3E%3Cpath d='M21 16v5h-5'/%3E%3Cpath d='M21 8V3h-5'/%3E%3Cpath d='M3 16v5h5'/%3E%3Cpath d='m3 21 6-6'/%3E%3Cpath d='M3 8V3h5'/%3E%3Cpath d='M9 9 3 3'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 15 6 6'/%3E%3Cpath d='m15 9 6-6'/%3E%3Cpath d='M21 16v5h-5'/%3E%3Cpath d='M21 8V3h-5'/%3E%3Cpath d='M3 16v5h5'/%3E%3Cpath d='m3 21 6-6'/%3E%3Cpath d='M3 8V3h5'/%3E%3Cpath d='M9 9 3 3'/%3E%3C/svg%3E");
+}
+
+.fa-picture-o {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='18' height='18' x='3' y='3' rx='2' ry='2'/%3E%3Ccircle cx='9' cy='9' r='2'/%3E%3Cpath d='m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21'/%3E%3C/svg%3E");
+}
+
+.fa-print {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/%3E%3Cpath d='M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6'/%3E%3Crect x='6' y='14' width='12' height='8' rx='1'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2'/%3E%3Cpath d='M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6'/%3E%3Crect x='6' y='14' width='12' height='8' rx='1'/%3E%3C/svg%3E");
+}
+
+.fa-chevron-down {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+.fa-arrows-h {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 8 4 4-4 4'/%3E%3Cpath d='M2 12h20'/%3E%3Cpath d='m6 8-4 4 4 4'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m18 8 4 4-4 4'/%3E%3Cpath d='M2 12h20'/%3E%3Cpath d='m6 8-4 4 4 4'/%3E%3C/svg%3E");
+}
+
+.fa-edit {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z'/%3E%3C/svg%3E");
+}
+
+.fa-floppy-o {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z'/%3E%3Cpath d='M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7'/%3E%3Cpath d='M7 3v4a1 1 0 0 0 1 1h7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z'/%3E%3Cpath d='M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7'/%3E%3Cpath d='M7 3v4a1 1 0 0 0 1 1h7'/%3E%3C/svg%3E");
+}
+
+.fa-lightbulb-o {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5'/%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5'/%3E%3Cpath d='M9 18h6'/%3E%3Cpath d='M10 22h4'/%3E%3C/svg%3E");
+}
+
+.fa-sort-alpha-asc {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 8 4-4 4 4'/%3E%3Cpath d='M7 4v16'/%3E%3Cpath d='M20 8h-5'/%3E%3Cpath d='M15 10V6.5a2.5 2.5 0 0 1 5 0V10'/%3E%3Cpath d='M15 14h5l-5 6h5'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m3 8 4-4 4 4'/%3E%3Cpath d='M7 4v16'/%3E%3Cpath d='M20 8h-5'/%3E%3Cpath d='M15 10V6.5a2.5 2.5 0 0 1 5 0V10'/%3E%3Cpath d='M15 14h5l-5 6h5'/%3E%3C/svg%3E");
+}
+
+.fa-text-width {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h16'/%3E%3Cpath d='m6 16 6-12 6 12'/%3E%3Cpath d='M8 12h8'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h16'/%3E%3Cpath d='m6 16 6-12 6 12'/%3E%3Cpath d='M8 12h8'/%3E%3C/svg%3E");
+}
+
+.fa-times {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+}
+
+
+/* ===== DARK MODE SUPPORT ===== */
+
+[data-bs-theme="dark"] {
+  /* Main canvas background - paper area where graph is drawn */
+  .graph-explorer-paper-area,
+  .graph-explorer-paper-area__area,
+  .graph-explorer-paper {
+    background-color: var(--tblr-bg-surface) !important;
+  }
+
+  /* Main workspace container */
+  .graph-explorer__workspace {
+    background-color: var(--tblr-bg-surface) !important;
+  }
+
+  /* Toolbar background and borders */
+  .graph-explorer-toolbar,
+  .graph-explorer-toolbar__layout,
+  .graph-explorer-toolbar__command-bar {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  /* Toolbar buttons and controls */
+  .graph-explorer-btn,
+  .graph-explorer-toolbar button,
+  .graph-explorer-toolbar__language-selector select {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+    color: var(--tblr-body-color) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  .graph-explorer-btn:hover,
+  .graph-explorer-toolbar button:hover {
+    background-color: var(--tblr-bg-surface-tertiary) !important;
+  }
+
+  /* Panels and sidebars */
+  .graph-explorer-class-tree,
+  .graph-explorer-instances-search,
+  .graph-explorer-search-results,
+  .graph-explorer-accordion,
+  .graph-explorer-accordion-item__body {
+    background-color: var(--tblr-bg-surface-dark) !important;
+    color: var(--tblr-body-color) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  /* Panel headers */
+  .graph-explorer-accordion-item__header {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+    color: var(--tblr-body-color) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  /* Input fields and search boxes */
+  .graph-explorer-form-control,
+  .graph-explorer-class-tree__filter input,
+  .graph-explorer-instances-search input,
+  .search-input {
+    background-color: var(--tblr-bg-forms) !important;
+    color: var(--tblr-body-color) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  .graph-explorer-form-control:focus,
+  .search-input:focus {
+    background-color: var(--tblr-bg-forms) !important;
+    border-color: var(--tblr-primary) !important;
+  }
+
+  /* Connections dialog/panel */
+  .graph-explorer-dialog,
+  .graph-explorer-connections-menu {
+    background-color: var(--tblr-bg-surface) !important;
+    color: var(--tblr-body-color) !important;
+  }
+
+  .graph-explorer-connections-menu__title-label {
+    background-color: transparent !important;
+    color: var(--tblr-body-color) !important;
+  }
+
+  /* Connection list items with alternating backgrounds */
+  .link-in-popup-menu {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+    color: var(--tblr-body-color) !important;
+  }
+
+  .link-in-popup-menu:nth-child(even) {
+    background-color: var(--tblr-bg-surface-tertiary) !important;
+  }
+
+  .link-in-popup-menu:hover {
+    background-color: var(--tblr-bg-surface-dark) !important;
+  }
+
+  .link-in-popup-menu_direction {
+    background-color: var(--tblr-bg-surface-dark) !important;
+  }
+
+  /* Progress bar in connections */
+  .graph-explorer-progress-bar {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+  }
+
+  .graph-explorer-progress-bar__bar {
+    background-color: var(--tblr-primary) !important;
+  }
+
+  /* Links panel - right sidebar connections list */
+  .graph-explorer-scrollable {
+    background-color: var(--tblr-bg-surface) !important;
+  }
+
+  .graph-explorer-list-group {
+    background-color: transparent !important;
+  }
+
+  .graph-explorer-list-group-item,
+  .linkInToolBox {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+    color: var(--tblr-body-color) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  .graph-explorer-list-group-item:hover,
+  .linkInToolBox:hover {
+    background-color: var(--tblr-bg-surface-tertiary) !important;
+  }
+
+  .link-title {
+    color: var(--tblr-body-color) !important;
+  }
+
+  /* Button groups within link items */
+  .linkInToolBox .graph-explorer-btn-group {
+    background-color: transparent !important;
+  }
+
+  /* Class tree items - links and labels */
+  .graph-explorer-class-leaf__body,
+  .graph-explorer-class-leaf__label,
+  .graph-explorer-class-leaf__label span {
+    color: var(--tblr-body-color) !important;
+  }
+
+  .graph-explorer-class-leaf__body:hover {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+  }
+
+  /* Instances search results container - fix bright border */
+  .graph-explorer-instances-search__rest {
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  /* Link types toolbox - fix bright border */
+  .link-types-toolbox__rest {
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  /* Class tree container - fix bright borders */
+  .graph-explorer-class-tree__tree {
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  /* Tree items and list items */
+  .graph-explorer-class-tree-item,
+  .graph-explorer-instance-item,
+  .graph-explorer-connection-menu-item {
+    color: var(--tblr-body-color) !important;
+  }
+
+  .graph-explorer-class-tree-item:hover,
+  .graph-explorer-instance-item:hover,
+  .graph-explorer-connection-menu-item:hover {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+  }
+
+  .graph-explorer-class-tree-item.selected,
+  .graph-explorer-instance-item.selected {
+    background-color: var(--tblr-primary) !important;
+    color: var(--tblr-primary-fg) !important;
+  }
+
+  /* Element nodes on canvas - override inline background colors */
+  .graph-explorer-standard-template__main {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  .graph-explorer-standard-template__body {
+    background-color: var(--tblr-bg-surface) !important;
+    border-left-color: var(--tblr-border-color) !important;
+  }
+
+  .graph-explorer-standard-template__body-content {
+    background-color: transparent !important;
+  }
+
+  /* Element text content - light text for dark mode */
+  .graph-explorer-standard-template__label,
+  .graph-explorer-standard-template__type-value {
+    color: var(--tblr-body-color) !important;
+  }
+
+  /* Element thumbnail/icon - keep accent color */
+  .graph-explorer-standard-template__thumbnail {
+    /* Keep the original accent color but adjust for dark mode */
+    background-color: var(--tblr-bg-surface-tertiary) !important;
+  }
+
+  /* Selection halo - keep subtle in dark mode */
+  .graph-explorer-halo {
+    box-shadow: 0 0.5rem 1rem rgba(255, 255, 255, 0.1) !important;
+  }
+
+  /* Tooltips and popovers */
+  .graph-explorer-tooltip,
+  .graph-explorer-popover {
+    background-color: var(--tblr-bg-surface-dark) !important;
+    color: var(--tblr-body-color) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  /* Modals and dialogs */
+  .graph-explorer-modal-content,
+  .graph-explorer-dialog-body {
+    background-color: var(--tblr-bg-surface) !important;
+    color: var(--tblr-body-color) !important;
+  }
+
+  .graph-explorer-modal-header,
+  .graph-explorer-dialog-header {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  /* Accordion handle - separator line between panels */
+  .graph-explorer-accordion-item__handle,
+  .graph-explorer-accordion-item__handle-horizontal,
+  .graph-explorer-accordion-item__handle-vertical {
+    background-color: var(--tblr-border-color) !important;
+  }
+
+  /* Accordion handle buttons */
+  .graph-explorer-accordion-item__handle-btn {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+    color: var(--tblr-body-color) !important;
+  }
+
+  .graph-explorer-accordion-item__handle-btn:hover {
+    background-color: var(--tblr-bg-surface-tertiary) !important;
+  }
+
+  /* Scrollbars (webkit browsers) */
+  .graph-explorer-class-tree::-webkit-scrollbar,
+  .graph-explorer-instances::-webkit-scrollbar {
+    background-color: var(--tblr-bg-surface-secondary);
+  }
+
+  .graph-explorer-class-tree::-webkit-scrollbar-thumb,
+  .graph-explorer-instances::-webkit-scrollbar-thumb {
+    background-color: var(--tblr-border-color-dark);
+  }
+
+  .graph-explorer-class-tree::-webkit-scrollbar-thumb:hover,
+  .graph-explorer-instances::-webkit-scrollbar-thumb:hover {
+    background-color: var(--tblr-muted);
+  }
+
+  /* Dropdown menus */
+  .graph-explorer-dropdown-menu {
+    background-color: var(--tblr-bg-surface) !important;
+    border-color: var(--tblr-border-color) !important;
+  }
+
+  .graph-explorer-dropdown-item {
+    color: var(--tblr-body-color) !important;
+  }
+
+  .graph-explorer-dropdown-item:hover {
+    background-color: var(--tblr-bg-surface-secondary) !important;
+  }
+
+  /* Badges and tags */
+  .graph-explorer-badge {
+    background-color: var(--tblr-bg-surface-tertiary) !important;
+    color: var(--tblr-body-color) !important;
+  }
+
+  /* Loading spinners and overlays */
+  .graph-explorer-spinner-overlay {
+    background-color: rgba(0, 0, 0, 0.5) !important;
+  }
+
+  /* Text colors for various states */
+  .graph-explorer-text-muted {
+    color: var(--tblr-muted) !important;
+  }
+
+  .graph-explorer-text-primary {
+    color: var(--tblr-primary) !important;
+  }
 }

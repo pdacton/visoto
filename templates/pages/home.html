@@ -79,128 +79,116 @@
   
 </div>
 
-<div class="row row-deck row-cards">
+<div class="row row-deck row-cards mb-3">
 
   <!-- classes card -->
-  <div class="col-sm-6 col-lg-3">
-    <div class="card">
-      <div class="card-body">
-        <sparql-query id="classCount" class="d-none">
-          SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
-            { ?class a owl:Class }
-            UNION
-            { ?class a rdfs:Class }
-          }
-        </sparql-query>
-        <div class="d-flex align-items-center">
-          <div class="subheader">Classes</div>
-        </div>
-        <div class="h1 mb-3">
-          {{ if .QueryResults.classCount.Bindings }}{{ (index .QueryResults.classCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-        </div>
-        <p class="text-secondary">Distinct classes (<a href="/resource/owl:Class">owl:Class</a>, <a href="/resource/rdfs:Class">rdfs:Class</a>) declared in the graph.</p>
-      </div>
-    </div>
-  </div>
-  
+  <sparql-query id="classCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
+      { ?class a owl:Class }
+      UNION
+      { ?class a rdfs:Class }
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.classCount "title" "Classes" "href" "/resource/owl:Class" "icon" "/static/img/resource/Class.svg") }}
+
   <!-- properties card -->
-  <div class="col-sm-6 col-lg-3">
-    <div class="card">
-      <div class="card-body">
-        <sparql-query id="tripleCount" class="d-none">
-          SELECT (COUNT(DISTINCT ?p) AS ?count) WHERE {
-            ?s ?p ?o .
-          }
-        </sparql-query>
-        <div class="d-flex align-items-center">
-          <div class="subheader">Properties</div>
-        </div>
-        <div class="h1 mb-3">
-          {{ if .QueryResults.tripleCount.Bindings }}{{ (index .QueryResults.tripleCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-        </div>
-        <p class="text-secondary">Distinct properties used in the graph.</p>
-      </div>
-    </div>
-  </div>
+  <sparql-query id="tripleCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?p) AS ?count) WHERE {
+      ?s ?p ?o .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.tripleCount "title" "Properties" "href" "/resource/rdf:Property" "icon" "/static/img/resource/Property.svg") }}
+
+  <!-- concept schemes card -->
+  <sparql-query id="conceptSchemeCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?scheme) AS ?count) WHERE {
+      ?scheme a skos:ConceptScheme .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.conceptSchemeCount "title" "Concept Schemes" "href" "/resource/skos:ConceptScheme" "icon" "/static/img/resource/ConceptScheme.svg") }}
 
   <!-- concepts card -->
-  <div class="col-sm-6 col-lg-3">
-    <div class="card">
-      <div class="card-body">
-        <sparql-query id="conceptCount" class="d-none">
-          SELECT (COUNT(DISTINCT ?concept) AS ?count) WHERE {
-            ?concept a skos:Concept .
-          }
-        </sparql-query>
-        <div class="d-flex align-items-center">
-          <div class="subheader">Concepts</div>
-        </div>
-        <div class="h1 mb-3">
-          {{ if .QueryResults.conceptCount.Bindings }}{{ (index .QueryResults.conceptCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-        </div>
-        <p class="text-secondary"><a href="/resource/skos:Concept">SKOS concepts</a> defined in the graph.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- defined terms card -->
-  <div class="col-sm-6 col-lg-3">
-    <div class="card">
-      <div class="card-body">
-        <sparql-query id="termCount" class="d-none">
-          SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
-            ?term a schema:DefinedTerm .
-          }
-        </sparql-query>
-        <div class="d-flex align-items-center">
-          <div class="subheader">Defined Terms</div>
-        </div>
-        <div class="h1 mb-3">
-          {{ if .QueryResults.termCount.Bindings }}{{ (index .QueryResults.termCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-        </div>
-        <p class="text-secondary"><a href="/resource/schema:DefinedTerm">Defined terms</a> in the graph.</p>
-      </div>
-    </div>
-  </div>
+  <sparql-query id="conceptCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?concept) AS ?count) WHERE {
+      ?concept a skos:Concept .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.conceptCount "title" "Concepts" "href" "/resource/skos:Concept" "icon" "/static/img/resource/Concept.svg") }}
 
   <!-- defined term sets card -->
-  <div class="col-sm-6 col-lg-3">
-    <div class="card">
-      <div class="card-body">
-        <sparql-query id="termSetCount" class="d-none">
-          SELECT (COUNT(DISTINCT ?termSet) AS ?count) WHERE {
-            ?termSet a schema:DefinedTermSet .
-          }
-        </sparql-query>
-        <div class="d-flex align-items-center">
-          <div class="subheader">Defined Term Sets</div>
-        </div>
-        <div class="h1 mb-3">
-          {{ if .QueryResults.termSetCount.Bindings }}{{ (index .QueryResults.termSetCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-        </div>
-        <p class="text-secondary"><a href="/resource/schema:DefinedTermSet">Defined term sets</a> in the graph.</p>
-      </div>
-    </div>
-  </div>
+  <sparql-query id="termSetCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?termSet) AS ?count) WHERE {
+      ?termSet a schema:DefinedTermSet .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.termSetCount "title" "Defined Term Sets" "href" "/resource/schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.svg") }}
+
+  <!-- defined terms card -->
+  <sparql-query id="termCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
+      ?term a schema:DefinedTerm .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.termCount "title" "Defined Terms" "href" "/resource/schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.svg") }}
 
   <!-- terminology collections card -->
-  <div class="col-sm-6 col-lg-3">
-    <div class="card">
-      <div class="card-body">
-        <sparql-query id="terminologyCollectionCount" class="d-none">
-          SELECT (COUNT(DISTINCT ?collection) AS ?count) WHERE {
-            ?collection a schch:TerminologyCollection .
-          }
-        </sparql-query>
-        <div class="d-flex align-items-center">
-          <div class="subheader">Terminology Collections</div>
-        </div>
-        <div class="h1 mb-3">
-          {{ if .QueryResults.terminologyCollectionCount.Bindings }}{{ (index .QueryResults.terminologyCollectionCount.Bindings 0).count.Value }}{{ else }}0{{ end }}
-        </div>
-        <p class="text-secondary"><a href="/resource/schch:TerminologyCollection">Terminology collections</a> in the graph.</p>
-      </div>
-    </div>
-  </div>
+  <sparql-query id="terminologyCollectionCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?collection) AS ?count) WHERE {
+      ?collection a schch:TerminologyCollection .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.terminologyCollectionCount "title" "Terminology Collections" "href" "/resource/schch:TerminologyCollection" "icon" "/static/img/resource/TerminologyCollection.svg") }}
+
+</div>
+
+<div class="row row-deck row-cards mb-3">
+
+  <!-- cubes card -->
+  <sparql-query id="cubeCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?cube) AS ?count) WHERE {
+      ?cube a cube:Cube .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.cubeCount "title" "Cubes" "href" "/resource/cube:Cube" "icon" "/static/img/resource/Cube.svg") }}
+
+  <!-- observation sets card -->
+  <sparql-query id="observationSetCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?set) AS ?count) WHERE {
+      ?set a cube:ObservationSet .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.observationSetCount "title" "Observation Sets" "href" "/resource/cube:ObservationSet" "icon" "/static/img/resource/ObservationSet.svg") }}
+
+  <!-- observations card -->
+  <sparql-query id="observationCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?obs) AS ?count) WHERE {
+      ?obs a cube:Observation .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.observationCount "title" "Observations" "href" "/resource/cube:Observation" "icon" "/static/img/resource/Observation.svg") }}
+
+  <!-- key dimensions card -->
+  <sparql-query id="keyDimensionCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
+      ?dim a cube:KeyDimension .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.keyDimensionCount "title" "Key Dimensions" "href" "/resource/cube:KeyDimension" "icon" "/static/img/resource/KeyDimension.svg") }}
+
+  <!-- measure dimensions card -->
+  <sparql-query id="measureDimensionCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
+      ?dim a cube:MeasureDimension .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.measureDimensionCount "title" "Measure Dimensions" "href" "/resource/cube:MeasureDimension" "icon" "/static/img/resource/MeasureDimension.svg") }}
+
+  <!-- shared dimensions card -->
+  <sparql-query id="sharedDimensionCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
+      ?dim a meta:SharedDimension .
+    }
+  </sparql-query>
+  {{ template "sparqlMetric" (dict "result" .QueryResults.sharedDimensionCount "title" "Shared Dimensions" "href" "/resource/meta:SharedDimension" "icon" "/static/img/resource/SharedDimension.svg") }}
 
 {{ end }}

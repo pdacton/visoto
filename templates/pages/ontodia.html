@@ -1,31 +1,12 @@
 
 {{ define "pageTitle" }}Graph Explorer{{ end }}
-{{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Graph Explorer Icon" / width="40px">{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Graph Explorer Icon" width="40" />{{ end }}
 {{ define "metaIcon" }}/static/img/graphexplorer.svg{{ end }}
 
 {{ define "pageContent" }}
+<!-- Graph Explorer expects Font Awesome icons, but we're replacing them with Lucide via CSS mask-image (see ontodia_overrides.css) -->
 <link rel="stylesheet" href="/static/css/ontodia_overrides.css">
 <div id="graph-explorer-root" style="height: calc(100vh - 200px); width: 100%; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius);"></div>
-<!-- Custom toolbar for Save/Load -->
-<div id="graph-toolbar" style="position: fixed; top: 120px; right: 30px; z-index: 100; display: flex; gap: 8px;">
-  <button class="btn btn-sm btn-outline-primary" onclick="window.graphExplorer.saveDiagram()" title="Save diagram to browser storage">
-    <i data-lucide="save" style="width: 16px; height: 16px;"></i> Save
-  </button>
-  <button class="btn btn-sm btn-outline-primary" onclick="window.graphExplorer.loadDiagram()" title="Load diagram from browser storage">
-    <i data-lucide="folder-open" style="width: 16px; height: 16px;"></i> Load
-  </button>
-  <button class="btn btn-sm btn-outline-secondary" onclick="window.graphExplorer.clearSaved()" title="Clear saved diagram">
-    <i data-lucide="trash-2" style="width: 16px; height: 16px;"></i>
-  </button>
-</div>
-<!-- Context menu for nodes -->
-<div id="graph-context-menu" class="dropdown-menu" style="display: none; position: fixed; z-index: 1050;">
-  <button class="dropdown-item" data-action="open-resource"><i data-lucide="external-link" class="me-2" style="width: 16px; height: 16px;"></i>Open Resource</button>
-  <button class="dropdown-item" data-action="expand-connections"><i data-lucide="git-branch" class="me-2" style="width: 16px; height: 16px;"></i>Expand Connections</button>
-  <button class="dropdown-item" data-action="copy-iri"><i data-lucide="clipboard-copy" class="me-2" style="width: 16px; height: 16px;"></i>Copy IRI</button>
-  <div class="dropdown-divider"></div>
-  <button class="dropdown-item text-danger" data-action="remove"><i data-lucide="x-circle" class="me-2" style="width: 16px; height: 16px;"></i>Remove from Graph</button>
-</div>
 {{ end }}
 
 {{ define "pageScripts" }}
@@ -33,7 +14,6 @@
 <script>
 (function() {
   'use strict';
-
   var GE = window.GraphExplorer;
   var container = document.getElementById('graph-explorer-root');
 
@@ -44,205 +24,67 @@
 
   // URL parameter support for deep linking
   var urlParams = new URLSearchParams(window.location.search);
-  var startIRI = urlParams.get('iri') || 'https://register.ld.admin.ch/zefix/company/CHE-105.805.080';
-
-  // Storage key for localStorage persistence
-  var STORAGE_KEY = 'graphExplorerDiagram';
-
-  // Global references for toolbar buttons
-  var workspaceRef = null;
-  var dataProviderRef = null;
-
-  // Expose functions globally for toolbar buttons
-  window.graphExplorer = {
-    saveDiagram: function() {
-      if (!workspaceRef) {
-        showNotification('Workspace not ready', 'warning');
-        return;
-      }
-      try {
-        var model = workspaceRef.getModel();
-        // Try different export methods that might be available
-        var layoutData;
-        if (typeof model.exportLayout === 'function') {
-          layoutData = model.exportLayout();
-        } else if (typeof workspaceRef.exportLayout === 'function') {
-          layoutData = workspaceRef.exportLayout();
-        } else {
-          // Fallback: manually collect element positions
-          var elements = model.elements;
-          var links = model.links;
-          layoutData = {
-            elements: [],
-            links: []
-          };
-          elements.forEach(function(el) {
-            layoutData.elements.push({
-              id: el.id,
-              iri: el.iri,
-              position: el.position
-            });
-          });
-          links.forEach(function(link) {
-            layoutData.links.push({
-              id: link.id,
-              sourceId: link.sourceId,
-              targetId: link.targetId
-            });
-          });
-        }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(layoutData));
-        showNotification('Diagram saved', 'success');
-      } catch (err) {
-        console.error('Failed to save diagram:', err);
-        showNotification('Failed to save: ' + err.message, 'danger');
-      }
-    },
-
-    loadDiagram: function() {
-      if (!workspaceRef || !dataProviderRef) {
-        showNotification('Workspace not ready', 'warning');
-        return;
-      }
-      try {
-        var saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) {
-          showNotification('No saved diagram found', 'warning');
-          return;
-        }
-        var diagramData = JSON.parse(saved);
-        var layoutData = diagramData.layoutData || diagramData;
-        var savedElements = layoutData.elements || [];
-
-        if (savedElements.length === 0) {
-          showNotification('No elements in saved diagram', 'warning');
-          return;
-        }
-
-        // Extract actual resource IRIs from saved elements
-        // The format stores IRI in 'iri' property, not '@id' (which is internal ID)
-        var iris = savedElements.map(function(el) {
-          // Try different possible locations for the actual IRI
-          return el.iri || el['iri'] || (el.data && el.data.id);
-        }).filter(function(iri) {
-          return iri && typeof iri === 'string' && iri.startsWith('http');
-        });
-
-
-        if (iris.length === 0) {
-          showNotification('No valid IRIs in saved diagram', 'warning');
-          return;
-        }
-
-        // Fetch element info and recreate the diagram
-        dataProviderRef.elementInfo({ elementIds: iris }).then(function(elementInfos) {
-          var model = workspaceRef.getModel();
-          var createdElements = [];
-
-          savedElements.forEach(function(savedEl) {
-            var iri = savedEl.iri;
-            if (iri && elementInfos[iri]) {
-              var element = model.createElement(iri);
-              if (element) {
-                var pos = savedEl.position;
-                if (pos) {
-                  element.setPosition({ x: pos.x, y: pos.y });
-                }
-                createdElements.push(element);
-              }
-            }
-          });
-
-          if (createdElements.length > 0) {
-            model.requestElementData(createdElements);
-            setTimeout(function() {
-              workspaceRef.zoomToFit();
-            }, 1000);
-            showNotification('Diagram loaded (' + createdElements.length + ' elements)', 'success');
-          } else {
-            showNotification('Could not restore elements', 'warning');
-          }
-        }).catch(function(err) {
-          console.error('Failed to fetch element info:', err);
-          showNotification('Failed to load diagram', 'danger');
-        });
-      } catch (err) {
-        console.error('Failed to load diagram:', err);
-        showNotification('Failed to load: ' + err.message, 'danger');
-      }
-    },
-
-    clearSaved: function() {
-      localStorage.removeItem(STORAGE_KEY);
-      showNotification('Saved diagram cleared', 'info');
-    }
-  };
-
-  // Simple notification helper
-  function showNotification(message, type) {
-    var notification = document.createElement('div');
-    notification.className = 'alert alert-' + type + ' alert-dismissible';
-    notification.style.cssText = 'position: fixed; top: 160px; right: 30px; z-index: 101; max-width: 250px; padding: 8px 12px; font-size: 13px;';
-    notification.innerHTML = message + '<button type="button" class="btn-close btn-close-sm" data-bs-dismiss="alert" style="padding: 10px;"></button>';
-    document.body.appendChild(notification);
-    setTimeout(function() {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
-      }
-    }, 3000);
-  }
+  var startIRI = urlParams.get('iri') || 'https://ld.admin.ch/canton/2';
 
   function onWorkspaceMounted(workspace) {
     if (!workspace) return;
 
-    workspaceRef = workspace;
-
-    // Custom settings for LINDAS endpoint - uses schema:name for labels
-    // Using OWLRDFSSettings (not OWLStatsSettings) to avoid loading all instances
-    // dataLabelProperty expects SPARQL property path syntax with angle brackets
-    var settings = Object.assign({}, GE.OWLRDFSSettings, {
-      dataLabelProperty: '<http://schema.org/name> | rdfs:label',
-      schemaLabelProperty: '<http://schema.org/name> | rdfs:label'
+    // OWLStatsSettings with LINDAS-specific label properties and prefixes.
+    var settings = Object.assign({}, GE.OWLStatsSettings, {
+      defaultPrefix:
+        'PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n' +
+        'PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n' +
+        'PREFIX owl:    <http://www.w3.org/2002/07/owl#>\n' +
+        'PREFIX skos:   <http://www.w3.org/2004/02/skos/core#>\n' +
+        'PREFIX schema: <http://schema.org/>\n' +
+        'PREFIX schch:  <https://schema.ld.admin.ch/>\n' +
+        'PREFIX gtfs:   <http://vocab.gtfs.org/terms#>\n' +
+        'PREFIX vl:     <https://version.link/>\n' +
+        'PREFIX rico:   <https://www.ica.org/standards/RiC/ontology#>\n' +
+        'PREFIX regch:  <https://register.ld.admin.ch/>\n' +
+        'PREFIX refch:  <https://reference.data.admin.ch/>\n' +
+        'PREFIX dcterms: <http://purl.org/dc/terms/>\n',
+      dataLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
+      schemaLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
     });
 
     var dataProvider = new GE.SparqlDataProvider(
       {
-        endpointUrl: 'https://ld.admin.ch/query/',
-        queryMethod: GE.SparqlQueryMethod.POST,
+        endpointUrl: 'https://lindas.cz-aws.net/query/',
+        acceptBlankNodes: false,
+        queryMethod: GE.SparqlQueryMethod.GET,
       },
       settings
     );
 
-    dataProviderRef = dataProvider;
-
-    workspace.getModel().importLayout({
+    var model = workspace.getModel();
+    model.importLayout({
       dataProvider: dataProvider,
       preloadedElements: {},
       layoutData: undefined,
     });
 
-    // Load the starting element
-    dataProvider.elementInfo({ elementIds: [startIRI] }).then(function(elementInfos) {
-      var elementInfo = elementInfos[startIRI];
-      if (elementInfo) {
-        var model = workspace.getModel();
-        var element = model.createElement(startIRI);
-        if (element) {
-          element.setPosition({ x: 400, y: 300 });
-          model.requestElementData([element]);
-          setTimeout(function() {
-            workspace.forceLayout();
-            workspace.zoomToFit();
-          }, 1000);
-        }
-      }
-    }).catch(function(err) {
-      console.error('Failed to load element:', err);
-    });
+    // Load the starting element and fetch its data
+    var element = model.createElement(startIRI);
+    if (element) {
+      element.setPosition({ x: 400, y: 300 });
+      model.requestElementData([startIRI]);
+      setTimeout(function() {
+        workspace.forceLayout();
+        workspace.zoomToFit();
+      }, 1000);
+    }
   }
 
   var props = {
     ref: onWorkspaceMounted,
+    languages: [
+      { code: 'en', label: 'English' },
+      { code: 'de', label: 'German' },
+      { code: 'fr', label: 'French' },
+      { code: 'it', label: 'Italian' },
+    ],
+    language: 'en',
     viewOptions: {
       onIriClick: function(iriEvent) {
         var iri = iriEvent.iri || iriEvent;
@@ -252,194 +94,6 @@
   };
 
   GE.renderTo(GE.Workspace, container, props);
-
-  // Enhance the Graph Explorer toolbar with Lucide icons and Tabler styling
-  function enhanceToolbar() {
-    var toolbar = container.querySelector('.graph-explorer-toolbar');
-    if (!toolbar) {
-      setTimeout(enhanceToolbar, 100);
-      return;
-    }
-
-    // Map button title to Lucide icon and display config
-    var buttonConfig = {
-      'Clear All': { icon: 'eraser', showText: true },
-      'Force layout': { icon: 'layout-grid', showText: true, text: 'Layout' },
-      'Zoom In': { icon: 'zoom-in', showText: false },
-      'Zoom Out': { icon: 'zoom-out', showText: false },
-      'Fit to Screen': { icon: 'maximize-2', showText: false },
-      'Export diagram as PNG': { icon: 'image', showText: false },
-      'Export diagram as SVG': { icon: 'file-code', showText: false },
-      'Print diagram': { icon: 'printer', showText: false }
-    };
-
-    // Find all buttons in the toolbar
-    var buttons = toolbar.querySelectorAll('button');
-    buttons.forEach(function(btn) {
-      var title = btn.getAttribute('title') || '';
-      var config = buttonConfig[title];
-
-      // Skip if already has Lucide icon
-      if (btn.querySelector('svg[data-lucide]')) {
-        btn.className = 'btn btn-sm btn-outline-secondary';
-        return;
-      }
-
-      if (config) {
-        // Add Tabler button classes
-        btn.className = 'btn btn-sm btn-outline-secondary';
-
-        // Create icon element
-        var icon = document.createElement('i');
-        icon.setAttribute('data-lucide', config.icon);
-        icon.style.cssText = 'width: 16px; height: 16px;';
-
-        // Clear button and add icon
-        btn.innerHTML = '';
-        btn.appendChild(icon);
-
-        // Add text if configured
-        if (config.showText) {
-          var textSpan = document.createElement('span');
-          textSpan.className = 'ms-1';
-          textSpan.textContent = config.text || title;
-          btn.appendChild(textSpan);
-        }
-      }
-    });
-
-    // Style the language selector
-    var langSelector = toolbar.querySelector('.graph-explorer-toolbar__language-selector');
-    if (langSelector) {
-      var select = langSelector.querySelector('select');
-      if (select) {
-        select.className = 'form-select form-select-sm';
-        select.style.cssText = 'width: auto;';
-      }
-      var label = langSelector.querySelector('label');
-      if (label) {
-        label.style.cssText = 'font-size: 13px; color: var(--tblr-muted);';
-      }
-    }
-
-    // Re-initialize Lucide icons for new elements
-    if (window.lucide) {
-      lucide.createIcons();
-    }
-  }
-
-  setTimeout(enhanceToolbar, 500);
-
-  // Context menu implementation
-  var contextMenu = document.getElementById('graph-context-menu');
-  var contextMenuTarget = null; // Store the element IRI that was right-clicked
-
-  // Hide context menu when clicking elsewhere
-  document.addEventListener('click', function() {
-    contextMenu.style.display = 'none';
-    contextMenuTarget = null;
-  });
-
-  // Handle right-click on the graph container
-  container.addEventListener('contextmenu', function(e) {
-    e.preventDefault();
-
-    // Find if we clicked on a node element
-    var target = e.target;
-    var elementNode = null;
-
-    // Walk up the DOM to find the overlayed-element (node container)
-    while (target && target !== container) {
-      if (target.classList && target.classList.contains('graph-explorer-overlayed-element')) {
-        elementNode = target;
-        break;
-      }
-      target = target.parentElement;
-    }
-
-    if (elementNode && workspaceRef) {
-      // Get the element ID from the data attribute
-      var elementId = elementNode.getAttribute('data-element-id');
-      if (elementId) {
-        // Find the element in the model to get its IRI
-        var model = workspaceRef.getModel();
-        var elements = model.elements;
-        var foundElement = null;
-        elements.forEach(function(el) {
-          if (el.id === elementId) {
-            foundElement = el;
-          }
-        });
-
-        if (foundElement && foundElement.iri) {
-          contextMenuTarget = foundElement.iri;
-
-          // Position and show the context menu
-          contextMenu.style.left = e.clientX + 'px';
-          contextMenu.style.top = e.clientY + 'px';
-          contextMenu.style.display = 'block';
-        }
-      }
-    }
-  });
-
-  // Handle context menu actions
-  contextMenu.addEventListener('click', function(e) {
-    var button = e.target.closest('[data-action]');
-    if (!button || !contextMenuTarget) return;
-
-    var action = button.getAttribute('data-action');
-    var iri = contextMenuTarget;
-
-    switch (action) {
-      case 'open-resource':
-        window.open('/resource/' + encodeURIComponent(iri), '_blank');
-        break;
-
-      case 'expand-connections':
-        if (workspaceRef) {
-          var model = workspaceRef.getModel();
-          var elements = model.elements;
-          elements.forEach(function(el) {
-            if (el.iri === iri) {
-              // Trigger the connections menu or expand - this mimics the halo expand action
-              model.requestLinksOfType({ elementId: el.id });
-            }
-          });
-        }
-        break;
-
-      case 'copy-iri':
-        navigator.clipboard.writeText(iri).then(function() {
-          showNotification('IRI copied to clipboard', 'success');
-        }).catch(function() {
-          // Fallback for older browsers
-          var textArea = document.createElement('textarea');
-          textArea.value = iri;
-          document.body.appendChild(textArea);
-          textArea.select();
-          document.execCommand('copy');
-          document.body.removeChild(textArea);
-          showNotification('IRI copied to clipboard', 'success');
-        });
-        break;
-
-      case 'remove':
-        if (workspaceRef) {
-          var model = workspaceRef.getModel();
-          var elements = model.elements;
-          elements.forEach(function(el) {
-            if (el.iri === iri) {
-              model.removeElement(el.id);
-            }
-          });
-        }
-        break;
-    }
-
-    contextMenu.style.display = 'none';
-    contextMenuTarget = null;
-  });
 })();
 </script>
 {{ end }}

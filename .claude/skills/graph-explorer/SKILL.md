@@ -124,12 +124,20 @@ workspace.exportPng()                   // Export as PNG
 ```javascript
 model.elements                          // Array of all elements
 model.links                             // Array of all links
-model.createElement(iri)                // Create element from IRI
+model.createElement(iri)                // Create element from IRI (does NOT fetch data)
 model.removeElement(elementId)          // Remove element by ID
 model.exportLayout()                    // Export current layout
 model.importLayout(layoutData)          // Import layout
-model.requestElementData(elements)      // Fetch data for elements
+model.requestElementData([iri])         // Fetch data - pass IRI STRINGS, not Element objects
 model.requestLinksOfType({ elementId }) // Request connections
+```
+
+### Loading an Element Programmatically
+```javascript
+// createElement only creates a placeholder - must call requestElementData to fetch labels/types
+var element = model.createElement(startIRI);
+element.setPosition({ x: 400, y: 300 });
+model.requestElementData([startIRI]);  // MUST pass string IRI, not element object
 ```
 
 ### Element Properties
@@ -142,26 +150,28 @@ element.setPosition({ x, y })           // Set position
 
 ## Data Provider Configuration
 
-### SPARQL Provider with Custom Settings
+### SPARQL Provider for LINDAS
 ```javascript
-var settings = Object.assign({}, GE.OWLRDFSSettings, {
+var settings = Object.assign({}, GE.OWLStatsSettings, {
+  // LINDAS uses schema:name, not rdfs:label — without this, labels will be empty
   dataLabelProperty: '<http://schema.org/name> | rdfs:label',
-  schemaLabelProperty: '<http://schema.org/name> | rdfs:label'
+  schemaLabelProperty: '<http://schema.org/name> | rdfs:label',
 });
 
 var dataProvider = new GE.SparqlDataProvider({
   endpointUrl: 'https://ld.admin.ch/query/',
-  queryMethod: GE.SparqlQueryMethod.POST,
-  imagePropertyUris: [
-    'http://xmlns.com/foaf/0.1/img',
-    'http://schema.org/image'
-  ]
+  acceptBlankNodes: false,
+  queryMethod: GE.SparqlQueryMethod.GET,
 }, settings);
 ```
 
 ### Available Settings Objects
-- `GE.OWLRDFSSettings` - Standard OWL/RDFS (recommended for most endpoints)
-- `GE.OWLStatsSettings` - Uses statistics queries (can be slow on large datasets)
+- `GE.OWLStatsSettings` - Used by LINDAS production; includes class instance counts
+- `GE.OWLRDFSSettings` - For large datasets without statistics
+
+### Known Issues with LINDAS Data
+- **Labels empty**: `OWLStatsSettings.dataLabelProperty` defaults to `rdfs:label` only. LINDAS entities use `schema:name` — must override `dataLabelProperty`.
+- **`startsWith` crash**: Some LINDAS entities have `schema:identifier` as bare integers (e.g. `261`). The library's `isEncodedBlank()` calls `.startsWith()` on these non-string values. Fix by overriding `elementInfoQuery` to filter: `FILTER (isLiteral(?propValue) && datatype(?propValue) IN (xsd:string, rdf:langString))`.
 
 ## Toolbar Props (for custom toolbar)
 ```typescript

@@ -1,0 +1,41 @@
+<!--
+  Partial template for rendering a single SPARQL count result as a metric card.
+
+  Usage:
+    {{ template "sparqlMetric" (dict "result" .QueryResults.termSetCount "title" "Defined Term Sets" "href" "/resource/schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.svg") }}
+
+  Parameters (via dict):
+    - result: QueryResult object with .Bindings (expects a single binding with a "count" variable)
+    - title: card title and link label
+    - href: URL for the title link
+    - icon: (optional) path to an SVG image to display alongside the title
+-->
+
+{{ define "sparqlMetric" }}
+
+  {{ $result := .result }}
+  {{ $title := .title }}
+  {{ $href := .href }}
+  {{ $icon := .icon }}
+
+  <div class="col-sm-6 col-lg-3">
+    <div class="card card-sm">
+      <div class="card-body">
+        <div class="d-flex align-items-start">
+          {{ if $icon }}
+          <div class="me-3">
+            <img src="{{ $icon }}" alt="{{ $title }}" width="40" height="40">
+          </div>
+          {{ end }}
+          <div>
+            <div class="subheader"><a href="{{ $href }}">{{ $title }}</a></div>
+            <div class="h1 mb-0">
+              {{ if $result.Bindings }}{{ (index $result.Bindings 0).count.Value }}{{ else }}0{{ end }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+{{ end }}
