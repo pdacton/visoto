@@ -34,3 +34,6 @@ go.work
 # OS specific files
 .DS_Store
 Thumbs.db
+
+# Runtime data (monitoring SQLite DB and state)
+data/

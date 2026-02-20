@@ -9,11 +9,13 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"hutzli.org/visoto/internal/chat"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
+	"hutzli.org/visoto/internal/monitor"
 	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/search"
 	"hutzli.org/visoto/internal/sparql"
@@ -40,6 +42,9 @@ var sparqlPreproc *sparql.Preprocessor
 
 // Package-level config instance
 var cfg *config.Config
+
+// Package-level monitor instance
+var mon *monitor.Monitor
 
 // getSelectedEndpoint reads user's endpoint selection from cookie
 // Returns empty string if none selected (use default)
@@ -231,6 +236,82 @@ func searchHandler(c *gin.Context) {
 	})
 }
 
+func monitoringPageHandler(c *gin.Context) {
+	c.HTML(http.StatusOK, "pages/monitoring.html", gin.H{
+		"SparqlEndpoints": cfg.Application.SparqlEndpoints,
+	})
+}
+
+func monitoringStatusHandler(c *gin.Context) {
+	if mon == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "monitoring not available"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"enabled":   mon.IsEnabled(),
+		"endpoints": mon.LatestStatus(),
+	})
+}
+
+func monitoringToggleHandler(c *gin.Context) {
+	if mon == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "monitoring not available"})
+		return
+	}
+	mon.SetEnabled(!mon.IsEnabled())
+	c.JSON(http.StatusOK, gin.H{"enabled": mon.IsEnabled()})
+}
+
+// parseDuration maps a query param like "1h","6h","24h","7d","30d" to a time.Duration.
+func parseDuration(s string) time.Duration {
+	switch s {
+	case "1h":
+		return 1 * time.Hour
+	case "6h":
+		return 6 * time.Hour
+	case "7d":
+		return 7 * 24 * time.Hour
+	case "30d":
+		return 30 * 24 * time.Hour
+	default: // "24h" and anything else
+		return 24 * time.Hour
+	}
+}
+
+func monitoringDataHandler(c *gin.Context) {
+	if mon == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "monitoring not available"})
+		return
+	}
+
+	dur := parseDuration(c.DefaultQuery("range", "24h"))
+	seriesMap, err := mon.QuerySeries(dur)
+	if err != nil {
+		log := logger.Get()
+		log.Error("monitoring data query failed", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+		return
+	}
+
+	// Build series in endpoint config order
+	type point [2]int64 // [unix_ms, duration_ms]
+	type series struct {
+		Name string  `json:"name"`
+		URL  string  `json:"url"`
+		Data []point `json:"data"`
+	}
+	var out []series
+	for _, ep := range cfg.Application.SparqlEndpoints {
+		metrics := seriesMap[ep.URL]
+		pts := make([]point, 0, len(metrics))
+		for _, m := range metrics {
+			pts = append(pts, point{m.MeasuredAt.UnixMilli(), m.DurationMs})
+		}
+		out = append(out, series{Name: ep.Name, URL: ep.URL, Data: pts})
+	}
+	c.JSON(http.StatusOK, gin.H{"series": out})
+}
+
 func main() {
 
 	// Load configuration
@@ -281,6 +362,17 @@ func main() {
 			slog.String("error", err.Error()))
 	}
 
+	// Initialize endpoint monitor (data stored in ./data/)
+	mon, err = monitor.New(&cfg.Application, "./data")
+	if err != nil {
+		log.Warn("failed to initialize endpoint monitor",
+			slog.String("error", err.Error()))
+	} else {
+		mon.Start()
+		log.Info("endpoint monitor started",
+			slog.Bool("enabled", mon.IsEnabled()))
+	}
+
 	// Create router
 	router := gin.Default()
 
@@ -295,6 +387,10 @@ func main() {
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.GET("/search", searchHandler)
 	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey))
+	router.GET("/monitoring", monitoringPageHandler)
+	router.GET("/api/monitoring/status", monitoringStatusHandler)
+	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
+	router.GET("/api/monitoring/data", monitoringDataHandler)
 	router.GET("/resource/*path", resourceHandler)
 	router.GET("/:page", staticPageHandler)
 

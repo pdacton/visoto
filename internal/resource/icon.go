@@ -52,6 +52,20 @@ func InitIconCache(iconDir string) error {
 	return nil
 }
 
+// GetIconNames returns all available icon names (without .svg extension)
+func GetIconNames() map[string]bool {
+	if globalIconCache == nil {
+		return map[string]bool{}
+	}
+	globalIconCache.mu.RLock()
+	defer globalIconCache.mu.RUnlock()
+	result := make(map[string]bool, len(globalIconCache.icons))
+	for k, v := range globalIconCache.icons {
+		result[k] = v
+	}
+	return result
+}
+
 // hasIcon checks if an icon with the given name exists
 func hasIcon(name string) bool {
 	if globalIconCache == nil {

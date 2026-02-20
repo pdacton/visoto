@@ -14,6 +14,7 @@ var funcMap = template.FuncMap{
 	"render":       sparql.Binding.RenderHTML,
 	"dict":         makeDict,
 	"resourceIcon": resource.GetIconForResource,
+	"iconNames":    resource.GetIconNames,
 	"toJSON":       toJSON,
 	"toJSONPretty": toJSONPretty,
 	"firstValue":   firstValue,

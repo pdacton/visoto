@@ -9,6 +9,8 @@ services:
     volumes:
       # Mount config file for easy customization
       - ./visoto.config:/app/visoto.config:ro
+      # Persistent storage for monitoring time-series database
+      - visoto_data:/app/data
     environment:
       # Gin mode: debug, release, or test
       - GIN_MODE=release
@@ -51,3 +53,4 @@ networks:
 volumes:
   caddy_data:
   caddy_config:
+  visoto_data:

@@ -1,0 +1,62 @@
+{{ define "pageTitle" }}Endpoint Monitoring{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/monitor.svg" alt="Monitoring Icon" width="40" />{{ end }}
+{{ define "metaIcon" }}/static/img/monitor.svg{{ end }}
+{{ define "pageSubtitle" }}Polls all endpoints defined in the settings every five minutes by sending a SPARQL query and records the response time.{{ end }}
+
+
+{{ define "pageContent" }}
+
+<div class="d-flex align-items-center mb-3">
+  <h2 class="mb-0 me-3">Endpoint Response Times</h2>
+  <span id="monitor-badge" class="badge bg-secondary">loading…</span>
+</div>
+
+<!-- Time range selector -->
+<div class="mb-3">
+  <div class="btn-group" role="group" aria-label="Time range">
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-range="1h">1h</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary active" data-range="24h">24h</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-range="7d">7d</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-range="30d">30d</button>
+  </div>
+</div>
+
+<!-- Chart -->
+<div class="card">
+  <div class="card-body">
+    <canvas id="monitoring-chart" style="max-height: 420px;"></canvas>
+    <p id="no-data-msg" class="text-muted text-center py-4" style="display:none;">
+      No data yet. Enable monitoring in the Settings menu and wait for the first probe.
+    </p>
+  </div>
+</div>
+
+<!-- Status table -->
+<div class="card mt-3">
+  <div class="card-header">
+    <h3 class="card-title">Last probe results</h3>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead>
+        <tr>
+          <th>Endpoint</th>
+          <th>Response time</th>
+          <th>Status</th>
+          <th>Measured at</th>
+        </tr>
+      </thead>
+      <tbody id="status-table-body">
+        <tr><td colspan="4" class="text-muted">Loading…</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{{ end }}
+
+{{ define "pageScripts" }}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+<script src="/static/js/monitoring.js"></script>
+{{ end }}
