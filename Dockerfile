@@ -41,6 +41,9 @@ COPY --from=builder /app/static ./static
 # Copy default config (can be overridden with volume mount)
 COPY --from=builder /app/visoto.config ./visoto.config
 
+# Create data directory for monitoring (volume mount point must be owned by the app user)
+RUN mkdir -p /app/data
+
 # Change ownership to non-root user
 RUN chown -R visoto:visoto /app
 
