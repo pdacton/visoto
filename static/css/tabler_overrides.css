@@ -49,14 +49,43 @@ html {
     }
 }
 
+/* --- Card action buttons (.btn-actions / .btn-action) --- */
+
+/* These classes are used in Tabler demos but not defined in tabler.css v1.4.0 */
+.btn-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    color: var(--tblr-secondary);
+    border-radius: var(--tblr-border-radius);
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.btn-action:hover {
+    color: var(--tblr-body-color);
+    background-color: var(--tblr-bg-surface-secondary);
+}
+
 /* --- Card collapse styling --- */
 
 /* Rotate chevron icon when card is collapsed */
-.btn-icon[data-bs-toggle="collapse"] svg {
+.btn-icon[data-bs-toggle="collapse"] svg,
+.btn-action[data-bs-toggle="collapse"] svg {
     transition: transform 0.2s ease;
 }
 
-.btn-icon[data-bs-toggle="collapse"].collapsed svg {
+.btn-icon[data-bs-toggle="collapse"].collapsed svg,
+.btn-action[data-bs-toggle="collapse"].collapsed svg {
     transform: rotate(180deg);
 }
 
@@ -182,3 +211,9 @@ body.resizing {
     user-select: none;
     cursor: ew-resize !important;
 }
+
+/* --- IRI hover dropdown on page title --- */
+.iri-title-wrapper { position: relative; display: inline-block; }
+.iri-dropdown { display: none; top: 100%; left: 0; width: max-content; }
+.iri-title-wrapper:hover .iri-dropdown,
+.iri-title-wrapper:focus-within .iri-dropdown { display: block; }

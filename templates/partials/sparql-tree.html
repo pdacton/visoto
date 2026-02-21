@@ -47,7 +47,7 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
           <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
         </div>
-        <a class="btn btn-icon btn-sm collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
+        <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
           <i data-lucide="chevron-up"></i>
         </a>
       </div>
@@ -71,19 +71,23 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
           {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
         </div>
-        <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 justify-content-end">
+        <div class="ms-auto d-flex align-items-center gap-2">
           {{ if $id }}
-            <input type="text" id="search-{{ $id }}" class="form-control w-auto flex-grow-1" style="min-width: 150px; max-width: 300px;" placeholder="Filter tree...">
-            <button id="expand-{{ $id }}" class="btn btn-icon btn-sm" title="Expand all">
-              <i data-lucide="list-chevrons-up-down"></i>
-            </button>
-            <button id="collapse-tree-{{ $id }}" class="btn btn-icon btn-sm" title="Collapse all">
-              <i data-lucide="list-chevrons-down-up"></i>
-            </button>
+            <input type="text" id="search-{{ $id }}" class="form-control form-control-sm" style="min-width: 150px; max-width: 300px;" placeholder="Filter tree...">
           {{ end }}
-          <a class="btn btn-icon btn-sm{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-            <i data-lucide="chevron-up"></i>
-          </a>
+          <div class="btn-actions">
+            {{ if $id }}
+              <a id="expand-{{ $id }}" class="btn-action" title="Expand all">
+                <i data-lucide="list-chevrons-up-down"></i>
+              </a>
+              <a id="collapse-tree-{{ $id }}" class="btn-action" title="Collapse all">
+                <i data-lucide="list-chevrons-down-up"></i>
+              </a>
+            {{ end }}
+            <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+              <i data-lucide="chevron-up"></i>
+            </a>
+          </div>
         </div>
       </div>
 

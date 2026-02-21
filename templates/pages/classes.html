@@ -24,14 +24,14 @@
             IF(CONTAINS(?iri, "http://") || CONTAINS(?iri, "https://"),
               REPLACE(REPLACE(?iri, "^https?://", ""), "/.*$", ""),
               "NO DOMAIN") AS ?domain)
-
         } GROUP BY ?class ?type ?instances ?iri ?domain
       </sparql-query>
-      {{ template "sparqlTable" (dict 
-          "result" .QueryResults.allClasses 
+      {{ template "sparqlTable" (dict
+          "result" .QueryResults.allClasses
           "id" "allClasses"
           "title" "Classes"
-          "icon" "squircle")
+          "icon" "squircle"
+          "iconVar" "class")
       }}
     </div>
 

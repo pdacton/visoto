@@ -72,7 +72,7 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
           <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
         </div>
-        <a class="btn btn-icon btn-sm collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
+        <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
           <i data-lucide="chevron-up"></i>
         </a>
       </div>
@@ -96,29 +96,30 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
           {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
         </div>
-        <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 justify-content-end">
+        <div class="ms-auto d-flex align-items-center gap-2">
           {{ if $id }}
-            <select id="direction-{{ $id }}" class="form-select w-auto">
+            <select id="direction-{{ $id }}" class="form-select form-select-sm w-auto">
               <option value="LR"{{ if or (eq $direction "LR") (not $direction) }} selected{{ end }}>Left to Right</option>
               <option value="TD"{{ if eq $direction "TD" }} selected{{ end }}>Top Down</option>
               <option value="graph"{{ if eq $direction "graph" }} selected{{ end }}>Graph</option>
             </select>
-            <!-- Zoom controls -->
-            <div class="btn-group" role="group">
-              <button id="zoom-out-{{ $id }}" class="btn btn-icon btn-sm" type="button" title="Zoom out">
-                <i data-lucide="zoom-out"></i>
-              </button>
-              <button id="zoom-reset-{{ $id }}" class="btn btn-icon btn-sm" type="button" title="Reset zoom">
-                <i data-lucide="maximize"></i>
-              </button>
-              <button id="zoom-in-{{ $id }}" class="btn btn-icon btn-sm" type="button" title="Zoom in">
-                <i data-lucide="zoom-in"></i>
-              </button>
-            </div>
           {{ end }}
-          <a class="btn btn-icon btn-sm{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-            <i data-lucide="chevron-up"></i>
-          </a>
+          <div class="btn-actions">
+            {{ if $id }}
+              <a id="zoom-out-{{ $id }}" class="btn-action" title="Zoom out">
+                <i data-lucide="zoom-out"></i>
+              </a>
+              <a id="zoom-reset-{{ $id }}" class="btn-action" title="Reset zoom">
+                <i data-lucide="maximize"></i>
+              </a>
+              <a id="zoom-in-{{ $id }}" class="btn-action" title="Zoom in">
+                <i data-lucide="zoom-in"></i>
+              </a>
+            {{ end }}
+            <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+              <i data-lucide="chevron-up"></i>
+            </a>
+          </div>
         </div>
       </div>
 

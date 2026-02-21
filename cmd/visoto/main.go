@@ -134,6 +134,7 @@ func resourceHandler(c *gin.Context) {
 
 	// Add endpoints to template data for menu rendering (no sensitive data)
 	r.Data.SparqlEndpoints = cfg.Application.SparqlEndpoints
+	r.Data.ShortIRI = r.GetShortIRI()
 
 	// log.Debug("SPARQL data retrieved", slog.Any("data", r.Data))
 

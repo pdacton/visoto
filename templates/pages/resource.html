@@ -1,8 +1,8 @@
 <!-- Default Class Template, for any resource which doesn't have a specific template -->
 
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|rico:title) ?title . }</sparql-query>
-{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
-{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" | or (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" | or (lastPathSegment .ResourceIRI) }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
 <sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
@@ -70,7 +70,8 @@
             "result" .QueryResults.incoming 
             "id" "incoming" 
             "title" "Incoming Relationships" 
-            "icon" "shrink") 
+            "icon" "shrink"
+            "iconVar" "source") 
         }}
       </div>
     </div>
@@ -91,7 +92,8 @@
               "result" .QueryResults.outgoing 
               "id" "outgoing" 
               "title" "Outgoing Relationships"
-              "icon" "expand") 
+              "icon" "expand"
+              "iconVar" "destination") 
         }}
       </div>
     </div>
@@ -115,7 +117,8 @@
             "result" .QueryResults.instances 
             "id" "instances" 
             "title" "Instances of this Class"
-            "icon" "squircle") 
+            "icon" "squircle"
+            "iconVar" "instance") 
         }}
       </div>
 
@@ -136,7 +139,8 @@
             "result" .QueryResults.superclasses 
             "id" "superclasses" 
             "title" "Superclasses of this Class"
-            "icon" "circle-arrow-up") 
+            "icon" "circle-arrow-up"
+            "iconVar" "superclass") 
         }}
       </div>
 
@@ -152,7 +156,8 @@
             "result" .QueryResults.subclasses 
             "id" "subclasses" 
             "title" "Subclasses of this Class"
-            "icon" "circle-arrow-down")
+            "icon" "circle-arrow-down"
+            "iconVar" "subclass")
         }}
       </div>
 
@@ -186,7 +191,8 @@
             "id" "ontology"
             "title" "Schema information"
             "icon" "squircle-dashed"
-            "collapsed" true)
+            "collapsed" true
+            "iconVar" "subject")
         }}
       </div>
 
@@ -207,7 +213,8 @@
             "id" "shacl"
             "title" "Shape information (SHACL)"
             "icon" "blend"
-            "collapsed" true)
+            "collapsed" true
+            "iconVar" "subject")
         }}
       </div>
 

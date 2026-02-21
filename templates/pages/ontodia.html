@@ -79,7 +79,8 @@
   }
 
   function iriToName(uri) {
-    return uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+    var decoded = decodeURIComponent(uri);
+    return decoded.includes('#') ? decoded.split('#').pop() : decoded.split('/').pop();
   }
 
   // Generic classes that should only be used as icon fallback if no specific class matches.
@@ -103,30 +104,32 @@
     return { icon: '/static/img/resource/defaultClass.svg' };
   }
 
-  // IriAwareTemplate: subclass of StandardTemplate that also checks the element's own IRI
+  // StandardTemplateWithIcon: subclass of StandardTemplate that also checks the element's own IRI
   // This handles class nodes (e.g. schema:DefinedTerm) whose rdf:type is owl:Class —
-  // typeStyleResolver gets types=[] before data loads, so it can't help them.
+  // typeStyleResolver gets types=[...] before data loads, so it can't help them.
   // By subclassing StandardTemplate we get its render() for free and only patch the props.
-  class IriAwareTemplate extends window.GraphExplorer.StandardTemplate {
+  class StandardTemplateWithIconUrl extends window.GraphExplorer.StandardTemplate {
+    // here we override the render method to inject our custom icon logic
+    // before calling the original rendering
     render() {
-      if (!this.props.iconUrl) {
+      // if (!this.props.iconUrl) {
         var name = iriToName(this.props.iri || '');
         if (AVAILABLE_ICONS[name]) {
           this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.svg' });
         }
-      }
+      // }
       return super.render();
     }
   }
 
   function elementTemplateResolver(_types) {
-    return IriAwareTemplate;
+    return StandardTemplateWithIconUrl;
   }
 
   var props = {
     ref: onWorkspaceMounted,
     typeStyleResolver: typeStyleResolver,
-    // elementTemplateResolver: elementTemplateResolver,
+    elementTemplateResolver: elementTemplateResolver,
     languages: [
       { code: 'en', label: 'English' },
       { code: 'de', label: 'German' },

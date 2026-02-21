@@ -12,7 +12,35 @@
     {{ end }}
   </div>
   <div>
-    <h1>{{ block "pageTitle" . }}Page Title{{ end }}{{ if .ResourceIRI }} <a href="{{ .ResourceIRI }}" target="_blank"><i data-lucide="external-link" style="width: 0.6em;"></i></a>{{ end }}</h1>
+    <div class="iri-title-wrapper">
+      <h1>{{ block "pageTitle" . }}{{ lastPathSegment .ResourceIRI | or "Page Title" }}{{ end }}</h1>
+      {{ if .ResourceIRI }}
+      <div class="dropdown-menu dropdown-menu-arrow iri-dropdown">
+        {{ if and .ShortIRI (ne .ShortIRI .ResourceIRI) }}
+        <div class="d-flex align-items-center px-3 py-1 gap-2">
+          <code class="text-muted small">{{ .ShortIRI }}</code>
+          <button class="btn btn-sm btn-ghost-secondary ms-auto iri-copy-btn" data-copy="{{ .ShortIRI }}" title="Copy short IRI">
+            <i data-lucide="copy" style="width:0.85em;"></i>
+          </button>
+        </div>
+        {{ end }}
+        <div class="d-flex align-items-center px-3 pt-0 pb-1 gap-2">
+          <a href="{{ .ResourceIRI }}" target="_blank" class="small">
+            <code>{{ .ResourceIRI }}</code>
+          </a>
+          <button class="btn btn-sm btn-ghost-secondary ms-auto iri-copy-btn" data-copy="{{ .ResourceIRI }}" title="Copy IRI">
+            <i data-lucide="copy" style="width:0.85em;"></i>
+          </button>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+    <script>
+    document.addEventListener('click', e => {
+      const btn = e.target.closest('.iri-copy-btn');
+      if (btn) navigator.clipboard.writeText(btn.dataset.copy);
+    });
+    </script>
     <p class="text-uppercase small">{{ block "pageClasses" . }}{{ end }}</p>    <p>{{ block "pageSubtitle" . }}{{ end }}</p>
   </div>
 </div>

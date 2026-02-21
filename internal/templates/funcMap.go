@@ -1,9 +1,11 @@
 package templates
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"strings"
 
 	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/sparql"
@@ -16,8 +18,10 @@ var funcMap = template.FuncMap{
 	"resourceIcon": resource.GetIconForResource,
 	"iconNames":    resource.GetIconNames,
 	"toJSON":       toJSON,
+	"toJSONRaw":    toJSONRaw,
 	"toJSONPretty": toJSONPretty,
 	"firstValue":   firstValue,
+	"lastPathSegment": lastPathSegment,
 }
 
 // makeDict creates a map from alternating key-value pairs
@@ -50,6 +54,20 @@ func toJSON(v interface{}) (template.HTML, error) {
 	return template.HTML(jsonBytes), nil
 }
 
+// toJSONRaw converts a value to JSON without HTML-escaping < > &
+// Use this when the JSON value will be processed by JS (e.g. passed to encodeURIComponent)
+// rather than rendered as HTML, so that URIs in SPARQL queries are preserved literally.
+func toJSONRaw(v interface{}) (template.HTML, error) {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	if err := enc.Encode(v); err != nil {
+		return "", err
+	}
+	// json.Encoder appends a newline; trim it
+	return template.HTML(bytes.TrimRight(buf.Bytes(), "\n")), nil
+}
+
 // toJSONPretty converts any value to indented JSON for display
 // HTML escaping (< > &) is kept for safety when embedding in HTML
 // Usage in templates: {{ toJSONPretty . }}
@@ -59,6 +77,19 @@ func toJSONPretty(v interface{}) (template.HTML, error) {
 		return "", err
 	}
 	return template.HTML(jsonBytes), nil
+}
+
+// lastPathSegment returns the last path segment of an IRI:
+// the fragment after # takes priority, then the last path segment after /
+func lastPathSegment(iri string) string {
+	iri = strings.TrimRight(iri, "/")
+	if idx := strings.LastIndex(iri, "#"); idx != -1 && idx < len(iri)-1 {
+		return iri[idx+1:]
+	}
+	if idx := strings.LastIndex(iri, "/"); idx != -1 && idx < len(iri)-1 {
+		return iri[idx+1:]
+	}
+	return iri
 }
 
 // firstValue extracts the first value from a QueryResult for a given variable name

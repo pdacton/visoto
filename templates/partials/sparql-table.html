@@ -10,6 +10,8 @@
     - title: (optional) card title
     - icon: (optional) Lucid icon name to display before the title
     - collapsed: (optional) if true, card starts in collapsed state
+    - iconVar: (optional) SPARQL variable name whose IRI is used to look up a resource icon
+    - badgeVar: (optional) SPARQL variable name to render as a Tabler badge instead of a link
 -->
 
 {{ define "sparqlTable" }}
@@ -19,12 +21,17 @@
   {{ $title := .title }}
   {{ $icon := .icon }}
   {{ $collapsed := .collapsed }}
+  {{ $iconVar := .iconVar }}
+  {{ $badgeVar := .badgeVar }}
 
+  <!-- query failed -->
   {{ if $result.Error }}
     <div class="alert alert-danger">
       <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
       Query failed: {{ $result.Error }}
     </div>
+
+  <!-- info if empty results -->
   {{ else if eq (len $result.Bindings) 0 }}
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
@@ -32,7 +39,7 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
           <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
         </div>
-        <a class="btn btn-icon btn-sm collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
+        <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
           <i data-lucide="chevron-up"></i>
         </a>
       </div>
@@ -45,36 +52,53 @@
         </div>
       </div>
     </div>
+
+  <!-- show results in table -->
   {{ else }}
 
     <!-- card to enclose the table -->
     <div class="card">
 
-      <!-- card header with title and search box -->
+      <!-- card header with title, search box, group buttons -->
       <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
           {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
           {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
         </div>
-        <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1 justify-content-end">
+        <div class="ms-auto d-flex align-items-center gap-2">
           {{ if $id }}
-            <select id="groupby-{{ $id }}" class="form-select w-auto text-muted">
-              <option value="" class="text-muted">Group by...</option>
-              {{ range $result.Vars }}
-              <option value="{{ . }}">{{ . }}</option>
-              {{ end }}
-            </select>
-            <input type="text" id="search-{{ $id }}" class="search-table form-control w-auto flex-grow-1" style="min-width: 150px; max-width: 300px;" placeholder="Search...">
-            <button id="expand-groups-{{ $id }}" class="btn btn-icon btn-sm" title="Expand all groups">
-              <i data-lucide="list-chevrons-up-down"></i>
-            </button>
-            <button id="collapse-groups-{{ $id }}" class="btn btn-icon btn-sm" title="Collapse all groups">
-              <i data-lucide="list-chevrons-down-up"></i>
-            </button>
+            <input type="text" id="search-{{ $id }}" class="search-table form-control form-control-sm text-secondary" style="min-width: 150px; max-width: 300px;" placeholder="Search...">
           {{ end }}
-          <a class="btn btn-icon btn-sm{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-            <i data-lucide="chevron-up"></i>
-          </a>
+          <div class="btn-actions">
+            {{ if $id }}
+              <select id="groupby-{{ $id }}" class="form-select form-select-sm text-muted">
+                <option value="" class="text-muted">Group by...</option>
+                {{ range $result.Vars }}
+                <option value="{{ . }}">{{ . }}</option>
+                {{ end }}
+              </select>
+              <a id="toggle-groups-{{ $id }}" class="btn-action d-none" title="Collapse all groups">
+                <i data-lucide="list-chevrons-up-down"></i>
+              </a>
+            {{ end }}
+            <div class="dropdown" style="display: contents;">
+              <a class="btn-action" data-bs-toggle="dropdown" aria-expanded="false">
+                <i data-lucide="ellipsis-vertical"></i>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end">
+                <li><h6 class="dropdown-header">Download</h6></li>
+                <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> CSV</a></li>
+                <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> JSON</a></li>
+                <li><a class="dropdown-item download-xlsx-{{ $id }}" href="#"><i data-lucide="table-2" style="width:1em;height:1em;"></i> Excel (XLSX)</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><h6 class="dropdown-header">SPARQL query</h6></li>
+                <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> Execute on endpoint</a></li>
+              </ul>
+            </div>
+            <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+              <i data-lucide="chevron-up"></i>
+            </a>
+          </div>
         </div>
       </div>
 
@@ -87,6 +111,8 @@
           <!-- Inline JSON data: vars is array of column names, bindings is array of row objects -->
           <template id="{{ $id }}-vars">{{ toJSON $result.Vars }}</template>
           <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
+          {{ if $iconVar }}<template id="{{ $id }}-icon-var">{{ $iconVar }}</template><template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>{{ end }}
+          {{ if $badgeVar }}<template id="{{ $id }}-badge-var">{{ $badgeVar }}</template>{{ end }}
         </div>
       </div>
 
@@ -160,6 +186,11 @@
             return value ? value.html || '' : '';
           }
 
+          // Accessor for downloads: extract plain text value from cell object
+          function plainValueAccessor(value) {
+            return value && value.value ? value.value : '';
+          }
+
           // Helper to create groupBy function for a field
           function makeGroupByFn(field) {
             return function(data) {
@@ -168,20 +199,77 @@
             };
           }
 
-          // Build column definitions from vars and first binding
+          // Read optional iconVar from embedded data (set when iconVar parameter is passed)
+          var iconVarEl = document.getElementById("{{ $id }}-icon-var");
+          var iconVar = iconVarEl ? iconVarEl.innerHTML.trim() : null;
+
+          // Read optional badgeVar from embedded data (set when badgeVar parameter is passed)
+          var badgeVarEl = document.getElementById("{{ $id }}-badge-var");
+          var badgeVar = badgeVarEl ? badgeVarEl.innerHTML.trim() : null;
+
+          // Badge formatter: renders the last path segment of a URI as a Tabler badge with a link
+          function badgeCellFormatter(cell) {
+            var value = cell.getValue();
+            if (!value) return '';
+            var uri = value.value || '';
+            // Extract last path segment for display (e.g. "Completed" from a URI)
+            var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+            var badge = '<span class="badge bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
+            if ((value.type === 'uri' || value.Type === 'uri') && uri) {
+              var href = '/resource/' + encodeURIComponent(uri);
+              return '<a href="' + href + '">' + badge + '</a>';
+            }
+            return badge;
+          }
+
+          // Build column definitions from vars
           var firstBinding = bindings[0] || {};
           var columns = vars.map(function(varName) {
             var binding = firstBinding[varName];
             var isLiteral = binding && binding.Type === 'literal';
+            var isBadge = badgeVar && varName === badgeVar;
 
             return {
               title: varName,
               field: varName,
-              formatter: htmlCellFormatter,
+              formatter: isBadge ? badgeCellFormatter : htmlCellFormatter,
               variableHeight: isLiteral,
-              sorter: valueSorter
+              sorter: valueSorter,
+              accessorDownload: plainValueAccessor
             };
           });
+
+          // Prepend icon column if iconVar is configured
+          if (iconVar) {
+            var availableIcons = JSON.parse(document.getElementById("{{ $id }}-available-icons").innerHTML.trim());
+
+            function iriToName(uri) {
+              try { uri = decodeURIComponent(uri); } catch(e) {}
+              return uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+            }
+
+            tableData.forEach(function(row) {
+              var cell = row[iconVar];
+              var iconHtml = '';
+              if (cell && cell.value) {
+                var name = iriToName(cell.value);
+                if (availableIcons[name]) {
+                  iconHtml = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="">';
+                }
+              }
+              row["_icon"] = { html: iconHtml, value: '' };
+            });
+
+            columns.unshift({
+              title: '',
+              field: '_icon',
+              formatter: htmlCellFormatter,
+              width: 40,
+              resizable: false,
+              headerSort: false,
+              download: false
+            });
+          }
 
           // Tabulator configuration
           var tableConfig = {
@@ -252,14 +340,73 @@
             });
           }
 
+          // Toggle expand/collapse all groups button
+          var toggleGroupsBtn = document.getElementById("toggle-groups-{{ $id }}");
+          var groupsExpanded = true;
+
+          function setToggleBtnState(expanded) {
+            groupsExpanded = expanded;
+            var iconName = expanded ? "list-chevrons-up-down" : "list-chevrons-down-up";
+            toggleGroupsBtn.title = expanded ? "Collapse all groups" : "Expand all groups";
+            toggleGroupsBtn.innerHTML = '<i data-lucide="' + iconName + '"></i>';
+            if (window.lucide) lucide.createIcons({ nodes: [toggleGroupsBtn] });
+          }
+
+          if (toggleGroupsBtn) {
+            toggleGroupsBtn.addEventListener("click", function() {
+              var newExpanded = !groupsExpanded;
+              table.blockRedraw();
+              try {
+                table.getGroups().forEach(function(group) {
+                  newExpanded ? group.show() : group.hide();
+                });
+              } finally {
+                table.restoreRedraw();
+              }
+              setToggleBtnState(newExpanded);
+            });
+          }
+
+          // Download handlers
+          var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
+
+          document.querySelector(".download-csv-{{ $id }}").addEventListener("click", function(e) {
+            e.preventDefault();
+            table.download("csv", filename + ".csv", { bom: true });
+          });
+
+          document.querySelector(".download-json-{{ $id }}").addEventListener("click", function(e) {
+            e.preventDefault();
+            table.download("json", filename + ".json");
+          });
+
+          document.querySelector(".download-xlsx-{{ $id }}").addEventListener("click", function(e) {
+            e.preventDefault();
+            table.download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) });
+          });
+
+          // Open query on YASGUI endpoint
+          document.querySelector(".sparql-endpoint-{{ $id }}").addEventListener("click", function(e) {
+            e.preventDefault();
+            var query = JSON.parse({{ toJSONRaw $result.Query }});
+            var endpoint = JSON.parse({{ toJSONRaw $result.Endpoint }});
+            var url = "https://yasgui.triply.cc/#query=" + encodeURIComponent(query) + "&endpoint=" + encodeURIComponent(endpoint);
+            window.open(url, "_blank");
+          });
+
           // GroupBy dropdown with localStorage persistence
           var groupBySelect = document.getElementById("groupby-{{ $id }}");
           if (groupBySelect) {
             function applyGroupBy(field) {
               if (field === "") {
                 table.setGroupBy(false);
+                if (toggleGroupsBtn) toggleGroupsBtn.classList.add("d-none");
               } else {
                 table.setGroupBy(makeGroupByFn(field));
+                if (toggleGroupsBtn) {
+                  toggleGroupsBtn.classList.remove("d-none");
+                  setToggleBtnState(true);
+                }
               }
             }
 
@@ -284,36 +431,6 @@
                 localStorage.setItem("tabulator-groupby-{{ $id }}", selectedField);
               } catch (e) {
                 console.warn("localStorage unavailable:", e);
-              }
-            });
-          }
-
-          // Expand all groups button
-          var expandGroupsBtn = document.getElementById("expand-groups-{{ $id }}");
-          if (expandGroupsBtn) {
-            expandGroupsBtn.addEventListener("click", function() {
-              table.blockRedraw();
-              try {
-                table.getGroups().forEach(function(group) {
-                  group.show();
-                });
-              } finally {
-                table.restoreRedraw();
-              }
-            });
-          }
-
-          // Collapse all groups button
-          var collapseGroupsBtn = document.getElementById("collapse-groups-{{ $id }}");
-          if (collapseGroupsBtn) {
-            collapseGroupsBtn.addEventListener("click", function() {
-              table.blockRedraw();
-              try {
-                table.getGroups().forEach(function(group) {
-                  group.hide();
-                });
-              } finally {
-                table.restoreRedraw();
               }
             });
           }

@@ -24,7 +24,7 @@
 
   {{ if $result.Error }}
     <div class="alert alert-danger">
-      <i class="bi bi-exclamation-triangle"></i>
+      <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
       Query failed: {{ $result.Error }}
     </div>
   {{ else if eq (len $result.Bindings) 0 }}
@@ -34,14 +34,14 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
           <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
         </div>
-        <a class="btn btn-icon btn-sm collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
+        <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
           <i data-lucide="chevron-up"></i>
         </a>
       </div>
       <div id="collapse-{{ $id }}" class="collapse">
         <div class="card-body">
           <div class="alert alert-info mb-0">
-            <i class="bi bi-info-circle"></i>
+            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
             No results found.
           </div>
         </div>
@@ -58,9 +58,11 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
           {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
         </div>
-        <a class="btn btn-icon btn-sm{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-          <i data-lucide="chevron-up"></i>
-        </a>
+        <div class="btn-actions">
+          <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+            <i data-lucide="chevron-up"></i>
+          </a>
+        </div>
       </div>
 
       <!-- card body with datagrid -->

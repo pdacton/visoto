@@ -41,17 +41,20 @@
     <div class="col-lg">
       <div class="mb-3">
         <sparql-query id="instances" class="d-none">
-          SELECT ?concept ?description WHERE {
+          SELECT ?concept ?definition ?status WHERE {
             BIND (?? AS ?conceptScheme)
             ?concept a ?conceptScheme .
-            OPTIONAL { ?concept (rdfs:label|skos:prefLabel) ?description . FILTER LANGMATCHES(?description, 'de') }
+            OPTIONAL { ?concept skos:definition ?definition . FILTER(lang(?definition) = 'de' || lang(?definition) = '') }
+            # there's a bug in the IRI, it has /# instead of /, so we need to use the full IRI here
+            OPTIONAL { ?concept &lt;https://www.w3.org/TR/vocab-adms/#adms_status&gt; ?status . }
           } LIMIT 10000
         </sparql-query>
         {{ template "sparqlTable" (dict
             "result" .QueryResults.instances
             "id" "instances"
             "title" "Available SKOS Concept Schemas"
-            "icon" "squircle")
+            "icon" "squircle"
+            "badgeVar" "status")
         }}
       </div>
     </div>
