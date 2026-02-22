@@ -255,6 +255,8 @@
                 var name = iriToName(cell.value);
                 if (availableIcons[name]) {
                   iconHtml = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="">';
+                } else if (availableIcons[name + '.fallback']) {
+                  iconHtml = '<img src="/static/img/resource/' + name + '.fallback.svg" width="24" height="24" alt="">';
                 }
               }
               row["_icon"] = { html: iconHtml, value: '' };

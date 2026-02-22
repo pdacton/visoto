@@ -1,6 +1,7 @@
-
-{{ define "pageTitle" }}Graph Explorer{{ end }}
+{{ define "pageTitle" }}Ontodia / Graph Explorer Test{{ end }}
+{{ define "pageSubtitle"}}A test page for the Ontodia/Zazuko Graph Explorer component, connected to the public LINDAS SPARQL endpoint.{{ end }}
 {{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Graph Explorer Icon" width="40" />{{ end }}
+{{ define "metaTitle" }}Ontodia Test{{ end }}
 {{ define "metaIcon" }}/static/img/graphexplorer.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -83,24 +84,20 @@
     return decoded.includes('#') ? decoded.split('#').pop() : decoded.split('/').pop();
   }
 
-  // Generic classes that should only be used as icon fallback if no specific class matches.
-  var DEPRIORITIZED_ICONS = { 'Identity': true, 'DefinedTerm': true };
-
   // typeStyleResolver: resolves icon from rdf:type values (for instances like Bern)
-  // Two-pass: first try specific classes, then fall back to deprioritized ones.
+  // Two-pass: first try regular icons, then fall back to fallback icons (.fallback.svg).
   function typeStyleResolver(types) {
     var fallback = null;
     for (var i = 0; i < types.length; i++) {
       var name = iriToName(types[i]);
       if (AVAILABLE_ICONS[name]) {
-        if (DEPRIORITIZED_ICONS[name]) {
-          if (!fallback) fallback = name;
-        } else {
-          return { icon: '/static/img/resource/' + name + '.svg' };
-        }
+        return { icon: '/static/img/resource/' + name + '.svg' };
+      }
+      if (!fallback && AVAILABLE_ICONS[name + '.fallback']) {
+        fallback = name;
       }
     }
-    if (fallback) return { icon: '/static/img/resource/' + fallback + '.svg' };
+    if (fallback) return { icon: '/static/img/resource/' + fallback + '.fallback.svg' };
     return { icon: '/static/img/resource/defaultClass.svg' };
   }
 
@@ -116,6 +113,8 @@
         var name = iriToName(this.props.iri || '');
         if (AVAILABLE_ICONS[name]) {
           this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.svg' });
+        } else if (AVAILABLE_ICONS[name + '.fallback']) {
+          this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.fallback.svg' });
         }
       // }
       return super.render();

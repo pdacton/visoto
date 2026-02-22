@@ -1,6 +1,7 @@
 {{ define "pageTitle" }}Visoto{{ end }}
 {{ define "pageSubtitle" }}Welcome to visoto, the adaptive knowledge graph explorer, here visualizing the contents of LINDAS.{{ end }}
 {{ define "pageIcon" }}<img src="/static/img/visoto_light.svg" alt="Page icon" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/visoto_light.svg{{ end }}
 
 {{ define "pageContent" }}
 <style>
@@ -75,8 +76,6 @@
     </div>
   </div>
 
-
-  
 </div>
 
 <div class="row row-deck row-cards mb-3">
@@ -121,7 +120,7 @@
       ?termSet a schema:DefinedTermSet .
     }
   </sparql-query>
-  {{ template "sparqlMetric" (dict "result" .QueryResults.termSetCount "title" "Defined Term Sets" "href" "/resource/schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.svg") }}
+  {{ template "sparqlMetric" (dict "result" .QueryResults.termSetCount "title" "Defined Term Sets" "href" "/resource/schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
 
   <!-- defined terms card -->
   <sparql-query id="termCount" class="d-none">
@@ -129,7 +128,7 @@
       ?term a schema:DefinedTerm .
     }
   </sparql-query>
-  {{ template "sparqlMetric" (dict "result" .QueryResults.termCount "title" "Defined Terms" "href" "/resource/schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.svg") }}
+  {{ template "sparqlMetric" (dict "result" .QueryResults.termCount "title" "Defined Terms" "href" "/resource/schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
 
   <!-- terminology collections card -->
   <sparql-query id="terminologyCollectionCount" class="d-none">
