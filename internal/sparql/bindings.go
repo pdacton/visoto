@@ -14,13 +14,15 @@ type Binding struct {
 	Lol   string // label or literal
 }
 
-// RenderHTML returns an HTML link if the type is "uri", otherwise returns plain text
+// RenderHTML returns an HTML link if the type is "uri", raw HTML if the type is "html",
+// otherwise returns escaped plain text
 func (b Binding) RenderHTML() template.HTML {
-	// return link if uri type
-	if b.Type == "uri" {
+	switch b.Type {
+	case "uri":
 		return template.HTML(`<a href="/resource/` + url.QueryEscape(b.Value) + `">` + template.HTMLEscapeString(b.Lol) + `</a>`)
+	case "html":
+		return template.HTML(b.Lol)
+	default:
+		return template.HTML(template.HTMLEscapeString(b.Lol))
 	}
-
-	// return plain text otherwise
-	return template.HTML(template.HTMLEscapeString(b.Lol))
 }

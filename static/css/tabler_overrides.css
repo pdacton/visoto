@@ -212,6 +212,14 @@ body.resizing {
     cursor: ew-resize !important;
 }
 
+/* --- Full-width datagrid items --- */
+
+/* Tabler's datagrid uses auto-fit columns, so col-span-12 has no effect.
+   This rule makes items with that class span the full grid width instead. */
+.datagrid-item.col-span-12 {
+    grid-column: 1 / -1;
+}
+
 /* --- IRI hover dropdown on page title --- */
 .iri-title-wrapper { position: relative; display: inline-block; }
 .iri-dropdown { display: none; top: 100%; left: 0; width: max-content; }

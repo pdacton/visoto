@@ -348,7 +348,7 @@
 
           function setToggleBtnState(expanded) {
             groupsExpanded = expanded;
-            var iconName = expanded ? "list-chevrons-up-down" : "list-chevrons-down-up";
+            var iconName = expanded ? "list-chevrons-down-up" : "list-chevrons-up-down";
             toggleGroupsBtn.title = expanded ? "Collapse all groups" : "Expand all groups";
             toggleGroupsBtn.innerHTML = '<i data-lucide="' + iconName + '"></i>';
             if (window.lucide) lucide.createIcons({ nodes: [toggleGroupsBtn] });

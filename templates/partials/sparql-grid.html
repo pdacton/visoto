@@ -67,16 +67,17 @@
 
       <!-- card body with datagrid -->
       <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
-      <div class="card-body">
-        <div class="datagrid">
-          {{ range $binding := $result.Bindings }}
-            <div class="datagrid-item">
-              <div class="datagrid-title text-uppercase">{{ render (index $binding "property") }}</div>
-              <div class="datagrid-content">{{ render (index $binding "value") }}</div>
-            </div>
-          {{ end }}
+        <div class="card-body">
+          <div class="datagrid">
+            {{ range $binding := groupByValue $result.Bindings }}
+              {{ $long := index $binding "long" }}
+              <div class="datagrid-item{{ if $long.Lol }} col-span-12{{ end }}">
+                <div class="datagrid-title text-uppercase">{{ render (index $binding "property") }}</div>
+                <div class="datagrid-content">{{ render (index $binding "value") }}</div>
+              </div>
+            {{ end }}
+          </div>
         </div>
-      </div>
       </div>
 
     </div>

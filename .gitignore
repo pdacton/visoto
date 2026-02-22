@@ -37,3 +37,6 @@ Thumbs.db
 
 # Runtime data (monitoring SQLite DB and state)
 data/
+
+# Icon factory
+iconfactory/

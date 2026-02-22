@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"sort"
 	"strings"
 
 	"hutzli.org/visoto/internal/resource"
@@ -13,15 +14,16 @@ import (
 
 // funcMap defines custom template functions available in all templates
 var funcMap = template.FuncMap{
-	"render":       sparql.Binding.RenderHTML,
-	"dict":         makeDict,
-	"resourceIcon": resource.GetIconForResource,
-	"iconNames":    resource.GetIconNames,
-	"toJSON":       toJSON,
-	"toJSONRaw":    toJSONRaw,
-	"toJSONPretty": toJSONPretty,
-	"firstValue":   firstValue,
+	"render":          sparql.Binding.RenderHTML,
+	"dict":            makeDict,
+	"resourceIcon":    resource.GetIconForResource,
+	"iconNames":       resource.GetIconNames,
+	"toJSON":          toJSON,
+	"toJSONRaw":       toJSONRaw,
+	"toJSONPretty":    toJSONPretty,
+	"firstValue":      firstValue,
 	"lastPathSegment": lastPathSegment,
+	"groupByValue":    groupByValue,
 }
 
 // makeDict creates a map from alternating key-value pairs
@@ -90,6 +92,57 @@ func lastPathSegment(iri string) string {
 		return iri[idx+1:]
 	}
 	return iri
+}
+
+// groupByValue deduplicates SPARQL grid bindings by the "value" field.
+// When multiple bindings share the same value, their "property" labels are
+// merged into a single comma-separated property Binding so the value is shown
+// only once in the datagrid. Insertion order (first occurrence) is preserved.
+func groupByValue(bindings []map[string]sparql.Binding) []map[string]sparql.Binding {
+	type entry struct {
+		propHTMLs []string
+		value     sparql.Binding
+	}
+	seen := make(map[string]*entry)
+	order := []string{} // tracks first-seen order by value key
+
+	for _, b := range bindings {
+		val := b["value"]
+		prop := b["property"]
+		key := val.Value
+		if e, ok := seen[key]; ok {
+			e.propHTMLs = append(e.propHTMLs, string(prop.RenderHTML()))
+		} else {
+			seen[key] = &entry{propHTMLs: []string{string(prop.RenderHTML())}, value: val}
+			order = append(order, key)
+		}
+	}
+
+	result := make([]map[string]sparql.Binding, 0, len(order))
+	for _, key := range order {
+		e := seen[key]
+		joinedHTML := strings.Join(e.propHTMLs, ", ")
+		result = append(result, map[string]sparql.Binding{
+			"property": {Type: "html", Lol: joinedHTML},
+			"value":    e.value,
+		})
+	}
+
+	// Sort: short values (< 200 chars) first, long values second.
+	// SliceStable preserves relative order within each group.
+	sort.SliceStable(result, func(i, j int) bool {
+		iLong := len(result[i]["value"].Value) >= 200
+		jLong := len(result[j]["value"].Value) >= 200
+		return !iLong && jLong
+	})
+
+	// Mark long entries so the template can apply full-width styling.
+	for i, row := range result {
+		if len(row["value"].Value) >= 200 {
+			result[i]["long"] = sparql.Binding{Type: "literal", Lol: "true"}
+		}
+	}
+	return result
 }
 
 // firstValue extracts the first value from a QueryResult for a given variable name
