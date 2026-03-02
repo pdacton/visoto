@@ -30,7 +30,7 @@
 
 <div class="home-background"></div>
 
-<div class="row row-deck row-cards mb-3">
+<div class="lindas-cards row row-deck row-cards mb-3 d-none">
 
   <!-- Klosters card -->
   <div class="col-sm-6 col-lg-3">
@@ -78,7 +78,7 @@
 
 </div>
 
-<div class="row row-deck row-cards mb-3">
+<div id="metrics-cards" class="row row-deck row-cards mb-3">
 
   <!-- classes card -->
   <sparql-query id="classCount" class="d-none">
@@ -114,6 +114,10 @@
   </sparql-query>
   {{ template "sparqlMetric" (dict "result" .QueryResults.conceptCount "title" "Concepts" "href" "/resource/skos:Concept" "icon" "/static/img/resource/Concept.svg") }}
 
+</div>
+
+<div id="terminology-cards" class="row row-deck row-cards mb-3">
+  
   <!-- defined term sets card -->
   <sparql-query id="termSetCount" class="d-none">
     SELECT (COUNT(DISTINCT ?termSet) AS ?count) WHERE {
@@ -140,7 +144,7 @@
 
 </div>
 
-<div class="row row-deck row-cards mb-3">
+<div class="lindas-cards row row-deck row-cards mb-3 d-none">
 
   <!-- cubes card -->
   <sparql-query id="cubeCount" class="d-none">
@@ -190,4 +194,18 @@
   </sparql-query>
   {{ template "sparqlMetric" (dict "result" .QueryResults.sharedDimensionCount "title" "Shared Dimensions" "href" "/resource/meta:SharedDimension" "icon" "/static/img/resource/SharedDimension.svg") }}
 
+</div>
+
+{{ end }}
+
+{{ define "pageScripts" }}
+<script>
+  (function () {
+    var cookie = document.cookie.split('; ').find(function (r) { return r.startsWith('selectedEndpoint='); });
+    var selected = cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
+    if (!selected || selected.toUpperCase().indexOf('LINDAS') !== -1) {
+      document.querySelectorAll('.lindas-cards').forEach(function(el) { el.classList.remove('d-none'); });
+    }
+  })();
+</script>
 {{ end }}

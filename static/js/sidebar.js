@@ -123,6 +123,18 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   });
 
+  // Persist active sidebar tab across page loads
+  const savedTab = localStorage.getItem('visoto-sidebar-tab');
+  if (savedTab) {
+    const tabLink = document.querySelector('#sidebar-tabs .nav-link[href="' + savedTab + '"]');
+    if (tabLink) tabLink.click();
+  }
+  document.querySelectorAll('#sidebar-tabs .nav-link').forEach(function (el) {
+    el.addEventListener('shown.bs.tab', function () {
+      localStorage.setItem('visoto-sidebar-tab', el.getAttribute('href'));
+    });
+  });
+
   // Handle resize - reinitialize on breakpoint change
   let wasMobile = isMobile();
   window.addEventListener('resize', function() {

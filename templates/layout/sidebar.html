@@ -2,154 +2,209 @@
   <div class="container-fluid">
 
     <div class="collapse navbar-collapse" id="sidebar-menu">
-      <ul class="navbar-nav pt-lg-3">
 
-        <!-- Zefix -->
-        <li class="nav-item">
-          <a class="nav-link" href="/resource/https://schema.ld.admin.ch/ZefixOrganisation">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/ZefixOrganisation.svg" alt="Zefix Organization">
-            </span>
-            <span class="nav-link-title">Zefix Organization</span>
-          </a>
-        </li>        
-        
-        <!-- Municipalities -->
-        <li class="nav-item">
-          <a class="nav-link" href="/resource/https://schema.ld.admin.ch/Municipality">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/Municipality.svg" alt="Municipality">
-            </span>
-            <span class="nav-link-title">Municipalities</span>
-          </a>
+      <!-- Tab strip -->
+      <ul class="nav nav-tabs mt-2 px-1" id="sidebar-tabs" data-bs-toggle="tabs" role="tablist">
+        <li class="nav-item" role="presentation">
+          <a class="nav-link active" id="sidebar-tab-nav" data-bs-toggle="tab" href="#sidebar-panel-nav" role="tab" aria-selected="true">Menu</a>
         </li>
-
-        <!-- Cantons -->
-        <li class="nav-item">
-          <a class="nav-link" href="/resource/https://schema.ld.admin.ch/Canton">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/Canton.svg" alt="Canton">
-            </span>
-            <span class="nav-link-title">Cantons</span>
-          </a>
+        <li class="nav-item" role="presentation">
+          <a class="nav-link" id="sidebar-tab-bookmarks" data-bs-toggle="tab" href="#sidebar-panel-bookmarks" role="tab" aria-selected="false" tabindex="-1">My Links</a>
         </li>
-
-        <!-- Countries -->
-        <li class="nav-item">
-          <a class="nav-link" href="/resource/http://schema.org/Country">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/Country.svg" alt="Country">
-            </span>
-            <span class="nav-link-title">Countries</span>
-          </a>
-        </li>
-
-        <!-- Datasets -->
-        <li class="nav-item">
-          <a class="nav-link" href="/resource/schema:Dataset">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/Dataset.svg" alt="Dataset">
-            </span>
-            <span class="nav-link-title">Datasets</span>
-          </a>
-        </li>        
-
-        <!-- Concept Schemes -->
-        <li class="nav-item">
-          <a class="nav-link" href="/resource/skos:ConceptScheme">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/ConceptScheme.svg" alt="SKOS Concept Scheme">
-            </span>
-            <span class="nav-link-title">Concept Schemes</span>
-          </a>
-        </li>
-
-        <!-- Cubes -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/Cube.svg" alt="Cube">
-            </span>
-            <span class="nav-link-title">Cubes</span>
-          </a>
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="/resource/cube:Cube">cube:Cube</a>
-            <a class="dropdown-item" href="/resource/cube:ObservationSet">cube:ObservationSet</a>
-            <a class="dropdown-item" href="/resource/cube:Observation">cube:Observation</a>
-            <a class="dropdown-item" href="/resource/cube:SharedDimension">cube:SharedDimension</a>
-            <a class="dropdown-item" href="/resource/cube:KeyDimension">cube:KeyDimension</a>
-            <a class="dropdown-item" href="/resource/cube:MeasureDimension">cube:MeasureDimension</a>
-          </div>
-        </li>
-
-        <!-- Civic Structures -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/CivicStructure.svg" alt="Civic Structure">
-            </span>
-            <span class="nav-link-title">Civic Structures</span>
-          </a>
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="/resource/schema:CivicStructure">All</a>
-            <a class="dropdown-item" href="/resource/schema:TrainStation">Train Station</a>
-            <a class="dropdown-item" href="/resource/schema:BusStop">Bus Stop</a>
-            <a class="dropdown-item" href="/resource/schema:Airport">Airport</a>
-          </div>
-        </li>
-
-        <!-- Libraries -->
-        <li class="nav-item">
-          <a class="nav-link" href="/resource/https://schema.ld.admin.ch/Isil">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/Isil.svg" alt="Library">
-            </span>
-            <span class="nav-link-title">Libraries</span>
-          </a>
-        </li>
-
-        <!-- Schema/Ontology Objects -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/resource/Class.svg" alt="Schema">
-            </span>
-            <span class="nav-link-title">Schema</span>
-          </a>
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="/resource/rdfs:Class">rdfs:Class</a>
-            <a class="dropdown-item" href="/resource/owl:Class">owl:Class</a>
-            <a class="dropdown-item" href="/resource/owl:Ontology">owl:Ontology</a>
-          </div>
-        </li>
-
-        <!-- Graph Explorer -->
-        <li class="nav-item">
-          <a class="nav-link" href="/ontodia.html">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/graphexplorer.svg" alt="Library">
-            </span>
-            <span class="nav-link-title">Graph Explorer</span>
-          </a>
-        </li>
-
-        <!-- Graph Info dropdown -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle" href="#sidebar-submenu-info" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
-            <span class="nav-link-icon d-md-none d-lg-inline-block">
-              <img src="/static/img/info.svg" alt="Graph Info">
-            </span>
-            <span class="nav-link-title">Graph Info</span>
-          </a>
-          <div class="dropdown-menu">
-            <a class="dropdown-item" href="/classes.html">Classes</a>
-            <a class="dropdown-item" href="/properties.html">Properties</a>
-            <a class="dropdown-item" href="/namedGraphs.html">Named Graphs</a>
-            <a class="dropdown-item" href="/dataIssues.html">Data Issues</a>
-          </div>
-        </li>
-
       </ul>
+
+      <div class="tab-content">
+
+        <!-- Nav tab -->
+        <div class="tab-pane show active" id="sidebar-panel-nav" role="tabpanel">
+          <ul class="navbar-nav pt-lg-3">
+
+            <!-- Organisation -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Organization.svg" alt="Organisation">
+                </span>
+                <span class="nav-link-title">Organisation</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource/schch:ZefixOrganisation">Zefix Organisation</a>
+                <a class="dropdown-item" href="/resource/schema:Organization">Organization (schema.org)</a>
+                <a class="dropdown-item" href="/resource/schema:GovernmentOrganization">Government Organization</a>
+                <a class="dropdown-item" href="/resource/vcard:Organization">Organization (vCard)</a>
+                <a class="dropdown-item" href="/resource/foaf:Organization">Organization (foaf)</a>
+              </div>
+            </li>
+
+            <!-- Municipalities -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/https://schema.ld.admin.ch/Municipality">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Municipality.svg" alt="Municipality">
+                </span>
+                <span class="nav-link-title">Municipalities</span>
+              </a>
+            </li>
+
+            <!-- Cantons -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/https://schema.ld.admin.ch/Canton">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Canton.svg" alt="Canton">
+                </span>
+                <span class="nav-link-title">Cantons</span>
+              </a>
+            </li>
+
+            <!-- Countries -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/http://schema.org/Country">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Country.svg" alt="Country">
+                </span>
+                <span class="nav-link-title">Countries</span>
+              </a>
+            </li>
+
+            <!-- Concept Schemes -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/skos:ConceptScheme">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/ConceptScheme.svg" alt="SKOS Concept Scheme">
+                </span>
+                <span class="nav-link-title">Concept Schemes</span>
+              </a>
+            </li>
+
+            <!-- Data catalog -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Dataset.svg" alt="Dataset">
+                </span>
+                <span class="nav-link-title">Data Catalog</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource/dcat:Catalog">Catalog</a>
+                <a class="dropdown-item" href="/resource/dcat:Dataset">Dataset</a>
+                <a class="dropdown-item" href="/resource/dcat:Distribution">Distribution</a>
+                <a class="dropdown-item" href="/resource/schema:Dataset">Dataset (schema.org)</a>
+                <a class="dropdown-item" href="/resource/void:Dataset">Dataset (VoID)</a>
+              </div>
+            </li>
+
+            <!-- Cubes -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Cube.svg" alt="Cube">
+                </span>
+                <span class="nav-link-title">Cubes</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource/cube:Cube">cube:Cube</a>
+                <a class="dropdown-item" href="/resource/cube:ObservationSet">cube:ObservationSet</a>
+                <a class="dropdown-item" href="/resource/cube:Observation">cube:Observation</a>
+                <a class="dropdown-item" href="/resource/cube:SharedDimension">cube:SharedDimension</a>
+                <a class="dropdown-item" href="/resource/cube:KeyDimension">cube:KeyDimension</a>
+                <a class="dropdown-item" href="/resource/cube:MeasureDimension">cube:MeasureDimension</a>
+              </div>
+            </li>
+
+            <!-- Civic Structures -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/CivicStructure.svg" alt="Civic Structure">
+                </span>
+                <span class="nav-link-title">Civic Structures</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource/schema:CivicStructure">All</a>
+                <a class="dropdown-item" href="/resource/schema:TrainStation">Train Station</a>
+                <a class="dropdown-item" href="/resource/schema:BusStop">Bus Stop</a>
+                <a class="dropdown-item" href="/resource/schema:Airport">Airport</a>
+              </div>
+            </li>
+
+            <!-- Plazi Treatments -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/http%3A%2F%2Fplazi.org%2Fvocab%2Ftreatment%23Treatment">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Treatment.svg" alt="Plazi Treatment">
+                </span>
+                <span class="nav-link-title">Plazi Treatments</span>
+              </a>
+            </li>
+
+            <!-- Libraries -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/https://schema.ld.admin.ch/Isil">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Isil.svg" alt="Library">
+                </span>
+                <span class="nav-link-title">Libraries</span>
+              </a>
+            </li>
+
+            <!-- Schema/Ontology Objects -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Class.svg" alt="Schema">
+                </span>
+                <span class="nav-link-title">Schema</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource/rdfs:Class">rdfs:Class</a>
+                <a class="dropdown-item" href="/resource/owl:Class">owl:Class</a>
+                <a class="dropdown-item" href="/resource/rdf:Property">rdf:Property</a>
+                <a class="dropdown-item" href="/resource/owl:Ontology">owl:Ontology</a>
+              </div>
+            </li>
+
+            <!-- Graph Explorer -->
+            <li class="nav-item">
+              <a class="nav-link" href="/ontodia.html">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/graphexplorer.svg" alt="Library">
+                </span>
+                <span class="nav-link-title">Graph Explorer</span>
+              </a>
+            </li>
+
+            <!-- Graph Info dropdown -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu-info" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/info.svg" alt="Graph Info">
+                </span>
+                <span class="nav-link-title">Graph Info</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/classes.html">Classes</a>
+                <a class="dropdown-item" href="/properties.html">Properties</a>
+                <a class="dropdown-item" href="/namedGraphs.html">Named Graphs</a>
+                <a class="dropdown-item" href="/dataIssues.html">Data Issues</a>
+              </div>
+            </li>
+
+          </ul>
+        </div>
+
+        <!-- Bookmarks tab -->
+        <div class="tab-pane" id="sidebar-panel-bookmarks" role="tabpanel">
+          <ul class="navbar-nav pt-lg-3" id="bookmarks-list">
+            <!-- populated by bookmarks.js -->
+          </ul>
+          <div id="bookmarks-drop-zone" class="bookmarks-drop-zone px-3 py-4 mt-1 text-center text-muted small rounded">
+            <i data-lucide="bookmark-plus" style="width:20px;height:20px;" class="d-block mx-auto mb-1 opacity-50"></i>
+            Drop a resource here
+          </div>
+        </div>
+
+      </div><!-- end tab-content -->
+
     </div>
   </div>
 </aside>

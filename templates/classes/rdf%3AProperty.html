@@ -1,0 +1,220 @@
+<!-- RDF Property Class Template -->
+
+{{ define "pageTitle" }}RDF Property{{ end }}
+{{ define "metaTitle" }}RDF Property{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+
+{{ define "pageContent" }}
+<div>
+
+  <!-- attributes -->
+  <div class="row">
+    <div class="column">
+      <div class="mb-3">
+        <sparql-query id="literals" class="d-none">
+          SELECT ?property ?value WHERE {
+            BIND (?? AS ?s)
+            ?s ?property ?value .
+            FILTER (isLiteral(?value))
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlGrid" (dict
+              "result" .QueryResults.literals
+              "id" "literals"
+              "title" "Attributes"
+              "icon" "tags")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- instances: properties defined as rdf:Property -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-query id="instances" class="d-none">
+          SELECT DISTINCT ?property ?label ?comment ?domain ?range WHERE {
+            { 
+              SELECT DISTINCT ?property { ?s ?property ?o .}
+            }
+            OPTIONAL { ?property a rdf:Property . }
+            OPTIONAL { ?property rdfs:label ?label . FILTER(lang(?label) = "en" || lang(?label) = "") }
+            OPTIONAL { ?property rdfs:comment ?comment . FILTER(lang(?comment) = "en" || lang(?comment) = "") }
+            OPTIONAL { ?property rdfs:domain ?domain . }
+            OPTIONAL { ?property rdfs:range ?range . }
+          }
+          ORDER BY ?property
+          LIMIT 10000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.instances
+            "id" "instances"
+            "title" "Property Instances"
+            "icon" "circle-dot")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- subproperty types (OWL specialisations) -->
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="subclasses" class="d-none">
+          SELECT DISTINCT ?subclass ?label ?count WHERE {
+            VALUES ?subclass {
+              owl:ObjectProperty
+              owl:DatatypeProperty
+              owl:AnnotationProperty
+              owl:FunctionalProperty
+              owl:InverseFunctionalProperty
+              owl:SymmetricProperty
+              owl:TransitiveProperty
+            }
+            OPTIONAL { ?subclass rdfs:label ?label . }
+            OPTIONAL {
+              SELECT ?subclass (COUNT(DISTINCT ?p) AS ?count) WHERE {
+                ?p a ?subclass .
+              } GROUP BY ?subclass
+            }
+          }
+          ORDER BY DESC(?count) ?subclass
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.subclasses
+            "id" "subclasses"
+            "title" "Property Subtypes"
+            "icon" "circle-chevron-down"
+            "collapsed" false)
+        }}
+      </div>
+    </div>
+
+    <!-- superclasses -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="superclasses" class="d-none">
+          SELECT DISTINCT ?superclass ?label WHERE {
+            BIND (rdf:Property AS ?class)
+            ?class rdfs:subClassOf ?superclass .
+            OPTIONAL { ?superclass rdfs:label ?label . }
+          }
+          ORDER BY ?superclass
+          LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.superclasses
+            "id" "superclasses"
+            "title" "Property Supertypes"
+            "icon" "circle-chevron-up"
+            "collapsed" false)
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- schema information: domain and range usage -->
+  <div class="row">
+
+    <!-- properties with domain info -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="ontology" class="d-none">
+          SELECT DISTINCT ?property ?label ?domain ?range WHERE {
+            ?property a rdf:Property .
+            { ?property rdfs:domain ?domain . } UNION { ?property rdfs:range ?range . }
+            OPTIONAL { ?property rdfs:label ?label . FILTER(lang(?label) = "en" || lang(?label) = "") }
+          }
+          ORDER BY ?property
+          LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.ontology
+            "id" "ontology"
+            "title" "Schema information (domain / range)"
+            "icon" "circle-dashed"
+            "collapsed" true)
+        }}
+      </div>
+    </div>
+
+    <!-- SHACL properties -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="shacl" class="d-none">
+          SELECT ?subject ?property ?object WHERE {
+            BIND (?? AS ?object)
+            ?subject ?property ?object .
+            FILTER (STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.shacl
+            "id" "shacl"
+            "title" "Shape information (SHACL)"
+            "icon" "shapes"
+            "collapsed" true)
+        }}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- relationships -->
+  <div class="row">
+
+    <!-- incoming relationships -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="incoming" class="d-none">
+          SELECT ?source ?property WHERE {
+            BIND (?? AS ?o)
+            ?source ?property ?o .
+            FILTER (?property != rdf:type)
+            FILTER (?property != rdfs:subClassOf)
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.incoming
+            "id" "incoming"
+            "title" "Incoming Relationships"
+            "icon" "shrink"
+            "collapsed" true)
+        }}
+      </div>
+    </div>
+
+    <!-- outgoing relationships -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="outgoing" class="d-none">
+          SELECT ?property ?destination WHERE {
+            BIND (?? AS ?s)
+            ?s ?property ?destination .
+            FILTER (isIRI(?destination))
+            FILTER (?property != rdf:type)
+            FILTER (?property != rdfs:subClassOf)
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+              "result" .QueryResults.outgoing
+              "id" "outgoing"
+              "title" "Outgoing Relationships"
+              "icon" "expand"
+              "collapsed" true)
+        }}
+      </div>
+    </div>
+
+  </div>
+
+</div>
+{{ end }}

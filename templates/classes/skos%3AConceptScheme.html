@@ -44,16 +44,18 @@
           SELECT ?concept ?definition ?status WHERE {
             BIND (?? AS ?conceptScheme)
             ?concept a ?conceptScheme .
-            OPTIONAL { ?concept skos:definition ?definition . FILTER(lang(?definition) = 'de' || lang(?definition) = '') }
-            # there's a bug in the IRI, it has /# instead of /, so we need to use the full IRI here
-            OPTIONAL { ?concept &lt;https://www.w3.org/TR/vocab-adms/#adms_status&gt; ?status . }
+            OPTIONAL { 
+              ?concept (skos:definition|rdfs:comment|dct:description) ?definition . 
+              FILTER(lang(?definition) = 'de' || lang(?definition) = '') 
+            }
+            OPTIONAL { ?concept adms:status ?status . }
           } LIMIT 10000
         </sparql-query>
         {{ template "sparqlTable" (dict
             "result" .QueryResults.instances
             "id" "instances"
             "title" "Available SKOS Concept Schemas"
-            "icon" "squircle"
+            "icon" "circle-dot"
             "badgeVar" "status")
         }}
       </div>

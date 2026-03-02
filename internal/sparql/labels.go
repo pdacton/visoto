@@ -158,7 +158,7 @@ func extractIRIs(result QueryResult) []string {
 }
 
 // buildLabelQuery constructs SPARQL query to fetch labels for given IRIs
-// Checks rdfs:label, skos:prefLabel, schema:name, dc:title, rico:title (in priority order)
+// Checks rdfs:label, skos:prefLabel, schema:name, dct:title, dc:title, rico:title (in priority order)
 // Filters by language preferences
 func buildLabelQuery(iris []string, languages []string) string {
 	if len(iris) == 0 {
@@ -187,7 +187,7 @@ func buildLabelQuery(iris []string, languages []string) string {
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX schema: <http://schema.org/>
-PREFIX dc: <http://purl.org/dc/terms/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
 PREFIX rico: <https://www.ica.org/standards/RiC/ontology#>
 
 SELECT ?iri ?label WHERE {
@@ -207,8 +207,9 @@ SELECT ?iri ?label WHERE {
         (rdfs:label "1")
         (skos:prefLabel "2")
         (schema:name "3")
-        (dc:title "4")
-        (rico:title "5")
+        (dct:title "4")
+        (dc:title "5")
+        (rico:title "6")
       }
       
       ?iri ?prop ?val .

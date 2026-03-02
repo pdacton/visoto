@@ -14,8 +14,9 @@ html {
     padding: 0 !important;
 }
 
-/* Navbar icon-only nav-link buttons - square with hover background */
-.navbar .nav-link {
+/* Topbar icon-only nav-link buttons - square with hover background */
+/* Scoped to the topbar <header> only, not the vertical sidebar */
+header.navbar .nav-link {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -26,7 +27,7 @@ html {
     transition: color 0.3s ease, background-color 0.3s ease;
 }
 
-.navbar .nav-link:hover {
+header.navbar .nav-link:hover {
     background-color: var(--tblr-bg-surface-secondary);
 }
 
@@ -219,6 +220,46 @@ body.resizing {
 .datagrid-item.col-span-12 {
     grid-column: 1 / -1;
 }
+
+/* --- Sidebar tab strip --- */
+
+/* Make the active tab background and its bottom border match the sidebar surface,
+   so the active tab appears to "open into" the content below it. */
+#sidebar-tabs {
+    --tblr-nav-tabs-link-active-bg: var(--tblr-bg-surface);
+    --tblr-nav-tabs-link-active-border-color: var(--tblr-border-color) var(--tblr-border-color) var(--tblr-bg-surface);
+}
+
+/* --- Bookmarks sidebar panel --- */
+.bookmarks-drop-zone {
+  border: 2px dashed currentColor;
+  border-radius: var(--tblr-border-radius);
+  transition: background-color 0.15s, border-color 0.15s;
+  cursor: default;
+}
+.bookmarks-drop-zone--over {
+  background-color: var(--tblr-primary-lt);
+  border-color: var(--tblr-primary);
+  color: var(--tblr-primary) !important;
+}
+/* .navbar-nav prefix needed to override .navbar-nav .nav-item { flex-direction: column; justify-content: center } */
+.navbar-nav .bookmark-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  cursor: grab;
+}
+.navbar-nav .bookmark-item:active { cursor: grabbing; }
+/* .navbar-nav prefix needed to override .navbar .navbar-nav .nav-link { justify-content: center } */
+.navbar-nav .bookmark-item .nav-link {
+  flex: 1;
+  min-width: 0; /* allow text-truncate to work */
+  justify-content: flex-start;
+}
+.navbar-nav .bookmark-item .bookmark-remove { display: none; }
+.navbar-nav .bookmark-item:hover .bookmark-remove { display: inline-flex; }
+.navbar-nav .bookmark-drop-above { border-top: 2px solid var(--tblr-primary); }
 
 /* --- IRI hover dropdown on page title --- */
 .iri-title-wrapper { position: relative; display: inline-block; }

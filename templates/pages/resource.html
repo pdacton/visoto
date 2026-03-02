@@ -1,6 +1,6 @@
 <!-- Default Class Template, for any resource which doesn't have a specific template -->
 
-<sparql-query id="pageTitle"    class="d-none">SELECT ?title { ?? (rdfs:label|skos:prefLabel|schema:name|rico:title) ?title . }</sparql-query>
+<sparql-query id="pageTitle"    class="d-none">SELECT ?title { ?? (rdfs:label|schema:name|skos:prefLabel|dc:title|rico:title) ?title . }</sparql-query>
 <sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
 <sparql-query id="pageClasses"  class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 
@@ -98,51 +98,33 @@
 
   </div>
 
-  <!-- instances and super/sub classes -->
+  <!-- instances of this class -->
   <div class="row">
-
-    <!-- instances of this class -->
-    <div class="col-lg-6">
+    <div class="col-lg">
       <div class="mb-3">
         <sparql-query id="instances" class="d-none">
           SELECT ?instance ?description WHERE {
             BIND (?? AS ?class)
             ?instance (rdf:type|owl:type) ?class .
-            OPTIONAL { ?instance schema:description ?description . }
+            OPTIONAL { ?instance rdf:comment|schema:description|dct:description ?description . }
           } LIMIT 5000
         </sparql-query>
-        {{ template "sparqlTable" (dict 
-            "result" .QueryResults.instances 
-            "id" "instances" 
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.instances
+            "id" "instances"
             "title" "Instances of this Class"
-            "icon" "squircle"
-            "iconVar" "instance") 
+            "icon" "circle-dot"
+            "iconVar" "instance")
         }}
       </div>
-
     </div>
+  </div>
 
-    <!-- superclasses and subclasses of this class -->
+  <!-- super/sub classes -->
+  <div class="row">
+
+    <!-- subclasses of this class -->
     <div class="col-lg-6">
-
-      <!-- superclasses of this class -->
-      <div class="mb-3">
-        <sparql-query id="superclasses" class="d-none">
-          SELECT ?superclass ?description WHERE {
-            ?? rdfs:subClassOf ?superclass .
-            OPTIONAL { ?superclass (rdfs:comment|schema:description) ?description . }
-          } LIMIT 5000
-        </sparql-query>
-        {{ template "sparqlTable" (dict 
-            "result" .QueryResults.superclasses 
-            "id" "superclasses" 
-            "title" "Superclasses of this Class"
-            "icon" "circle-arrow-up"
-            "iconVar" "superclass") 
-        }}
-      </div>
-
-      <!-- subclasses of this class -->
       <div class="mb-3">
         <sparql-query id="subclasses" class="d-none">
           SELECT ?subclass ?description WHERE {
@@ -154,12 +136,31 @@
             "result" .QueryResults.subclasses 
             "id" "subclasses" 
             "title" "Subclasses of this Class"
-            "icon" "circle-arrow-down"
+            "icon" "circle-chevron-down"
             "iconVar" "subclass")
         }}
       </div>
+    </div>  
 
+    <!-- superclasses of this class -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="superclasses" class="d-none">
+          SELECT ?superclass ?description WHERE {
+            ?? rdfs:subClassOf ?superclass .
+            OPTIONAL { ?superclass (rdfs:comment|schema:description) ?description . }
+          } LIMIT 5000
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+            "result" .QueryResults.superclasses 
+            "id" "superclasses" 
+            "title" "Superclasses of this Class"
+            "icon" "circle-chevron-up"
+            "iconVar" "superclass") 
+        }}
+      </div>
     </div>
+
   </div>
 
   <!-- ontology and SHACL properties -->
@@ -188,7 +189,7 @@
             "result" .QueryResults.ontology
             "id" "ontology"
             "title" "Schema information"
-            "icon" "squircle-dashed"
+            "icon" "circle-dashed"
             "collapsed" true
             "iconVar" "subject")
         }}
@@ -210,7 +211,7 @@
             "result" .QueryResults.shacl
             "id" "shacl"
             "title" "Shape information (SHACL)"
-            "icon" "blend"
+            "icon" "shapes"
             "collapsed" true
             "iconVar" "subject")
         }}
