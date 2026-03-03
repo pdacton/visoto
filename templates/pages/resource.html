@@ -106,7 +106,7 @@
           SELECT ?instance ?description WHERE {
             BIND (?? AS ?class)
             ?instance (rdf:type|owl:type) ?class .
-            OPTIONAL { ?instance rdf:comment|schema:description|dct:description ?description . }
+            OPTIONAL { ?instance rdfs:comment|schema:description|dct:description ?description . }
           } LIMIT 5000
         </sparql-query>
         {{ template "sparqlTable" (dict

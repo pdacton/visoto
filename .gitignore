@@ -24,6 +24,10 @@ vendor/
 # Go workspace file
 go.work
 
+# MCP configuration
+.mcp.json
+.claude/settings.local.json
+
 # IDE specific files
 .idea/
 .vscode/

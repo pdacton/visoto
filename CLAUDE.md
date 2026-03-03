@@ -53,6 +53,12 @@ Use these skills when working on related tasks.
 - **Go backend**: Unit tests using Go's standard testing package (`*_test.go` files).
 - **Templates**: Template testing approach is currently undefined.
 
+### Debugging
+- **Playwright MCP** is configured via `.mcp.json` in the project root (gitignored).
+- Use Playwright MCP tools (`browser_navigate`, `browser_snapshot`, `browser_take_screenshot`, `browser_click`, etc.) to inspect and interact with the running site.
+- The server must be running first: `go run ./cmd/visoto/` (serves on port 8060).
+- Playwright runs Chromium headlessly in WSL — no visible browser window.
+
 ### Deployment
 - Deployment is managed via the `deploy.sh` script in the project root.
 - **Environment variables**: Currently none in use.
