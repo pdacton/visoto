@@ -111,7 +111,7 @@ func extractElements(templateContent string) ([]ExtractedElement, error) {
 		if n.Type == html.ElementNode {
 			// Check if this is a SPARQL custom element
 			switch n.Data {
-			case "sparql-query", "sparql-table", "sparql-tree":
+			case "sparql-query", "sparql-table", "sparql-tree", "sparql-async":
 				elem, err := parseElement(n)
 				if err == nil {
 					elements = append(elements, elem)
@@ -215,4 +215,20 @@ func extractQueriesDOM(templateContent string) ([]extractedQuery, error) {
 	}
 
 	return queries, nil
+}
+
+// ExtractAsyncElements parses HTML content and returns all <sparql-async> elements.
+// These are client-side async SPARQL queries not executed during server-side rendering.
+func ExtractAsyncElements(content string) ([]ExtractedElement, error) {
+	all, err := extractElements(content)
+	if err != nil {
+		return nil, err
+	}
+	var out []ExtractedElement
+	for _, el := range all {
+		if el.TagName == "sparql-async" {
+			out = append(out, el)
+		}
+	}
+	return out, nil
 }

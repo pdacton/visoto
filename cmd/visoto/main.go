@@ -237,6 +237,49 @@ func searchHandler(c *gin.Context) {
 	})
 }
 
+func metricHandler(c *gin.Context) {
+	id := c.Param("id")
+	acceptLanguage := c.GetHeader("Accept-Language")
+
+	// Read query text from template — single source of truth
+	content, err := os.ReadFile("templates/pages/home.html")
+	if err != nil {
+		c.String(http.StatusInternalServerError, "0")
+		return
+	}
+
+	elements, err := sparql.ExtractAsyncElements(string(content))
+	if err != nil {
+		c.String(http.StatusInternalServerError, "0")
+		return
+	}
+
+	query := ""
+	for _, el := range elements {
+		if el.ID == id {
+			query = el.Content
+			break
+		}
+	}
+	if query == "" {
+		c.String(http.StatusNotFound, "0")
+		return
+	}
+
+	preprocessor := createPreprocessorForRequest(c)
+	result, err := preprocessor.ExecuteQuery(query, false, acceptLanguage, "")
+
+	count := "0"
+	if err == nil && len(result.Bindings) > 0 {
+		if b, ok := result.Bindings[0]["count"]; ok {
+			count = b.Value
+		}
+	}
+
+	c.Header("Content-Type", "text/html")
+	c.String(http.StatusOK, count)
+}
+
 func monitoringPageHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/monitoring.html", gin.H{
 		"SparqlEndpoints": cfg.Application.SparqlEndpoints,
@@ -392,6 +435,7 @@ func main() {
 	router.GET("/api/monitoring/status", monitoringStatusHandler)
 	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
 	router.GET("/api/monitoring/data", monitoringDataHandler)
+	router.GET("/api/metric/:id", metricHandler)
 	router.GET("/resource/*path", resourceHandler)
 	router.GET("/:page", staticPageHandler)
 
