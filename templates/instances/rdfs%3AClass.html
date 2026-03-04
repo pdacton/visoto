@@ -1,19 +1,19 @@
 <!-- RDF Class Template -->
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
-{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
-{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
-{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
+<sparql-query id="pageTitle"    class="d-none">SELECT ?title { ?? (rdfs:label|schema:name|skos:prefLabel|dc:title|rico:title) ?title . }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="pageClasses"  class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
+{{ define "metaTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
-{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
 {{ define "pageContent" }}

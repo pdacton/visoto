@@ -23,88 +23,70 @@
   {{ $collapsed := .collapsed }}
   {{ $iconVar := .iconVar }}
   {{ $badgeVar := .badgeVar }}
+  {{ $hasResults := gt (len $result.Bindings) 0 }}
+  {{ $hasError := $result.Error }}
+  {{ $collapsed := or $collapsed (not $hasResults) $hasError }}
 
-  <!-- query failed -->
-  {{ if $result.Error }}
-    <div class="alert alert-danger">
-      <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
-      Query failed: {{ $result.Error }}
-    </div>
+  <!-- card to enclose the table -->
+  <div class="card" {{ if or $hasError (not $hasResults) }}style="background-color: var(--tblr-bg-surface-secondary);"{{ end }}>
 
-  <!-- info if empty results -->
-  {{ else if eq (len $result.Bindings) 0 }}
-    <div class="card">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
-          <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
-        </div>
-        <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
-          <i data-lucide="chevron-up"></i>
-        </a>
+    <!-- card header with title, search box, group buttons -->
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+        {{ if $title }} <h3 class="card-title mb-0{{ if or $hasError (not $hasResults) }} text-muted{{ end }}">{{ $title }}</h3> {{ end }}
       </div>
-      <div id="collapse-{{ $id }}" class="collapse">
-        <div class="card-body">
-          <div class="alert alert-info mb-0">
-            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
-            No results found.
-          </div>
-        </div>
-      </div>
-    </div>
-
-  <!-- show results in table -->
-  {{ else }}
-
-    <!-- card to enclose the table -->
-    <div class="card">
-
-      <!-- card header with title, search box, group buttons -->
-      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
-          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
-          {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
-        </div>
-        <div class="ms-auto d-flex align-items-center gap-2">
-          {{ if $id }}
-            <input type="text" id="search-{{ $id }}" class="search-table form-control form-control-sm text-secondary" style="min-width: 150px; max-width: 300px;" placeholder="Search...">
+      <div class="btn-actions ms-auto">
+        {{ if and $id $hasResults }}
+          <input type="text" id="search-{{ $id }}" class="search-table form-control form-control-sm text-secondary" style="min-width: 150px; max-width: 300px;" placeholder="Search...">
+        {{ end }}
+          {{ if and $id $hasResults }}
+            <select id="groupby-{{ $id }}" class="form-select form-select-sm text-muted" style="min-width: 100px; padding-right: 1.5rem; background-size: 0.75rem; background-position: right 0.5rem center;">
+              <option value="" class="text-muted">Group by...</option>
+              {{ range $result.Vars }}
+              <option value="{{ . }}">{{ . }}</option>
+              {{ end }}
+            </select>
+            <a id="toggle-groups-{{ $id }}" class="btn-action d-none" title="Collapse all groups" style="cursor:pointer;">
+              <i data-lucide="list-chevrons-up-down"></i>
+            </a>
           {{ end }}
-          <div class="btn-actions">
-            {{ if $id }}
-              <select id="groupby-{{ $id }}" class="form-select form-select-sm text-muted">
-                <option value="" class="text-muted">Group by...</option>
-                {{ range $result.Vars }}
-                <option value="{{ . }}">{{ . }}</option>
-                {{ end }}
-              </select>
-              <a id="toggle-groups-{{ $id }}" class="btn-action d-none" title="Collapse all groups">
-                <i data-lucide="list-chevrons-up-down"></i>
-              </a>
-            {{ end }}
-            <div class="dropdown" style="display: contents;">
-              <a class="btn-action" data-bs-toggle="dropdown" aria-expanded="false">
-                <i data-lucide="ellipsis-vertical"></i>
-              </a>
-              <ul class="dropdown-menu dropdown-menu-end">
+          <div class="dropdown" style="display: contents;">
+            <a class="btn-action" data-bs-toggle="dropdown" aria-expanded="false">
+              <i data-lucide="ellipsis-vertical"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              {{ if $hasResults }}
                 <li><h6 class="dropdown-header">Download</h6></li>
                 <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> CSV</a></li>
                 <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> JSON</a></li>
                 <li><a class="dropdown-item download-xlsx-{{ $id }}" href="#"><i data-lucide="table-2" style="width:1em;height:1em;"></i> Excel (XLSX)</a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><h6 class="dropdown-header">SPARQL query</h6></li>
-                <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> Execute on endpoint</a></li>
-              </ul>
-            </div>
-            <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-              <i data-lucide="chevron-up"></i>
-            </a>
+              {{ end }}
+              <li><h6 class="dropdown-header">SPARQL query</h6></li>
+              <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> Execute on endpoint</a></li>
+            </ul>
           </div>
+          <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+            <i data-lucide="chevron-up"></i>
+          </a>
         </div>
-      </div>
+    </div>
 
-      <!-- table container and inline JSON data -->
-      <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
-        <div class="card-body p-0">
+    <!-- collapsible body -->
+    <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
+      <div class="card-body{{ if $hasResults }} p-0{{ end }}">
+        {{ if $hasError }}
+          <div class="alert alert-danger mb-0">
+            <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
+            Query failed: {{ $result.Error }}
+          </div>
+        {{ else if not $hasResults }}
+          <div class="alert alert-info mb-0">
+            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
+            No results found.
+          </div>
+        {{ else }}
           <!-- Empty div for Tabulator to render into -->
           <div id="{{ $id }}-table"></div>
 
@@ -113,332 +95,342 @@
           <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
           {{ if $iconVar }}<template id="{{ $id }}-icon-var">{{ $iconVar }}</template><template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>{{ end }}
           {{ if $badgeVar }}<template id="{{ $id }}-badge-var">{{ $badgeVar }}</template>{{ end }}
-        </div>
+        {{ end }}
       </div>
-
     </div>
 
-    <!-- Tabulator.js initialization for this table -->
-    {{ if $id }}
-      <script>
-        /* eslint-disable */
-        document.addEventListener('DOMContentLoaded', function() {
-          // Parse embedded JSON data from template elements
-          var vars = JSON.parse(document.getElementById("{{ $id }}-vars").innerHTML.trim());
-          var bindings = JSON.parse(document.getElementById("{{ $id }}-bindings").innerHTML.trim());
-          var rowCount = bindings.length;
+  </div>
 
-          // HTML escape helper
-          function escapeHtml(text) {
-            if (!text) return '';
-            var div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-          }
-
-          // Render a binding value as HTML (replicates Go's RenderHTML)
-          function renderBinding(binding) {
-            if (!binding) return '';
-            if (binding.Type === 'uri') {
-              var display = escapeHtml(binding.Lol || binding.Value);
-              var href = '/resource/' + encodeURIComponent(binding.Value);
-              return '<a href="' + href + '">' + display + '</a>';
-            }
-            return escapeHtml(binding.Lol || binding.Value);
-          }
-
-          // Transform bindings to Tabulator row format
-          var tableData = bindings.map(function(binding) {
-            var row = {};
-            vars.forEach(function(varName) {
-              var b = binding[varName];
-              if (b) {
-                row[varName] = {
-                  html: renderBinding(b),
-                  value: b.Lol || b.Value,
-                  type: b.Type
-                };
-              } else {
-                row[varName] = null;
-              }
-            });
-            return row;
-          });
-
-          // Custom sorter using display value
-          function valueSorter(a, b) {
-            var valA = a && a.value ? a.value : '';
-            var valB = b && b.value ? b.value : '';
-
-            // Try numeric comparison first
-            var numA = parseFloat(valA);
-            var numB = parseFloat(valB);
-            if (!isNaN(numA) && !isNaN(numB)) {
-              return numA - numB;
-            }
-
-            return String(valA).localeCompare(String(valB));
-          }
-
-          // Custom formatter that renders pre-generated HTML
-          function htmlCellFormatter(cell) {
-            var value = cell.getValue();
-            return value ? value.html || '' : '';
-          }
-
-          // Accessor for downloads: extract plain text value from cell object
-          function plainValueAccessor(value) {
-            return value && value.value ? value.value : '';
-          }
-
-          // Helper to create groupBy function for a field
-          function makeGroupByFn(field) {
-            return function(data) {
-              var val = data[field];
-              return val && val.value ? val.value : '';
-            };
-          }
-
-          // Read optional iconVar from embedded data (set when iconVar parameter is passed)
-          var iconVarEl = document.getElementById("{{ $id }}-icon-var");
-          var iconVar = iconVarEl ? iconVarEl.innerHTML.trim() : null;
-
-          // Read optional badgeVar from embedded data (set when badgeVar parameter is passed)
-          var badgeVarEl = document.getElementById("{{ $id }}-badge-var");
-          var badgeVar = badgeVarEl ? badgeVarEl.innerHTML.trim() : null;
-
-          // Badge formatter: renders the last path segment of a URI as a Tabler badge with a link
-          function badgeCellFormatter(cell) {
-            var value = cell.getValue();
-            if (!value) return '';
-            var uri = value.value || '';
-            // Extract last path segment for display (e.g. "Completed" from a URI)
-            var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
-            var badge = '<span class="badge bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
-            if ((value.type === 'uri' || value.Type === 'uri') && uri) {
-              var href = '/resource/' + encodeURIComponent(uri);
-              return '<a href="' + href + '">' + badge + '</a>';
-            }
-            return badge;
-          }
-
-          // Build column definitions from vars
-          var firstBinding = bindings[0] || {};
-          var columns = vars.map(function(varName) {
-            var binding = firstBinding[varName];
-            var isLiteral = binding && binding.Type === 'literal';
-            var isBadge = badgeVar && varName === badgeVar;
-
-            return {
-              title: varName,
-              field: varName,
-              formatter: isBadge ? badgeCellFormatter : htmlCellFormatter,
-              variableHeight: isLiteral,
-              sorter: valueSorter,
-              accessorDownload: plainValueAccessor
-            };
-          });
-
-          // Prepend icon column if iconVar is configured
-          if (iconVar) {
-            var availableIcons = JSON.parse(document.getElementById("{{ $id }}-available-icons").innerHTML.trim());
-
-            function iriToName(uri) {
-              try { uri = decodeURIComponent(uri); } catch(e) {}
-              return uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
-            }
-
-            tableData.forEach(function(row) {
-              var cell = row[iconVar];
-              var iconHtml = '';
-              if (cell && cell.value) {
-                var name = iriToName(cell.value);
-                if (availableIcons[name]) {
-                  iconHtml = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="">';
-                } else if (availableIcons[name + '.fallback']) {
-                  iconHtml = '<img src="/static/img/resource/' + name + '.fallback.svg" width="24" height="24" alt="">';
-                }
-              }
-              row["_icon"] = { html: iconHtml, value: '' };
-            });
-
-            columns.unshift({
-              title: '',
-              field: '_icon',
-              formatter: htmlCellFormatter,
-              width: 40,
-              resizable: false,
-              headerSort: false,
-              download: false
-            });
-          }
-
-          // Tabulator configuration
-          var tableConfig = {
-            data: tableData,
-            columns: columns,
-            layout: "fitDataStretch",
-            resizableColumnFit: true,
-            renderHorizontal: "virtual",
-            movableColumns: true,
-            sortMode: "local",
-            langs: {
-              "default": {
-                "pagination": {
-                  "first": "<i data-lucide='chevrons-left'></i>",
-                  "first_title": "First Page",
-                  "prev": "<i data-lucide='chevron-left'></i>",
-                  "prev_title": "Prev Page",
-                  "next": "<i data-lucide='chevron-right'></i>",
-                  "next_title": "Next Page",
-                  "last": "<i data-lucide='chevrons-right'></i>",
-                  "last_title": "Last Page"
-                }
-              }
-            }
-          };
-
-          // Enable pagination for larger datasets
-          if (rowCount > 10) {
-            tableConfig.pagination = "local";
-            tableConfig.paginationSize = 10;
-            tableConfig.paginationSizeSelector = [10, 25, 50, 100, true];
-            tableConfig.paginationCounter = "rows";
-          }
-
-          var table = new Tabulator("#{{ $id }}-table", tableConfig);
-
-          // Initialize Lucide icons after table is built
-          table.on("tableBuilt", function() {
-            if (window.lucide) {
-              lucide.createIcons();
-            }
-          });
-
-          // Search filter with debounce
-          var searchInput = document.getElementById("search-{{ $id }}");
-          if (searchInput) {
-            var searchTimeout;
-            searchInput.addEventListener("input", function(e) {
-              clearTimeout(searchTimeout);
-              searchTimeout = setTimeout(function() {
-                var searchValue = e.target.value.toLowerCase();
-                if (!searchValue) {
-                  table.clearFilter();
-                  return;
-                }
-
-                table.setFilter(function(data) {
-                  for (var key in data) {
-                    if (data[key] && data[key].value) {
-                      if (String(data[key].value).toLowerCase().indexOf(searchValue) !== -1) {
-                        return true;
-                      }
-                    }
-                  }
-                  return false;
-                });
-              }, 150);
-            });
-          }
-
-          // Toggle expand/collapse all groups button
-          var toggleGroupsBtn = document.getElementById("toggle-groups-{{ $id }}");
-          var groupsExpanded = true;
-
-          function setToggleBtnState(expanded) {
-            groupsExpanded = expanded;
-            var iconName = expanded ? "list-chevrons-down-up" : "list-chevrons-up-down";
-            toggleGroupsBtn.title = expanded ? "Collapse all groups" : "Expand all groups";
-            toggleGroupsBtn.innerHTML = '<i data-lucide="' + iconName + '"></i>';
-            if (window.lucide) lucide.createIcons({ nodes: [toggleGroupsBtn] });
-          }
-
-          if (toggleGroupsBtn) {
-            toggleGroupsBtn.addEventListener("click", function() {
-              var newExpanded = !groupsExpanded;
-              table.blockRedraw();
-              try {
-                table.getGroups().forEach(function(group) {
-                  newExpanded ? group.show() : group.hide();
-                });
-              } finally {
-                table.restoreRedraw();
-              }
-              setToggleBtnState(newExpanded);
-            });
-          }
-
-          // Download handlers
-          var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
-
-          document.querySelector(".download-csv-{{ $id }}").addEventListener("click", function(e) {
-            e.preventDefault();
-            table.download("csv", filename + ".csv", { bom: true });
-          });
-
-          document.querySelector(".download-json-{{ $id }}").addEventListener("click", function(e) {
-            e.preventDefault();
-            table.download("json", filename + ".json");
-          });
-
-          document.querySelector(".download-xlsx-{{ $id }}").addEventListener("click", function(e) {
-            e.preventDefault();
-            table.download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) });
-          });
-
-          // Open query on YASGUI endpoint
-          document.querySelector(".sparql-endpoint-{{ $id }}").addEventListener("click", function(e) {
+  <!-- Always-emitted: SPARQL endpoint handler -->
+  {{ if $id }}
+    <script>
+      /* eslint-disable */
+      document.addEventListener('DOMContentLoaded', function() {
+        var sparqlEndpointBtn = document.querySelector(".sparql-endpoint-{{ $id }}");
+        if (sparqlEndpointBtn) {
+          sparqlEndpointBtn.addEventListener("click", function(e) {
             e.preventDefault();
             var query = JSON.parse({{ toJSONRaw $result.Query }});
             var endpoint = JSON.parse({{ toJSONRaw $result.Endpoint }});
             var url = "https://yasgui.triply.cc/#query=" + encodeURIComponent(query) + "&endpoint=" + encodeURIComponent(endpoint);
             window.open(url, "_blank");
           });
+        }
+      });
+    </script>
+  {{ end }}
 
-          // GroupBy dropdown with localStorage persistence
-          var groupBySelect = document.getElementById("groupby-{{ $id }}");
-          if (groupBySelect) {
-            function applyGroupBy(field) {
-              if (field === "") {
-                table.setGroupBy(false);
-                if (toggleGroupsBtn) toggleGroupsBtn.classList.add("d-none");
-              } else {
-                table.setGroupBy(makeGroupByFn(field));
-                if (toggleGroupsBtn) {
-                  toggleGroupsBtn.classList.remove("d-none");
-                  setToggleBtnState(true);
-                }
+  <!-- Tabulator.js initialization for this table (only when results exist) -->
+  {{ if and $id $hasResults }}
+    <script>
+      /* eslint-disable */
+      document.addEventListener('DOMContentLoaded', function() {
+        // Parse embedded JSON data from template elements
+        var vars = JSON.parse(document.getElementById("{{ $id }}-vars").innerHTML.trim());
+        var bindings = JSON.parse(document.getElementById("{{ $id }}-bindings").innerHTML.trim());
+        var rowCount = bindings.length;
+
+        // HTML escape helper
+        function escapeHtml(text) {
+          if (!text) return '';
+          var div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        }
+
+        // Render a binding value as HTML (replicates Go's RenderHTML)
+        function renderBinding(binding) {
+          if (!binding) return '';
+          if (binding.Type === 'uri') {
+            var display = escapeHtml(binding.Lol || binding.Value);
+            var href = '/resource/' + encodeURIComponent(binding.Value);
+            return '<a href="' + href + '">' + display + '</a>';
+          }
+          return escapeHtml(binding.Lol || binding.Value);
+        }
+
+        // Transform bindings to Tabulator row format
+        var tableData = bindings.map(function(binding) {
+          var row = {};
+          vars.forEach(function(varName) {
+            var b = binding[varName];
+            if (b) {
+              row[varName] = {
+                html: renderBinding(b),
+                value: b.Lol || b.Value,
+                type: b.Type
+              };
+            } else {
+              row[varName] = null;
+            }
+          });
+          return row;
+        });
+
+        // Custom sorter using display value
+        function valueSorter(a, b) {
+          var valA = a && a.value ? a.value : '';
+          var valB = b && b.value ? b.value : '';
+
+          // Try numeric comparison first
+          var numA = parseFloat(valA);
+          var numB = parseFloat(valB);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numA - numB;
+          }
+
+          return String(valA).localeCompare(String(valB));
+        }
+
+        // Custom formatter that renders pre-generated HTML
+        function htmlCellFormatter(cell) {
+          var value = cell.getValue();
+          return value ? value.html || '' : '';
+        }
+
+        // Accessor for downloads: extract plain text value from cell object
+        function plainValueAccessor(value) {
+          return value && value.value ? value.value : '';
+        }
+
+        // Helper to create groupBy function for a field
+        function makeGroupByFn(field) {
+          return function(data) {
+            var val = data[field];
+            return val && val.value ? val.value : '';
+          };
+        }
+
+        // Read optional iconVar from embedded data (set when iconVar parameter is passed)
+        var iconVarEl = document.getElementById("{{ $id }}-icon-var");
+        var iconVar = iconVarEl ? iconVarEl.innerHTML.trim() : null;
+
+        // Read optional badgeVar from embedded data (set when badgeVar parameter is passed)
+        var badgeVarEl = document.getElementById("{{ $id }}-badge-var");
+        var badgeVar = badgeVarEl ? badgeVarEl.innerHTML.trim() : null;
+
+        // Badge formatter: renders the last path segment of a URI as a Tabler badge with a link
+        function badgeCellFormatter(cell) {
+          var value = cell.getValue();
+          if (!value) return '';
+          var uri = value.value || '';
+          // Extract last path segment for display (e.g. "Completed" from a URI)
+          var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+          var badge = '<span class="badge bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
+          if ((value.type === 'uri' || value.Type === 'uri') && uri) {
+            var href = '/resource/' + encodeURIComponent(uri);
+            return '<a href="' + href + '">' + badge + '</a>';
+          }
+          return badge;
+        }
+
+        // Build column definitions from vars
+        var firstBinding = bindings[0] || {};
+        var columns = vars.map(function(varName) {
+          var binding = firstBinding[varName];
+          var isLiteral = binding && binding.Type === 'literal';
+          var isBadge = badgeVar && varName === badgeVar;
+
+          return {
+            title: varName,
+            field: varName,
+            formatter: isBadge ? badgeCellFormatter : htmlCellFormatter,
+            variableHeight: isLiteral,
+            sorter: valueSorter,
+            accessorDownload: plainValueAccessor
+          };
+        });
+
+        // Prepend icon column if iconVar is configured
+        if (iconVar) {
+          var availableIcons = JSON.parse(document.getElementById("{{ $id }}-available-icons").innerHTML.trim());
+
+          function iriToName(uri) {
+            try { uri = decodeURIComponent(uri); } catch(e) {}
+            return uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+          }
+
+          tableData.forEach(function(row) {
+            var cell = row[iconVar];
+            var iconHtml = '';
+            if (cell && cell.value) {
+              var name = iriToName(cell.value);
+              if (availableIcons[name]) {
+                iconHtml = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="">';
+              } else if (availableIcons[name + '.fallback']) {
+                iconHtml = '<img src="/static/img/resource/' + name + '.fallback.svg" width="24" height="24" alt="">';
               }
             }
+            row["_icon"] = { html: iconHtml, value: '' };
+          });
 
-            // Restore saved grouping after table is built
-            table.on("tableBuilt", function() {
-              try {
-                var savedGroupBy = localStorage.getItem("tabulator-groupby-{{ $id }}");
-                if (savedGroupBy !== null) {
-                  groupBySelect.value = savedGroupBy;
-                  applyGroupBy(savedGroupBy);
-                }
-              } catch (e) {
-                console.warn("localStorage unavailable:", e);
+          columns.unshift({
+            title: '',
+            field: '_icon',
+            formatter: htmlCellFormatter,
+            width: 40,
+            resizable: false,
+            headerSort: false,
+            download: false
+          });
+        }
+
+        // Tabulator configuration
+        var tableConfig = {
+          data: tableData,
+          columns: columns,
+          layout: "fitDataStretch",
+          resizableColumnFit: true,
+          renderHorizontal: "virtual",
+          movableColumns: true,
+          sortMode: "local",
+          langs: {
+            "default": {
+              "pagination": {
+                "first": "<i data-lucide='chevrons-left'></i>",
+                "first_title": "First Page",
+                "prev": "<i data-lucide='chevron-left'></i>",
+                "prev_title": "Prev Page",
+                "next": "<i data-lucide='chevron-right'></i>",
+                "next_title": "Next Page",
+                "last": "<i data-lucide='chevrons-right'></i>",
+                "last_title": "Last Page"
               }
-            });
+            }
+          }
+        };
 
-            groupBySelect.addEventListener("change", function(e) {
-              var selectedField = e.target.value;
-              applyGroupBy(selectedField);
+        // Enable pagination for larger datasets
+        if (rowCount > 10) {
+          tableConfig.pagination = "local";
+          tableConfig.paginationSize = 10;
+          tableConfig.paginationSizeSelector = [10, 25, 50, 100, true];
+          tableConfig.paginationCounter = "rows";
+        }
 
-              try {
-                localStorage.setItem("tabulator-groupby-{{ $id }}", selectedField);
-              } catch (e) {
-                console.warn("localStorage unavailable:", e);
-              }
-            });
+        var table = new Tabulator("#{{ $id }}-table", tableConfig);
+
+        // Initialize Lucide icons after table is built
+        table.on("tableBuilt", function() {
+          if (window.lucide) {
+            lucide.createIcons();
           }
         });
-      </script>
-    {{ end }}
 
+        // Search filter with debounce
+        var searchInput = document.getElementById("search-{{ $id }}");
+        if (searchInput) {
+          var searchTimeout;
+          searchInput.addEventListener("input", function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+              var searchValue = e.target.value.toLowerCase();
+              if (!searchValue) {
+                table.clearFilter();
+                return;
+              }
+
+              table.setFilter(function(data) {
+                for (var key in data) {
+                  if (data[key] && data[key].value) {
+                    if (String(data[key].value).toLowerCase().indexOf(searchValue) !== -1) {
+                      return true;
+                    }
+                  }
+                }
+                return false;
+              });
+            }, 150);
+          });
+        }
+
+        // Toggle expand/collapse all groups button
+        var toggleGroupsBtn = document.getElementById("toggle-groups-{{ $id }}");
+        var groupsExpanded = true;
+
+        function setToggleBtnState(expanded) {
+          groupsExpanded = expanded;
+          var iconName = expanded ? "list-chevrons-down-up" : "list-chevrons-up-down";
+          toggleGroupsBtn.title = expanded ? "Collapse all groups" : "Expand all groups";
+          toggleGroupsBtn.innerHTML = '<i data-lucide="' + iconName + '"></i>';
+          if (window.lucide) lucide.createIcons({ nodes: [toggleGroupsBtn] });
+        }
+
+        if (toggleGroupsBtn) {
+          toggleGroupsBtn.addEventListener("click", function() {
+            var newExpanded = !groupsExpanded;
+            table.blockRedraw();
+            try {
+              table.getGroups().forEach(function(group) {
+                newExpanded ? group.show() : group.hide();
+              });
+            } finally {
+              table.restoreRedraw();
+            }
+            setToggleBtnState(newExpanded);
+          });
+        }
+
+        // Download handlers
+        var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
+
+        document.querySelector(".download-csv-{{ $id }}").addEventListener("click", function(e) {
+          e.preventDefault();
+          table.download("csv", filename + ".csv", { bom: true });
+        });
+
+        document.querySelector(".download-json-{{ $id }}").addEventListener("click", function(e) {
+          e.preventDefault();
+          table.download("json", filename + ".json");
+        });
+
+        document.querySelector(".download-xlsx-{{ $id }}").addEventListener("click", function(e) {
+          e.preventDefault();
+          table.download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) });
+        });
+
+        // GroupBy dropdown with localStorage persistence
+        var groupBySelect = document.getElementById("groupby-{{ $id }}");
+        if (groupBySelect) {
+          function applyGroupBy(field) {
+            if (field === "") {
+              table.setGroupBy(false);
+              if (toggleGroupsBtn) toggleGroupsBtn.classList.add("d-none");
+            } else {
+              table.setGroupBy(makeGroupByFn(field));
+              if (toggleGroupsBtn) {
+                toggleGroupsBtn.classList.remove("d-none");
+                setToggleBtnState(true);
+              }
+            }
+          }
+
+          // Restore saved grouping after table is built
+          table.on("tableBuilt", function() {
+            try {
+              var savedGroupBy = localStorage.getItem("tabulator-groupby-{{ $id }}");
+              if (savedGroupBy !== null) {
+                groupBySelect.value = savedGroupBy;
+                applyGroupBy(savedGroupBy);
+              }
+            } catch (e) {
+              console.warn("localStorage unavailable:", e);
+            }
+          });
+
+          groupBySelect.addEventListener("change", function(e) {
+            var selectedField = e.target.value;
+            applyGroupBy(selectedField);
+
+            try {
+              localStorage.setItem("tabulator-groupby-{{ $id }}", selectedField);
+            } catch (e) {
+              console.warn("localStorage unavailable:", e);
+            }
+          });
+        }
+      });
+    </script>
   {{ end }}
+
 {{ end }}

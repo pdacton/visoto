@@ -21,53 +21,55 @@
   {{ $title := .title }}
   {{ $icon := .icon }}
   {{ $collapsed := .collapsed }}
+  {{ $hasResults := gt (len $result.Bindings) 0 }}
+  {{ $hasError := $result.Error }}
+  {{ $collapsed := or $collapsed (not $hasResults) $hasError }}
 
-  {{ if $result.Error }}
-    <div class="alert alert-danger">
-      <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
-      Query failed: {{ $result.Error }}
-    </div>
-  {{ else if eq (len $result.Bindings) 0 }}
-    <div class="card">
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
-          <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
-        </div>
-        <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
-          <i data-lucide="chevron-up"></i>
-        </a>
+  <!-- card to enclose the datagrid -->
+  <div class="card" {{ if or $hasError (not $hasResults) }}style="background-color: var(--tblr-bg-surface-secondary);"{{ end }}>
+
+    <!-- card header with title -->
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+        {{ if $title }} <h3 class="card-title mb-0{{ if or $hasError (not $hasResults) }} text-muted{{ end }}">{{ $title }}</h3> {{ end }}
       </div>
-      <div id="collapse-{{ $id }}" class="collapse">
-        <div class="card-body">
-          <div class="alert alert-info mb-0">
-            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
-            No results found.
+      <div class="btn-actions ms-auto">
+          <div class="dropdown" style="display: contents;">
+            <a class="btn-action" data-bs-toggle="dropdown" aria-expanded="false">
+              <i data-lucide="ellipsis-vertical"></i>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end">
+              {{ if $hasResults }}
+                <li><h6 class="dropdown-header">Download</h6></li>
+                <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> CSV</a></li>
+                <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> JSON</a></li>
+                <li><hr class="dropdown-divider"></li>
+              {{ end }}
+              <li><h6 class="dropdown-header">SPARQL query</h6></li>
+              <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> Execute on endpoint</a></li>
+            </ul>
           </div>
-        </div>
-      </div>
-    </div>
-  {{ else }}
-
-    <!-- card to enclose the datagrid -->
-    <div class="card">
-
-      <!-- card header with title -->
-      <div class="card-header d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center gap-2">
-          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
-          {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
-        </div>
-        <div class="btn-actions">
           <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
             <i data-lucide="chevron-up"></i>
           </a>
         </div>
-      </div>
+    </div>
 
-      <!-- card body with datagrid -->
-      <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
-        <div class="card-body">
+    <!-- collapsible body -->
+    <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
+      <div class="card-body">
+        {{ if $hasError }}
+          <div class="alert alert-danger mb-0">
+            <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
+            Query failed: {{ $result.Error }}
+          </div>
+        {{ else if not $hasResults }}
+          <div class="alert alert-info mb-0">
+            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
+            No results found.
+          </div>
+        {{ else }}
           <div class="datagrid">
             {{ range $binding := groupByValue $result.Bindings }}
               {{ $long := index $binding "long" }}
@@ -77,10 +79,87 @@
               </div>
             {{ end }}
           </div>
-        </div>
+          <!-- Inline JSON data for downloads -->
+          <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
+        {{ end }}
       </div>
-
     </div>
 
+  </div>
+
+  <!-- Always-emitted: SPARQL endpoint handler -->
+  {{ if $id }}
+    <script>
+      /* eslint-disable */
+      document.addEventListener('DOMContentLoaded', function() {
+        var sparqlEndpointBtn = document.querySelector(".sparql-endpoint-{{ $id }}");
+        if (sparqlEndpointBtn) {
+          sparqlEndpointBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            var query = JSON.parse({{ toJSONRaw $result.Query }});
+            var endpoint = JSON.parse({{ toJSONRaw $result.Endpoint }});
+            var url = "https://yasgui.triply.cc/#query=" + encodeURIComponent(query) + "&endpoint=" + encodeURIComponent(endpoint);
+            window.open(url, "_blank");
+          });
+        }
+      });
+    </script>
   {{ end }}
+
+  <!-- Download handlers (only when results exist) -->
+  {{ if and $id $hasResults }}
+    <script>
+      /* eslint-disable */
+      document.addEventListener('DOMContentLoaded', function() {
+        var bindingsEl = document.getElementById("{{ $id }}-bindings");
+        if (!bindingsEl) return;
+        var bindings = JSON.parse(bindingsEl.innerHTML.trim());
+        var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
+
+        // Extract property/value pairs as plain text rows
+        function getRows() {
+          return bindings.map(function(b) {
+            return {
+              property: (b.property && (b.property.Lol || b.property.Value)) || '',
+              value:    (b.value    && (b.value.Lol    || b.value.Value))    || ''
+            };
+          });
+        }
+
+        // CSV download
+        var csvBtn = document.querySelector(".download-csv-{{ $id }}");
+        if (csvBtn) {
+          csvBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            var rows = getRows();
+            var lines = ["\uFEFFproperty,value"];
+            rows.forEach(function(r) {
+              function q(s) { return '"' + String(s).replace(/"/g, '""') + '"'; }
+              lines.push(q(r.property) + "," + q(r.value));
+            });
+            var blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename + ".csv";
+            a.click();
+          });
+        }
+
+        // JSON download
+        var jsonBtn = document.querySelector(".download-json-{{ $id }}");
+        if (jsonBtn) {
+          jsonBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            var rows = getRows();
+            var blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename + ".json";
+            a.click();
+          });
+        }
+      });
+    </script>
+  {{ end }}
+
 {{ end }}
