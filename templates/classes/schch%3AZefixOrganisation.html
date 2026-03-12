@@ -20,10 +20,10 @@
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-query id="instances" class="d-none">
-      SELECT ?org ?description WHERE {
+      SELECT ?organization ?description WHERE {
         BIND (?? AS ?class)
-        ?org rdf:type ?class .
-        OPTIONAL { ?org schema:description ?description . }
+        ?organization rdf:type ?class .
+        OPTIONAL { ?organization schema:description ?description . }
       } LIMIT 20000
     </sparql-query>
     {{ template "sparqlTable" (dict 

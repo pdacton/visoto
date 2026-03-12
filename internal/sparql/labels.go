@@ -1,6 +1,14 @@
 package sparql
 
+// labels.go provides label resolution for RDF IRIs.
+//
+// It fetches human-readable labels from a SPARQL endpoint by querying common
+// labelling properties (rdfs:label, skos:prefLabel, schema:name, etc.) and
+// ranking results by property type and browser language preference. Resolved
+// labels are cached in memory with a TTL to avoid redundant network requests.
+
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -11,6 +19,8 @@ import (
 
 	"hutzli.org/visoto/internal/logger"
 )
+
+// ── Cache types & variables ──────────────────────────────────────────────────
 
 // labelCacheEntry stores IRI→label mappings with expiration
 type labelCacheEntry struct {
@@ -24,6 +34,8 @@ var (
 	cleanupInterval = 15 * time.Minute
 	cleanupOnce     sync.Once
 )
+
+// ── Cache lifecycle ──────────────────────────────────────────────────────────
 
 // initLabelCache starts the background cleanup goroutine (called once)
 func initLabelCache() {
@@ -39,7 +51,7 @@ func labelCacheCleanup() {
 
 	for range ticker.C {
 		now := time.Now()
-		labelCache.Range(func(key, value interface{}) bool {
+		labelCache.Range(func(key, value any) bool {
 			if entry, ok := value.(labelCacheEntry); ok {
 				if now.After(entry.expiration) {
 					labelCache.Delete(key)
@@ -50,25 +62,60 @@ func labelCacheCleanup() {
 	}
 }
 
+// ── Cache operations ─────────────────────────────────────────────────────────
+
+// labelCacheKey returns a cache key incorporating the IRI and language preferences.
+// Languages are sorted so that equivalent preference sets produce the same key.
+func labelCacheKey(iri string, languages []string) string {
+	langs := make([]string, len(languages))
+	copy(langs, languages)
+	sort.Strings(langs)
+	return iri + "\x00" + strings.Join(langs, ",")
+}
+
 // getCachedLabel retrieves label from cache if not expired
-func getCachedLabel(iri string) (string, bool) {
-	if val, ok := labelCache.Load(iri); ok {
+func getCachedLabel(iri string, languages []string) (string, bool) {
+	key := labelCacheKey(iri, languages)
+	if val, ok := labelCache.Load(key); ok {
 		if entry, ok := val.(labelCacheEntry); ok {
 			if time.Now().Before(entry.expiration) {
 				return entry.label, true
 			}
-			labelCache.Delete(iri) // Expired, remove it
+			labelCache.Delete(key) // Expired, remove it
 		}
 	}
 	return "", false
 }
 
 // setCachedLabel stores label in cache with TTL
-func setCachedLabel(iri, label string) {
-	labelCache.Store(iri, labelCacheEntry{
+func setCachedLabel(iri, label string, languages []string) {
+	labelCache.Store(labelCacheKey(iri, languages), labelCacheEntry{
 		label:      label,
 		expiration: time.Now().Add(cacheTTL),
 	})
+}
+
+// ── Query building ───────────────────────────────────────────────────────────
+
+// extractIRIs collects all unique IRI values from a QueryResult, sorted for determinism
+func extractIRIs(result QueryResult) []string {
+	iriSet := make(map[string]bool)
+
+	for _, binding := range result.Bindings {
+		for _, value := range binding {
+			if value.Type == "uri" {
+				iriSet[value.Value] = true
+			}
+		}
+	}
+
+	iris := make([]string, 0, len(iriSet))
+	for iri := range iriSet {
+		iris = append(iris, iri)
+	}
+	sort.Strings(iris)
+
+	return iris
 }
 
 // parseAcceptLanguage extracts language codes from Accept-Language header
@@ -111,50 +158,24 @@ func parseAcceptLanguage(header string) []string {
 		return langs[i].weight > langs[j].weight
 	})
 
-	// Extract language codes
+	// Extract language codes, inserting base language after each variant (en-US → en)
+	seen := make(map[string]bool)
 	result := make([]string, 0, len(langs))
 	for _, lw := range langs {
-		result = append(result, lw.lang)
-
-		// Also add base language if specific variant present (en-US → en)
+		if !seen[lw.lang] {
+			result = append(result, lw.lang)
+			seen[lw.lang] = true
+		}
 		if strings.Contains(lw.lang, "-") {
-			base := strings.Split(lw.lang, "-")[0]
-			// Avoid duplicates
-			found := false
-			for _, existing := range result {
-				if existing == base {
-					found = true
-					break
-				}
-			}
-			if !found {
+			base := strings.SplitN(lw.lang, "-", 2)[0]
+			if !seen[base] {
 				result = append(result, base)
+				seen[base] = true
 			}
 		}
 	}
 
 	return result
-}
-
-// extractIRIs collects all unique IRI values from a QueryResult
-func extractIRIs(result QueryResult) []string {
-	iriSet := make(map[string]bool)
-
-	for _, binding := range result.Bindings {
-		for _, value := range binding {
-			if value.Type == "uri" {
-				iriSet[value.Value] = true
-			}
-		}
-	}
-
-	// Convert to slice
-	iris := make([]string, 0, len(iriSet))
-	for iri := range iriSet {
-		iris = append(iris, iri)
-	}
-
-	return iris
 }
 
 // buildLabelQuery constructs SPARQL query to fetch labels for given IRIs
@@ -187,6 +208,7 @@ func buildLabelQuery(iris []string, languages []string) string {
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX schema: <http://schema.org/>
+PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX dc: <http://purl.org/dc/elements/1.1/>
 PREFIX rico: <https://www.ica.org/standards/RiC/ontology#>
 
@@ -211,7 +233,7 @@ SELECT ?iri ?label WHERE {
         (dc:title "5")
         (rico:title "6")
       }
-      
+
       ?iri ?prop ?val .
       BIND(lang(?val) AS ?lang)
 
@@ -227,7 +249,7 @@ SELECT ?iri ?label WHERE {
           IF(?lang = "en", "7", 1/0),
           IF(?lang = "rm", "8", 1/0),
           "9" # Default/Fallback
-        ) 
+        )
 	  AS ?lPrio)
 
       # C. Create the sortable rank: "14LabelText" (PropPrio=1, LangPrio=4)
@@ -243,6 +265,8 @@ SELECT ?iri ?label WHERE {
 
 	return query
 }
+
+// ── Label fetching & enrichment ───────────────────────────────────────────────
 
 // extractLastSegment extracts the last path segment from an IRI as fallback label
 // Examples:
@@ -270,14 +294,13 @@ func extractLastSegment(iri string) string {
 
 // fetchLabels queries endpoint for labels and returns IRI→label mapping
 // TODO: split up queries if more than 5k IRIs, LINDAS returns 403 error (too many entries) for 10k labels
-// TODO: verify error handling when query fails - do not write into cache in that case
 func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages []string) map[string]string {
 	// Check cache first
 	uncachedIRIs := make([]string, 0, len(iris))
 	labelMap := make(map[string]string)
 
 	for _, iri := range iris {
-		if label, found := getCachedLabel(iri); found {
+		if label, found := getCachedLabel(iri, languages); found {
 			labelMap[iri] = label
 		} else {
 			uncachedIRIs = append(uncachedIRIs, iri)
@@ -292,20 +315,17 @@ func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages [
 	// Build and execute label query
 	query := buildLabelQuery(uncachedIRIs, languages)
 
-	// DEBUG: print the query
-	fmt.Printf("LABEL QUERY:\n%s\n", query)
-
-	response, _, err := p.querySparqlEndpoint(endpointURL, query)
+	finalizedQuery := p.finalizeQuery(query)
+	response, err := p.querySparqlEndpoint(context.Background(), endpointURL, finalizedQuery)
 	if err != nil {
 		log := logger.Get()
 		log.Warn("label query failed, using fallback",
 			slog.String("error", err.Error()),
 			slog.Int("iri_count", len(uncachedIRIs)))
-		// Apply fallback for all uncached IRIs
 		for _, iri := range uncachedIRIs {
 			fallback := extractLastSegment(iri)
 			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback)
+			setCachedLabel(iri, fallback, languages)
 		}
 		return labelMap
 	}
@@ -319,33 +339,22 @@ func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages [
 		for _, iri := range uncachedIRIs {
 			fallback := extractLastSegment(iri)
 			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback)
+			setCachedLabel(iri, fallback, languages)
 		}
 		return labelMap
 	}
 
-	// DEBUG: print sparqlResp
-	fmt.Printf("LABEL RESPONSE: %+v\n", sparqlResp)
-
-	// Build mapping from results (first label per IRI due to ORDER BY)
-	seenIRIs := make(map[string]bool)
+	// Build mapping from results — one row per IRI guaranteed by GROUP BY in subquery
 	for _, binding := range sparqlResp.Results.Bindings {
 		iriValue := binding["iri"].Value
 		labelValue := binding["label"].Value
 
-		// DEBUG: print fetched labels
-		fmt.Printf("iri - label: %s - %s\n", iriValue, labelValue)
-
-		// Skip empty labels - let fallback logic handle it
 		if labelValue == "" {
 			continue
 		}
 
-		if !seenIRIs[iriValue] {
-			labelMap[iriValue] = labelValue
-			setCachedLabel(iriValue, labelValue)
-			seenIRIs[iriValue] = true
-		}
+		labelMap[iriValue] = labelValue
+		setCachedLabel(iriValue, labelValue, languages)
 	}
 
 	// Apply fallback for IRIs without labels
@@ -353,32 +362,27 @@ func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages [
 		if _, found := labelMap[iri]; !found {
 			fallback := extractLastSegment(iri)
 			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback)
+			setCachedLabel(iri, fallback, languages)
 		}
 	}
 
 	return labelMap
 }
 
-// enrichWithLabels populates the Lol field for URI bindings
+// enrichWithLabels populates the DisplayText field for URI bindings
 func enrichWithLabels(result *QueryResult, labelMap map[string]string) {
 	for i := range result.Bindings {
 		for varName, value := range result.Bindings[i] {
 			if value.Type == "uri" {
 				if label, found := labelMap[value.Value]; found {
-					// Create new struct with updated Lol field
-					result.Bindings[i][varName] = struct {
-						Type  string
-						Value string
-						Lol   string
-					}{
-						Type:  value.Type,
-						Value: value.Value,
-						Lol:   label,
+					result.Bindings[i][varName] = Binding{
+						Type:        value.Type,
+						Value:       value.Value,
+						DisplayText: label,
 					}
 				}
 			}
-			// Literals keep Value as Lol (already set in simplifyBindings)
+			// Literals keep Value as DisplayText (already set in simplifyBindings)
 		}
 	}
 }

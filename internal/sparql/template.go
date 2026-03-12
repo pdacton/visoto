@@ -4,6 +4,7 @@ package sparql
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -13,12 +14,16 @@ import (
 
 // Preprocessor handles SPARQL query preprocessing for templates
 type Preprocessor struct {
-	config Config
+	config     Config
+	httpClient *http.Client
 }
 
 // New creates a new Preprocessor with the given configuration
 func New(config Config) *Preprocessor {
-	return &Preprocessor{config: config}
+	return &Preprocessor{
+		config:     config,
+		httpClient: &http.Client{},
+	}
 }
 
 // ProcessTemplateFile reads a template file, extracts and executes SPARQL queries,
@@ -43,7 +48,7 @@ func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLa
 	}
 
 	// Execute queries in parallel with language preference
-	results := p.executeQueriesParallel(p.config.EndpointURL, queries, p.config.Timeout, acceptLanguage)
+	results := p.executeQueriesParallel(queries, p.config.Timeout, acceptLanguage)
 
 	// Create TemplateData with results
 	data := TemplateData{

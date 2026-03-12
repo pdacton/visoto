@@ -123,7 +123,7 @@ func groupByValue(bindings []map[string]sparql.Binding) []map[string]sparql.Bind
 		e := seen[key]
 		joinedHTML := strings.Join(e.propHTMLs, ", ")
 		result = append(result, map[string]sparql.Binding{
-			"property": {Type: "html", Lol: joinedHTML},
+			"property": {Type: "html", DisplayText: joinedHTML},
 			"value":    e.value,
 		})
 	}
@@ -139,7 +139,7 @@ func groupByValue(bindings []map[string]sparql.Binding) []map[string]sparql.Bind
 	// Mark long entries so the template can apply full-width styling.
 	for i, row := range result {
 		if len(row["value"].Value) >= 200 {
-			result[i]["long"] = sparql.Binding{Type: "literal", Lol: "true"}
+			result[i]["long"] = sparql.Binding{Type: "literal", DisplayText: "true"}
 		}
 	}
 	return result

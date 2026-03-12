@@ -73,7 +73,7 @@
           <div class="datagrid">
             {{ range $binding := groupByValue $result.Bindings }}
               {{ $long := index $binding "long" }}
-              <div class="datagrid-item{{ if $long.Lol }} col-span-12{{ end }}">
+              <div class="datagrid-item{{ if $long.DisplayText }} col-span-12{{ end }}">
                 <div class="datagrid-title text-uppercase">{{ render (index $binding "property") }}</div>
                 <div class="datagrid-content">{{ render (index $binding "value") }}</div>
               </div>
@@ -120,8 +120,8 @@
         function getRows() {
           return bindings.map(function(b) {
             return {
-              property: (b.property && (b.property.Lol || b.property.Value)) || '',
-              value:    (b.value    && (b.value.Lol    || b.value.Value))    || ''
+              property: (b.property && (b.property.DisplayText || b.property.Value)) || '',
+              value:    (b.value    && (b.value.DisplayText    || b.value.Value))    || ''
             };
           });
         }

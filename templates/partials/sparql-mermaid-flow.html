@@ -290,8 +290,8 @@
                   uriToId[binding.from.Value] = id;
                   idToUri[id] = binding.from.Value;
                   // Store fromType if available
-                  if (binding.fromType && binding.fromType.Lol) {
-                    idToType[id] = binding.fromType.Lol;
+                  if (binding.fromType && binding.fromType.DisplayText) {
+                    idToType[id] = binding.fromType.DisplayText;
                   } else if (binding.fromType && binding.fromType.Value) {
                     idToType[id] = binding.fromType.Value;
                   }
@@ -301,8 +301,8 @@
                   uriToId[binding.to.Value] = id;
                   idToUri[id] = binding.to.Value;
                   // Store toType if available
-                  if (binding.toType && binding.toType.Lol) {
-                    idToType[id] = binding.toType.Lol;
+                  if (binding.toType && binding.toType.DisplayText) {
+                    idToType[id] = binding.toType.DisplayText;
                   } else if (binding.toType && binding.toType.Value) {
                     idToType[id] = binding.toType.Value;
                   }
@@ -326,7 +326,7 @@
 
                   // Check for from-specific field (e.g., fromValidFrom)
                   if (binding[fromFieldName]) {
-                    var fromValue = binding[fromFieldName].Lol || binding[fromFieldName].Value;
+                    var fromValue = binding[fromFieldName].DisplayText || binding[fromFieldName].Value;
                     if (fromValue && fromId && !idToExtraField[fromId]) {
                       idToExtraField[fromId] = fromValue;
                     }
@@ -334,7 +334,7 @@
 
                   // Check for to-specific field (e.g., toValidFrom)
                   if (binding[toFieldName]) {
-                    var toValue = binding[toFieldName].Lol || binding[toFieldName].Value;
+                    var toValue = binding[toFieldName].DisplayText || binding[toFieldName].Value;
                     if (toValue && toId && !idToExtraField[toId]) {
                       idToExtraField[toId] = toValue;
                     }
@@ -342,7 +342,7 @@
 
                   // Fallback: check for single shared field (e.g., validFrom)
                   if (binding[extraField]) {
-                    var extraValue = binding[extraField].Lol || binding[extraField].Value;
+                    var extraValue = binding[extraField].DisplayText || binding[extraField].Value;
                     if (extraValue) {
                       if (fromId && !idToExtraField[fromId]) {
                         idToExtraField[fromId] = extraValue;
@@ -373,9 +373,9 @@
 
                 var fromId = uriToId[binding.from.Value];
                 var toId = uriToId[binding.to.Value];
-                var fromLabel = escapeLabel(binding.from.Lol || binding.from.Value);
-                var toLabel = escapeLabel(binding.to.Lol || binding.to.Value);
-                var edgeLabel = escapeLabel(binding.predicate.Lol || binding.predicate.Value);
+                var fromLabel = escapeLabel(binding.from.DisplayText || binding.from.Value);
+                var toLabel = escapeLabel(binding.to.DisplayText || binding.to.Value);
+                var edgeLabel = escapeLabel(binding.predicate.DisplayText || binding.predicate.Value);
 
                 // Build node label with type if available
                 var fromNodeLabel = fromLabel;

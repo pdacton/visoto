@@ -40,7 +40,7 @@ func TestParseAcceptLanguage(t *testing.T) {
 		{
 			name:   "duplicate base language",
 			header: "en-US,en-GB,en",
-			want:   []string{"en-US", "en", "en-GB", "en"}, // en appears twice: once from en-US, once explicit
+			want:   []string{"en-US", "en", "en-GB"}, // en deduplicated after first insertion
 		},
 	}
 
@@ -114,14 +114,14 @@ func TestExtractIRIs(t *testing.T) {
 				Vars: []string{"s", "p", "o"},
 				Bindings: []map[string]Binding{
 					{
-						"s": {Type: "uri", Value: "http://example.com/subject", Lol: ""},
-						"p": {Type: "uri", Value: "http://example.com/predicate", Lol: ""},
-						"o": {Type: "literal", Value: "literal value", Lol: ""},
+						"s": {Type: "uri", Value: "http://example.com/subject", DisplayText: ""},
+						"p": {Type: "uri", Value: "http://example.com/predicate", DisplayText: ""},
+						"o": {Type: "literal", Value: "literal value", DisplayText: ""},
 					},
 					{
-						"s": {Type: "uri", Value: "http://example.com/subject2", Lol: ""},
-						"p": {Type: "uri", Value: "http://example.com/predicate", Lol: ""}, // duplicate
-						"o": {Type: "literal", Value: "another literal", Lol: ""},
+						"s": {Type: "uri", Value: "http://example.com/subject2", DisplayText: ""},
+						"p": {Type: "uri", Value: "http://example.com/predicate", DisplayText: ""}, // duplicate
+						"o": {Type: "literal", Value: "another literal", DisplayText: ""},
 					},
 				},
 			},
@@ -145,10 +145,10 @@ func TestExtractIRIs(t *testing.T) {
 				Vars: []string{"o"},
 				Bindings: []map[string]Binding{
 					{
-						"o": {Type: "literal", Value: "literal1", Lol: ""},
+						"o": {Type: "literal", Value: "literal1", DisplayText: ""},
 					},
 					{
-						"o": {Type: "literal", Value: "literal2", Lol: ""},
+						"o": {Type: "literal", Value: "literal2", DisplayText: ""},
 					},
 				},
 			},
@@ -236,16 +236,13 @@ func TestBuildLabelQuery(t *testing.T) {
 				}
 			}
 
-			// Should contain UNION for priority
-			if !containsString(got, "UNION") {
-				t.Errorf("buildLabelQuery() missing UNION for priority")
+			// Should contain COALESCE for language priority ranking
+			if !containsString(got, "COALESCE") {
+				t.Errorf("buildLabelQuery() missing COALESCE for language priority")
 			}
 
-			// Should contain language filter if languages provided
+			// Should contain language IF expressions if languages provided
 			if len(tt.languages) > 0 {
-				if !containsString(got, "FILTER") {
-					t.Errorf("buildLabelQuery() missing FILTER for languages")
-				}
 				for _, lang := range tt.languages {
 					if !containsString(got, lang) {
 						t.Errorf("buildLabelQuery() missing language: %v", lang)
@@ -260,18 +257,20 @@ func TestLabelCache(t *testing.T) {
 	testIRI := "http://example.com/test-cache"
 	testLabel := "Test Label"
 
+	testLangs := []string{"en", "de"}
+
 	// Clear any existing entry for test IRI
-	labelCache.Delete(testIRI)
+	labelCache.Delete(labelCacheKey(testIRI, testLangs))
 
 	// Test cache miss
-	if _, found := getCachedLabel(testIRI); found {
+	if _, found := getCachedLabel(testIRI, testLangs); found {
 		t.Error("getCachedLabel() should return false for uncached IRI")
 	}
 
 	// Test cache set and get
-	setCachedLabel(testIRI, testLabel)
+	setCachedLabel(testIRI, testLabel, testLangs)
 
-	label, found := getCachedLabel(testIRI)
+	label, found := getCachedLabel(testIRI, testLangs)
 	if !found {
 		t.Error("getCachedLabel() should return true for cached IRI")
 	}
@@ -281,12 +280,12 @@ func TestLabelCache(t *testing.T) {
 
 	// Test expiration by manually setting an expired entry
 	expiredIRI := "http://example.com/expired"
-	labelCache.Store(expiredIRI, labelCacheEntry{
+	labelCache.Store(labelCacheKey(expiredIRI, testLangs), labelCacheEntry{
 		label:      "Expired",
 		expiration: time.Now().Add(-1 * time.Hour),
 	})
 
-	if _, found := getCachedLabel(expiredIRI); found {
+	if _, found := getCachedLabel(expiredIRI, testLangs); found {
 		t.Error("getCachedLabel() should return false for expired entry")
 	}
 }
@@ -296,9 +295,9 @@ func TestEnrichWithLabels(t *testing.T) {
 		Vars: []string{"s", "p", "o"},
 		Bindings: []map[string]Binding{
 			{
-				"s": {Type: "uri", Value: "http://example.com/subject", Lol: "http://example.com/subject"},
-				"p": {Type: "uri", Value: "http://schema.org/name", Lol: "http://schema.org/name"},
-				"o": {Type: "literal", Value: "John Doe", Lol: "John Doe"},
+				"s": {Type: "uri", Value: "http://example.com/subject", DisplayText: "http://example.com/subject"},
+				"p": {Type: "uri", Value: "http://schema.org/name", DisplayText: "http://schema.org/name"},
+				"o": {Type: "literal", Value: "John Doe", DisplayText: "John Doe"},
 			},
 		},
 	}
@@ -311,17 +310,17 @@ func TestEnrichWithLabels(t *testing.T) {
 	enrichWithLabels(&result, labelMap)
 
 	// Check URI bindings got labels
-	if result.Bindings[0]["s"].Lol != "Subject Label" {
-		t.Errorf("enrichWithLabels() subject Lol = %v, want %v", result.Bindings[0]["s"].Lol, "Subject Label")
+	if result.Bindings[0]["s"].DisplayText != "Subject Label" {
+		t.Errorf("enrichWithLabels() subject Lol = %v, want %v", result.Bindings[0]["s"].DisplayText, "Subject Label")
 	}
 
-	if result.Bindings[0]["p"].Lol != "name" {
-		t.Errorf("enrichWithLabels() predicate Lol = %v, want %v", result.Bindings[0]["p"].Lol, "name")
+	if result.Bindings[0]["p"].DisplayText != "name" {
+		t.Errorf("enrichWithLabels() predicate Lol = %v, want %v", result.Bindings[0]["p"].DisplayText, "name")
 	}
 
 	// Check literal binding unchanged
-	if result.Bindings[0]["o"].Lol != "John Doe" {
-		t.Errorf("enrichWithLabels() literal Lol should remain unchanged, got %v", result.Bindings[0]["o"].Lol)
+	if result.Bindings[0]["o"].DisplayText != "John Doe" {
+		t.Errorf("enrichWithLabels() literal Lol should remain unchanged, got %v", result.Bindings[0]["o"].DisplayText)
 	}
 }
 

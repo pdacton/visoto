@@ -1,13 +1,13 @@
 package resource
 
-// package represents an RDF resource represented by an IRI and its associated template and data
-// it takes into accout prefixes defined in the config file
+// this package resolves the appropriate html template for a given RDF resource IRI
 
 import (
 	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 
 	"hutzli.org/visoto/internal/config"
@@ -19,13 +19,13 @@ import (
 
 type Resource struct {
 	IRI          string              // IRI of the resource
-	shortIRI     string              // short IRI with prefix
+	ShortIRI     string              // short IRI with prefix
 	TemplateName string              // template file associated with the resource
 	TemplatePath string              // full path to the template file
 	Data         sparql.TemplateData // data returned by the queries for this resource (SPARQL web result format with Head, Bindings)
 }
 
-// public Functions --------------------------------
+// --- public Functions --------------------------------
 
 // create a new Resource instance after validating the provided IRI
 // Handles both full IRIs (http://schema.org/Person) and prefixed IRIs (schema:Person)
@@ -56,31 +56,24 @@ func New(iri string, prefixes []config.Prefix) (*Resource, error) {
 
 	return &Resource{
 		IRI:      fullIRI,
-		shortIRI: shortIRI,
+		ShortIRI: shortIRI,
 		Data: sparql.TemplateData{
 			QueryResults: make(map[string]sparql.QueryResult),
 		},
 	}, nil
 }
 
-func (r *Resource) GetIRI() string {
-	return r.IRI
-}
-
-func (r *Resource) GetShortIRI() string {
-	return r.shortIRI
-}
-
 // ResolveTemplate determines the appropriate template for this resource
 // Resolution order:
-// 1. Direct IRI match in templates/instances/ (tries both full IRI and short IRI)
-// 2. Direct IRI match in templates/classes/ (tries both full IRI and short IRI)
-// 3. RDF type match in templates/classes/ (with type priority)
+// 1. Direct IRI match in templates/classes/ (tries both full IRI and short IRI)
+// 2. Direct IRI match in templates/instances/ (tries both full IRI and short IRI)
+// 3. rdf:type match in templates/instances/ (with type priority)
 // 4. Fallback to templates/pages/resource.html
 func (r *Resource) ResolveTemplate(preprocessor *sparql.Preprocessor, typePriority []string, prefixes []config.Prefix) error {
+
 	log := logger.Get()
 	fullIRITemplate := normalizeToFilename(r.IRI)
-	shortIRITemplate := normalizeToFilename(r.shortIRI)
+	shortIRITemplate := normalizeToFilename(r.ShortIRI)
 
 	// Helper to check and set template
 	tryTemplate := func(dir, template, reason string) bool {
@@ -131,7 +124,7 @@ func (r *Resource) ResolveTemplate(preprocessor *sparql.Preprocessor, typePriori
 	return nil
 }
 
-// internal Helper functions ----------------------------
+// ---internal Helper functions ----------------------------
 
 // normalizeToFilename converts an IRI to a URL-encoded filename
 func normalizeToFilename(iri string) string {
@@ -170,13 +163,9 @@ func sortTypesByPriority(types []string, priority []string) []string {
 	}
 
 	// Sort prioritized types by their priority index
-	for i := 0; i < len(prioritized); i++ {
-		for j := i + 1; j < len(prioritized); j++ {
-			if priorityMap[prioritized[i]] > priorityMap[prioritized[j]] {
-				prioritized[i], prioritized[j] = prioritized[j], prioritized[i]
-			}
-		}
-	}
+	sort.Slice(prioritized, func(i, j int) bool {
+		return priorityMap[prioritized[i]] < priorityMap[prioritized[j]]
+	})
 
 	// Combine prioritized and others
 	return append(prioritized, others...)

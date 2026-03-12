@@ -1,10 +1,11 @@
+// this is the main package of the visoto application, responsible for
+// initializing configuration, logger, SPARQL preprocessor, and starting the web server with defined routes and handlers.
 // to run this code, use the command: go run cmd/visoto/main.go
 // to build this code you must install gin-gonic package first using: go get github.com/gin-gonic/gin
 
 package main
 
 import (
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -22,130 +23,55 @@ import (
 	"hutzli.org/visoto/internal/templates"
 )
 
-// SparqlResponse represents the JSON response structure from a SPARQL endpoint
-// the annotations are used by Unmarshal to map the JSON fields to Go struct fields
-// uppercase field names are exported and accessible by the json package
-type SparqlResponse struct {
-	Head struct {
-		Vars []string `json:"vars"`
-	} `json:"head"`
-	Results struct {
-		Bindings []map[string]struct {
-			Type  string `json:"type"`
-			Value string `json:"value"`
-		} `json:"bindings"`
-	} `json:"results"`
-}
+// ---- Package-level state ----
 
-// Package-level SPARQL preprocessor instance
-var sparqlPreproc *sparql.Preprocessor
-
-// Package-level config instance
 var cfg *config.Config
-
-// Package-level monitor instance
 var mon *monitor.Monitor
 
-// getSelectedEndpoint reads user's endpoint selection from cookie
-// Returns empty string if none selected (use default)
-func getSelectedEndpoint(c *gin.Context) string {
-	endpoint, err := c.Cookie("selectedEndpoint")
-	if err != nil {
-		return "" // No selection, use default
-	}
-	return endpoint
-}
+// ---- Request helpers ----
 
 // createPreprocessorForRequest creates a preprocessor with user-selected default endpoint
 func createPreprocessorForRequest(c *gin.Context) *sparql.Preprocessor {
-	selectedName := getSelectedEndpoint(c)
 
-	// Determine default endpoint for this request
-	defaultEndpoint := cfg.Application.SparqlEndpoint
-	if selectedName != "" {
-		// Look up named endpoint
-		if url, exists := cfg.Application.GetNamedEndpointsMap()[selectedName]; exists {
-			defaultEndpoint = url
+	// Determine default endpoint for this request from cookie or config default
+	namedEndpoints := cfg.Application.GetNamedEndpointsMap()
+	endpoint := cfg.Application.SparqlEndpoint
+	if selectedEndpoint, err := c.Cookie("selectedEndpoint"); err == nil && selectedEndpoint != "" {
+		if url, exists := namedEndpoints[selectedEndpoint]; exists {
+			endpoint = url
 		}
 	}
 
 	// Create preprocessor with custom default
 	return sparql.New(sparql.Config{
-		EndpointURL:    defaultEndpoint, // User selection or config default
+		EndpointURL:    endpoint,
 		Timeout:        cfg.GetTimeout(),
 		Prefixes:       cfg.RDF.ParsedPrefixes,
-		NamedEndpoints: cfg.Application.GetNamedEndpointsMap(),
+		NamedEndpoints: namedEndpoints,
 	})
 }
 
-func homeHandler(c *gin.Context) {
-
-	log := logger.Get()
-	log.Debug("processing home request")
-
-	// Set the page parameter to home.html
-	c.Params = append(c.Params, gin.Param{Key: "page", Value: "home.html"})
-
-	// Delegate to staticPageHandler
-	staticPageHandler(c)
+// parseDuration maps a query param like "1h","24h","7d","30d" to a time.Duration.
+func parseDuration(s string) time.Duration {
+	switch s {
+	case "1h":
+		return 1 * time.Hour
+	case "24h":
+		return 24 * time.Hour
+	case "7d":
+		return 7 * 24 * time.Hour
+	case "30d":
+		return 30 * 24 * time.Hour
+	default:
+		return 24 * time.Hour
+	}
 }
 
-func resourceHandler(c *gin.Context) {
-
-	// extract iri from path
-	iri := strings.TrimPrefix(c.Param("path"), "/")
-
-	// log request
-	log := logger.Get()
-	log.Debug("----> processing resource request",
-		slog.String("path", c.Param("path")),
-		slog.String("iri", iri))
-
-	// create Resource instance
-	r, err := resource.New(iri, cfg.RDF.ParsedPrefixes)
-	if err != nil {
-		log := logger.Get()
-		log.Error("invalid resource IRI", slog.String("iri", iri), slog.String("error", err.Error()))
-		c.String(http.StatusBadRequest, err.Error())
-		return
-	}
-
-	// Get language preference from request
-	acceptLanguage := c.GetHeader("Accept-Language")
-
-	// Create preprocessor with user-selected endpoint
-	preprocessor := createPreprocessorForRequest(c)
-
-	// Resolve template based on IRI and RDF types (use per-request preprocessor)
-	if err := r.ResolveTemplate(preprocessor, cfg.RDF.TypePriority, cfg.RDF.ParsedPrefixes); err != nil {
-		log.Error("template resolution failed",
-			slog.String("iri", iri),
-			slog.String("error", err.Error()))
-		// Continue with fallback already set by ResolveTemplate
-	}
-
-	// TODO: refactor, move into Resource method
-	// extract SPARQL query from template and retrieve data (use per-request preprocessor)
-	r.Data, err = preprocessor.ProcessTemplateFile(r.TemplatePath, r.GetIRI(), acceptLanguage)
-	if err != nil {
-		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
-		return
-	}
-
-	// Add endpoints to template data for menu rendering (no sensitive data)
-	r.Data.SparqlEndpoints = cfg.Application.SparqlEndpoints
-	r.Data.ShortIRI = r.GetShortIRI()
-
-	// log.Debug("SPARQL data retrieved", slog.Any("data", r.Data))
-
-	// native gin template rendering
-	c.HTML(http.StatusOK, r.TemplateName, r.Data)
-}
+// ---- Page handlers ----
 
 func staticPageHandler(c *gin.Context) {
 
 	log := logger.Get()
-	log.Debug("processing static page request")
 
 	// Extract page name from URL parameter
 	pageName := c.Param("page")
@@ -199,6 +125,53 @@ func staticPageHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, templateName, data)
 }
 
+func resourceHandler(c *gin.Context) {
+
+	// extract iri from path
+	iri := strings.TrimPrefix(c.Param("path"), "/")
+
+	// Get language preference from request
+	acceptLanguage := c.GetHeader("Accept-Language")
+
+	// log request
+	log := logger.Get()
+	log.Debug("processing resource request", slog.String("path", c.Param("path")), slog.String("iri", iri))
+
+	// Create preprocessor with user-selected endpoint
+	preprocessor := createPreprocessorForRequest(c)
+
+	// create Resource instance
+	r, err := resource.New(iri, cfg.RDF.ParsedPrefixes)
+	if err != nil {
+		log.Error("invalid resource IRI", slog.String("iri", iri), slog.String("error", err.Error()))
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Resolve template based on IRI and RDF types (use per-request preprocessor)
+	if err := r.ResolveTemplate(preprocessor, cfg.RDF.TypePriority, cfg.RDF.ParsedPrefixes); err != nil {
+		log.Error("template resolution failed",
+			slog.String("iri", iri),
+			slog.String("error", err.Error()))
+		// Continue with fallback already set by ResolveTemplate
+	}
+
+	// TODO: refactor, move into Resource method
+	// extract SPARQL query from template and retrieve data (use per-request preprocessor)
+	r.Data, err = preprocessor.ProcessTemplateFile(r.TemplatePath, r.IRI, acceptLanguage)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
+		return
+	}
+
+	// Add endpoints to template data for menu rendering (no sensitive data)
+	r.Data.SparqlEndpoints = cfg.Application.SparqlEndpoints
+	r.Data.ShortIRI = r.ShortIRI
+
+	// native gin template rendering
+	c.HTML(http.StatusOK, r.TemplateName, r.Data)
+}
+
 func searchHandler(c *gin.Context) {
 	// Create preprocessor with user-selected endpoint
 	preprocessor := createPreprocessorForRequest(c)
@@ -237,6 +210,8 @@ func searchHandler(c *gin.Context) {
 	})
 }
 
+// metricHandler serves /api/metric/:id — called by HTMX to lazily load metric counts on the home page.
+// It reads the sparql-async element with the matching id from home.html, executes its query, and returns the count.
 func metricHandler(c *gin.Context) {
 	id := c.Param("id")
 	acceptLanguage := c.GetHeader("Accept-Language")
@@ -280,6 +255,8 @@ func metricHandler(c *gin.Context) {
 	c.String(http.StatusOK, count)
 }
 
+// ---- Monitoring handlers ----
+
 func monitoringPageHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/monitoring.html", gin.H{
 		"SparqlEndpoints": cfg.Application.SparqlEndpoints,
@@ -304,22 +281,6 @@ func monitoringToggleHandler(c *gin.Context) {
 	}
 	mon.SetEnabled(!mon.IsEnabled())
 	c.JSON(http.StatusOK, gin.H{"enabled": mon.IsEnabled()})
-}
-
-// parseDuration maps a query param like "1h","6h","24h","7d","30d" to a time.Duration.
-func parseDuration(s string) time.Duration {
-	switch s {
-	case "1h":
-		return 1 * time.Hour
-	case "6h":
-		return 6 * time.Hour
-	case "7d":
-		return 7 * 24 * time.Hour
-	case "30d":
-		return 30 * 24 * time.Hour
-	default: // "24h" and anything else
-		return 24 * time.Hour
-	}
 }
 
 func monitoringDataHandler(c *gin.Context) {
@@ -356,15 +317,13 @@ func monitoringDataHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"series": out})
 }
 
+// ---- Main ----
+
 func main() {
 
 	// Load configuration
 	var err error
 	cfg, err = config.Load("visoto.config")
-	if err != nil {
-		// Config loading failed, but cfg contains defaults
-		fmt.Fprintf(os.Stderr, "WARNING: Failed to load config file, using defaults: %v\n", err)
-	}
 
 	// Initialize logger
 	logger.MustInit(logger.Config{Level: cfg.Logging.Level, Format: cfg.Logging.Format, Output: cfg.Logging.Output})
@@ -387,18 +346,6 @@ func main() {
 			slog.String("config_key", "application.gemini_api_key"),
 			slog.String("config_file", "visoto.config"))
 	}
-
-	// Initialize SPARQL preprocessor with config values and named endpoints
-	sparqlPreproc = sparql.New(sparql.Config{
-		EndpointURL:    cfg.Application.SparqlEndpoint,
-		Timeout:        cfg.GetTimeout(),
-		Prefixes:       cfg.RDF.ParsedPrefixes,
-		NamedEndpoints: cfg.Application.GetNamedEndpointsMap(),
-	})
-
-	// Note: searcher is no longer initialized as singleton
-	// Each search request creates its own searcher with user-selected endpoint
-	search.SetDefaultProvider("stardog")
 
 	// Initialize icon cache
 	if err := resource.InitIconCache("./static/img/resource"); err != nil {
@@ -427,7 +374,10 @@ func main() {
 	router.StaticFile("/favicon.ico", "./static/img/favicon.svg")
 	router.StaticFile("/robots.txt", "./static/robots.txt")
 	router.Static("/static", "static")
-	router.GET("/", homeHandler)
+	router.GET("/", func(c *gin.Context) {
+		c.Params = append(c.Params, gin.Param{Key: "page", Value: "home.html"})
+		staticPageHandler(c)
+	})
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.GET("/search", searchHandler)
 	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey))

@@ -142,11 +142,11 @@
         function renderBinding(binding) {
           if (!binding) return '';
           if (binding.Type === 'uri') {
-            var display = escapeHtml(binding.Lol || binding.Value);
+            var display = escapeHtml(binding.DisplayText || binding.Value);
             var href = '/resource/' + encodeURIComponent(binding.Value);
             return '<a href="' + href + '">' + display + '</a>';
           }
-          return escapeHtml(binding.Lol || binding.Value);
+          return escapeHtml(binding.DisplayText || binding.Value);
         }
 
         // Transform bindings to Tabulator row format
@@ -157,7 +157,7 @@
             if (b) {
               row[varName] = {
                 html: renderBinding(b),
-                value: b.Lol || b.Value,
+                value: b.DisplayText || b.Value,
                 type: b.Type
               };
             } else {

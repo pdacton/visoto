@@ -59,12 +59,12 @@ func TestIRIExpansionAndShortening(t *testing.T) {
 				t.Fatalf("Error creating resource: %v", err)
 			}
 
-			if r.GetIRI() != tt.expectedFull {
-				t.Errorf("Full IRI mismatch:\n  got:  %s\n  want: %s", r.GetIRI(), tt.expectedFull)
+			if r.IRI != tt.expectedFull {
+				t.Errorf("Full IRI mismatch:\n  got:  %s\n  want: %s", r.IRI, tt.expectedFull)
 			}
 
-			if r.GetShortIRI() != tt.expectedShort {
-				t.Errorf("Short IRI mismatch:\n  got:  %s\n  want: %s", r.GetShortIRI(), tt.expectedShort)
+			if r.ShortIRI != tt.expectedShort {
+				t.Errorf("Short IRI mismatch:\n  got:  %s\n  want: %s", r.ShortIRI, tt.expectedShort)
 			}
 		})
 	}

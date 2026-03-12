@@ -1,5 +1,7 @@
-// deals with our custom html elements
 package sparql
+
+// Parsing of custom SPARQL HTML elements (<sparql-query>, <sparql-async>, etc.)
+// into structured types for query execution.
 
 import (
 	"fmt"

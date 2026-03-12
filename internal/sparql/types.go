@@ -1,10 +1,32 @@
 package sparql
 
 import (
+	"html/template"
+	"net/url"
 	"time"
 
 	"hutzli.org/visoto/internal/config"
 )
+
+// Binding represents a single SPARQL query result value
+type Binding struct {
+	Type        string
+	Value       string
+	DisplayText string // human-readable display string (resolved label for URIs, literal value otherwise)
+}
+
+// RenderHTML returns an HTML link if the type is "uri", raw HTML if the type is "html",
+// otherwise returns escaped plain text
+func (b Binding) RenderHTML() template.HTML {
+	switch b.Type {
+	case "uri":
+		return template.HTML(`<a href="/resource/` + url.QueryEscape(b.Value) + `">` + template.HTMLEscapeString(b.DisplayText) + `</a>`)
+	case "html":
+		return template.HTML(b.DisplayText)
+	default:
+		return template.HTML(template.HTMLEscapeString(b.DisplayText))
+	}
+}
 
 // Config holds configuration for the SPARQL preprocessor
 type Config struct {

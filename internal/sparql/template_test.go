@@ -390,9 +390,9 @@ func TestExtractQueries_Integration(t *testing.T) {
   <table>
     {{ range .QueryResults.resource.Bindings }}
     <tr>
-      <td>{{ .s.Lol }}</td>
-      <td>{{ .p.Lol }}</td>
-      <td>{{ .o.Lol }}</td>
+      <td>{{ .s.DisplayText }}</td>
+      <td>{{ .p.DisplayText }}</td>
+      <td>{{ .o.DisplayText }}</td>
     </tr>
     {{ end }}
   </table>

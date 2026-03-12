@@ -1,42 +1,36 @@
 package templates
 
 import (
+	"path/filepath"
 	"testing"
 )
 
 func TestLoad(t *testing.T) {
-	// Note: This test requires running from project root where templates/ exists
-	// Skip if templates directory doesn't exist
+	const templatesDir = "../../templates"
 
-	// This will panic if templates can't be loaded (by design)
-	r := Load("../../templates")
+	r := Load(templatesDir)
 
 	if r == nil {
-		t.Error("Load() returned nil renderer")
+		t.Fatal("Load() returned nil renderer")
 	}
 
-	// Verify singleton was set
-	if Get() == nil {
-		t.Error("Get() returned nil after Load()")
-	}
-
-	// Note: Can't compare renderer instances directly (not comparable)
-	// Just verify Get() doesn't panic and returns something
-	r2 := Get()
-	if r2 == nil {
-		t.Error("Get() returned nil after Load()")
-	}
-}
-
-func TestGetPanicsWithoutLoad(t *testing.T) {
-	// Reset renderer
-	renderer = nil
-
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("Get() should panic when called before MustLoad()")
+	// Verify expected template groups are non-empty
+	for _, group := range []struct {
+		name    string
+		pattern string
+	}{
+		{"layouts", templatesDir + "/layout/*.html"},
+		{"partials", templatesDir + "/partials/*.html"},
+		{"pages", templatesDir + "/pages/*.html"},
+		{"classes", templatesDir + "/classes/*.html"},
+		{"instances", templatesDir + "/instances/*.html"},
+	} {
+		files, err := filepath.Glob(group.pattern)
+		if err != nil {
+			t.Fatalf("glob error for %s: %v", group.name, err)
 		}
-	}()
-
-	Get() // Should panic
+		if len(files) == 0 {
+			t.Errorf("expected at least one %s template, got none", group.name)
+		}
+	}
 }

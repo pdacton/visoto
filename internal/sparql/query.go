@@ -17,24 +17,23 @@ import (
 	"hutzli.org/visoto/internal/logger"
 )
 
+// --- Prefix substitutions ---
+
+var (
+	reDeclaredPrefixes = regexp.MustCompile(`(?i)PREFIX\s+(\w+):\s*<[^>]+>`)
+	reUsedPrefixes     = regexp.MustCompile(`\b(\w+):(?:[a-zA-Z_]|\/)`)
+)
+
 // extractDeclaredPrefixes parses query and returns a set of prefix names already declared
 // Returns map[string]bool where keys are prefix names (e.g., "rdf", "schema")
 func extractDeclaredPrefixes(query string) map[string]bool {
 	declared := make(map[string]bool)
-
-	// Regex to match PREFIX declarations in SPARQL format
-	// Matches: PREFIX name: <uri> or PREFIX name: uri
-	// Case-insensitive for PREFIX keyword
-	re := regexp.MustCompile(`(?i)PREFIX\s+(\w+):\s*<[^>]+>`)
-
-	matches := re.FindAllStringSubmatch(query, -1)
+	matches := reDeclaredPrefixes.FindAllStringSubmatch(query, -1)
 	for _, match := range matches {
 		if len(match) >= 2 {
-			prefixName := strings.TrimSpace(match[1])
-			declared[prefixName] = true
+			declared[strings.TrimSpace(match[1])] = true
 		}
 	}
-
 	return declared
 }
 
@@ -43,27 +42,16 @@ func extractDeclaredPrefixes(query string) map[string]bool {
 // Excludes http:, https:, file: which are not prefixes
 func extractUsedPrefixes(query string) map[string]bool {
 	used := make(map[string]bool)
-
-	// Regex to match prefixed names: word followed by colon and word/path
-	// Matches: rdf:type, schema:name, skos:broader, etc.
-	// But NOT http:, https:, file: (common URL schemes)
-	re := regexp.MustCompile(`\b(\w+):(?:[a-zA-Z_]|\/)`)
-
-	matches := re.FindAllStringSubmatch(query, -1)
+	matches := reUsedPrefixes.FindAllStringSubmatch(query, -1)
 	for _, match := range matches {
 		if len(match) >= 2 {
-			prefixName := match[1]
-
-			// Exclude URL schemes
-			lowerPrefix := strings.ToLower(prefixName)
+			lowerPrefix := strings.ToLower(match[1])
 			if lowerPrefix == "http" || lowerPrefix == "https" || lowerPrefix == "file" {
 				continue
 			}
-
-			used[prefixName] = true
+			used[match[1]] = true
 		}
 	}
-
 	return used
 }
 
@@ -80,16 +68,9 @@ func buildNeededPrefixBlock(prefixes []config.Prefix, usedSet map[string]bool, d
 	addedAny := false
 
 	for _, prefix := range prefixes {
-		// Skip if this prefix is not used in the query
-		if !usedSet[prefix.Name] {
+		if !usedSet[prefix.Name] || declaredSet[prefix.Name] {
 			continue
 		}
-
-		// Skip if this prefix is already declared in the query
-		if declaredSet[prefix.Name] {
-			continue
-		}
-
 		sb.WriteString("PREFIX ")
 		sb.WriteString(prefix.Name)
 		sb.WriteString(": <")
@@ -98,7 +79,6 @@ func buildNeededPrefixBlock(prefixes []config.Prefix, usedSet map[string]bool, d
 		addedAny = true
 	}
 
-	// Only add blank line if we actually added prefixes
 	if addedAny {
 		sb.WriteString("\n")
 	}
@@ -108,61 +88,48 @@ func buildNeededPrefixBlock(prefixes []config.Prefix, usedSet map[string]bool, d
 
 // finalizeQuery adds PREFIX declarations to query if needed
 func (p *Preprocessor) finalizeQuery(query string) string {
-	// Extract which prefixes are already declared in the query
 	declaredPrefixes := extractDeclaredPrefixes(query)
-
-	// Extract which prefixes are actually used in the query
 	usedPrefixes := extractUsedPrefixes(query)
-
-	// Build prefix block with only needed (used but not declared) prefixes
 	prefixBlock := buildNeededPrefixBlock(p.config.Prefixes, usedPrefixes, declaredPrefixes)
-
 	return prefixBlock + query
 }
 
+// --- Endpoint resolution ---
+
 // resolveEndpoint determines which endpoint URL to use
-// Priority: 1) Direct URL, 2) Named endpoint lookup, 3) Default
+// Priority: 1) Named endpoint lookup, 2) Direct URL, 3) Default
 func (p *Preprocessor) resolveEndpoint(endpointAttr string) string {
 	if endpointAttr == "" {
-		return p.config.EndpointURL // Use default
+		return p.config.EndpointURL
 	}
-
-	// Check if it's a named endpoint
 	if url, exists := p.config.NamedEndpoints[endpointAttr]; exists {
 		return url
 	}
-
-	// Treat as direct URL (allows full URLs in templates)
 	return endpointAttr
 }
 
-// querySparqlEndpoint sends a SPARQL query to the specified endpoint and returns the response
-func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, string, error) {
+// --- HTTP transport ---
 
-	// Finalize query with PREFIX declarations if needed
-	finalizedQuery := p.finalizeQuery(query)
-
-	// Prepare the request parameters
+// querySparqlEndpoint sends a SPARQL query to the specified endpoint and returns the response.
+// The query must already be finalized (PREFIX declarations added).
+func (p *Preprocessor) querySparqlEndpoint(ctx context.Context, endpointURL, query string) ([]byte, error) {
 	params := url.Values{}
-	params.Set("query", finalizedQuery)
+	params.Set("query", query)
 	params.Set("format", "application/sparql-results+json")
 	encodedParams := params.Encode()
 
-	// Create the HTTP request
-	req, err := http.NewRequest("POST", endpointURL, strings.NewReader(encodedParams))
+	req, err := http.NewRequestWithContext(ctx, "POST", endpointURL, strings.NewReader(encodedParams))
 	if err != nil {
 		log := logger.Get()
 		log.Error("failed to create HTTP request",
 			slog.String("error", err.Error()),
 			slog.String("endpoint", endpointURL))
-		return nil, "", fmt.Errorf("failed to create request: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Set appropriate headers
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/sparql-results+json")
 
-	// Log the full request details at debug level
 	log := logger.Get()
 	log.Debug("HTTP request details",
 		slog.String("method", req.Method),
@@ -172,55 +139,41 @@ func (p *Preprocessor) querySparqlEndpoint(endpointURL, query string) ([]byte, s
 		slog.String("body", encodedParams),
 		slog.Int("body_length", len(encodedParams)))
 
-	// Execute the request
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := p.httpClient.Do(req)
 	if err != nil {
-		log := logger.Get()
 		log.Error("failed to execute HTTP request",
 			slog.String("error", err.Error()),
 			slog.String("endpoint", endpointURL))
-		return nil, "", fmt.Errorf("failed to execute request: %w", err)
+		return nil, fmt.Errorf("failed to execute request: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Check for HTTP errors
 	if resp.StatusCode != http.StatusOK {
-		io.Copy(io.Discard, resp.Body) // Drain body to allow connection reuse
-		log := logger.Get()
+		io.Copy(io.Discard, resp.Body)
 		log.Error("SPARQL endpoint returned HTTP error",
 			slog.Int("status_code", resp.StatusCode),
 			slog.String("status", resp.Status),
 			slog.String("endpoint", endpointURL))
-
-		// Log the encoded parameters for debugging
 		log.Debug("encoded query parameters",
 			slog.String("encoded_length", fmt.Sprintf("%d bytes", len(encodedParams))))
-
-		// Log the query at debug level
 		log.Debug("executing SPARQL query",
 			slog.String("endpoint", endpointURL),
-			slog.String("query", finalizedQuery))
-
-		return nil, "", fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
+			slog.String("query", query))
+		return nil, fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
 	}
 
-	// Read the response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		log := logger.Get()
 		log.Error("failed to read response body",
 			slog.String("error", err.Error()),
 			slog.String("endpoint", endpointURL))
-		return nil, "", fmt.Errorf("failed to read response body: %w", err)
+		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	// fmt.Println("=== SPARQL Response Body ===")
-	// fmt.Println(string(body))
-	// fmt.Println("=== End SPARQL Response Body ===")
-
-	return body, finalizedQuery, nil
+	return body, nil
 }
+
+// --- Response parsing ---
 
 // simplifyBindings converts sparqlResponse to simplified QueryResult format
 // we basically take out the Head and Results and keep the Vars and Bindings only
@@ -237,9 +190,9 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 		simplified := make(map[string]Binding)
 		for varName, varData := range binding {
 			simplified[varName] = Binding{
-				Type:  varData.Type,
-				Value: varData.Value,
-				Lol:   varData.Value,
+				Type:        varData.Type,
+				Value:       varData.Value,
+				DisplayText: varData.Value,
 			}
 		}
 		result.Bindings = append(result.Bindings, simplified)
@@ -248,100 +201,14 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 	return result
 }
 
+// --- Query execution (private) ---
 
-// QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI
-// Returns a slice of type URIs
-func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
-	// Construct SPARQL query to get all types
-	query := fmt.Sprintf("SELECT ?type WHERE { <%s> (a|owl:type) ?type }", iri)
-
-	// Execute query
-	response, _, err := p.querySparqlEndpoint(p.config.EndpointURL, query)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query types for IRI %s: %w", iri, err)
-	}
-
-	// Parse JSON response
-	var sparqlResp sparqlResponse
-	if err := json.Unmarshal(response, &sparqlResp); err != nil {
-		return nil, fmt.Errorf("failed to parse SPARQL response: %w", err)
-	}
-
-	// Extract type URIs from bindings
-	types := make([]string, 0, len(sparqlResp.Results.Bindings))
-	for _, binding := range sparqlResp.Results.Bindings {
-		if typeData, ok := binding["type"]; ok {
-			types = append(types, typeData.Value)
-		}
-	}
-
-	return types, nil
-}
-
-// executeQueriesParallel executes multiple queries concurrently with timeout
-func (p *Preprocessor) executeQueriesParallel(endpointURL string, queries []extractedQuery, timeout time.Duration, acceptLanguage string) map[string]QueryResult {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-
-	resultsChan := make(chan queryExecutionResult, len(queries))
-	var wg sync.WaitGroup
-
-	for _, q := range queries {
-
-		wg.Add(1)
-		go func(query extractedQuery) {
-			defer wg.Done()
-
-			// Check if context already cancelled
-			select {
-			case <-ctx.Done():
-				resultsChan <- queryExecutionResult{
-					ID:     query.ID,
-					Result: QueryResult{
-						Error:    "Query timeout exceeded",
-						Query:    p.finalizeQuery(query.Query),
-						Endpoint: p.resolveEndpoint(query.Endpoint),
-					},
-				}
-				return
-			default:
-			}
-
-			// Execute query with label resolution flag and endpoint from query
-			queryResult, err := p.ExecuteQuery(query.Query, query.ResolveLabels, acceptLanguage, query.Endpoint)
-			if err != nil {
-				// Preserve the Query field from queryResult while updating the error message
-				queryResult.Error = fmt.Sprintf("Query execution failed: %v", err)
-			}
-			resultsChan <- queryExecutionResult{ID: query.ID, Result: queryResult}
-		}(q)
-	}
-
-	// Close channel when all goroutines finish
-	go func() {
-		wg.Wait()
-		close(resultsChan)
-	}()
-
-	// Collect results
-	results := make(map[string]QueryResult)
-	for res := range resultsChan {
-		results[res.ID] = res.Result
-	}
-
-	return results
-}
-
-// ExecuteQuery executes a raw SPARQL query and returns simplified results
-// This method is useful for executing queries without template processing
-func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
-	// Resolve endpoint (empty string = use default)
+// executeQueryWithContext executes a SPARQL query using the provided context (supports cancellation/timeout)
+func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
 	targetEndpoint := p.resolveEndpoint(endpoint)
-
-	// Finalize query with PREFIX declarations if needed (done early so it's available in error cases)
 	finalizedQuery := p.finalizeQuery(query)
 
-	response, _, err := p.querySparqlEndpoint(targetEndpoint, query)
+	response, err := p.querySparqlEndpoint(ctx, targetEndpoint, finalizedQuery)
 	if err != nil {
 		return QueryResult{Error: err.Error(), Query: finalizedQuery, Endpoint: targetEndpoint}, err
 	}
@@ -355,10 +222,8 @@ func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLang
 	result.Query = finalizedQuery
 	result.Endpoint = targetEndpoint
 
-	// Perform label enrichment if requested
 	if resolveLabels {
-		initLabelCache() // Ensure cleanup goroutine started
-
+		initLabelCache()
 		iris := extractIRIs(result)
 		if len(iris) > 0 {
 			languages := parseAcceptLanguage(acceptLanguage)
@@ -368,4 +233,86 @@ func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLang
 	}
 
 	return result, nil
+}
+
+// executeQueriesParallel executes multiple queries concurrently with timeout
+func (p *Preprocessor) executeQueriesParallel(queries []extractedQuery, timeout time.Duration, acceptLanguage string) map[string]QueryResult {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	resultsChan := make(chan queryExecutionResult, len(queries))
+	var wg sync.WaitGroup
+
+	for _, q := range queries {
+		wg.Add(1)
+		go func(query extractedQuery) {
+			defer wg.Done()
+
+			select {
+			case <-ctx.Done():
+				resultsChan <- queryExecutionResult{
+					ID: query.ID,
+					Result: QueryResult{
+						Error:    "Query timeout exceeded",
+						Query:    p.finalizeQuery(query.Query),
+						Endpoint: p.resolveEndpoint(query.Endpoint),
+					},
+				}
+				return
+			default:
+			}
+
+			queryResult, err := p.executeQueryWithContext(ctx, query.Query, query.ResolveLabels, acceptLanguage, query.Endpoint)
+			if err != nil {
+				queryResult.Error = fmt.Sprintf("Query execution failed: %v", err)
+			}
+			resultsChan <- queryExecutionResult{ID: query.ID, Result: queryResult}
+		}(q)
+	}
+
+	go func() {
+		wg.Wait()
+		close(resultsChan)
+	}()
+
+	results := make(map[string]QueryResult)
+	for res := range resultsChan {
+		results[res.ID] = res.Result
+	}
+
+	return results
+}
+
+// --- Public functions ---
+
+// ExecuteQuery executes a raw SPARQL query and returns simplified results
+// This method is useful for executing queries without template processing
+func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
+	return p.executeQueryWithContext(context.Background(), query, resolveLabels, acceptLanguage, endpoint)
+}
+
+// QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI
+// Returns a slice of type URIs
+func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
+	query := fmt.Sprintf("SELECT ?type WHERE { <%s> a ?type }", iri)
+
+	finalizedQuery := p.finalizeQuery(query)
+	response, err := p.querySparqlEndpoint(context.Background(), p.config.EndpointURL, finalizedQuery)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query types for IRI %s: %w", iri, err)
+	}
+
+	var sparqlResp sparqlResponse
+	if err := json.Unmarshal(response, &sparqlResp); err != nil {
+		return nil, fmt.Errorf("failed to parse SPARQL response: %w", err)
+	}
+
+	types := make([]string, 0, len(sparqlResp.Results.Bindings))
+	for _, binding := range sparqlResp.Results.Bindings {
+		if typeData, ok := binding["type"]; ok {
+			types = append(types, typeData.Value)
+		}
+	}
+
+	return types, nil
 }

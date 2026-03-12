@@ -116,7 +116,43 @@
 
 </div>
 
-<div id="terminology-cards" class="row row-deck row-cards mb-3">
+<div id="dcat-cards" class="row row-deck row-cards mb-3">
+
+  <!-- dcat catalogs card -->
+  <sparql-async id="dcatCatalogCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?catalog) AS ?count) WHERE {
+      ?catalog a dcat:Catalog .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "dcatCatalogCount" "title" "Catalogs" "href" "/resource/dcat:Catalog" "icon" "/static/img/resource/Catalog.svg") }}
+
+  <!-- dcat datasets card -->
+  <sparql-async id="dcatDatasetCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?dataset) AS ?count) WHERE {
+      ?dataset a dcat:Dataset .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "dcatDatasetCount" "title" "Datasets" "href" "/resource/dcat:Dataset" "icon" "/static/img/resource/Dataset.svg") }}
+
+  <!-- dcat distributions card -->
+  <sparql-async id="dcatDistributionCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?distribution) AS ?count) WHERE {
+      ?distribution a dcat:Distribution .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "dcatDistributionCount" "title" "Distributions" "href" "/resource/dcat:Distribution" "icon" "/static/img/resource/Distribution.svg") }}
+
+  <!-- dcat data services card -->
+  <sparql-async id="dcatDataServiceCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?service) AS ?count) WHERE {
+      ?service a dcat:DataService .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "dcatDataServiceCount" "title" "Data Services" "href" "/resource/dcat:DataService" "icon" "/static/img/resource/DataService.svg") }}
+
+</div>
+
+<div class="lindas-cards row row-deck row-cards mb-3 d-none">
   
   <!-- defined term sets card -->
   <sparql-async id="termSetCount" class="d-none">
@@ -195,7 +231,6 @@
   {{ template "sparqlMetric" (dict "queryId" "sharedDimensionCount" "title" "Shared Dimensions" "href" "/resource/meta:SharedDimension" "icon" "/static/img/resource/SharedDimension.svg") }}
 
 </div>
-
 {{ end }}
 
 {{ define "pageScripts" }}
