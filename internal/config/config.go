@@ -22,6 +22,12 @@ type Config struct {
 	Application ApplicationConfig `toml:"application"`
 	RDF         RDFConfig         `toml:"rdf"`
 	Logging     LoggingConfig     `toml:"logging"`
+	MCP         MCPConfig         `toml:"mcp"`
+}
+
+// MCPConfig holds MCP server settings
+type MCPConfig struct {
+	Port int `toml:"port"` // default 8070
 }
 
 // ApplicationConfig holds application-level settings
@@ -73,6 +79,9 @@ func Load(configPath string) (*Config, error) {
 			Level:  "INFO",
 			Format: "text",
 			Output: "stdout",
+		},
+		MCP: MCPConfig{
+			Port: 8070,
 		},
 	}
 

@@ -28,12 +28,13 @@ func (b Binding) RenderHTML() template.HTML {
 	}
 }
 
-// Config holds configuration for the SPARQL preprocessor
-type Config struct {
-	EndpointURL     string            // Default SPARQL endpoint URL
-	Timeout         time.Duration     // Global timeout for all queries
-	Prefixes        []config.Prefix   // RDF prefix declarations
-	NamedEndpoints  map[string]string // Named endpoints: name -> URL mapping
+// QueryInput holds the inputs for SPARQL query processing:
+// endpoint resolution, prefix substitution, and query execution.
+type QueryInput struct {
+	EndpointURL    string            // Default SPARQL endpoint URL
+	Timeout        time.Duration     // Global timeout for all queries
+	Prefixes       []config.Prefix   // RDF prefix declarations
+	NamedEndpoints map[string]string // Named endpoints: name -> URL mapping
 }
 
 // QueryResult stores simplified SPARQL results for template consumption
@@ -45,16 +46,8 @@ type QueryResult struct {
 	Endpoint string               // The endpoint URL used for this query
 }
 
-// PageData wraps all data retrieved for a resource
-type TemplateData struct {
-	ResourceIRI      string                   // The IRI of the resource being rendered
-	ShortIRI         string                   // Prefixed IRI (e.g. schema:Person), empty if no prefix match
-	QueryResults     map[string]QueryResult   // Results indexed by query ID defined in template
-	SparqlEndpoints  []config.SparqlEndpoint  // SPARQL endpoints for menu (no sensitive data)
-}
-
-// extractedQuery represents a SPARQL query found in template (internal use)
-type extractedQuery struct {
+// ExtractedQuery represents a SPARQL query found in template
+type ExtractedQuery struct {
 	ID            string // Query identifier
 	Query         string // SPARQL query text
 	ResolveLabels bool   // Whether to perform IRI label enrichment

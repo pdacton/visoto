@@ -17,6 +17,20 @@ import (
 	"hutzli.org/visoto/internal/logger"
 )
 
+// Preprocessor handles SPARQL query execution
+type Preprocessor struct {
+	config     QueryInput
+	httpClient *http.Client
+}
+
+// New creates a new Preprocessor with the given configuration
+func New(config QueryInput) *Preprocessor {
+	return &Preprocessor{
+		config:     config,
+		httpClient: &http.Client{},
+	}
+}
+
 // --- Prefix substitutions ---
 
 var (
@@ -98,6 +112,8 @@ func (p *Preprocessor) finalizeQuery(query string) string {
 
 // resolveEndpoint determines which endpoint URL to use
 // Priority: 1) Named endpoint lookup, 2) Direct URL, 3) Default
+// a direct URL can be provided in the template <sparql-query endpoint="https://dbpedia.org/sparql">
+// the end client can also provide a identifier for a named endpoint
 func (p *Preprocessor) resolveEndpoint(endpointAttr string) string {
 	if endpointAttr == "" {
 		return p.config.EndpointURL
@@ -105,10 +121,10 @@ func (p *Preprocessor) resolveEndpoint(endpointAttr string) string {
 	if url, exists := p.config.NamedEndpoints[endpointAttr]; exists {
 		return url
 	}
-	return endpointAttr
+	return endpointAttr // direct URL provided in query attribute (e.g., endpoint="https://dbpedia.org/sparql")
 }
 
-// --- HTTP transport ---
+// --- send actual query ---
 
 // querySparqlEndpoint sends a SPARQL query to the specified endpoint and returns the response.
 // The query must already be finalized (PREFIX declarations added).
@@ -149,16 +165,11 @@ func (p *Preprocessor) querySparqlEndpoint(ctx context.Context, endpointURL, que
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		io.Copy(io.Discard, resp.Body)
+		_, _ = io.Copy(io.Discard, resp.Body)
 		log.Error("SPARQL endpoint returned HTTP error",
 			slog.Int("status_code", resp.StatusCode),
 			slog.String("status", resp.Status),
 			slog.String("endpoint", endpointURL))
-		log.Debug("encoded query parameters",
-			slog.String("encoded_length", fmt.Sprintf("%d bytes", len(encodedParams))))
-		log.Debug("executing SPARQL query",
-			slog.String("endpoint", endpointURL),
-			slog.String("query", query))
 		return nil, fmt.Errorf("HTTP error: %d %s", resp.StatusCode, resp.Status)
 	}
 
@@ -183,9 +194,8 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 		Bindings: make([]map[string]Binding, 0, len(resp.Results.Bindings)),
 	}
 
-	// apparently we have to copy each binding entry individually,
-	// even though the structures of QueryResult.Bindings and sparqlResponse.Results.Bindings are identical
-	// but go treats them as different types because of the tags
+	// copy each binding individually: sparqlResponse bindings lack the DisplayText field
+	// that QueryResult.Binding has, so the types differ and a direct assignment isn't possible
 	for _, binding := range resp.Results.Bindings {
 		simplified := make(map[string]Binding)
 		for varName, varData := range binding {
@@ -235,8 +245,8 @@ func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string
 	return result, nil
 }
 
-// executeQueriesParallel executes multiple queries concurrently with timeout
-func (p *Preprocessor) executeQueriesParallel(queries []extractedQuery, timeout time.Duration, acceptLanguage string) map[string]QueryResult {
+// ExecuteQueriesParallel executes multiple queries concurrently with timeout
+func (p *Preprocessor) ExecuteQueriesParallel(queries []ExtractedQuery, timeout time.Duration, acceptLanguage string) map[string]QueryResult {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
@@ -245,7 +255,7 @@ func (p *Preprocessor) executeQueriesParallel(queries []extractedQuery, timeout 
 
 	for _, q := range queries {
 		wg.Add(1)
-		go func(query extractedQuery) {
+		go func(query ExtractedQuery) {
 			defer wg.Done()
 
 			select {

@@ -16,7 +16,9 @@ import (
 	"hutzli.org/visoto/internal/chat"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
+	mcpserver "hutzli.org/visoto/internal/mcp"
 	"hutzli.org/visoto/internal/monitor"
+	"hutzli.org/visoto/internal/parser"
 	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/search"
 	"hutzli.org/visoto/internal/sparql"
@@ -30,10 +32,10 @@ var mon *monitor.Monitor
 
 // ---- Request helpers ----
 
-// createPreprocessorForRequest creates a preprocessor with user-selected default endpoint
-func createPreprocessorForRequest(c *gin.Context) *sparql.Preprocessor {
+// prepareQueryInputs creates a preprocessor with user-selected default endpoint
+func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 
-	// Determine default endpoint for this request from cookie or config default
+	// Determine default endpoint for this request either from cookie or config default
 	namedEndpoints := cfg.Application.GetNamedEndpointsMap()
 	endpoint := cfg.Application.SparqlEndpoint
 	if selectedEndpoint, err := c.Cookie("selectedEndpoint"); err == nil && selectedEndpoint != "" {
@@ -42,8 +44,8 @@ func createPreprocessorForRequest(c *gin.Context) *sparql.Preprocessor {
 		}
 	}
 
-	// Create preprocessor with custom default
-	return sparql.New(sparql.Config{
+	// Create query inputs for preprocessor
+	return parser.New(sparql.QueryInput{
 		EndpointURL:    endpoint,
 		Timeout:        cfg.GetTimeout(),
 		Prefixes:       cfg.RDF.ParsedPrefixes,
@@ -102,7 +104,7 @@ func staticPageHandler(c *gin.Context) {
 	}
 
 	// Create preprocessor with user-selected endpoint
-	preprocessor := createPreprocessorForRequest(c)
+	preprocessor := prepareQueryInputs(c)
 
 	// Process SPARQL queries in template (WITHOUT IRI substitution, use per-request preprocessor)
 	data, err := preprocessor.ProcessTemplateFile(templatePath, "", acceptLanguage)
@@ -125,20 +127,20 @@ func staticPageHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, templateName, data)
 }
 
-func resourceHandler(c *gin.Context) {
+func resourcePageHandler(c *gin.Context) {
 
 	// extract iri from path
 	iri := strings.TrimPrefix(c.Param("path"), "/")
 
 	// Get language preference from request
-	acceptLanguage := c.GetHeader("Accept-Language")
+	language := c.GetHeader("Accept-Language")
 
 	// log request
 	log := logger.Get()
-	log.Debug("processing resource request", slog.String("path", c.Param("path")), slog.String("iri", iri))
+	log.Debug("processing resource page request", slog.String("path", c.Param("path")), slog.String("iri", iri))
 
-	// Create preprocessor with user-selected endpoint
-	preprocessor := createPreprocessorForRequest(c)
+	// Create preprocessor with user-selected endpoint (inside cookie)
+	preprocessor := prepareQueryInputs(c)
 
 	// create Resource instance
 	r, err := resource.New(iri, cfg.RDF.ParsedPrefixes)
@@ -158,7 +160,7 @@ func resourceHandler(c *gin.Context) {
 
 	// TODO: refactor, move into Resource method
 	// extract SPARQL query from template and retrieve data (use per-request preprocessor)
-	r.Data, err = preprocessor.ProcessTemplateFile(r.TemplatePath, r.IRI, acceptLanguage)
+	r.Data, err = preprocessor.ProcessTemplateFile(r.TemplatePath, r.IRI, language)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
 		return
@@ -174,10 +176,10 @@ func resourceHandler(c *gin.Context) {
 
 func searchHandler(c *gin.Context) {
 	// Create preprocessor with user-selected endpoint
-	preprocessor := createPreprocessorForRequest(c)
+	preprocessor := prepareQueryInputs(c)
 
 	// Create searcher instance for this request
-	searcher := search.New(preprocessor, "stardog")
+	searcher := search.New(preprocessor.SparqlPreprocessor(), "stardog")
 
 	// Parse search parameters
 	params := search.ParseParams(c)
@@ -223,7 +225,7 @@ func metricHandler(c *gin.Context) {
 		return
 	}
 
-	elements, err := sparql.ExtractAsyncElements(string(content))
+	elements, err := parser.ExtractAsyncElements(string(content))
 	if err != nil {
 		c.String(http.StatusInternalServerError, "0")
 		return
@@ -241,7 +243,7 @@ func metricHandler(c *gin.Context) {
 		return
 	}
 
-	preprocessor := createPreprocessorForRequest(c)
+	preprocessor := prepareQueryInputs(c)
 	result, err := preprocessor.ExecuteQuery(query, false, acceptLanguage, "")
 
 	count := "0"
@@ -364,6 +366,15 @@ func main() {
 			slog.Bool("enabled", mon.IsEnabled()))
 	}
 
+	// Build MCP handler (fixed default endpoint, no per-request cookie logic)
+	mcpPreprocessor := sparql.New(sparql.QueryInput{
+		EndpointURL:    cfg.Application.SparqlEndpoint,
+		Timeout:        cfg.GetTimeout(),
+		Prefixes:       cfg.RDF.ParsedPrefixes,
+		NamedEndpoints: cfg.Application.GetNamedEndpointsMap(),
+	})
+	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor)
+
 	// Create router
 	router := gin.Default()
 
@@ -386,14 +397,17 @@ func main() {
 	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
 	router.GET("/api/monitoring/data", monitoringDataHandler)
 	router.GET("/api/metric/:id", metricHandler)
-	router.GET("/resource/*path", resourceHandler)
+	router.GET("/resource/*path", resourcePageHandler)
+	router.Any("/mcp", gin.WrapH(mcpHandler))
+	router.GET("/health", gin.WrapH(mcpHandler))
 	router.GET("/:page", staticPageHandler)
 
 	// Start server with configured port
 	// Bind to 0.0.0.0 to allow connections from outside (required for Docker)
 	log.Info("server starting",
 		slog.String("address", "0.0.0.0"+cfg.GetPort()),
-		slog.String("url", "http://localhost"+cfg.GetPort()))
+		slog.String("url", "http://localhost"+cfg.GetPort()),
+		slog.String("mcp", "http://localhost"+cfg.GetPort()+"/mcp"))
 
 	if err := router.Run("0.0.0.0" + cfg.GetPort()); err != nil {
 		log.Error("server failed to start",

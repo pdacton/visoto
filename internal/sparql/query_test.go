@@ -172,7 +172,7 @@ func TestFinalizeQuery(t *testing.T) {
 		{Name: "schch", URI: "https://schema.ld.admin.ch/"},
 	}
 
-	preproc := New(Config{
+	preproc := New(QueryInput{
 		EndpointURL: "http://example.com/sparql",
 		Prefixes:    prefixes,
 	})

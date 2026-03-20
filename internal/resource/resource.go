@@ -1,6 +1,9 @@
-package resource
+// this package is a light abstraction over a RDF resource.
+// It's main function is to resolve the appropriate template for a given resource based on its IRI and RDF types, following a specific resolution order.
+// It also handles both full IRIs and prefixed IRIs, allowing for flexible input formats.
+// The package includes helper functions for normalizing IRIs to filenames, checking template existence, and sorting RDF types by priority.
 
-// this package resolves the appropriate html template for a given RDF resource IRI
+package resource
 
 import (
 	"fmt"
@@ -12,6 +15,7 @@ import (
 
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
+	"hutzli.org/visoto/internal/parser"
 	"hutzli.org/visoto/internal/sparql"
 )
 
@@ -22,7 +26,7 @@ type Resource struct {
 	ShortIRI     string              // short IRI with prefix
 	TemplateName string              // template file associated with the resource
 	TemplatePath string              // full path to the template file
-	Data         sparql.TemplateData // data returned by the queries for this resource (SPARQL web result format with Head, Bindings)
+	Data         parser.TemplateData // data returned by the queries for this resource (SPARQL web result format with Head, Bindings)
 }
 
 // --- public Functions --------------------------------
@@ -57,7 +61,7 @@ func New(iri string, prefixes []config.Prefix) (*Resource, error) {
 	return &Resource{
 		IRI:      fullIRI,
 		ShortIRI: shortIRI,
-		Data: sparql.TemplateData{
+		Data: parser.TemplateData{
 			QueryResults: make(map[string]sparql.QueryResult),
 		},
 	}, nil
@@ -69,7 +73,7 @@ func New(iri string, prefixes []config.Prefix) (*Resource, error) {
 // 2. Direct IRI match in templates/instances/ (tries both full IRI and short IRI)
 // 3. rdf:type match in templates/instances/ (with type priority)
 // 4. Fallback to templates/pages/resource.html
-func (r *Resource) ResolveTemplate(preprocessor *sparql.Preprocessor, typePriority []string, prefixes []config.Prefix) error {
+func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriority []string, prefixes []config.Prefix) error {
 
 	log := logger.Get()
 	fullIRITemplate := normalizeToFilename(r.IRI)

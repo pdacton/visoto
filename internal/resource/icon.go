@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"hutzli.org/visoto/internal/logger"
-	"hutzli.org/visoto/internal/sparql"
+	"hutzli.org/visoto/internal/parser"
 )
 
 // iconCache holds the set of available icon names (without .svg extension)
@@ -132,7 +132,7 @@ func GetIconForResource(data interface{}) string {
 	const basePath = "/static/img/resource/"
 
 	// Check if it's TemplateData (resource pages)
-	td, ok := data.(sparql.TemplateData)
+	td, ok := data.(parser.TemplateData)
 	if !ok {
 		// For other types (search, home, etc.) return empty string (no icon)
 		return ""
