@@ -16,8 +16,9 @@ function getSelectedEndpoint() {
  */
 function setSelectedEndpoint(name) {
     if (name) {
-        // Set cookie for 1 year with Lax SameSite policy
-        document.cookie = `selectedEndpoint=${name}; path=/; max-age=31536000; SameSite=Lax`;
+        // Set cookie for 1 year with Lax SameSite policy. encodeURIComponent ensures non-ASCII
+        // endpoint names (e.g. "Stadt Zürich") are safely stored and matched on the server side.
+        document.cookie = `selectedEndpoint=${encodeURIComponent(name)}; path=/; max-age=31536000; SameSite=Lax`;
     } else {
         // Clear cookie
         document.cookie = 'selectedEndpoint=; path=/; max-age=0';
@@ -37,10 +38,10 @@ function switchEndpoint(name) {
 document.addEventListener('DOMContentLoaded', function() {
     const selected = getSelectedEndpoint();
 
-    // Set the select element's value to match the cookie
+    // Set the select element's value to match the cookie (decode since cookie is URI-encoded)
     const endpointSelect = document.getElementById('endpoint-selector');
     if (endpointSelect && selected) {
-        endpointSelect.value = selected;
+        endpointSelect.value = decodeURIComponent(selected);
     }
 
     // Add change event listener to trigger endpoint switch

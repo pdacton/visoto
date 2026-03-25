@@ -44,6 +44,7 @@ type SparqlEndpoint struct {
 	Name    string `toml:"name"`    // Display name (e.g., "LINDAS", "Wikidata")
 	URL     string `toml:"url"`     // Full endpoint URL
 	Default bool   `toml:"default"` // Optional: mark as default
+	Monitor bool   `toml:"monitor"` // Enable health monitoring for this endpoint
 }
 
 // RDFConfig holds RDF-related settings

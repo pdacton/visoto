@@ -117,6 +117,9 @@ func (m *Monitor) LatestStatus() []EndpointStatus {
 
 	out := make([]EndpointStatus, 0, len(m.cfg.SparqlEndpoints))
 	for _, ep := range m.cfg.SparqlEndpoints {
+		if !ep.Monitor {
+			continue
+		}
 		es := EndpointStatus{Name: ep.Name, URL: ep.URL}
 		if metric, ok := m.latest[ep.URL]; ok {
 			copy := *metric
@@ -213,6 +216,9 @@ func (m *Monitor) runCleanup() {
 func (m *Monitor) probe() {
 	log := logger.Get()
 	for _, ep := range m.cfg.SparqlEndpoints {
+		if !ep.Monitor {
+			continue
+		}
 		metric := m.probeOne(ep)
 		log.Info("monitor: probe",
 			slog.String("endpoint", ep.Name),

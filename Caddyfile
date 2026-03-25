@@ -1,7 +1,3 @@
-mcp.visoto.hutzli.org {
-    reverse_proxy visoto:8060
-}
-
 visoto.hutzli.org {
     rate_limit {
         zone client_ip {

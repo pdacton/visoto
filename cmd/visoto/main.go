@@ -8,6 +8,7 @@ package main
 import (
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -39,8 +40,13 @@ func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 	namedEndpoints := cfg.Application.GetNamedEndpointsMap()
 	endpoint := cfg.Application.SparqlEndpoint
 	if selectedEndpoint, err := c.Cookie("selectedEndpoint"); err == nil && selectedEndpoint != "" {
-		if url, exists := namedEndpoints[selectedEndpoint]; exists {
-			endpoint = url
+		// Decode the cookie value: browsers percent-encode non-ASCII characters (e.g. "Stadt Zürich" → "Stadt+Z%C3%BCrich"),
+		// so we must decode before looking up the endpoint name in the map.
+		if decoded, err := url.QueryUnescape(selectedEndpoint); err == nil {
+			selectedEndpoint = decoded
+		}
+		if epURL, exists := namedEndpoints[selectedEndpoint]; exists {
+			endpoint = epURL
 		}
 	}
 
