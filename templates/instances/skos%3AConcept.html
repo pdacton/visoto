@@ -81,9 +81,10 @@
         <div class="col-lg-6">
         <div class="mb-3">
             <sparql-query id="incoming" class="d-none">
-            SELECT ?source ?property WHERE {
+            SELECT ?type ?source ?property WHERE {
                 BIND (?? AS ?o)
                 ?source ?property ?o .
+                OPTIONAL { ?source a ?type }
                 FILTER (?property != rdf:type)
                 FILTER (?property != rdfs:subClassOf)
                 FILTER (?property NOT IN (
@@ -104,7 +105,8 @@
                 "id" "incoming" 
                 "title" "Incoming Relationships" 
                 "icon" "shrink"
-                "collapsed" true) 
+                "collapsed" true
+                "iconVar" "type") 
             }}
         </div>
         </div>
@@ -113,9 +115,10 @@
         <div class="col-lg-6">
         <div class="mb-3">
             <sparql-query id="outgoing" class="d-none">
-            SELECT ?property ?destination WHERE {
+            SELECT ?property ?destination ?type WHERE {
                 BIND (?? AS ?s)
                 ?s ?property ?destination .
+                OPTIONAL { ?destination a ?type }
                 FILTER (isIRI(?destination))
                 FILTER (?property != rdf:type)
                 FILTER (?property != rdfs:subClassOf) 
@@ -126,7 +129,8 @@
                 "id" "outgoing" 
                 "title" "Outgoing Relationships"
                 "icon" "expand"
-                "collapsed" true) 
+                "collapsed" true
+                "iconVar" "type" ) 
             }}
         </div>
         </div>

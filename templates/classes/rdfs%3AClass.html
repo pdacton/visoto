@@ -52,7 +52,8 @@
             "result" .QueryResults.instances
             "id" "instances"
             "title" "Classes found"
-            "icon" "circle-dot")
+            "icon" "circle-dot"
+            "iconVar" "class")
         }}
       </div>
     </div>
@@ -63,10 +64,9 @@
     <div class="col-lg-6">
       <div class="mb-3">
         <sparql-query id="subclasses" class="d-none">
-          SELECT DISTINCT ?subclass ?label WHERE {
+          SELECT DISTINCT ?subclass WHERE {
             BIND (?? AS ?class)
             ?subclass rdfs:subClassOf ?class .
-            OPTIONAL { ?subclass rdfs:label ?label . }
           }
           ORDER BY ?subclass
           LIMIT 1000
@@ -76,7 +76,8 @@
             "id" "subclasses"
             "title" "Subclasses"
             "icon" "circle-chevron-down"
-            "collapsed" false)
+            "collapsed" false
+            "iconVar" "subclass")
         }}
       </div>
     </div>
@@ -85,10 +86,9 @@
     <div class="col-lg-6">
       <div class="mb-3">
         <sparql-query id="superclasses" class="d-none">
-          SELECT DISTINCT ?superclass ?label WHERE {
+          SELECT DISTINCT ?superclass WHERE {
             BIND (?? AS ?class)
             ?class rdfs:subClassOf ?superclass .
-            OPTIONAL { ?superclass rdfs:label ?label . }
           }
           ORDER BY ?superclass
           LIMIT 1000
@@ -98,7 +98,8 @@
             "id" "superclasses"
             "title" "Superclasses"
             "icon" "circle-chevron-up"
-            "collapsed" false)
+            "collapsed" false
+            "iconVar" "superclass")
         }}
       </div>
     </div>

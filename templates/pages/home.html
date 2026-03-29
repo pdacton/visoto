@@ -1,5 +1,5 @@
 {{ define "pageTitle" }}Visoto{{ end }}
-{{ define "pageSubtitle" }}Welcome to visoto, the adaptive knowledge graph explorer, here visualizing the contents of LINDAS.{{ end }}
+{{ define "pageSubtitle" }}{{ if eq .EndpointTag "lindas" }}Welcome to visoto, exploring LINDAS – the Swiss Federal Linked Data Service.{{ else if eq .EndpointTag "stadtzuerich" }}Welcome to visoto, exploring the open data of the City of Zürich.{{ else }}Welcome to visoto, the adaptive knowledge graph explorer.{{ end }}{{ end }}
 {{ define "pageIcon" }}<img src="/static/img/visoto_light.svg" alt="Page icon" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/visoto_light.svg{{ end }}
 
@@ -30,7 +30,8 @@
 
 <div class="home-background"></div>
 
-<div class="lindas-cards row row-deck row-cards mb-3 d-none">
+{{ if eq .EndpointTag "lindas" }}
+<div class="row row-deck row-cards mb-3">
 
   <!-- Klosters card -->
   <div class="col-sm-6 col-lg-3">
@@ -77,6 +78,7 @@
   </div>
 
 </div>
+{{ end }}
 
 <div id="stats-cards" class="row row-deck row-cards mb-3">
 
@@ -152,8 +154,74 @@
 
 </div>
 
-<div class="lindas-cards row row-deck row-cards mb-3 d-none">
-  
+{{ if eq .EndpointTag "stadtzuerich" }}
+<div class="row row-deck row-cards mb-3">
+
+  <!-- cubes card -->
+  <sparql-async id="cubeCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?cube) AS ?count) WHERE {
+      ?cube a cube:Cube .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "cubeCount" "title" "Cubes" "href" "/resource/cube:Cube" "icon" "/static/img/resource/Cube.svg") }}
+
+  <!-- observation sets card -->
+  <sparql-async id="observationSetCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?set) AS ?count) WHERE {
+      ?set a cube:ObservationSet .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "observationSetCount" "title" "Observation Sets" "href" "/resource/cube:ObservationSet" "icon" "/static/img/resource/ObservationSet.svg") }}
+
+  <!-- key dimensions card -->
+  <sparql-async id="keyDimensionCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
+      ?dim a cube:KeyDimension .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "keyDimensionCount" "title" "Key Dimensions" "href" "/resource/cube:KeyDimension" "icon" "/static/img/resource/KeyDimension.svg") }}
+
+  <!-- measure dimensions card -->
+  <sparql-async id="measureDimensionCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
+      ?dim a cube:MeasureDimension .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "measureDimensionCount" "title" "Measure Dimensions" "href" "/resource/cube:MeasureDimension" "icon" "/static/img/resource/MeasureDimension.svg") }}
+
+</div>
+<div class="row row-deck row-cards mb-3">
+
+  <!-- defined term sets card -->
+  <sparql-async id="termSetCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?termSet) AS ?count) WHERE {
+      ?termSet a schema2:DefinedTermSet .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "termSetCount" "title" "Defined Term Sets" "href" "/resource/schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
+
+  <!-- defined terms card -->
+  <sparql-async id="termCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
+      ?term a schema2:DefinedTerm .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "termCount" "title" "Defined Terms" "href" "/resource/schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
+
+  <!-- places card -->
+  <sparql-async id="placeCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?place) AS ?count) WHERE {
+      ?place a schema2:Place .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "placeCount" "title" "Places" "href" "/resource/schema:Place" "icon" "/static/img/resource/Place.svg") }}
+
+</div>
+{{ end }}
+
+{{ if eq .EndpointTag "lindas" }}
+<div class="row row-deck row-cards mb-3">
+
   <!-- defined term sets card -->
   <sparql-async id="termSetCount" class="d-none">
     SELECT (COUNT(DISTINCT ?termSet) AS ?count) WHERE {
@@ -179,8 +247,10 @@
   {{ template "sparqlMetric" (dict "queryId" "terminologyCollectionCount" "title" "Terminology Collections" "href" "/resource/schch:TerminologyCollection" "icon" "/static/img/resource/TerminologyCollection.svg") }}
 
 </div>
+{{ end }}
 
-<div class="lindas-cards row row-deck row-cards mb-3 d-none">
+{{ if eq .EndpointTag "lindas" }}
+<div class="row row-deck row-cards mb-3">
 
   <!-- cubes card -->
   <sparql-async id="cubeCount" class="d-none">
@@ -232,15 +302,5 @@
 
 </div>
 {{ end }}
-
-{{ define "pageScripts" }}
-<script>
-  (function () {
-    var cookie = document.cookie.split('; ').find(function (r) { return r.startsWith('selectedEndpoint='); });
-    var selected = cookie ? decodeURIComponent(cookie.split('=')[1]) : '';
-    if (!selected || selected.toUpperCase().indexOf('LINDAS') !== -1) {
-      document.querySelectorAll('.lindas-cards').forEach(function(el) { el.classList.remove('d-none'); });
-    }
-  })();
-</script>
 {{ end }}
+

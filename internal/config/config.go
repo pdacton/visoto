@@ -45,6 +45,7 @@ type SparqlEndpoint struct {
 	URL     string `toml:"url"`     // Full endpoint URL
 	Default bool   `toml:"default"` // Optional: mark as default
 	Monitor bool   `toml:"monitor"` // Enable health monitoring for this endpoint
+	Tag     string `toml:"tag"`     // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
 }
 
 // RDFConfig holds RDF-related settings
@@ -111,6 +112,22 @@ func (c *Config) GetTimeout() time.Duration {
 // GetPort returns the formatted port string ":8080" instead of int for router.Run()
 func (c *Config) GetPort() string {
 	return fmt.Sprintf(":%d", c.Application.Port)
+}
+
+// ResolveEndpointTag returns the Tag of the endpoint matching selectedName,
+// falling back to the default endpoint's tag, or empty string if none configured.
+func (a *ApplicationConfig) ResolveEndpointTag(selectedName string) string {
+	for _, ep := range a.SparqlEndpoints {
+		if ep.Name == selectedName {
+			return ep.Tag
+		}
+	}
+	for _, ep := range a.SparqlEndpoints {
+		if ep.Default {
+			return ep.Tag
+		}
+	}
+	return ""
 }
 
 // GetNamedEndpointsMap returns SPARQL endpoints as a map[name]url for quick lookup

@@ -3,7 +3,7 @@
 
     <div class="collapse navbar-collapse" id="sidebar-menu">
 
-      <!-- Tab strip -->
+      <!-- Tab strip: Nav / Bookmarks -->
       <ul class="nav nav-tabs mt-2 px-1" id="sidebar-tabs" data-bs-toggle="tabs" role="tablist">
         <li class="nav-item" role="presentation">
           <a class="nav-link active" id="sidebar-tab-nav" data-bs-toggle="tab" href="#sidebar-panel-nav" role="tab" aria-selected="true">Menu</a>
@@ -18,6 +18,8 @@
         <!-- Nav tab -->
         <div class="tab-pane show active" id="sidebar-panel-nav" role="tabpanel">
           <ul class="navbar-nav pt-lg-3">
+
+            {{ if eq .EndpointTag "lindas" }}
 
             <!-- Organisation -->
             <li class="nav-item dropdown">
@@ -75,6 +77,16 @@
                   <img src="/static/img/resource/ConceptScheme.svg" alt="SKOS Concept Scheme">
                 </span>
                 <span class="nav-link-title">Concept Schemes</span>
+              </a>
+            </li>
+
+            <!-- Defined Term Sets -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/schema:DefinedTermSet">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/DefinedTermSet.fallback.svg" alt="Defined Term Set">
+                </span>
+                <span class="nav-link-title">Defined Term Sets</span>
               </a>
             </li>
 
@@ -240,7 +252,82 @@
               </a>
             </li>
 
-            <!-- Schema/Ontology Objects -->
+          {{ else if eq .EndpointTag "stadtzuerich" }}
+
+            <!-- Stadt Zürich: placeholder, to be customized -->
+            <!-- Concept Schemes -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/schema2:DefinedTermSet">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/DefinedTermSet.fallback.svg" alt="Defined Term Set">
+                </span>
+                <span class="nav-link-title">Defined Term Sets</span>
+              </a>
+            </li>
+
+            <!-- Cubes -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Cube.svg" alt="Cube">
+                </span>
+                <span class="nav-link-title">Cubes</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource/cube:Cube">cube:Cube</a>
+                <a class="dropdown-item" href="/resource/cube:ObservationSet">cube:ObservationSet</a>
+                <a class="dropdown-item" href="/resource/cube:Observation">cube:Observation</a>
+                <a class="dropdown-item" href="/resource/cube:KeyDimension">cube:KeyDimension</a>
+                <a class="dropdown-item" href="/resource/cube:MeasureDimension">cube:MeasureDimension</a>
+              </div>
+            </li>
+
+            <!-- Data catalog -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Dataset.svg" alt="Dataset">
+                </span>
+                <span class="nav-link-title">Data Catalog</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource/dcat:Catalog">Catalog</a>
+                <a class="dropdown-item" href="/resource/dcat:Dataset">Dataset</a>
+                <a class="dropdown-item" href="/resource/dcat:Distribution">Distribution</a>
+              </div>
+            </li>
+
+          {{ else }}
+
+            <!-- Generic fallback for unknown endpoints -->
+            <!-- Concept Schemes -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/skos:ConceptScheme">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/ConceptScheme.svg" alt="SKOS Concept Scheme">
+                </span>
+                <span class="nav-link-title">Concept Schemes</span>
+              </a>
+            </li>
+
+            <!-- Data catalog -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Dataset.svg" alt="Dataset">
+                </span>
+                <span class="nav-link-title">Data Catalog</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource/dcat:Catalog">Catalog</a>
+                <a class="dropdown-item" href="/resource/dcat:Dataset">Dataset</a>
+                <a class="dropdown-item" href="/resource/dcat:Distribution">Distribution</a>
+              </div>
+            </li>
+
+          {{ end }}
+
+            <!-- Schema/Ontology Objects — always visible -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -256,7 +343,7 @@
               </div>
             </li>
 
-            <!-- Graph Explorer -->
+            <!-- Graph Explorer — always visible -->
             <li class="nav-item">
               <a class="nav-link" href="/ontodia.html">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
@@ -266,7 +353,7 @@
               </a>
             </li>
 
-            <!-- Graph Info dropdown -->
+            <!-- Graph Info dropdown — always visible -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#sidebar-submenu-info" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">

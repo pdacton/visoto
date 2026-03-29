@@ -208,6 +208,7 @@ func buildLabelQuery(iris []string, languages []string) string {
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 PREFIX schema: <http://schema.org/>
+PREFIX schema2: <https://schema.org/>
 PREFIX dct: <http://purl.org/dc/terms/>
 PREFIX dc: <http://purl.org/dc/elements/1.1/>
 PREFIX rico: <https://www.ica.org/standards/RiC/ontology#>
@@ -229,9 +230,10 @@ SELECT ?iri ?label WHERE {
         (rdfs:label "1")
         (skos:prefLabel "2")
         (schema:name "3")
-        (dct:title "4")
-        (dc:title "5")
-        (rico:title "6")
+        (schema2:name "4")
+        (dct:title "5")
+        (dc:title "6")
+        (rico:title "7")
       }
 
       ?iri ?prop ?val .
@@ -292,8 +294,63 @@ func extractLastSegment(iri string) string {
 	return iri
 }
 
-// fetchLabels queries endpoint for labels and returns IRI→label mapping
-// TODO: split up queries if more than 5k IRIs, LINDAS returns 403 error (too many entries) for 10k labels
+const labelQueryBatchSize = 1000
+
+// fetchLabelsBatch queries the endpoint for a single batch of IRIs (≤ labelQueryBatchSize)
+// and merges results into labelMap. Falls back to last-segment for any IRI without a label.
+func fetchLabelsBatch(p *Preprocessor, endpointURL string, iris []string, languages []string, labelMap map[string]string) {
+	query := buildLabelQuery(iris, languages)
+	finalizedQuery := p.finalizeQuery(query, "")
+	response, err := p.querySparqlEndpoint(context.Background(), endpointURL, finalizedQuery)
+	if err != nil {
+		log := logger.Get()
+		log.Warn("label query failed, using fallback",
+			slog.String("error", err.Error()),
+			slog.Int("iri_count", len(iris)))
+		for _, iri := range iris {
+			fallback := extractLastSegment(iri)
+			labelMap[iri] = fallback
+			setCachedLabel(iri, fallback, languages)
+		}
+		return
+	}
+
+	var sparqlResp sparqlResponse
+	if err := json.Unmarshal(response, &sparqlResp); err != nil {
+		log := logger.Get()
+		log.Warn("label response parse failed",
+			slog.String("error", err.Error()))
+		for _, iri := range iris {
+			fallback := extractLastSegment(iri)
+			labelMap[iri] = fallback
+			setCachedLabel(iri, fallback, languages)
+		}
+		return
+	}
+
+	// Build mapping from results — one row per IRI guaranteed by GROUP BY in subquery
+	for _, binding := range sparqlResp.Results.Bindings {
+		iriValue := binding["iri"].Value
+		labelValue := binding["label"].Value
+		if labelValue == "" {
+			continue
+		}
+		labelMap[iriValue] = labelValue
+		setCachedLabel(iriValue, labelValue, languages)
+	}
+
+	// Apply fallback for IRIs without labels
+	for _, iri := range iris {
+		if _, found := labelMap[iri]; !found {
+			fallback := extractLastSegment(iri)
+			labelMap[iri] = fallback
+			setCachedLabel(iri, fallback, languages)
+		}
+	}
+}
+
+// fetchLabels queries endpoint for labels and returns IRI→label mapping.
+// Splits the request into batches of labelQueryBatchSize to avoid endpoint limits.
 func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages []string) map[string]string {
 	// Check cache first
 	uncachedIRIs := make([]string, 0, len(iris))
@@ -312,59 +369,29 @@ func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages [
 		return labelMap
 	}
 
-	// Build and execute label query
-	query := buildLabelQuery(uncachedIRIs, languages)
+	// Query in batches to stay within endpoint limits (parallel)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
 
-	finalizedQuery := p.finalizeQuery(query)
-	response, err := p.querySparqlEndpoint(context.Background(), endpointURL, finalizedQuery)
-	if err != nil {
-		log := logger.Get()
-		log.Warn("label query failed, using fallback",
-			slog.String("error", err.Error()),
-			slog.Int("iri_count", len(uncachedIRIs)))
-		for _, iri := range uncachedIRIs {
-			fallback := extractLastSegment(iri)
-			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback, languages)
+	for i := 0; i < len(uncachedIRIs); i += labelQueryBatchSize {
+		end := i + labelQueryBatchSize
+		if end > len(uncachedIRIs) {
+			end = len(uncachedIRIs)
 		}
-		return labelMap
+		batch := uncachedIRIs[i:end]
+		wg.Add(1)
+		go func(b []string) {
+			defer wg.Done()
+			batchResult := make(map[string]string)
+			fetchLabelsBatch(p, endpointURL, b, languages, batchResult)
+			mu.Lock()
+			for k, v := range batchResult {
+				labelMap[k] = v
+			}
+			mu.Unlock()
+		}(batch)
 	}
-
-	// Parse response
-	var sparqlResp sparqlResponse
-	if err := json.Unmarshal(response, &sparqlResp); err != nil {
-		log := logger.Get()
-		log.Warn("label response parse failed",
-			slog.String("error", err.Error()))
-		for _, iri := range uncachedIRIs {
-			fallback := extractLastSegment(iri)
-			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback, languages)
-		}
-		return labelMap
-	}
-
-	// Build mapping from results — one row per IRI guaranteed by GROUP BY in subquery
-	for _, binding := range sparqlResp.Results.Bindings {
-		iriValue := binding["iri"].Value
-		labelValue := binding["label"].Value
-
-		if labelValue == "" {
-			continue
-		}
-
-		labelMap[iriValue] = labelValue
-		setCachedLabel(iriValue, labelValue, languages)
-	}
-
-	// Apply fallback for IRIs without labels
-	for _, iri := range uncachedIRIs {
-		if _, found := labelMap[iri]; !found {
-			fallback := extractLastSegment(iri)
-			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback, languages)
-		}
-	}
+	wg.Wait()
 
 	return labelMap
 }

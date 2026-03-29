@@ -60,7 +60,7 @@ func extractUsedPrefixes(query string) map[string]bool {
 	for _, match := range matches {
 		if len(match) >= 2 {
 			lowerPrefix := strings.ToLower(match[1])
-			if lowerPrefix == "http" || lowerPrefix == "https" || lowerPrefix == "file" {
+			if lowerPrefix == "http" || lowerPrefix == "https" || lowerPrefix == "file" || lowerPrefix == "visoto" {
 				continue
 			}
 			used[match[1]] = true
@@ -100,8 +100,21 @@ func buildNeededPrefixBlock(prefixes []config.Prefix, usedSet map[string]bool, d
 	return sb.String()
 }
 
-// finalizeQuery adds PREFIX declarations to query if needed
-func (p *Preprocessor) finalizeQuery(query string) string {
+// topLanguage returns the highest-priority language code from an Accept-Language header,
+// falling back to "en" if the header is empty or unparseable.
+func topLanguage(acceptLanguage string) string {
+	langs := parseAcceptLanguage(acceptLanguage)
+	if len(langs) == 0 {
+		return "en"
+	}
+	return langs[0]
+}
+
+// finalizeQuery substitutes magic tokens and adds PREFIX declarations to a query.
+// visoto:dispLang is replaced with the browser's top language preference (e.g. "de").
+func (p *Preprocessor) finalizeQuery(query string, acceptLanguage string) string {
+	lang := topLanguage(acceptLanguage)
+	query = strings.ReplaceAll(query, "visoto:dispLang", fmt.Sprintf("%q", lang))
 	declaredPrefixes := extractDeclaredPrefixes(query)
 	usedPrefixes := extractUsedPrefixes(query)
 	prefixBlock := buildNeededPrefixBlock(p.config.Prefixes, usedPrefixes, declaredPrefixes)
@@ -216,7 +229,7 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 // executeQueryWithContext executes a SPARQL query using the provided context (supports cancellation/timeout)
 func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
 	targetEndpoint := p.resolveEndpoint(endpoint)
-	finalizedQuery := p.finalizeQuery(query)
+	finalizedQuery := p.finalizeQuery(query, acceptLanguage)
 
 	response, err := p.querySparqlEndpoint(ctx, targetEndpoint, finalizedQuery)
 	if err != nil {
@@ -264,7 +277,7 @@ func (p *Preprocessor) ExecuteQueriesParallel(queries []ExtractedQuery, timeout 
 					ID: query.ID,
 					Result: QueryResult{
 						Error:    "Query timeout exceeded",
-						Query:    p.finalizeQuery(query.Query),
+						Query:    p.finalizeQuery(query.Query, acceptLanguage),
 						Endpoint: p.resolveEndpoint(query.Endpoint),
 					},
 				}
@@ -306,7 +319,7 @@ func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLang
 func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 	query := fmt.Sprintf("SELECT ?type WHERE { <%s> a ?type }", iri)
 
-	finalizedQuery := p.finalizeQuery(query)
+	finalizedQuery := p.finalizeQuery(query, "")
 	response, err := p.querySparqlEndpoint(context.Background(), p.config.EndpointURL, finalizedQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query types for IRI %s: %w", iri, err)

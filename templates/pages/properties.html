@@ -11,18 +11,17 @@
     <!-- properties -->
     <div class="mb-3">
       <sparql-query id="allProperties" class="d-none">
-        SELECT DISTINCT ?property ?iri ?domain WHERE {
+        SELECT DISTINCT ?property ?iri ?domain ?type WHERE {
           {
             # subquery to pick up all properties (declared and used)
             SELECT DISTINCT ?property WHERE {
               { ?property a rdf:Property } 
               UNION { ?property rdfs:subPropertyOf ?p}
               UNION { ?property a owl:ObjectProperty } 
-              UNION { ?property a owl:ValueProperty } 
+              UNION { ?property a owl:DatatypeProperty } 
               UNION { ?s ?property ?o } .
             }
           }
-          OPTIONAL { ?property rdfs:label ?label }
           OPTIONAL { ?property a ?type }
           BIND (STR(?property) AS ?iri)
           BIND(

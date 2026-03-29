@@ -211,7 +211,7 @@ func TestFinalizeQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := preproc.finalizeQuery(tt.query)
+			got := preproc.finalizeQuery(tt.query, "")
 			for _, want := range tt.wantContain {
 				if !strings.Contains(got, want) {
 					t.Errorf("finalizeQuery() should contain %q, got:\n%s", want, got)

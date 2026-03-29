@@ -42,13 +42,37 @@
   <!-- relationships -->
   <div class="row">
 
+    <!-- outgoing relationships -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="outgoing" class="d-none">
+          SELECT ?property ?destination ?type WHERE {
+            BIND (?? AS ?s)
+            ?s ?property ?destination .
+            OPTIONAL { ?destination a ?type . }
+            FILTER (isIRI(?destination))
+            FILTER (?property != rdf:type)
+            FILTER (?property != rdfs:subClassOf) 
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict 
+              "result" .QueryResults.outgoing 
+              "id" "outgoing" 
+              "title" "Outgoing Relationships"
+              "icon" "expand"
+              "iconVar" "type")
+        }}
+      </div>
+    </div>
+
     <!-- incoming relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
         <sparql-query id="incoming" class="d-none">
-          SELECT ?source ?property WHERE {
+          SELECT ?type ?source ?property WHERE {
             BIND (?? AS ?o)
             ?source ?property ?o .
+            OPTIONAL { ?source a ?type . }
             FILTER (?property != rdf:type)
             FILTER (?property != rdfs:subClassOf)
             FILTER (?property NOT IN (
@@ -69,32 +93,11 @@
             "id" "incoming" 
             "title" "Incoming Relationships" 
             "icon" "shrink"
-            "iconVar" "source") 
+            "iconVar" "type") 
         }}
       </div>
     </div>
-    
-    <!-- outgoing relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="outgoing" class="d-none">
-          SELECT ?property ?destination WHERE {
-            BIND (?? AS ?s)
-            ?s ?property ?destination .
-            FILTER (isIRI(?destination))
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf) 
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict 
-              "result" .QueryResults.outgoing 
-              "id" "outgoing" 
-              "title" "Outgoing Relationships"
-              "icon" "expand"
-              "iconVar" "destination") 
-        }}
-      </div>
-    </div>
+
 
   </div>
 
@@ -103,7 +106,7 @@
     <div class="col-lg">
       <div class="mb-3">
         <sparql-query id="instances" class="d-none">
-          SELECT ?instance ?description WHERE {
+          SELECT ?class ?instance ?description WHERE {
             BIND (?? AS ?class)
             ?instance (rdf:type|owl:type) ?class .
             OPTIONAL { ?instance rdfs:comment|schema:description|dct:description ?description . }
@@ -114,7 +117,7 @@
             "id" "instances"
             "title" "Instances of this Class"
             "icon" "circle-dot"
-            "iconVar" "instance")
+            "iconVar" "class")
         }}
       </div>
     </div>

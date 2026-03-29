@@ -1,9 +1,40 @@
 {{ define "pageTitle" }}Class overview{{ end }}
 {{ define "pageSubtitle" }}A list of all classes in the triple store.{{ end }}
 {{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Graph Infos" width="48" height="48">{{end}}
+{{ define "metaTitle" }}Classes{{ end }}
 {{ define "metaIcon" }}/static/img/info.svg{{ end }}
 
 {{ define "pageContent" }}
+
+<div class="row row-deck row-cards mb-3">
+
+  <!-- rdf:Class count -->
+  <sparql-async id="rdfClassCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
+      ?class a rdf:Class .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "rdfClassCount" "title" "rdf:Class" "href" "/resource/rdf:Class" "icon" "/static/img/resource/Class.svg") }}
+
+  <!-- owl:Class count -->
+  <sparql-async id="owlClassCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
+      ?class a owl:Class .
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "owlClassCount" "title" "owl:Class" "href" "/resource/owl:Class" "icon" "/static/img/resource/Class.svg") }}
+
+  <!-- implicit classes: used as rdf:type target but not declared as rdf:Class or owl:Class -->
+  <sparql-async id="implicitClassCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
+      ?s a ?class .
+      FILTER NOT EXISTS { ?class a rdf:Class }
+      FILTER NOT EXISTS { ?class a owl:Class }
+    }
+  </sparql-async>
+  {{ template "sparqlMetric" (dict "queryId" "implicitClassCount" "title" "Implicit Classes" "href" "/resource/rdfs:Class" "icon" "/static/img/resource/defaultClass.svg") }}
+
+</div>
 
 <div class="row">
   <div class="col">
@@ -11,21 +42,20 @@
     <!-- classes -->
     <div class="mb-3">
       <sparql-query id="allClasses" class="d-none">
-        SELECT ?class (SAMPLE(?label) AS ?sampled_label) ?type ?instances ?iri ?domain WHERE {
+        SELECT ?class ?type ?instances ?iri ?domain WHERE {
           {
             # subquery to count instances
             SELECT DISTINCT ?class (COUNT(?instance) AS ?instances) WHERE {
               { ?class a rdf:Class } UNION { ?class a owl:Class } UNION { ?instance a ?class } .
             } GROUP BY ?class
           }
-          OPTIONAL { ?class rdfs:label ?label }
           OPTIONAL { ?class a ?type }
           BIND (STR(?class) AS ?iri)
           BIND(
             IF(CONTAINS(?iri, "http://") || CONTAINS(?iri, "https://"),
               REPLACE(REPLACE(?iri, "^https?://", ""), "/.*$", ""),
               "NO DOMAIN") AS ?domain)
-        } GROUP BY ?class ?type ?instances ?iri ?domain
+        }
       </sparql-query>
       {{ template "sparqlTable" (dict
           "result" .QueryResults.allClasses

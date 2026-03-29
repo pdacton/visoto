@@ -33,19 +33,28 @@ var mon *monitor.Monitor
 
 // ---- Request helpers ----
 
+// resolveSelectedEndpointName reads and URL-decodes the selectedEndpoint cookie.
+// Returns empty string if the cookie is absent or cannot be decoded.
+func resolveSelectedEndpointName(c *gin.Context) string {
+	selected, err := c.Cookie("selectedEndpoint")
+	if err != nil || selected == "" {
+		return ""
+	}
+	// Decode the cookie value: browsers percent-encode non-ASCII characters (e.g. "Stadt Zürich" → "Stadt+Z%C3%BCrich")
+	if decoded, err := url.QueryUnescape(selected); err == nil {
+		return decoded
+	}
+	return selected
+}
+
 // prepareQueryInputs creates a preprocessor with user-selected default endpoint
 func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 
 	// Determine default endpoint for this request either from cookie or config default
 	namedEndpoints := cfg.Application.GetNamedEndpointsMap()
 	endpoint := cfg.Application.SparqlEndpoint
-	if selectedEndpoint, err := c.Cookie("selectedEndpoint"); err == nil && selectedEndpoint != "" {
-		// Decode the cookie value: browsers percent-encode non-ASCII characters (e.g. "Stadt Zürich" → "Stadt+Z%C3%BCrich"),
-		// so we must decode before looking up the endpoint name in the map.
-		if decoded, err := url.QueryUnescape(selectedEndpoint); err == nil {
-			selectedEndpoint = decoded
-		}
-		if epURL, exists := namedEndpoints[selectedEndpoint]; exists {
+	if name := resolveSelectedEndpointName(c); name != "" {
+		if epURL, exists := namedEndpoints[name]; exists {
 			endpoint = epURL
 		}
 	}
@@ -122,8 +131,9 @@ func staticPageHandler(c *gin.Context) {
 		return
 	}
 
-	// Add endpoints to template data for menu rendering (no sensitive data)
+	// Add endpoints and resolved tag to template data
 	data.SparqlEndpoints = cfg.Application.SparqlEndpoints
+	data.EndpointTag = cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c))
 
 	log.Debug("rendering static page",
 		slog.String("templateName", templateName),
@@ -172,8 +182,9 @@ func resourcePageHandler(c *gin.Context) {
 		return
 	}
 
-	// Add endpoints to template data for menu rendering (no sensitive data)
+	// Add endpoints and resolved tag to template data
 	r.Data.SparqlEndpoints = cfg.Application.SparqlEndpoints
+	r.Data.EndpointTag = cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c))
 	r.Data.ShortIRI = r.ShortIRI
 
 	// native gin template rendering
@@ -197,6 +208,7 @@ func searchHandler(c *gin.Context) {
 			"PropertyFilters": search.GetPropertyFilters(),
 			"Error":           "",
 			"SparqlEndpoints": cfg.Application.SparqlEndpoints,
+			"EndpointTag":     cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c)),
 		})
 		return
 	}
@@ -215,6 +227,7 @@ func searchHandler(c *gin.Context) {
 		"SearchResults":    result.Results,
 		"Provider":         result.Provider,
 		"SparqlEndpoints":  cfg.Application.SparqlEndpoints,
+		"EndpointTag":      cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c)),
 	})
 }
 
@@ -224,23 +237,28 @@ func metricHandler(c *gin.Context) {
 	id := c.Param("id")
 	acceptLanguage := c.GetHeader("Accept-Language")
 
-	// Read query text from template — single source of truth
-	content, err := os.ReadFile("templates/pages/home.html")
-	if err != nil {
-		c.String(http.StatusInternalServerError, "0")
-		return
-	}
-
-	elements, err := parser.ExtractAsyncElements(string(content))
-	if err != nil {
-		c.String(http.StatusInternalServerError, "0")
-		return
-	}
-
+	// Search all page templates for a sparql-async element matching the requested id
 	query := ""
-	for _, el := range elements {
-		if el.ID == id {
-			query = el.Content
+	templateFiles, _ := os.ReadDir("templates/pages")
+	for _, f := range templateFiles {
+		if f.IsDir() || !strings.HasSuffix(f.Name(), ".html") {
+			continue
+		}
+		content, err := os.ReadFile("templates/pages/" + f.Name())
+		if err != nil {
+			continue
+		}
+		elements, err := parser.ExtractAsyncElements(string(content))
+		if err != nil {
+			continue
+		}
+		for _, el := range elements {
+			if el.ID == id {
+				query = el.Content
+				break
+			}
+		}
+		if query != "" {
 			break
 		}
 	}
@@ -268,6 +286,7 @@ func metricHandler(c *gin.Context) {
 func monitoringPageHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, "pages/monitoring.html", gin.H{
 		"SparqlEndpoints": cfg.Application.SparqlEndpoints,
+		"EndpointTag":     cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c)),
 	})
 }
 

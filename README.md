@@ -2,6 +2,8 @@
 
 Visoto is a Go web application for browsing and visualizing RDF linked data resources via SPARQL endpoints. It renders resource pages using type-specific templates, supports full-text search, and exposes an MCP server for AI assistant integration.
 
+Visoto is still in development and not all features work properly.
+
 ### Features
 
 - **Resource browser** — fetch any RDF resource by IRI; templates are resolved automatically from the resource's `rdf:type`

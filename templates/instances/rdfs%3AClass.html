@@ -45,8 +45,9 @@
     <div class="col-lg">
       <div class="mb-3">
         <sparql-query id="instances" class="d-none">
-          SELECT DISTINCT ?instance ?description WHERE {
-            ?instance a ?? .
+          SELECT DISTINCT ?class ?instance ?description WHERE {
+            BIND (?? AS ?class)
+            ?instance a ?class .
             OPTIONAL { ?instance (rdfs:comment|schema:description|dct:description) ?description . }
           }
           LIMIT 10000
@@ -55,7 +56,8 @@
             "result" .QueryResults.instances
             "id" "instances"
             "title" "Instances of this class"
-            "icon" "circle-dot")
+            "icon" "circle-dot"
+            "iconVar" "class")
         }}
       </div>
     </div>

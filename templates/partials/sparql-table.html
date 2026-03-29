@@ -25,7 +25,7 @@
   {{ $badgeVar := .badgeVar }}
   {{ $hasResults := gt (len $result.Bindings) 0 }}
   {{ $hasError := $result.Error }}
-  {{ $collapsed := or $collapsed (not $hasResults) $hasError }}
+  {{ $collapsed = or $collapsed (not $hasResults) $hasError }}
 
   <!-- card to enclose the table -->
   <div class="card" {{ if or $hasError (not $hasResults) }}style="background-color: var(--tblr-bg-surface-secondary);"{{ end }}>
@@ -149,28 +149,19 @@
           return escapeHtml(binding.DisplayText || binding.Value);
         }
 
-        // Transform bindings to Tabulator row format
+        // Transform bindings to Tabulator row format (store raw bindings; HTML rendered lazily by formatters)
         var tableData = bindings.map(function(binding) {
           var row = {};
           vars.forEach(function(varName) {
-            var b = binding[varName];
-            if (b) {
-              row[varName] = {
-                html: renderBinding(b),
-                value: b.DisplayText || b.Value,
-                type: b.Type
-              };
-            } else {
-              row[varName] = null;
-            }
+            row[varName] = binding[varName] || null;
           });
           return row;
         });
 
         // Custom sorter using display value
         function valueSorter(a, b) {
-          var valA = a && a.value ? a.value : '';
-          var valB = b && b.value ? b.value : '';
+          var valA = a ? (a.DisplayText || a.Value || '') : '';
+          var valB = b ? (b.DisplayText || b.Value || '') : '';
 
           // Try numeric comparison first
           var numA = parseFloat(valA);
@@ -182,22 +173,21 @@
           return String(valA).localeCompare(String(valB));
         }
 
-        // Custom formatter that renders pre-generated HTML
+        // Custom formatter: renders a raw SPARQL binding as HTML (lazy — called only for visible cells)
         function htmlCellFormatter(cell) {
-          var value = cell.getValue();
-          return value ? value.html || '' : '';
+          return renderBinding(cell.getValue());
         }
 
-        // Accessor for downloads: extract plain text value from cell object
+        // Accessor for downloads: extract plain text value from raw binding
         function plainValueAccessor(value) {
-          return value && value.value ? value.value : '';
+          return value ? (value.DisplayText || value.Value || '') : '';
         }
 
         // Helper to create groupBy function for a field
         function makeGroupByFn(field) {
           return function(data) {
             var val = data[field];
-            return val && val.value ? val.value : '';
+            return val ? (val.DisplayText || val.Value || '') : '';
           };
         }
 
@@ -213,15 +203,40 @@
         function badgeCellFormatter(cell) {
           var value = cell.getValue();
           if (!value) return '';
-          var uri = value.value || '';
+          var uri = value.Value || '';
           // Extract last path segment for display (e.g. "Completed" from a URI)
           var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
           var badge = '<span class="badge bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
-          if ((value.type === 'uri' || value.Type === 'uri') && uri) {
+          if (value.Type === 'uri' && uri) {
             var href = '/resource/' + encodeURIComponent(uri);
             return '<a href="' + href + '">' + badge + '</a>';
           }
           return badge;
+        }
+
+        // Load icon support data if iconVar is configured
+        var availableIcons = null;
+        if (iconVar) {
+          availableIcons = JSON.parse(document.getElementById("{{ $id }}-available-icons").innerHTML.trim());
+        }
+
+        function iriToName(uri) {
+          try { uri = decodeURIComponent(uri); } catch(e) {}
+          return uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+        }
+
+        // Icon formatter: replaces cell text with an icon image when one is available
+        function iconCellFormatter(cell) {
+          var b = cell.getValue();
+          if (!b || !b.Value) return '';
+          var name = iriToName(b.Value);
+          var img = '';
+          if (availableIcons[name]) {
+            img = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">';
+          } else if (availableIcons[name + '.fallback']) {
+            img = '<img src="/static/img/resource/' + name + '.fallback.svg" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">';
+          }
+          return img + renderBinding(b);
         }
 
         // Build column definitions from vars
@@ -230,50 +245,17 @@
           var binding = firstBinding[varName];
           var isLiteral = binding && binding.Type === 'literal';
           var isBadge = badgeVar && varName === badgeVar;
+          var isIcon = iconVar && varName === iconVar;
 
           return {
             title: varName,
             field: varName,
-            formatter: isBadge ? badgeCellFormatter : htmlCellFormatter,
+            formatter: isIcon ? iconCellFormatter : (isBadge ? badgeCellFormatter : htmlCellFormatter),
             variableHeight: isLiteral,
             sorter: valueSorter,
             accessorDownload: plainValueAccessor
           };
         });
-
-        // Prepend icon column if iconVar is configured
-        if (iconVar) {
-          var availableIcons = JSON.parse(document.getElementById("{{ $id }}-available-icons").innerHTML.trim());
-
-          function iriToName(uri) {
-            try { uri = decodeURIComponent(uri); } catch(e) {}
-            return uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
-          }
-
-          tableData.forEach(function(row) {
-            var cell = row[iconVar];
-            var iconHtml = '';
-            if (cell && cell.value) {
-              var name = iriToName(cell.value);
-              if (availableIcons[name]) {
-                iconHtml = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="">';
-              } else if (availableIcons[name + '.fallback']) {
-                iconHtml = '<img src="/static/img/resource/' + name + '.fallback.svg" width="24" height="24" alt="">';
-              }
-            }
-            row["_icon"] = { html: iconHtml, value: '' };
-          });
-
-          columns.unshift({
-            title: '',
-            field: '_icon',
-            formatter: htmlCellFormatter,
-            width: 40,
-            resizable: false,
-            headerSort: false,
-            download: false
-          });
-        }
 
         // Tabulator configuration
         var tableConfig = {
@@ -332,8 +314,10 @@
 
               table.setFilter(function(data) {
                 for (var key in data) {
-                  if (data[key] && data[key].value) {
-                    if (String(data[key].value).toLowerCase().indexOf(searchValue) !== -1) {
+                  var b = data[key];
+                  if (b) {
+                    var text = b.DisplayText || b.Value || '';
+                    if (String(text).toLowerCase().indexOf(searchValue) !== -1) {
                       return true;
                     }
                   }
@@ -374,17 +358,20 @@
         // Download handlers
         var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
 
-        document.querySelector(".download-csv-{{ $id }}").addEventListener("click", function(e) {
+        var csvBtn = document.querySelector(".download-csv-{{ $id }}");
+        if (csvBtn) csvBtn.addEventListener("click", function(e) {
           e.preventDefault();
           table.download("csv", filename + ".csv", { bom: true });
         });
 
-        document.querySelector(".download-json-{{ $id }}").addEventListener("click", function(e) {
+        var jsonBtn = document.querySelector(".download-json-{{ $id }}");
+        if (jsonBtn) jsonBtn.addEventListener("click", function(e) {
           e.preventDefault();
           table.download("json", filename + ".json");
         });
 
-        document.querySelector(".download-xlsx-{{ $id }}").addEventListener("click", function(e) {
+        var xlsxBtn = document.querySelector(".download-xlsx-{{ $id }}");
+        if (xlsxBtn) xlsxBtn.addEventListener("click", function(e) {
           e.preventDefault();
           table.download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) });
         });
@@ -432,5 +419,6 @@
       });
     </script>
   {{ end }}
+
 
 {{ end }}

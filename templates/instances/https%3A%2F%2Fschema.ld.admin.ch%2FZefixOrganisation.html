@@ -29,24 +29,26 @@
 
   <div class="mt-3">
     <sparql-query id="outgoing" style="display: none;">
-      SELECT ?relationship ?destination WHERE {
+      SELECT ?relationship ?destination ?type  WHERE {
         BIND (?? AS ?s)
         ?s ?relationship ?destination .
+        OPTIONAL { ?destination a ?type . }
         FILTER (isIRI( ?destination))
         FILTER (?relationship != rdf:type)
       } LIMIT 100
     </sparql-query>
-    {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships" "icon" "expand") }}
+    {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships" "icon" "expand" "iconVar" "type") }}
   </div>
 
   <div class="mt-3">
     <sparql-query id="incoming" style="display: none;">
-      SELECT ?source ?relationship WHERE {
+      SELECT ?type ?source ?relationship WHERE {
         BIND (?? AS ?s)
         ?source ?relationship ?s .
+        OPTIONAL { ?source a ?type . }
       } LIMIT 1000
     </sparql-query>
-    {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships" "icon" "shrink") }}
+    {{ template "sparqlTable" (dict "result" .QueryResults.incoming "id" "incoming" "title" "Incoming Relationships" "icon" "shrink" "iconVar" "type") }}
   </div>
 
 </div>
