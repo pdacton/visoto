@@ -22,8 +22,9 @@
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-query id="instances" class="d-none">
-      SELECT ?canton ?identifier ?name_de ?name_fr ?name_it ?name_rm ?name_en
+      SELECT ?type ?canton ?identifier ?name_de ?name_fr ?name_it ?name_rm ?name_en
       WHERE {
+        BIND (?? AS ?type)
         BIND (?? AS ?class)
         ?canton (rdf:type|owl:type) ?class .
         OPTIONAL { ?canton schema:identifier ?identifier . }
@@ -40,8 +41,8 @@
         "result" .QueryResults.instances
         "id" "instances"
         "title" "Cantons"
-        "icon" "circle-dot")
-
+        "icon" "circle-dot"
+        "iconVar" "type")
     }}
   </div>
 </div>

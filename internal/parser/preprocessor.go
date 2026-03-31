@@ -14,17 +14,22 @@ import (
 
 // ----- Preprocessor -----
 
+// defaultComponentsDir is the path to the components directory relative to the working directory.
+const defaultComponentsDir = "./templates/components"
+
 // Preprocessor handles template parsing and SPARQL query execution for templates
 type Preprocessor struct {
-	sp      *sparql.Preprocessor
-	timeout time.Duration
+	sp            *sparql.Preprocessor
+	timeout       time.Duration
+	componentsDir string
 }
 
 // New creates a new Preprocessor with the given configuration
 func New(config sparql.QueryInput) *Preprocessor {
 	return &Preprocessor{
-		sp:      sparql.New(config),
-		timeout: config.Timeout,
+		sp:            sparql.New(config),
+		timeout:       config.Timeout,
+		componentsDir: defaultComponentsDir,
 	}
 }
 
@@ -50,6 +55,20 @@ func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLa
 	queries, err := extractQueriesDOM(string(content))
 	if err != nil {
 		return TemplateData{}, fmt.Errorf("failed to extract queries: %w", err)
+	}
+
+	// Discover and add queries from included component files
+	if p.componentsDir != "" {
+		existingIDs := make(map[string]bool, len(queries))
+		for _, q := range queries {
+			existingIDs[q.ID] = true
+		}
+		includes := extractTemplateIncludes(string(content))
+		extra, err := loadComponentQueries(p.componentsDir, includes, existingIDs)
+		if err != nil {
+			return TemplateData{}, fmt.Errorf("component queries: %w", err)
+		}
+		queries = append(queries, extra...)
 	}
 
 	// Replace the entity placeholder `??` with the provided IRI in each query

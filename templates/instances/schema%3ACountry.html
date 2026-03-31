@@ -1,0 +1,97 @@
+<!-- Country Instance Template -->
+
+{{ define "breadcrumb" }}
+{{ end}}
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+
+{{ define "pageIcon" }}
+  <sparql-query id="pageIcon" class="d-none">
+    PREFIX wdt: &lt;http://www.wikidata.org/prop/direct/&gt;
+    SELECT ?flagURL WHERE {
+      ?? schema:sameAs ?wikidataEntity .
+      FILTER(STRSTARTS(STR(?wikidataEntity), "http://www.wikidata.org/entity/"))
+      SERVICE &lt;https://query.wikidata.org/sparql&gt; {
+        OPTIONAL { ?wikidataEntity wdt:P41 ?flag . }
+        OPTIONAL { ?wikidataEntity wdt:P94 ?coa . }
+        BIND(COALESCE(?flag, ?coa) AS ?image)
+        BIND(STR(?image) AS ?flagURL)
+      }
+    }
+  </sparql-query>
+  {{ $flagURL := "" }}
+  {{ if .QueryResults.pageIcon.Bindings }}
+    {{ with (index .QueryResults.pageIcon.Bindings 0).flagURL }}
+      {{ $flagURL = .Value }}
+    {{ end }}
+  {{ end }}
+  {{ if $flagURL }}
+    <img src="{{ $flagURL }}" alt="Country flag" width="64" height="64" style="object-fit: contain;">
+  {{ else }}
+    <img src="{{ resourceIcon . }}" alt="Page icon" width="48" height="48">
+  {{ end }}
+{{ end }}
+
+
+{{ define "pageContent" }}
+<div>
+  <div class="row mb-3">
+
+    <!-- Attributes -->
+    <div class="col-lg mt-3">
+      <sparql-query id="attributes" class="d-none">
+        SELECT ?property ?value WHERE {
+          BIND (?? AS ?s)
+          ?s ?property ?value .
+          FILTER (isLiteral(?value))
+        } LIMIT 1000
+      </sparql-query>
+      {{ template "sparqlGrid" (dict
+            "result" .QueryResults.attributes
+            "id" "attributes"
+            "title" "Attributes"
+            "icon" "tags")
+      }}
+    </div>
+
+  </div>
+  <div class="row mb-3">
+
+    <!-- Cantons -->
+    <div class="col-lg mt-3">
+      <sparql-query id="cantons" class="d-none">
+        SELECT ?type ?canton ?identifier WHERE {
+          ?? schema:containsPlace ?canton .
+          ?canton a ?type . FILTER (?type = schch:Canton)
+          OPTIONAL { ?canton schema:identifier ?identifier . }
+        }
+        ORDER BY ?identifier
+        LIMIT 5000
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.cantons
+            "id" "cantons"
+            "title" "Cantons"
+            "icon" "map-pinned"
+            "iconVar" "type")
+      }}
+    </div>
+
+  </div>
+
+  {{ template "relationships" . }}
+</div>
+{{ end }}

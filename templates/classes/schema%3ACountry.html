@@ -1,0 +1,44 @@
+<!-- Country Class Template, listing all instances of this class -->
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-query id="instances" class="d-none">
+      SELECT ?type ?country ?identifier ?name_de ?name_fr ?name_it ?name_en
+      WHERE {
+        BIND (?? AS ?type)
+        ?country rdf:type ?type .
+        OPTIONAL { ?country schema:identifier ?identifier . }
+        OPTIONAL { ?country schema:name ?name_de . FILTER(lang(?name_de) = "de") }
+        OPTIONAL { ?country schema:name ?name_fr . FILTER(lang(?name_fr) = "fr") }
+        OPTIONAL { ?country schema:name ?name_it . FILTER(lang(?name_it) = "it") }
+        OPTIONAL { ?country schema:name ?name_en . FILTER(lang(?name_en) = "en") }
+      }
+      ORDER BY ?identifier
+      LIMIT 10000
+    </sparql-query>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.instances
+        "id" "instances"
+        "title" "Countries"
+        "icon" "circle-dot"
+        "iconVar" "type")
+    }}
+  </div>
+</div>
+{{ end }}

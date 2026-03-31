@@ -1,8 +1,12 @@
 <!-- Canton Instance Template -->
 
+<sparql-query id="breadcrumbs" class="d-none">
+  SELECT ?country WHERE {
+    ?? schema:containedInPlace ?country . ?country a schema:Country .
+  }
+</sparql-query>
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item">  <a href="/resource/https://schema.ld.admin.ch/Countries">Countries</a></li>
-  <li class="breadcrumb-item">  <a href="/resource/https://schema.ld.admin.ch/Canton">Cantons</a></li>
+  <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "country") }}</li>
 {{ end}}
 
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
@@ -77,13 +81,19 @@
     <!-- Districts -->
     <div class="col-lg mt-3">
       <sparql-query id="districts" class="d-none">
-        SELECT ?district ?identifier (COUNT(?municipality) AS ?municipalities) WHERE {
+        SELECT ?district ?identifier (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) (COUNT(DISTINCT ?municipality) AS ?municipalities) WHERE {
           ?? schema:hasPart ?district .
           ?district a schch:District .
           OPTIONAL { ?district schema:identifier ?identifier . }
+          OPTIONAL {
+            ?district vl:version ?version .
+            ?version schema:validFrom ?vf .
+            OPTIONAL { ?version schema:validThrough ?vt . }
+          }
           OPTIONAL { ?municipality schema:containedInPlace ?district . }
         }
-        GROUP BY ?district ?identifier  
+        GROUP BY ?district ?identifier
+        ORDER BY ?identifier
         LIMIT 5000
       </sparql-query>
       {{ template "sparqlTable" (dict
@@ -97,12 +107,20 @@
     <!-- Municipalities -->
     <div class="col-lg mt-3">
       <sparql-query id="municipalities" class="d-none">
-        SELECT ?municipality ?identifier ?district WHERE {
+        SELECT ?municipality ?identifier ?district (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) WHERE {
           ?municipality schema:containedInPlace ?? .
           ?municipality a schch:Municipality .
           OPTIONAL { ?municipality schema:identifier ?identifier . }
           OPTIONAL { ?municipality schema:containedInPlace ?district . ?district a schch:District . }
-        } LIMIT 5000
+          OPTIONAL {
+            ?municipality vl:version ?version .
+            ?version schema:validFrom ?vf .
+            OPTIONAL { ?version schema:validThrough ?vt . }
+          }
+        }
+        GROUP BY ?municipality ?identifier ?district
+        ORDER BY ?identifier
+        LIMIT 5000
       </sparql-query>
       {{ template "sparqlTable" (dict
             "result" .QueryResults.municipalities
@@ -114,62 +132,6 @@
 
   </div>
 
-  <div class="row mb-3">
-
-      <!-- incoming relationships -->
-      <div class="col-lg-6">
-        <div class="mb-3">
-          <sparql-query id="incoming" class="d-none">
-            SELECT ?source ?property WHERE {
-              BIND (?? AS ?o)
-              ?source ?property ?o .
-              FILTER (?property != rdf:type)
-              FILTER (?property != rdfs:subClassOf)
-              FILTER (?property NOT IN (
-                schema:rangeIncludes,
-                schema:domainIncludes,
-                rdfs:range,
-                rdfs:domain,
-                owl:equivalentClass,
-                owl:disjointWith,
-                owl:unionOf,
-                owl:intersectionOf
-              ))
-              FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
-            } LIMIT 1000
-          </sparql-query>
-          {{ template "sparqlTable" (dict 
-              "result" .QueryResults.incoming 
-              "id" "incoming" 
-              "title" "Incoming Relationships" 
-              "icon" "shrink"
-              "collapsed" true) 
-          }}
-        </div>
-      </div>
-      
-      <!-- outgoing relationships -->
-      <div class="col-lg-6">
-        <div class="mb-3">
-          <sparql-query id="outgoing" class="d-none">
-            SELECT ?property ?destination WHERE {
-              BIND (?? AS ?s)
-              ?s ?property ?destination .
-              FILTER (isIRI(?destination))
-              FILTER (?property != rdf:type)
-              FILTER (?property != rdfs:subClassOf) 
-            } LIMIT 1000
-          </sparql-query>
-          {{ template "sparqlTable" (dict 
-                "result" .QueryResults.outgoing 
-                "id" "outgoing" 
-                "title" "Outgoing Relationships"
-                "icon" "expand"
-                "collapsed" true) 
-          }}
-        </div>
-      </div>
-
-  </div>
+  {{ template "relationships" . }}
 </div>
 {{ end }}

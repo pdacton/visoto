@@ -5,11 +5,41 @@ package templates
 
 import (
 	"log/slog"
+	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/gin-contrib/multitemplate"
 	"hutzli.org/visoto/internal/logger"
 )
+
+var templateIncludeRe = regexp.MustCompile(`{{\s*template\s+"([^"]+)"`)
+
+// referencedComponents returns the subset of componentFiles that are referenced
+// by {{ template "name" }} in the given page file.
+func referencedComponents(pageFile string, componentFiles []string) []string {
+	if len(componentFiles) == 0 {
+		return nil
+	}
+	data, err := os.ReadFile(pageFile)
+	if err != nil {
+		return nil
+	}
+	matches := templateIncludeRe.FindAllSubmatch(data, -1)
+	referenced := make(map[string]bool, len(matches))
+	for _, m := range matches {
+		referenced[string(m[1])] = true
+	}
+	var result []string
+	for _, cf := range componentFiles {
+		name := filepath.Base(cf)
+		name = name[:len(name)-len(filepath.Ext(name))] // strip .html
+		if referenced[name] {
+			result = append(result, cf)
+		}
+	}
+	return result
+}
 
 // Load loads Go HTML templates from templates/layout and templates/pages.
 // Creates a multitemplate renderer where each page is combined with all layouts.
@@ -28,6 +58,12 @@ func Load(templatesDir string) multitemplate.Renderer {
 
 	// Compile list of partial templates
 	partials, err := filepath.Glob(templatesDir + "/partials/*.html")
+	if err != nil {
+		panic(err.Error())
+	}
+
+	// Compile list of component templates (optional — no panic if directory is absent)
+	components, err := filepath.Glob(templatesDir + "/components/*.html")
 	if err != nil {
 		panic(err.Error())
 	}
@@ -75,7 +111,7 @@ func Load(templatesDir string) multitemplate.Renderer {
 		// array on subsequent iterations when len < cap.
 		layoutCopy := make([]string, len(layouts))
 		copy(layoutCopy, layouts)
-		files := append(append(layoutCopy, partials...), page)
+		files := append(append(append(layoutCopy, partials...), referencedComponents(page, components)...), page)
 		// Use directory/filename as template name to avoid collisions between classes/ and instances/
 		templateName := filepath.Join(filepath.Base(filepath.Dir(page)), filepath.Base(page))
 		r.AddFromFilesFuncs(templateName, funcMap, files...)

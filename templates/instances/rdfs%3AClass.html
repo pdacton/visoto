@@ -1,44 +1,11 @@
 <!-- RDF Class Template -->
 
-<sparql-query id="pageTitle"    class="d-none">SELECT ?title { ?? (rdfs:label|schema:name|skos:prefLabel|dc:title|rico:title) ?title . }</sparql-query>
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
-<sparql-query id="pageClasses"  class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
-
-{{ define "pageTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}
-{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
-{{ define "pageClasses" }}
-  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
-    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
-  {{ end }}
-{{ end }}
-{{ define "metaTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}
-{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
-
-
+{{ template "pageHeader" . }}
 
 {{ define "pageContent" }}
 <div>
 
-  <!-- literals -->
-  <div class="row">
-    <div class="column">
-      <div class="mb-3">
-        <sparql-query id="literals" class="d-none">
-          SELECT ?property ?value WHERE {
-            BIND (?? AS ?s)
-            ?s ?property ?value .
-            FILTER (isLiteral(?value))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlGrid" (dict
-              "result" .QueryResults.literals
-              "id" "literals"
-              "title" "Attributes"
-              "icon" "tags")
-        }}
-      </div>
-    </div>
-  </div>
+  {{ template "literals" . }}
 
   <!-- instances: classes defined as rdfs:Class or owl:Class -->
   <div class="row">
@@ -109,109 +76,9 @@
     </div>
   </div>
 
-  <!-- relationships -->
-  <div class="row">
+  {{ template "relationships" . }}
 
-    <!-- incoming relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="incoming" class="d-none">
-          SELECT ?source ?property WHERE {
-            BIND (?? AS ?o)
-            ?source ?property ?o .
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf)
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.incoming
-            "id" "incoming"
-            "title" "Incoming Relationships"
-            "icon" "shrink"
-            "collapsed" true)
-        }}
-      </div>
-    </div>
-
-    <!-- outgoing relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="outgoing" class="d-none">
-          SELECT ?property ?destination WHERE {
-            BIND (?? AS ?s)
-            ?s ?property ?destination .
-            FILTER (isIRI(?destination))
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf)
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-              "result" .QueryResults.outgoing
-              "id" "outgoing"
-              "title" "Outgoing Relationships"
-              "icon" "expand"
-              "collapsed" true)
-        }}
-      </div>
-    </div>
-
-  </div>
-
-  <!-- ontology and SHACL properties -->
-  <div class="row">
-
-    <!-- ontology properties -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="ontology" class="d-none">
-          SELECT ?subject ?property ?object WHERE {
-            BIND (?? AS ?object)
-            ?subject ?property ?object .
-            FILTER (?property IN (
-              schema:rangeIncludes,
-              schema:domainIncludes,
-              rdfs:range,
-              rdfs:domain,
-              owl:equivalentClass,
-              owl:disjointWith,
-              owl:unionOf,
-              owl:intersectionOf
-            ))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.ontology
-            "id" "ontology"
-            "title" "Schema information"
-            "icon" "circle-dashed"
-            "collapsed" true)
-        }}
-      </div>
-
-    </div>
-
-    <!-- SHACL properties -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="shacl" class="d-none">
-          SELECT ?subject ?property ?object WHERE {
-            BIND (?? AS ?object)
-            ?subject ?property ?object .
-            FILTER (STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.shacl
-            "id" "shacl"
-            "title" "Shape information (SHACL)"
-            "icon" "shapes"
-            "collapsed" true)
-        }}
-      </div>
-
-    </div>
-
-  </div>
+  {{ template "ontologyShacl" . }}
 
 </div>
 {{ end }}

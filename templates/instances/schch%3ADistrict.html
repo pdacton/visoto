@@ -1,0 +1,160 @@
+<!-- District Instance Template -->
+
+<sparql-query id="breadcrumbs" class="d-none">
+  SELECT ?canton ?country WHERE
+  {
+    ?? schema:containedInPlace ?canton . ?canton a schch:Canton .
+    ?canton schema:containedInPlace ?country . ?country a schema:Country .
+  }
+</sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "country") }}</li>
+  <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "canton") }}</li>
+{{ end}}
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="districtValidity" class="d-none">
+  SELECT * WHERE {
+    ?? vl:version ?version .
+    ?version schema:validFrom ?validFrom .
+    OPTIONAL { ?version schema:validThrough ?validThrough . }
+  }
+</sparql-query>
+{{ define "pageSubtitle" }}
+  {{ $description := firstValue .QueryResults.pageSubtitle "description" }}
+  {{ if $description }}{{ $description }}{{ end }}
+  {{ with .QueryResults.districtValidity }}
+    {{ $validFrom := firstValue . "validFrom" }}
+    {{ $validThrough := firstValue . "validThrough" }}
+    {{ if $validFrom }}
+      <small class="text-muted">Valid from {{ $validFrom }}{{ if $validThrough }} until {{ $validThrough }}{{ end }}</small>
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+
+{{ define "pageContent" }}
+<div>
+  <div class="row mb-3">
+
+    <!-- Attributes -->
+    <div class="col-lg mt-3">
+      <sparql-query id="attributes" class="d-none">
+        SELECT ?property ?value WHERE {
+          BIND (?? AS ?s)
+          ?s ?property ?value .
+          FILTER (isLiteral(?value))
+        } LIMIT 1000
+      </sparql-query>
+      {{ template "sparqlGrid" (dict
+            "result" .QueryResults.attributes
+            "id" "attributes"
+            "title" "Attributes"
+            "icon" "tags")
+      }}
+    </div>
+
+  </div>
+  <div class="row mb-3">
+
+    <!-- Municipalities -->
+    <div class="col-lg mt-3">
+      <sparql-query id="municipalities" class="d-none">
+        SELECT ?type ?municipality ?identifier (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) (COUNT(DISTINCT ?station) AS ?stations) (COUNT(DISTINCT ?org) AS ?orgs) WHERE {
+          ?? schema:hasPart ?municipality .
+          ?municipality a ?type . FILTER (?type = schch:Municipality)
+          OPTIONAL { ?municipality schema:identifier ?identifier . }
+          OPTIONAL {
+            ?municipality vl:version ?version .
+            ?version schema:validFrom ?vf .
+            OPTIONAL { ?version schema:validThrough ?vt . }
+          }
+          OPTIONAL { ?station a gtfs:Station . ?station schch:municipality ?municipality . }
+          OPTIONAL { ?org a schema:Organization . ?org schch:municipality ?municipality . }
+        }
+        GROUP BY ?type ?municipality ?identifier
+        ORDER BY ?identifier
+        LIMIT 5000
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.municipalities
+            "id" "municipalities"
+            "title" "Municipalities"
+            "icon" "map-pinned"
+            "iconVar" "type")
+      }}
+    </div>
+
+  </div>
+
+  <!-- Version Flow Diagram -->
+  <div class="row mb-3">
+    <div class="col">
+      <div class="mb-0">
+        <sparql-query id="versionflow" class="d-none">
+          SELECT DISTINCT ?from ?predicate ?to ?fromType ?toType ?fromValidFrom ?toValidFrom WHERE {
+            # District → version
+            {
+              BIND (?? AS ?from)
+              BIND (vl:version AS ?predicate)
+              ?? vl:version ?to .
+              BIND (schch:District AS ?fromType)
+              BIND (vl:Version AS ?toType)
+            }
+            UNION
+            # older versions pointing to newer via vl:successor
+            {
+              BIND (vl:successor AS ?predicate)
+              ?? vl:version ?v .
+              ?from vl:successor* ?v .
+              ?from vl:successor ?to .
+              ?from a vl:Version .
+              ?to   a vl:Version .
+              BIND (vl:Version AS ?fromType)
+              BIND (vl:Version AS ?toType)
+              OPTIONAL { ?from schema:validFrom ?fromValidFrom . }
+              OPTIONAL { ?to   schema:validFrom ?toValidFrom . }
+            }
+          }
+        </sparql-query>
+
+        <!-- Configuration for the mermaid diagram -->
+        <script type="application/json" id="versionflow-config">
+        {
+          "typeMap": {
+            "District": { "cssClass": "district", "shape": "rounded" },
+            "Version": { "cssClass": "version", "shape": "stadium" }
+          },
+          "classDefs": [
+            "classDef district color:#fff, font-size:18pt, fill:#206bc4, stroke:#206bc4, stroke-width:0px",
+            "classDef version color:#206bc4, font-size:14pt, fill:#d4e6f9, stroke:#206bc4, stroke-width:0px"
+          ]
+        }
+        </script>
+
+        {{ template "sparqlMermaidFlow" (dict
+              "result" .QueryResults.versionflow
+              "id" "versionflow"
+              "title" "Version Flow for District"
+              "icon" "history"
+              "direction" "LR"
+              "extraField" "validFrom")
+        }}
+      </div>
+    </div>
+  </div>
+
+  {{ template "relationships" . }}
+</div>
+{{ end }}

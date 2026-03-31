@@ -1,0 +1,21 @@
+<!-- Component: pageHeader
+     Provides standard page title, subtitle, classes, and meta defines for RDF resource pages.
+     Usage: {{ template "pageHeader" . }}
+-->
+
+<sparql-query id="pageTitle"    class="d-none">SELECT ?title { ?? (rdfs:label|schema:name|skos:prefLabel|dc:title|rico:title) ?title . }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="pageClasses"  class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+
+{{ define "pageTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+{{ define "metaTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
+
+{{/* render-time no-op — included only to trigger preprocessor component discovery */}}
+{{ define "pageHeader" }}{{ end }}

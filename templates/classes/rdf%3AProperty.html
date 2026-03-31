@@ -15,26 +15,7 @@
 {{ define "pageContent" }}
 <div>
 
-  <!-- attributes -->
-  <div class="row">
-    <div class="column">
-      <div class="mb-3">
-        <sparql-query id="literals" class="d-none">
-          SELECT ?property ?value WHERE {
-            BIND (?? AS ?s)
-            ?s ?property ?value .
-            FILTER (isLiteral(?value))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlGrid" (dict
-              "result" .QueryResults.literals
-              "id" "literals"
-              "title" "Attributes"
-              "icon" "tags")
-        }}
-      </div>
-    </div>
-  </div>
+  {{ template "literals" . }}
 
   <!-- instances: properties defined as rdf:Property -->
   <div class="row">
@@ -42,7 +23,7 @@
       <div class="mb-3">
         <sparql-query id="instances" class="d-none">
           SELECT DISTINCT ?type ?property ?label ?comment ?domain ?range WHERE {
-            { 
+            {
               SELECT DISTINCT ?property { ?s ?property ?o .}
             }
             OPTIONAL { ?property a ?type . }
@@ -169,53 +150,7 @@
 
   </div>
 
-  <!-- relationships -->
-  <div class="row">
-
-    <!-- incoming relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="incoming" class="d-none">
-          SELECT ?source ?property WHERE {
-            BIND (?? AS ?o)
-            ?source ?property ?o .
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf)
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.incoming
-            "id" "incoming"
-            "title" "Incoming Relationships"
-            "icon" "shrink"
-            "collapsed" true)
-        }}
-      </div>
-    </div>
-
-    <!-- outgoing relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="outgoing" class="d-none">
-          SELECT ?property ?destination WHERE {
-            BIND (?? AS ?s)
-            ?s ?property ?destination .
-            FILTER (isIRI(?destination))
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf)
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-              "result" .QueryResults.outgoing
-              "id" "outgoing"
-              "title" "Outgoing Relationships"
-              "icon" "expand"
-              "collapsed" true)
-        }}
-      </div>
-    </div>
-
-  </div>
+  {{ template "relationships" . }}
 
 </div>
 {{ end }}

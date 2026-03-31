@@ -15,26 +15,7 @@
 {{ define "pageContent" }}
 <div>
 
-  <!-- literals -->
-  <div class="row">
-    <div class="column">
-      <div class="mb-3">
-        <sparql-query id="literals" class="d-none">
-          SELECT ?property ?value WHERE {
-            BIND (?? AS ?s)
-            ?s ?property ?value .
-            FILTER (isLiteral(?value))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlGrid" (dict
-              "result" .QueryResults.literals
-              "id" "literals"
-              "title" "Attributes"
-              "icon" "tags")
-        }}
-      </div>
-    </div>
-  </div>
+  {{ template "literals" . }}
 
   <!-- instances of this concept scheme -->
   <div class="row">
@@ -71,7 +52,7 @@
     </div>
   </div>
 
-  <!-- relationships -->
+  <!-- relationships (custom: filters skos:inScheme from incoming) -->
   <div class="row">
 
     <!-- incoming relationships -->

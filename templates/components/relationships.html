@@ -1,0 +1,65 @@
+<!-- Component: relationships
+     Renders outgoing and incoming relationship tables (collapsed by default).
+     Usage: {{ template "relationships" . }}
+     Note: use inline sparql-query elements instead if you need different FILTERs or collapsed=false.
+-->
+
+<sparql-query id="outgoing" class="d-none">
+  SELECT ?property ?destination ?type WHERE {
+    BIND (?? AS ?s)
+    ?s ?property ?destination .
+    OPTIONAL { ?destination a ?type . }
+    FILTER (isIRI(?destination))
+    FILTER (?property != rdf:type)
+    FILTER (?property != rdfs:subClassOf)
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+  } LIMIT 1000
+</sparql-query>
+
+<sparql-query id="incoming" class="d-none">
+  SELECT ?type ?source ?property WHERE {
+    BIND (?? AS ?o)
+    ?source ?property ?o .
+    OPTIONAL { ?source a ?type . }
+    FILTER (?property != rdf:type)
+    FILTER (?property != rdfs:subClassOf)
+    FILTER (?property NOT IN (
+      schema:rangeIncludes,
+      schema:domainIncludes,
+      rdfs:range,
+      rdfs:domain
+    ))
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+  } LIMIT 1000
+</sparql-query>
+
+{{ define "relationships" }}
+<div class="row">
+  <div class="col-lg-6">
+    <div class="mb-3">
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.outgoing
+            "id" "outgoing"
+            "title" "Outgoing Relationships"
+            "icon" "expand"
+            "collapsed" true
+            "iconVar" "type")
+      }}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="mb-3">
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.incoming
+            "id" "incoming"
+            "title" "Incoming Relationships"
+            "icon" "shrink"
+            "collapsed" true
+            "iconVar" "type")
+      }}
+    </div>
+  </div>
+</div>
+{{ end }}

@@ -1,0 +1,43 @@
+<!-- District Class Template, listing all instances of this class -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource/schema:Country">Country</a></li>
+  <li class="breadcrumb-item"><a href="/resource/schch:Canton">Canton</a></li>
+{{ end}}
+
+{{ define "pageTitle" }}District{{ end }}
+{{ define "metaTitle" }}District{{ end }}
+{{ define "pageSubtitle" }}Bezirk (de) · District (fr) · Distretto (it){{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-query id="instances" class="d-none">
+      SELECT ?type ?district ?identifier ?canton ?validFrom ?validThrough (COUNT(?municipality) AS ?municipalities)
+      WHERE {
+        BIND (?? AS ?type)
+        ?district rdf:type ?type .
+        OPTIONAL { ?district schema:identifier ?identifier . }
+        OPTIONAL { ?district schema:containedInPlace ?canton . ?canton a schch:Canton . }
+        OPTIONAL {
+          ?district vl:version ?version .
+          ?version schema:validFrom ?validFrom .
+          OPTIONAL { ?version schema:validThrough ?validThrough . }
+        }
+        OPTIONAL { ?municipality schema:containedInPlace ?district . ?municipality a schch:Municipality . }
+      }
+      GROUP BY ?type ?district ?identifier ?canton ?validFrom ?validThrough
+      ORDER BY ?canton ?identifier
+      LIMIT 20000
+    </sparql-query>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.instances
+        "id" "instances"
+        "title" "Districts"
+        "icon" "circle-dot"
+        "iconVar" "type")
+    }}
+  </div>
+</div>
+{{ end }}

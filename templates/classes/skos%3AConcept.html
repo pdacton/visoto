@@ -18,30 +18,11 @@
 {{ define "pageContent" }}
 <div>
 
-  <!-- literals -->
-  <div class="row">
-    <div class="column">
-      <div class="mb-3">
-        <sparql-query id="literals" class="d-none">
-          SELECT ?property ?value WHERE {
-            BIND (?? AS ?s)
-            ?s ?property ?value .
-            FILTER (isLiteral(?value))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlGrid" (dict 
-              "result" .QueryResults.literals 
-              "id" "literals"
-              "title" "Attributes"
-              "icon" "tags")
-        }}
-      </div>
-    </div>
-  </div>  
+  {{ template "literals" . }}
 
   <!-- instances of this class -->
   <div class="row">
-    </div>    <div class="col-lg">
+    <div class="col-lg">
       <div class="mb-3">
         <sparql-query id="instances" class="d-none">
           SELECT ?instance ?description WHERE {
@@ -50,9 +31,9 @@
             OPTIONAL { ?instance schema:description ?description . }
           } LIMIT 50000
         </sparql-query>
-        {{ template "sparqlTable" (dict 
-            "result" .QueryResults.instances 
-            "id" "instances" 
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.instances
+            "id" "instances"
             "title" "Available SKOS Concepts"
             "icon" "circle-dot")
         }}
@@ -60,162 +41,11 @@
     </div>
   </div>
 
-  <!-- relationships -->
-  <div class="row">
+  {{ template "relationships" . }}
 
-    <!-- incoming relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="incoming" class="d-none">
-          SELECT ?source ?property WHERE {
-            BIND (?? AS ?o)
-            ?source ?property ?o .
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf)
-            FILTER (?property NOT IN (
-              schema:rangeIncludes,
-              schema:domainIncludes,
-              rdfs:range,
-              rdfs:domain,
-              owl:equivalentClass,
-              owl:disjointWith,
-              owl:unionOf,
-              owl:intersectionOf
-            ))
-            FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict 
-            "result" .QueryResults.incoming 
-            "id" "incoming" 
-            "title" "Incoming Relationships" 
-            "icon" "shrink"
-            "collapsed" true) 
-        }}
-      </div>
-    </div>
-    
-    <!-- outgoing relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="outgoing" class="d-none">
-          SELECT ?property ?destination WHERE {
-            BIND (?? AS ?s)
-            ?s ?property ?destination .
-            FILTER (isIRI(?destination))
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf) 
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict 
-              "result" .QueryResults.outgoing 
-              "id" "outgoing" 
-              "title" "Outgoing Relationships"
-              "icon" "expand"
-              "collapsed" true) 
-        }}
-      </div>
-    </div>
+  {{ template "classHierarchy" . }}
 
-  </div>
-
-  <!-- instances and super/sub classes -->
-  <div class="row">
-
-    <!-- subclasses of this class -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="subclasses" class="d-none">
-          SELECT ?subclass ?description WHERE {
-            ?subclass rdfs:subClassOf ?? .
-            OPTIONAL { ?subclass (rdfs:comment|schema:description) ?description . }
-          } LIMIT 5000
-        </sparql-query>
-        {{ template "sparqlTable" (dict 
-            "result" .QueryResults.subclasses 
-            "id" "subclasses" 
-            "title" "Subclasses of this Class"
-            "icon" "circle-chevron-down"
-            "collapsed" true)
-        }}
-      </div>
-
-    </div>
-
-    <!-- superclasses of this class -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="superclasses" class="d-none">
-          SELECT ?superclass ?description WHERE {
-            ?? rdfs:subClassOf ?superclass .
-            OPTIONAL { ?superclass (rdfs:comment|schema:description) ?description . }
-          } LIMIT 5000
-        </sparql-query>
-        {{ template "sparqlTable" (dict 
-            "result" .QueryResults.superclasses 
-            "id" "superclasses" 
-            "title" "Superclasses of this Class"
-            "icon" "circle-chevron-up"
-            "collapsed" true) 
-        }}
-      </div>
-    </div>
-  
-  </div>
-
-  <!-- ontology and SHACL properties -->
-  <div class="row">
-
-    <!-- ontology properties -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="ontology" class="d-none">
-          SELECT ?subject ?property ?object WHERE {
-            BIND (?? AS ?object)
-            ?subject ?property ?object .
-            FILTER (?property IN (
-              schema:rangeIncludes,
-              schema:domainIncludes,
-              rdfs:range,
-              rdfs:domain,
-              owl:equivalentClass,
-              owl:disjointWith,
-              owl:unionOf,
-              owl:intersectionOf
-            ))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.ontology
-            "id" "ontology"
-            "title" "Schema information"
-            "icon" "circle-dashed"
-            "collapsed" true)
-        }}
-      </div>
-    </div>
-
-    <!-- SHACL properties -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="shacl" class="d-none">
-          SELECT ?subject ?property ?object WHERE {
-            BIND (?? AS ?object)
-            ?subject ?property ?object .
-            FILTER (STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
-          } LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.shacl
-            "id" "shacl"
-            "title" "Shape information (SHACL)"
-            "icon" "shapes"
-            "collapsed" true)
-        }}
-      </div>
-    </div>
-
-  </div>
+  {{ template "ontologyShacl" . }}
 
 </div>
 {{ end }}

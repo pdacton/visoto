@@ -1,0 +1,45 @@
+<!-- Component: classHierarchy
+     Renders subclass and superclass relationship tables for OWL/RDFS class resources.
+     Usage: {{ template "classHierarchy" . }}
+-->
+
+<sparql-query id="subclasses" class="d-none">
+  SELECT ?subclass ?description WHERE {
+    ?subclass rdfs:subClassOf ?? .
+    OPTIONAL { ?subclass (rdfs:comment|schema:description) ?description . }
+  } LIMIT 5000
+</sparql-query>
+
+<sparql-query id="superclasses" class="d-none">
+  SELECT ?superclass ?description WHERE {
+    ?? rdfs:subClassOf ?superclass .
+    OPTIONAL { ?superclass (rdfs:comment|schema:description) ?description . }
+  } LIMIT 5000
+</sparql-query>
+
+{{ define "classHierarchy" }}
+<div class="row">
+  <div class="col-lg-6">
+    <div class="mb-3">
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.subclasses
+            "id" "subclasses"
+            "title" "Subclasses of this Class"
+            "icon" "circle-chevron-down"
+            "iconVar" "subclass")
+      }}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="mb-3">
+      {{ template "sparqlTable" (dict
+            "result" .QueryResults.superclasses
+            "id" "superclasses"
+            "title" "Superclasses of this Class"
+            "icon" "circle-chevron-up"
+            "iconVar" "superclass")
+      }}
+    </div>
+  </div>
+</div>
+{{ end }}
