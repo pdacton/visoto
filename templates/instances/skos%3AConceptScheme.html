@@ -21,78 +21,83 @@
 
 {{ define "pageContent" }}
 
-    {{ template "literals" . }}
+  {{ template "literals" . }}
 
-    <!-- concept hierarchy tree -->
-    <div class="row">
-        <div class="col">
-            <div class="mb-3">
-                <sparql-query id="conceptTree" class="d-none">
-                    SELECT ?node ?parent ?code WHERE {
-                        BIND (?? AS ?conceptScheme)
-                        ?node skos:inScheme ?conceptScheme .
-                        ?node a skos:Concept .
-                        OPTIONAL { ?node skos:broader ?parent . }
-                        OPTIONAL { ?node skos:notation ?code . }
-                    }
-                </sparql-query>
-                {{ template "sparqlTree" (dict
-                    "result" .QueryResults.conceptTree
-                    "id" "conceptTree"
-                    "title" "Concept Hierarchy"
-                    "icon" "list-tree"
-                    "treeExpanded" false)
-                }}
-            </div>
-        </div>
+  <!-- concept hierarchy tree -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="conceptTree" class="d-none">
+          SELECT ?node ?parent ?code WHERE {
+            BIND (?? AS ?conceptScheme)
+            ?node skos:inScheme ?conceptScheme .
+            ?node a skos:Concept .
+            OPTIONAL { ?node skos:broader ?parent . }
+            OPTIONAL { ?node skos:notation ?code . }
+          }
+        </sparql-query>
+        {{ template "sparqlTree" (dict
+          "result" .QueryResults.conceptTree
+          "id" "conceptTree"
+          "title" "Concept Hierarchy"
+          "icon" "list-tree"
+          "treeExpanded" false)
+        }}
+    </div>
+    </div>
+  </div>
+
+  <!-- relationships (custom: filters skos:inScheme from incoming) -->
+  <div class="row">
+
+    <!-- incoming relationships -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="incoming" class="d-none">
+          SELECT ?type ?source ?property WHERE {
+            BIND (?? AS ?o)
+            ?source ?property ?o .
+            OPTIONAL { ?source a ?type . }
+            FILTER (?property != rdf:type)
+            # filtering here because we show this in the table above
+            FILTER (?property != skos:inScheme)
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.incoming
+          "id" "incoming"
+          "title" "Incoming Relationships"
+          "icon" "shrink"
+          "collapsed" true
+          "iconVar" "type")
+        }}
+      </div>
     </div>
 
-    <!-- relationships (custom: filters skos:inScheme from incoming) -->
-    <div class="row">
-
-        <!-- incoming relationships -->
-        <div class="col-lg-6">
-        <div class="mb-3">
-            <sparql-query id="incoming" class="d-none">
-                SELECT ?source ?property WHERE {
-                    BIND (?? AS ?o)
-                    ?source ?property ?o .
-                    FILTER (?property != rdf:type)
-                    FILTER (?property != skos:inScheme)
-                    FILTER (?property != rdfs:subClassOf)
-                } LIMIT 1000
-            </sparql-query>
-            {{ template "sparqlTable" (dict
-                "result" .QueryResults.incoming
-                "id" "incoming"
-                "title" "Incoming Relationships"
-                "icon" "shrink"
-                "collapsed" true)
-            }}
-        </div>
-        </div>
-
-        <!-- outgoing relationships -->
-        <div class="col-lg-6">
-        <div class="mb-3">
-            <sparql-query id="outgoing" class="d-none">
-            SELECT ?property ?destination WHERE {
-                BIND (?? AS ?s)
-                ?s ?property ?destination .
-                FILTER (isIRI(?destination))
-                FILTER (?property != rdf:type)
-            } LIMIT 1000
-            </sparql-query>
-            {{ template "sparqlTable" (dict
-                "result" .QueryResults.outgoing
-                "id" "outgoing"
-                "title" "Outgoing Relationships"
-                "icon" "expand"
-                "collapsed" true)
-            }}
-        </div>
-        </div>
-
+    <!-- outgoing relationships -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="outgoing" class="d-none">
+        SELECT ?property ?destination ?type WHERE {
+          BIND (?? AS ?s)
+          ?s ?property ?destination .
+          OPTIONAL { ?destination a ?type . }
+          FILTER (isIRI(?destination))
+          FILTER (?property != rdf:type)
+        } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.outgoing
+          "id" "outgoing"
+          "title" "Outgoing Relationships"
+          "icon" "expand"
+          "collapsed" true
+          "iconVar" "type")
+        }}
+      </div>
+      
     </div>
+
+  </div>
 
 {{ end }}

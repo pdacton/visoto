@@ -117,6 +117,13 @@ div.wunderbaum span.wb-col {
     --wb-header-height: 44px;
 }
 
+/* Cap tree height so virtual scrolling kicks in — without a fixed height
+   Wunderbaum renders ALL rows at once, which hangs on large datasets.
+   Actual height is set dynamically by JS based on node count (see sparql-tree.html). */
+div[id$="-tree"] {
+    max-height: 600px;
+}
+
 /* Match Tabler table header styling */
 div.wunderbaum div.wb-header {
     background-color: var(--tblr-bg-surface-tertiary) !important;

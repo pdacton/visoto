@@ -22,7 +22,7 @@
     <div class="col-lg">
       <div class="mb-3">
         <sparql-query id="instances" class="d-none">
-          SELECT ?type ?scheme ?publisher ?status ?definition ?identifier WHERE {
+          SELECT ?type ?scheme ?publisher ?status ?definition ?identifier ?conceptCount WHERE {
             BIND (?? AS ?type)
             ?scheme a ?type .
 
@@ -32,11 +32,22 @@
             BIND( COALESCE(?pub_lang, ?pub_en) AS ?publisher ) .
 
             OPTIONAL { ?scheme adms:status ?status . }
-            OPTIONAL { ?scheme (schema:identifier|dct:identifier) ?identifier . }
+            OPTIONAL {
+              SELECT ?scheme (SAMPLE(?id) AS ?identifier) WHERE {
+                ?scheme (schema:identifier|dc:identifier|dct:identifier) ?id .
+              } GROUP BY ?scheme
+            }
 
             OPTIONAL { ?scheme skos:definition ?def_lang . FILTER (LANG(?def_lang) = visoto:dispLang) }
             OPTIONAL { ?scheme skos:definition ?def_en . FILTER (LANG(?def_en) = "en") }
             BIND( COALESCE(?def_lang, ?def_en) AS ?definition ) .
+
+            OPTIONAL {
+              SELECT ?scheme (COUNT(DISTINCT ?concept) AS ?conceptCount) WHERE {
+                ?concept skos:inScheme ?scheme .
+                ?concept a skos:Concept .
+              } GROUP BY ?scheme
+            }
 
           } LIMIT 10000
         </sparql-query>

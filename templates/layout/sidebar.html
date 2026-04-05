@@ -297,6 +297,48 @@
               </div>
             </li>
 
+          {{ else if eq .EndpointTag "datacatalog" }}
+
+            <!-- Catalog -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/dcat:Catalog">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Dataset.svg" alt="Catalog">
+                </span>
+                <span class="nav-link-title">Catalog</span>
+              </a>
+            </li>
+
+            <!-- Dataset -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/dcat:Dataset">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Dataset.svg" alt="Dataset">
+                </span>
+                <span class="nav-link-title">Dataset</span>
+              </a>
+            </li>
+
+            <!-- Distribution -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/dcat:Distribution">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Dataset.svg" alt="Distribution">
+                </span>
+                <span class="nav-link-title">Distribution</span>
+              </a>
+            </li>
+
+            <!-- Concept Schemes -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource/skos:ConceptScheme">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/ConceptScheme.svg" alt="SKOS Concept Scheme">
+                </span>
+                <span class="nav-link-title">Concept Schemes</span>
+              </a>
+            </li>
+
           {{ else }}
 
             <!-- Generic fallback for unknown endpoints -->
@@ -366,6 +408,7 @@
                 <a class="dropdown-item" href="/properties.html">Properties</a>
                 <a class="dropdown-item" href="/namedGraphs.html">Named Graphs</a>
                 <a class="dropdown-item" href="/dataIssues.html">Data Issues</a>
+                <a class="dropdown-item" href="/multiAttribution.html">Multi-Attribution</a>
               </div>
             </li>
 

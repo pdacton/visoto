@@ -1,0 +1,39 @@
+{{ define "pageTitle" }}Multi-Attribution{{ end }}
+{{ define "pageSubtitle" }}Instances that belong to more than one class (grouped by type combination).{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Multi-Attribution" width="48" height="48">{{end}}
+{{ define "metaTitle" }}Multi-Attribution{{ end }}
+{{ define "metaIcon" }}/static/img/info.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<div class="row">
+  <div class="col">
+
+    <div class="mb-3">
+      <sparql-query id="multiAttribution" class="d-none">
+        SELECT ?example ?type WHERE {
+          {
+            SELECT DISTINCT ?types (SAMPLE(?instance) AS ?example) WHERE {
+              {
+                SELECT DISTINCT ?instance (GROUP_CONCAT(DISTINCT STR(?type); separator="|") AS ?types) WHERE {
+                  ?instance a ?type .
+                } GROUP BY ?instance HAVING (COUNT(DISTINCT ?type) > 1)
+              }
+            } GROUP BY ?types
+          }
+          ?example a ?type .
+        }
+      </sparql-query>
+      {{ template "sparqlTable" (dict
+          "result" .QueryResults.multiAttribution
+          "id" "multiAttribution"
+          "title" "Type Combinations with Multiple Classes"
+          "icon" "circles-relation"
+          "iconVar" "type")
+      }}
+    </div>
+
+  </div>
+</div>
+
+{{ end }}

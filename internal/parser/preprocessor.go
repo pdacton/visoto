@@ -99,3 +99,8 @@ func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLang
 func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 	return p.sp.QueryTypes(iri)
 }
+
+// QueryIsClass checks whether the given IRI is a class
+func (p *Preprocessor) QueryIsClass(iri string) (bool, error) {
+	return p.sp.QueryIsClass(iri)
+}

@@ -107,21 +107,47 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 	}
 
 	// 3. Query for RDF types and check for instance templates
-	if types, err := preprocessor.QueryTypes(r.IRI); err != nil {
+	var types []string
+	if t, err := preprocessor.QueryTypes(r.IRI); err != nil {
 		log.Warn("failed to query RDF types, using fallback template", slog.String("iri", r.IRI), slog.String("error", err.Error()))
-	} else if len(types) > 0 {
-		log.Debug("found RDF types for resource", slog.String("iri", r.IRI), slog.Any("types", types))
-		for _, typ := range sortTypesByPriority(types, typePriority) {
-			// Try shortened IRI first, then full IRI
-			shortTyp := shortenIRI(typ, prefixes)
-			if tryTemplate("templates/instances/", normalizeToFilename(shortTyp), "via RDF type match") ||
-				tryTemplate("templates/instances/", normalizeToFilename(typ), "via RDF type match") {
-				return nil
+	} else {
+		types = t
+		if len(types) > 0 {
+			log.Debug("found RDF types for resource", slog.String("iri", r.IRI), slog.Any("types", types))
+			for _, typ := range sortTypesByPriority(types, typePriority) {
+				// Try shortened IRI first, then full IRI
+				shortTyp := shortenIRI(typ, prefixes)
+				if tryTemplate("templates/instances/", normalizeToFilename(shortTyp), "via RDF type match") ||
+					tryTemplate("templates/instances/", normalizeToFilename(typ), "via RDF type match") {
+					return nil
+				}
 			}
 		}
 	}
 
-	// 4. Fallback to default template
+	// 4. Detect class vs instance for default fallback
+	isClass := false
+	for _, t := range types {
+		if t == "http://www.w3.org/2000/01/rdf-schema#Class" || t == "http://www.w3.org/2002/07/owl#Class" {
+			isClass = true
+			break
+		}
+	}
+	if !isClass {
+		// subClassOf + incoming rdf:type check (ignore error → treated as false)
+		isClass, _ = preprocessor.QueryIsClass(r.IRI)
+	}
+	if isClass {
+		if tryTemplate("templates/classes/", "default.html", "via default class template") {
+			return nil
+		}
+	} else {
+		if tryTemplate("templates/instances/", "default.html", "via default instance template") {
+			return nil
+		}
+	}
+
+	// 5. Hard fallback to generic resource template
 	r.TemplateName = "pages/resource.html"
 	r.TemplatePath = "templates/pages/resource.html"
 	log.Debug("using fallback template", slog.String("iri", r.IRI), slog.String("template", r.TemplateName))

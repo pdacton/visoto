@@ -1,0 +1,203 @@
+<!-- dcat:Distribution Instance Template -->
+
+<sparql-query id="breadcrumbs" class="d-none">
+  SELECT ?dataset WHERE {
+    ?dataset dcat:distribution ?? .
+  } LIMIT 1
+</sparql-query>
+{{ define "breadcrumb" }}
+  {{ with index .QueryResults.breadcrumbs.Bindings 0 }}
+    <li class="breadcrumb-item">{{ render (index . "dataset") }}</li>
+  {{ end }}
+{{ end }}
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? dct:title ?title . } LIMIT 1</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? dct:description ?description . } LIMIT 1</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+
+{{ define "pageContent" }}
+
+  {{ template "literals" . }}
+
+  <!-- Access & Download URLs -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="accessLinks" class="d-none">
+          SELECT ?property ?url WHERE {
+            BIND (?? AS ?dist)
+            {
+              ?dist dcat:accessURL ?url .
+              BIND (dcat:accessURL AS ?property)
+            } UNION {
+              ?dist dcat:downloadURL ?url .
+              BIND (dcat:downloadURL AS ?property)
+            }
+          }
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.accessLinks
+          "id" "accessLinks"
+          "title" "Access & Download URLs"
+          "icon" "link")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Parent Dataset -->
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="parentDataset" class="d-none">
+          SELECT ?dataset ?title WHERE {
+            ?dataset dcat:distribution ?? .
+            OPTIONAL { ?dataset dct:title ?title . FILTER(LANG(?title) = "en" || LANG(?title) = "de" || LANG(?title) = "") }
+          } LIMIT 100
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.parentDataset
+          "id" "parentDataset"
+          "title" "Part of Dataset"
+          "icon" "database")
+        }}
+      </div>
+    </div>
+
+    <!-- Format & Media Type -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="formatInfo" class="d-none">
+          SELECT ?property ?value WHERE {
+            BIND (?? AS ?dist)
+            {
+              ?dist dct:format ?value .
+              BIND (dct:format AS ?property)
+            } UNION {
+              ?dist dcat:mediaType ?value .
+              BIND (dcat:mediaType AS ?property)
+            } UNION {
+              ?dist dcat:packageFormat ?value .
+              BIND (dcat:packageFormat AS ?property)
+            }
+          }
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.formatInfo
+          "id" "formatInfo"
+          "title" "Format & Media Type"
+          "icon" "file")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- License & Rights -->
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="licenseInfo" class="d-none">
+          SELECT ?property ?value WHERE {
+            BIND (?? AS ?dist)
+            {
+              ?dist dct:license ?value .
+              BIND (dct:license AS ?property)
+            } UNION {
+              ?dist dct:rights ?value .
+              BIND (dct:rights AS ?property)
+            } UNION {
+              ?dist <http://data.europa.eu/r5r/availability> ?value .
+              BIND (<http://data.europa.eu/r5r/availability> AS ?property)
+            } UNION {
+              ?dist <http://www.w3.org/ns/adms#status> ?value .
+              BIND (<http://www.w3.org/ns/adms#status> AS ?property)
+            }
+          }
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.licenseInfo
+          "id" "licenseInfo"
+          "title" "License & Rights"
+          "icon" "lock")
+        }}
+      </div>
+    </div>
+
+    <!-- Access Service -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="accessService" class="d-none">
+          SELECT ?service ?title WHERE {
+            ?? dcat:accessService ?service .
+            OPTIONAL { ?service dct:title ?title . FILTER(LANG(?title) = "en" || LANG(?title) = "de" || LANG(?title) = "") }
+          } LIMIT 100
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.accessService
+          "id" "accessService"
+          "title" "Access Service"
+          "icon" "server")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Incoming & Outgoing Relationships -->
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="incoming" class="d-none">
+          SELECT ?type ?source ?property WHERE {
+            BIND (?? AS ?o)
+            ?source ?property ?o .
+            OPTIONAL { ?source a ?type . }
+            FILTER (?property != rdf:type)
+            FILTER (?property != dcat:distribution)
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.incoming
+          "id" "incoming"
+          "title" "Incoming Relationships"
+          "icon" "shrink"
+          "collapsed" true
+          "iconVar" "type")
+        }}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-query id="outgoing" class="d-none">
+          SELECT ?property ?destination ?type WHERE {
+            BIND (?? AS ?s)
+            ?s ?property ?destination .
+            OPTIONAL { ?destination a ?type . }
+            FILTER (isIRI(?destination))
+            FILTER (?property != rdf:type)
+          } LIMIT 1000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+          "result" .QueryResults.outgoing
+          "id" "outgoing"
+          "title" "Outgoing Relationships"
+          "icon" "expand"
+          "collapsed" true
+          "iconVar" "type")
+        }}
+      </div>
+    </div>
+  </div>
+
+{{ end }}

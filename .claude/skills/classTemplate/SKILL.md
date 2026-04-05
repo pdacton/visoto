@@ -65,7 +65,7 @@ You'll be prompted for:
 - Subclasses section, collapsed
 - Superclasses section, collapsed
 
-### Standard Template (default)
+### Standard Template ('--standard', default)
 - Title, subtitle, and metadata queries
 - **Instances list** with relevant properties
 - Subclasses section
@@ -79,11 +79,12 @@ You'll be prompted for:
 
 ## Features
 
-- **SPARQL Introspection**: Automatically queries the SPARQL endpoint to discover class properties
+- **SPARQL Introspection**: Automatically queries the SPARQL endpoint to discover class properties, using the visoto MCP server with endpoint configuration from `visoto.config`, use curl as fallback only
 - **URL Encoding**: Automatically encodes class URI for filename (e.g., `schch:Canton` → `schch%3ACanton.html`)
 - **Backup on Update**: Creates `.backup` file before overwriting existing templates
 - **Example Comments**: Includes helpful comments showing how to customize queries
-- **Partial Integration**: Uses existing Visoto partials (`sparqlTable`, `sparqlGrid`, etc.)
+- **Partial Integration**: Uses the more basic Visoto partials (`sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlMermaidFlow`)
+- **Component Integration**: uses the pre-built, ready to use building blocks (`pageHeader`, `literals`, `relationships`, `classHierarchy`, `ontologyShacl`)
 
 ## Configuration
 
@@ -114,7 +115,7 @@ This information is displayed before creating the template and used to generate 
 
 - Use short form URIs (e.g., `schch:Canton`) when the prefix is defined in `visoto.config`
 - The `--preview` flag is useful for testing before committing to file creation
-- Breadcrumbs should be ordered from general to specific (e.g., Country → Canton → District)
+- Breadcrumbs should be ordered from general to specific (e.g., Country → Canton → District), use use rdf:subClassOf relationships for automatic breadcrumb generation
 - The skill will warn if the URI doesn't return any data from the endpoint
 
 ## Workflow

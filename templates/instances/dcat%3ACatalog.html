@@ -1,0 +1,68 @@
+<!-- dcat:Catalog Instance Template -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- datasets in this catalog -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-query id="datasets" class="d-none">
+          SELECT ?type ?dataset ?title ?identifier WHERE {
+            BIND (?? AS ?catalog)
+            ?catalog dcat:dataset ?dataset .
+            OPTIONAL { ?dataset a ?type . }
+            OPTIONAL {
+              ?dataset dct:title ?title .
+              FILTER (lang(?title) = visoto:dispLang || lang(?title) = "")
+            }
+            OPTIONAL { ?dataset dct:identifier ?identifier . }
+          }
+          ORDER BY ?title
+          LIMIT 10000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.datasets
+            "id" "datasets"
+            "title" "Datasets"
+            "icon" "database"
+            "iconVar" "type")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- catalog records -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-query id="records" class="d-none">
+          SELECT ?type ?record ?identifier ?primaryTopic ?issued ?modified WHERE {
+            BIND (?? AS ?catalog)
+            ?catalog dcat:record ?record .
+            OPTIONAL { ?record a ?type . }
+            OPTIONAL { ?record dct:identifier ?identifier . }
+            OPTIONAL { ?record foaf:primaryTopic ?primaryTopic . }
+            OPTIONAL { ?record dct:issued ?issued . }
+            OPTIONAL { ?record dct:modified ?modified . }
+          }
+          ORDER BY ?identifier
+          LIMIT 10000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.records
+            "id" "records"
+            "title" "Catalog Records"
+            "icon" "file-description"
+            "iconVar" "type")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

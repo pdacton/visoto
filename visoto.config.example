@@ -8,32 +8,44 @@ sparqlEndpoint = "https://ld.admin.ch/query/"  # Default endpoint
 timeout = 30 # timeout in seconds
 gemini_api_key = "YOUR_GEMINI_API_KEY_HERE" # Get from: https://aistudio.google.com/app/apikey
 
-# Named SPARQL endpoints for the menu
+# Named SPARQL endpoints for the sidebar endpoint-switcher menu.
+# Each endpoint can have:
+#   name    — display label in the menu
+#   url     — SPARQL endpoint URL
+#   default — pre-selected on startup (at most one should be true)
+#   monitor — enable health monitoring on the /monitoring dashboard
+#   tag     — logical group label; exposed to templates as .EndpointTag so templates
+#             can conditionally show endpoint-specific content (e.g. {{ if eq .EndpointTag "lindas" }})
 [[application.sparqlEndpoints]]
 name = "LINDAS prod"
 url = "https://ld.admin.ch/query/"
 default = true
 monitor = true
+tag = "lindas"
 
 [[application.sparqlEndpoints]]
 name = "LINDAS int"
 url = "https://int.lindas.admin.ch/query/"
 monitor = true
+tag = "lindas"
 
 [[application.sparqlEndpoints]]
 name = "LINDAS test"
 url = "https://test.lindas.admin.ch/query/"
 monitor = true
+tag = "lindas"
 
 [[application.sparqlEndpoints]]
 name = "LINDASnext prod"
 url = "https://lindas.cz-aws.net/query/"
 monitor = true
+tag = "lindas"
 
 [[application.sparqlEndpoints]]
 name = "LINDASnext int"
 url = "https://lindas.int.cz-aws.net/query/"
 monitor = false
+tag = "lindas"
 
 
 # RDF settings

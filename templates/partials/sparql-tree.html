@@ -121,86 +121,65 @@
           var resourceIRI = document.getElementById("{{ $id }}-resourceIRI").innerHTML.trim();
 
           // --- arrayToTree: Convert flat SPARQL bindings to Wunderbaum tree structure ---
+          // Single pass: create nodes and wire parent-child relationships together.
+          // Nodes whose parent hasn't been seen yet are stored in pendingChildren and
+          // re-wired at the end (handles bindings where parent rows come after child rows).
           function arrayToTree(bindings, expanded) {
-            var nodeMap = {};  // key (IRI) -> tree node object
-            var roots = [];    // nodes with no parent
-            var childKeys = {}; // track which keys are children
+            var nodeMap = {};   // key -> wunderbaum node object
+            var roots = [];     // top-level nodes, in encounter order
+            var rootKeys = new Set();
+            var childKeys = new Set();
+            // child nodes whose parent binding hadn't been seen yet
+            var pendingChildren = {}; // parentKey -> [childNode, ...]
 
-            // First pass: create all nodes
             bindings.forEach(function(binding) {
               var nodeBinding = binding["node"];
               if (!nodeBinding) return;
 
               var key = nodeBinding.Value;
-              var title = nodeBinding.DisplayText || nodeBinding.Value;
 
-              if (nodeMap[key]) return; // skip duplicates
-
-              // Collect extra data (all variables except node and parent)
-              var data = { iri: key };
+              // Extra vars go directly on the source node object (not nested under "data").
+              // Wunderbaum exposes non-reserved source properties as e.node.data[varName].
+              var node = { title: nodeBinding.DisplayText || key, key: key, _iri: key };
               for (var varName in binding) {
                 if (varName === "node" || varName === "parent") continue;
-                if (binding[varName]) {
-                  data[varName] = {
-                    value: binding[varName].Value,
-                    label: binding[varName].DisplayText || binding[varName].Value,
-                    type: binding[varName].Type
-                  };
-                  // DEBUGGING
-                  // console.log("data[" + varName + "]:", data[varName]);
-                }
+                var b = binding[varName];
+                if (b) node[varName] = { value: b.Value, label: b.DisplayText || b.Value, type: b.Type };
+              }
+              if (expanded) node.expanded = true;
+              nodeMap[key] = node;
+
+              // Flush any children that were waiting for this node as parent
+              if (pendingChildren[key]) {
+                node.children = pendingChildren[key];
+                pendingChildren[key].forEach(function(c) { childKeys.add(c.key); });
+                delete pendingChildren[key];
               }
 
-              nodeMap[key] = {
-                title: title,
-                key: key,
-                icon: false,
-                children: [],
-                data: data,
-                expanded: expanded
-              };
-            });
-
-            // Second pass: establish parent-child relationships
-            bindings.forEach(function(binding) {
-              var nodeBinding = binding["node"];
+              // Wire to parent
               var parentBinding = binding["parent"];
-              if (!nodeBinding) return;
-
-              var childKey = nodeBinding.Value;
-              var child = nodeMap[childKey];
-              if (!child) return;
-
-              if (!parentBinding || !parentBinding.Value || parentBinding.Value === "") {
-                // No parent = root node
-                if (roots.indexOf(child) === -1) {
-                  roots.push(child);
-                }
+              if (!parentBinding || !parentBinding.Value) {
+                rootKeys.add(key);
+                roots.push(node);
               } else {
                 var parentKey = parentBinding.Value;
                 var parent = nodeMap[parentKey];
                 if (parent) {
-                  // Avoid duplicate children
-                  var alreadyChild = parent.children.some(function(c) {
-                    return c.key === childKey;
-                  });
-                  if (!alreadyChild) {
-                    parent.children.push(child);
-                    childKeys[childKey] = true;
-                  }
+                  if (!parent.children) parent.children = [];
+                  parent.children.push(node);
+                  childKeys.add(key);
                 } else {
-                  // Parent not in dataset = treat as root
-                  if (roots.indexOf(child) === -1) {
-                    roots.push(child);
-                  }
+                  // Parent not yet seen — queue for later
+                  if (!pendingChildren[parentKey]) pendingChildren[parentKey] = [];
+                  pendingChildren[parentKey].push(node);
                 }
               }
             });
 
-            // Find orphans: nodes that are neither roots nor children
-            for (var key in nodeMap) {
-              if (roots.indexOf(nodeMap[key]) === -1 && !childKeys[key]) {
-                roots.push(nodeMap[key]);
+            // Any remaining pending children whose parent was never in the dataset = roots
+            for (var parentKey in pendingChildren) {
+              if (!nodeMap[parentKey]) {
+                pendingChildren[parentKey].forEach(function(node) { roots.push(node); });
               }
             }
 
@@ -219,9 +198,18 @@
             });
           }
 
+          // Set tree container height: fit content up to a max, so virtual scrolling
+          // kicks in for large datasets while small trees don't leave whitespace.
+          var treeElem = document.getElementById("{{ $id }}-tree");
+          var rowHeightPx = 44;
+          var headerHeightPx = columns ? 44 : 0;
+          var maxHeightPx = 600;
+          var contentHeightPx = bindings.length * rowHeightPx + headerHeightPx;
+          treeElem.style.height = Math.min(contentHeightPx, maxHeightPx) + "px";
+
           // Initialize Wunderbaum
           var tree = new mar10.Wunderbaum({
-            element: document.getElementById("{{ $id }}-tree"),
+            element: treeElem,
             source: treeData,
             columns: columns,
             rowHeightPx: 44, // static row height required by wunderbaum, must be same as --wb-header-height CSS variable in css override file
@@ -230,8 +218,6 @@
               mode: "hide"
             },
             init: function(e) {
-              console.log("Wunderbaum '{{ $id }}' initialized with", bindings.length, "nodes");
-              console.log("resourceIRI:", resourceIRI);
               // Expand to specific ResourceIRI if provided (after tree is fully initialized)
               if (resourceIRI) {
                 console.log("Expanding tree to resource IRI:", resourceIRI);
@@ -248,26 +234,15 @@
               }
             },
             render: function(e) {
-              // because wunderbaum escapes HTML in titles for security reasons,
-              // we have to add the links dynamically here before they are rendered in the DOM
-
-              // Use titleWithHighlight if available (when filtering), otherwise use title
-              let displayTitle = e.node.titleWithHighlight || e.node.title;
-
-              const titleWithLink = "<a href='/resource/" + encodeURIComponent(e.node.key) + "'>" + displayTitle + "</a>";
               const titleSpan = e.nodeElem.querySelector(".wb-title");
               if (titleSpan) {
-                titleSpan.innerHTML = titleWithLink;
+                const displayTitle = e.node.titleWithHighlight || e.node.title;
+                titleSpan.innerHTML = "<a href='/resource/" + encodeURIComponent(e.node.key) + "'>" + displayTitle + "</a>";
               }
-
-              // console.log("Rendering:", e.node.data);  
-
-              // Render column data
               if (e.renderColInfosById) {
                 for (const col of Object.values(e.renderColInfosById)) {
                   if (col.id === "*") continue;
-                  const nodeData = e.node.data.data || e.node.data;
-                  const colData = nodeData[col.id];
+                  const colData = e.node.data[col.id];
                   col.elem.textContent = colData ? (colData.label || colData.value || "") : "";
                 }
               }

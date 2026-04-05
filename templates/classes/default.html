@@ -1,0 +1,44 @@
+<!-- Default class template, used for any class without a specific template -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- instances of this class -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-query id="instances" class="d-none">
+          SELECT DISTINCT ?class ?instance ?description WHERE {
+            BIND (?? AS ?class) .
+            ?instance a ?class .
+            OPTIONAL { 
+              ?instance rdfs:comment|schema:description|dct:description ?description .
+              FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") 
+            }
+          }
+          ORDER BY ?instance
+          LIMIT 10000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.instances
+            "id" "instances"
+            "title" "Instances"
+            "icon" "circle-dot"
+            "iconVar" "class")
+        }}
+      </div>
+    </div>
+  </div>
+
+  {{ template "classHierarchy" . }}
+
+  {{ template "relationships" . }}
+
+  {{ template "ontologyShacl" . }}
+
+</div>
+{{ end }}

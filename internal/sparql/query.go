@@ -314,6 +314,34 @@ func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLang
 	return p.executeQueryWithContext(context.Background(), query, resolveLabels, acceptLanguage, endpoint)
 }
 
+// QueryIsClass checks whether the given IRI is a class by looking for:
+// - rdfs:subClassOf relationships (as subject or object)
+// - incoming rdf:type statements (implicitly defined classes)
+func (p *Preprocessor) QueryIsClass(iri string) (bool, error) {
+	query := fmt.Sprintf(`ASK {
+		{ <%s> rdfs:subClassOf ?x }
+		UNION
+		{ ?x rdfs:subClassOf <%s> }
+		UNION
+		{ ?x a <%s> }
+	}`, iri, iri, iri)
+
+	finalizedQuery := p.finalizeQuery(query, "")
+	response, err := p.querySparqlEndpoint(context.Background(), p.config.EndpointURL, finalizedQuery)
+	if err != nil {
+		return false, fmt.Errorf("failed to query class status for IRI %s: %w", iri, err)
+	}
+
+	var askResp struct {
+		Boolean bool `json:"boolean"`
+	}
+	if err := json.Unmarshal(response, &askResp); err != nil {
+		return false, fmt.Errorf("failed to parse ASK response: %w", err)
+	}
+
+	return askResp.Boolean, nil
+}
+
 // QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI
 // Returns a slice of type URIs
 func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {

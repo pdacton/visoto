@@ -26,7 +26,7 @@ Visoto is still in development and not all features work properly.
 
 1. **Clone the repo and install dependencies:**
    ```sh
-   go get ./...
+   go mod download
    ```
 
 2. **Create your config file:**
@@ -45,6 +45,15 @@ Visoto is still in development and not all features work properly.
    - Health check: `http://localhost:8060/ping`
    - MCP server: `http://localhost:8060/mcp`
 
+**Alternative: run with Docker:**
+```sh
+docker build -t visoto .
+docker run -e GIN_MODE=release -p 8060:8060 \
+  -v ./visoto.config:/app/visoto.config:ro \
+  visoto
+```
+See [docs/deployment.md](docs/deployment.md) for full production Docker + Caddy setup.
+
 ### Configuration
 
 Configuration is loaded from `visoto.config` (TOML format). See [`visoto.config.example`](visoto.config.example) for all options.
@@ -53,7 +62,7 @@ Key settings:
 
 | Setting | Description | Default |
 |---|---|---|
-| `application.port` | HTTP port | `8080` |
+| `application.port` | HTTP port (code default is `8080`; example config uses `8060` — set explicitly) | `8080` |
 | `application.sparqlEndpoint` | Default SPARQL endpoint URL | — |
 | `application.sparqlEndpoints` | Named endpoints for the switcher menu | — |
 | `application.timeout` | SPARQL query timeout (seconds) | `30` |
@@ -62,6 +71,17 @@ Key settings:
 | `rdf.type_priority` | Priority order for template resolution when a resource has multiple types | — |
 | `logging.level` | Log level: `DEBUG`, `INFO`, `WARN`, `ERROR` | `INFO` |
 | `mcp.port` | MCP port (unused when embedded in main server) | `8070` |
+| `GIN_MODE` (env var) | Gin framework mode: `debug`, `release`, `test` | `debug` |
+
+### Documentation
+
+| Document | Audience |
+|---|---|
+| [Getting Started](docs/getting-started.md) | Run locally for the first time |
+| [Architecture Overview](docs/architecture.md) | Understand how the system fits together |
+| [Configuration Reference](docs/configuration.md) | All `visoto.config` fields explained |
+| [Template Authoring Guide](docs/templating.md) | Create custom templates for your RDF types |
+| [Deployment Guide](docs/deployment.md) | Docker + Caddy production setup |
 
 ### Project Structure
 
@@ -72,7 +92,7 @@ internal/
   config/          — TOML config loading
   logger/          — structured slog logger
   mcp/             — MCP server (AI tool integration)
-  monitor/         — SPARQL endpoint health monitoring
+  monitor/         — simple SPARQL endpoint health monitoring
   parser/          — SPARQL preprocessor (template → query → result)
   resource/        — RDF resource resolution and template matching
   search/          — full-text search over SPARQL endpoints

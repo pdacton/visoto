@@ -134,6 +134,7 @@ func staticPageHandler(c *gin.Context) {
 	// Add endpoints and resolved tag to template data
 	data.SparqlEndpoints = cfg.Application.SparqlEndpoints
 	data.EndpointTag = cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c))
+	data.TemplateName = templateName
 
 	log.Debug("rendering static page",
 		slog.String("templateName", templateName),
@@ -186,6 +187,7 @@ func resourcePageHandler(c *gin.Context) {
 	r.Data.SparqlEndpoints = cfg.Application.SparqlEndpoints
 	r.Data.EndpointTag = cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c))
 	r.Data.ShortIRI = r.ShortIRI
+	r.Data.TemplateName = r.TemplateName
 
 	// native gin template rendering
 	c.HTML(http.StatusOK, r.TemplateName, r.Data)

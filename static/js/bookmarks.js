@@ -63,10 +63,14 @@
   function lastSegment(iri) {
     iri = iri.replace(/\/$/, '');
     var hash = iri.lastIndexOf('#');
-    if (hash !== -1 && hash < iri.length - 1) return iri.slice(hash + 1);
-    var slash = iri.lastIndexOf('/');
-    if (slash !== -1 && slash < iri.length - 1) return iri.slice(slash + 1);
-    return iri;
+    var name = (hash !== -1 && hash < iri.length - 1) ? iri.slice(hash + 1) : null;
+    if (!name) {
+      var slash = iri.lastIndexOf('/');
+      name = (slash !== -1 && slash < iri.length - 1) ? iri.slice(slash + 1) : iri;
+    }
+    // Strip CURIE prefix (e.g. "rdf:Property" → "Property")
+    if (name.includes(':')) name = name.split(':').pop();
+    return name;
   }
 
   function renderBookmarks() {

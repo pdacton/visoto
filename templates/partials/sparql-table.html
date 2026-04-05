@@ -222,7 +222,10 @@
 
         function iriToName(uri) {
           try { uri = decodeURIComponent(uri); } catch(e) {}
-          return uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+          var name = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+          // Handle CURIEs like "rdf:Property" — strip the prefix
+          if (name.includes(':')) name = name.split(':').pop();
+          return name;
         }
 
         // Icon formatter: replaces cell text with an icon image when one is available

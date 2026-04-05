@@ -1,0 +1,46 @@
+<!-- euthority:MappedCode Class Template -->
+
+{{ define "pageTitle" }}Mapped Code{{ end }}
+{{ define "metaTitle" }}Mapped Code{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+
+{{ define "pageContent" }}
+<div>
+
+  <!-- instances of euthority:MappedCode -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-query id="instances" class="d-none">
+          SELECT ?type ?instance ?legacyCode ?source WHERE {
+            BIND (?? AS ?class)
+            ?instance (rdf:type|owl:type) ?class .
+            OPTIONAL { ?instance a ?type . }
+            OPTIONAL { ?instance euthority:legacy-code ?legacyCode . }
+            OPTIONAL { ?instance dc:source ?source . }
+          } LIMIT 50000
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.instances
+            "id" "instances"
+            "title" "Mapped Codes"
+            "icon" "code"
+            "iconVar" "type")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}
