@@ -4,6 +4,8 @@ Visoto is a Go web application for browsing and visualizing RDF linked data reso
 
 Visoto is still in development and not all features work properly.
 
+![Visoto home page showing the LINDAS data service browser](docs/screenshot1.png)
+
 ### Features
 
 - **Resource browser** — fetch any RDF resource by IRI; templates are resolved automatically from the resource's `rdf:type`
@@ -121,3 +123,9 @@ static/            — CSS, JS, images
 | `POST` | `/api/chat` | Gemini AI chat |
 | `ANY` | `/mcp` | MCP server endpoint |
 | `GET` | `/ping` | Health check |
+
+### Screenshots
+
+![Catalog class page in dark mode](docs/screenshot2.png)
+
+![Graph Explorer — version flow for Municipality](docs/screenshot3.png)
