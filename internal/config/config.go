@@ -17,12 +17,20 @@ import (
 // TODO: add validation funtions for config fields (e.g. port range, valid URIs, etc.)
 // TODO: add constructor function for Config with default values
 
+// OntologyEntry represents a well-known ontology that can be loaded via the upload modal.
+type OntologyEntry struct {
+	Name  string `toml:"name"  json:"name"`  // Short display name (e.g. "SKOS")
+	URL   string `toml:"url"   json:"url"`   // Canonical ontology URL to fetch
+	Graph string `toml:"graph" json:"graph"` // Target named graph URI (e.g. "urn:ontology:w3/skos")
+}
+
 // Config represents the complete application configuration
 type Config struct {
 	Application ApplicationConfig `toml:"application"`
 	RDF         RDFConfig         `toml:"rdf"`
 	Logging     LoggingConfig     `toml:"logging"`
 	MCP         MCPConfig         `toml:"mcp"`
+	Ontologies  []OntologyEntry   `toml:"ontologies"`
 }
 
 // MCPConfig holds MCP server settings
@@ -41,11 +49,15 @@ type ApplicationConfig struct {
 
 // SparqlEndpoint represents a named SPARQL endpoint configuration
 type SparqlEndpoint struct {
-	Name    string `toml:"name"`    // Display name (e.g., "LINDAS", "Wikidata")
-	URL     string `toml:"url"`     // Full endpoint URL
-	Default bool   `toml:"default"` // Optional: mark as default
-	Monitor bool   `toml:"monitor"` // Enable health monitoring for this endpoint
-	Tag     string `toml:"tag"`     // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
+	Name     string `toml:"name"`     // Display name (e.g., "LINDAS", "Wikidata")
+	URL      string `toml:"url"`      // Full endpoint URL
+	Default  bool   `toml:"default"`  // Optional: mark as default
+	Monitor  bool   `toml:"monitor"`  // Enable health monitoring for this endpoint
+	Tag      string `toml:"tag"`      // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
+	Username       string `toml:"username"`        // Optional basic auth username for write operations
+	Password       string `toml:"password"`        // Optional basic auth password for write operations
+	AccessToken    string `toml:"access_token"`    // Optional Bearer token for write operations (takes precedence over username/password)
+	SearchProvider string `toml:"search_provider"` // FTS provider: "stardog" (default), "graphdb", "fuseki"
 }
 
 // RDFConfig holds RDF-related settings
@@ -137,6 +149,24 @@ func (a *ApplicationConfig) GetNamedEndpointsMap() map[string]string {
 		m[ep.Name] = ep.URL
 	}
 	return m
+}
+
+// GetEndpointByName returns the SparqlEndpoint with the given name, or the default endpoint, or nil.
+func (a *ApplicationConfig) GetEndpointByName(name string) *SparqlEndpoint {
+	for i := range a.SparqlEndpoints {
+		if a.SparqlEndpoints[i].Name == name {
+			return &a.SparqlEndpoints[i]
+		}
+	}
+	for i := range a.SparqlEndpoints {
+		if a.SparqlEndpoints[i].Default {
+			return &a.SparqlEndpoints[i]
+		}
+	}
+	if len(a.SparqlEndpoints) > 0 {
+		return &a.SparqlEndpoints[0]
+	}
+	return nil
 }
 
 // ParsePrefixStrings parses an array of prefix strings into Prefix structs

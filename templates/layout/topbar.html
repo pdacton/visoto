@@ -68,6 +68,12 @@
             <span>Endpoint Monitoring</span>
             <span id="monitoring-toggle-icon" class="ms-2"></span>
           </a>
+          <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#uploadDataModal">
+            <i data-lucide="upload" style="width: 1rem; height: 1rem;" class="me-2"></i>Upload data
+          </a>
+          <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#namedGraphsModal">
+            <i data-lucide="database" style="width: 1rem; height: 1rem;" class="me-2"></i>Named graphs
+          </a>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" href="/monitoring">
             <i data-lucide="chart-line" style="width: 1rem; height: 1rem;" class="me-2"></i>View response times
@@ -80,3 +86,139 @@
 
 </header>
 <!-- horizontal Topbar end -->
+
+<!-- Upload Data Modal -->
+<div class="modal modal-blur fade" id="uploadDataModal" tabindex="-1" role="dialog" aria-labelledby="uploadDataModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="uploadDataModalLabel">
+          <i data-lucide="upload-cloud" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>Upload RDF data
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Source tabs -->
+        <ul class="nav nav-tabs mb-3" id="uploadTabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="tab-file-btn" data-bs-toggle="tab" data-bs-target="#tab-file" type="button" role="tab" aria-controls="tab-file" aria-selected="true">
+              <i data-lucide="file" style="width: 1rem; height: 1rem;" class="me-1"></i>File
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-url-btn" data-bs-toggle="tab" data-bs-target="#tab-url" type="button" role="tab" aria-controls="tab-url" aria-selected="false">
+              <i data-lucide="link" style="width: 1rem; height: 1rem;" class="me-1"></i>URL
+            </button>
+          </li>
+          <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-ontologies-btn" data-bs-toggle="tab" data-bs-target="#tab-ontologies" type="button" role="tab" aria-controls="tab-ontologies" aria-selected="false">
+              <i data-lucide="library" style="width: 1rem; height: 1rem;" class="me-1"></i>Ontologies
+            </button>
+          </li>
+        </ul>
+
+        <div class="tab-content" id="uploadTabContent">
+          <!-- File tab -->
+          <div class="tab-pane fade show active" id="tab-file" role="tabpanel" aria-labelledby="tab-file-btn">
+            <div class="dropzone" id="upload-dropzone">
+              <div class="dropzone-body">
+                <i data-lucide="upload-cloud" style="width: 2.5rem; height: 2.5rem;" class="mb-2 text-muted"></i>
+                <p class="mb-1">Drag &amp; drop a file here, or <label for="upload-file-input" class="text-primary" style="cursor:pointer;">browse</label></p>
+                <p class="text-muted small mb-0">Supported formats: .ttl, .nq, .nt, .rdf, .jsonld, .trig</p>
+                <input type="file" id="upload-file-input" accept=".ttl,.nq,.nt,.rdf,.owl,.xml,.jsonld,.trig" class="d-none">
+              </div>
+              <div id="upload-file-name" class="mt-2 small text-muted d-none"></div>
+            </div>
+          </div>
+
+          <!-- URL tab -->
+          <div class="tab-pane fade" id="tab-url" role="tabpanel" aria-labelledby="tab-url-btn">
+            <div class="mb-2">
+              <label for="upload-url-input" class="form-label">RDF resource URL</label>
+              <input type="url" class="form-control" id="upload-url-input" placeholder="https://www.w3.org/TR/rdf11-schema/">
+              <div class="form-text">The server will fetch this URL and upload its contents.</div>
+            </div>
+          </div>
+
+          <!-- Ontologies tab -->
+          <div class="tab-pane fade" id="tab-ontologies" role="tabpanel" aria-labelledby="tab-ontologies-btn">
+            <div id="ontologies-list-container">
+              <div class="text-muted small">Loading ontologies…</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Named graph URI (hidden on Ontologies tab) -->
+        <div class="mb-3 mt-3" id="upload-graph-uri-section">
+          <label for="upload-graph-uri" class="form-label">Named graph URI</label>
+          <input type="text" class="form-control" id="upload-graph-uri" list="named-graphs-list" placeholder="Loading existing graphs…" autocomplete="off">
+          <datalist id="named-graphs-list"></datalist>
+          <div class="form-text">Choose an existing graph or enter a new URI. A proposal is generated from the source name.</div>
+        </div>
+
+        <!-- Result area -->
+        <div id="upload-result" class="d-none"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" id="upload-submit-btn">
+          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>Upload
+        </button>
+        <button type="button" class="btn btn-primary d-none" id="upload-ontologies-btn">
+          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>Load Selected
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Upload Data Modal end -->
+
+<!-- Named Graphs Modal -->
+<div class="modal modal-blur fade" id="namedGraphsModal" tabindex="-1" role="dialog" aria-labelledby="namedGraphsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="namedGraphsModalLabel">
+          <i data-lucide="database" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>Named graphs
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-0">
+        <!-- Loading state -->
+        <div id="ng-loading" class="text-center py-4">
+          <div class="spinner-border text-muted" role="status"><span class="visually-hidden">Loading...</span></div>
+        </div>
+        <!-- Error state -->
+        <div id="ng-error" class="alert alert-danger m-3 d-none"></div>
+        <!-- Table -->
+        <div id="ng-table-wrapper" class="d-none" style="max-height: 60vh; overflow-y: auto;">
+          <table class="table table-vcenter table-hover card-table mb-0">
+            <thead>
+              <tr>
+                <th style="width: 2.5rem;">
+                  <input type="checkbox" class="form-check-input" id="ng-select-all" aria-label="Select all">
+                </th>
+                <th>Graph IRI</th>
+                <th>Label</th>
+              </tr>
+            </thead>
+            <tbody id="ng-tbody"></tbody>
+          </table>
+          <div id="ng-empty" class="text-center text-muted py-4 d-none">No named graphs found.</div>
+        </div>
+        <!-- Delete result -->
+        <div id="ng-delete-result" class="d-none m-3"></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger me-auto" id="ng-delete-btn" disabled>
+          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete selected
+        </button>
+        <button type="button" class="btn btn-outline-danger me-2" id="ng-delete-default-btn">
+          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete default graph
+        </button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Done</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Named Graphs Modal end -->

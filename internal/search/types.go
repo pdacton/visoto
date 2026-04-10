@@ -12,9 +12,10 @@ type SearchParams struct {
 
 // SearchResult wraps SPARQL query results for search
 type SearchResult struct {
-	Query    string             // Original search query
-	Results  sparql.QueryResult // SPARQL results (Vars, Bindings, Error)
-	Provider string             // Provider used (stardog, graphdb, qlever)
+	Query        string             // Original search query
+	Results      sparql.QueryResult // SPARQL results (Vars, Bindings, Error)
+	Provider     string             // Provider used (stardog, graphdb, fuseki, sparql-query)
+	FallbackUsed bool               // true when sparql-query fallback was used instead of native FTS
 }
 
 // Filter represents a class or property filter option

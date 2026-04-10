@@ -2,13 +2,15 @@
 
 Visoto is a Go web application for browsing and visualizing RDF linked data resources via SPARQL endpoints. It renders resource pages using type-specific templates, supports full-text search, and exposes an MCP server for AI assistant integration.
 
+You can find a demo at http://visoto.hutzli.org.
+
 Visoto is still in development and not all features work properly.
 
 ![Visoto home page showing the LINDAS data service browser](docs/screenshot1.png)
 
 ### Features
 
-- **Resource browser** — fetch any RDF resource by IRI; templates are resolved automatically from the resource's `rdf:type`
+- **RDF Resource browser** — fetch any RDF resource by IRI; templates are resolved automatically from the resource's `rdf:type`
 - **Full-text search** — search across linked data resources with class and property filters
 - **Multi-endpoint support** — switch between named SPARQL endpoints (e.g. LINDAS prod/int/test) via a sidebar menu
 - **Graph Explorer** — interactive RDF graph visualization powered by Graph Explorer (Ontodia fork)
@@ -55,6 +57,12 @@ docker run -e GIN_MODE=release -p 8060:8060 \
   visoto
 ```
 See [docs/deployment.md](docs/deployment.md) for full production Docker + Caddy setup.
+
+**Optional: deploy with QLever private triplestore:**
+```sh
+./deploy.sh <server> [user] --with-qlever
+```
+This starts QLever in an isolated Docker network reachable only by Visoto. See [qlever/](qlever/) and [scripts/qlever-start-dev.sh](scripts/qlever-start-dev.sh) for local dev setup and data loading instructions.
 
 ### Configuration
 

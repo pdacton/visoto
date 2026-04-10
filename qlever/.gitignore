@@ -1,0 +1,4 @@
+# QLever binary index and source RDF files — not committed
+data/*
+# Keep the Qleverfile inside data/
+!data/Qleverfile

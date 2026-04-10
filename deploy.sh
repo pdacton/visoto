@@ -3,8 +3,9 @@
 # Visoto Deployment Script
 # Deploys Visoto to a remote server via SSH
 #
-# Usage: ./deploy.sh <server> [user]
+# Usage: ./deploy.sh <server> [user] [--with-qlever]
 # Example: ./deploy.sh 192.168.1.100 hePeter
+# Example with QLever: ./deploy.sh 192.168.1.100 hePeter --with-qlever
 #
 
 set -e
@@ -23,11 +24,19 @@ NC='\033[0m' # No Color
 # Parse arguments
 SERVER="${1}"
 USER="${2:-$DEFAULT_USER}"
+WITH_QLEVER=false
+
+for arg in "$@"; do
+    if [ "$arg" = "--with-qlever" ]; then
+        WITH_QLEVER=true
+    fi
+done
 
 if [ -z "$SERVER" ]; then
     echo -e "${RED}Error: Server address required${NC}"
-    echo "Usage: ./deploy.sh <server> [user]"
+    echo "Usage: ./deploy.sh <server> [user] [--with-qlever]"
     echo "Example: ./deploy.sh 192.168.1.100 hePeter"
+    echo "Example with QLever: ./deploy.sh 192.168.1.100 hePeter --with-qlever"
     exit 1
 fi
 
@@ -39,6 +48,7 @@ echo "Server: ${SERVER}"
 echo "User: ${USER}"
 echo "SSH Port: ${SSH_PORT}"
 echo "Remote directory: ${REMOTE_DIR}"
+echo "QLever: ${WITH_QLEVER}"
 echo ""
 
 # Step 1: Check SSH connectivity
@@ -63,6 +73,9 @@ echo "Docker OK"
 # Step 3: Create remote directory
 echo -e "${YELLOW}[3/6] Creating remote directory...${NC}"
 ssh ${SSH_OPTS} "${SSH_TARGET}" "sudo mkdir -p ${REMOTE_DIR} && sudo chown ${USER}:${USER} ${REMOTE_DIR}"
+if [ "$WITH_QLEVER" = true ]; then
+    ssh ${SSH_OPTS} "${SSH_TARGET}" "mkdir -p ${REMOTE_DIR}/qlever/data"
+fi
 echo "Directory created: ${REMOTE_DIR}"
 
 # Step 4: Copy files to server
@@ -77,6 +90,9 @@ scp ${SCP_OPTS} "${SCRIPT_DIR}/Caddyfile" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/visoto.config" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/go.mod" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/go.sum" "${SSH_TARGET}:${REMOTE_DIR}/"
+if [ "$WITH_QLEVER" = true ]; then
+    scp ${SCP_OPTS} -r "${SCRIPT_DIR}/qlever/Qleverfile" "${SSH_TARGET}:${REMOTE_DIR}/qlever/"
+fi
 
 # Remove source directories first to avoid stale files from previous deploys
 ssh ${SSH_OPTS} "${SSH_TARGET}" "rm -rf ${REMOTE_DIR}/cmd ${REMOTE_DIR}/internal ${REMOTE_DIR}/templates ${REMOTE_DIR}/static"
@@ -91,7 +107,11 @@ echo "Files copied"
 
 # Step 5: Build and start container
 echo -e "${YELLOW}[5/6] Building and starting container...${NC}"
-ssh ${SSH_OPTS} "${SSH_TARGET}" "cd ${REMOTE_DIR} && docker compose up -d --build"
+if [ "$WITH_QLEVER" = true ]; then
+    ssh ${SSH_OPTS} "${SSH_TARGET}" "cd ${REMOTE_DIR} && docker compose --profile qlever up -d --build"
+else
+    ssh ${SSH_OPTS} "${SSH_TARGET}" "cd ${REMOTE_DIR} && docker compose up -d --build"
+fi
 
 # Step 6: Verify deployment
 echo -e "${YELLOW}[6/6] Verifying deployment...${NC}"
@@ -105,10 +125,15 @@ if ssh ${SSH_OPTS} "${SSH_TARGET}" "curl -s http://localhost:8060/ping" | grep -
     echo ""
     echo "Useful commands on the server:"
     echo "  cd ${REMOTE_DIR}"
-    echo "  docker compose logs -f         # View all logs"
-    echo "  docker compose logs caddy -f   # View Caddy logs"
-    echo "  docker compose restart         # Restart services"
-    echo "  docker compose down            # Stop services"
+    echo "  docker compose logs -f                          # View all logs"
+    echo "  docker compose logs caddy -f                    # View Caddy logs"
+    echo "  docker compose restart                          # Restart services"
+    echo "  docker compose down                             # Stop services"
+    if [ "$WITH_QLEVER" = true ]; then
+        echo "  docker compose --profile qlever logs qlever -f # View QLever logs"
+        echo "  docker compose --profile qlever down            # Stop all incl. QLever"
+        echo "  docker compose --profile qlever down -v         # Stop and delete QLever data"
+    fi
 else
     echo -e "${RED}Warning: Health check failed${NC}"
     echo "Container may still be starting. Check logs with:"

@@ -22,6 +22,10 @@ url = "https://ld.admin.ch/query/"
 default = true
 monitor = true
 tag = "lindas"
+# access_token = "YOUR_TOKEN_HERE"  # optional: Bearer token for write operations (Upload data feature)
+# username = ""                      # alternative: basic auth (used only if access_token is absent)
+# password = ""
+# search_provider = "stardog"        # FTS backend: "stardog" (default), "graphdb", "fuseki", "sparql-query"
 
 [[application.sparqlEndpoints]]
 name = "LINDAS int"
@@ -46,6 +50,49 @@ name = "LINDASnext int"
 url = "https://lindas.int.cz-aws.net/query/"
 monitor = false
 tag = "lindas"
+
+# GraphDB endpoint with Simple FTS (no Lucene connector required)
+# [[application.sparqlEndpoints]]
+# name = "GraphDB (local)"
+# url = "http://localhost:7200/repositories/myrepo"
+# default = false
+# monitor = false
+# tag = "graphdb"
+# search_provider = "graphdb"
+
+# Generic SPARQL 1.1 endpoint — no FTS plugin, uses FILTER(CONTAINS(...)) for text search
+# [[application.sparqlEndpoints]]
+# name = "Generic SPARQL"
+# url = "http://localhost:3030/dataset/sparql"
+# default = false
+# monitor = false
+# tag = "generic"
+# search_provider = "sparql-query"
+
+# Apache Jena Fuseki endpoint with text:query FTS (requires jena-text module + configured text index)
+# [[application.sparqlEndpoints]]
+# name = "Fuseki (local)"
+# url = "http://localhost:3030/dataset/sparql"
+# default = false
+# monitor = false
+# tag = "fuseki"
+# search_provider = "fuseki"
+
+# QLever private triplestore (optional — only add if you run QLever locally)
+# See qlever/ and scripts/qlever-start-dev.sh for setup instructions.
+#
+# Dev (go run on host, QLever as standalone Docker container):
+#   url = "http://localhost:7001"
+#
+# Prod (Docker Compose with --profile qlever):
+#   url = "http://qlever:7001"   ← Docker internal DNS on qlever-private network
+#
+# [[application.sparqlEndpoints]]
+# name = "QLever (local)"
+# url = "http://qlever:7001"
+# default = false
+# monitor = true
+# tag = "qlever"
 
 
 # RDF settings
@@ -84,6 +131,38 @@ type_priority = [
   "http://schema.org/Organization",
   "http://schema.org/DefinedTerm"
 ]
+
+# Well-known ontologies available for one-click loading in the Upload modal.
+# Each entry requires: name (display label), url (fetch source), graph (target named graph URI).
+[[ontologies]]
+name  = "RDF"
+url   = "https://www.w3.org/1999/02/22-rdf-syntax-ns#"
+graph = "urn:ontology:w3/rdf-syntax-ns"
+
+[[ontologies]]
+name  = "RDFS"
+url   = "https://www.w3.org/2000/01/rdf-schema"
+graph = "urn:ontology:w3/rdf-schema"
+
+[[ontologies]]
+name  = "OWL"
+url   = "https://www.w3.org/2002/07/owl#"
+graph = "urn:ontology:w3/owl"
+
+[[ontologies]]
+name  = "SKOS"
+url   = "https://www.w3.org/2009/08/skos-reference/skos.rdf"
+graph = "urn:ontology:w3/skos"
+
+[[ontologies]]
+name  = "DC"
+url   = "http://purl.org/dc/elements/1.1/"
+graph = "urn:ontology:dc/elements"
+
+[[ontologies]]
+name  = "DCT"
+url   = "http://purl.org/dc/terms/"
+graph = "urn:ontology:dc/terms"
 
 # MCP server settings
 # Note: port is unused when MCP is embedded in the main server (default).

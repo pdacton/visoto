@@ -25,16 +25,16 @@ func (s *StardogProvider) BuildQuery(params SearchParams) (string, error) {
 	queryParts = append(queryParts, "PREFIX fts: <tag:stardog:api:search:>")
 	queryParts = append(queryParts, "")
 	// Start SELECT clause, we're excluding highlight from the results, maybe add later for highlighting
-	queryParts = append(queryParts, "SELECT ?class ?subject ?property ?matchedText ?score WHERE {")
+	queryParts = append(queryParts, "SELECT ?type ?subject ?property ?matchedText ?score WHERE {")
 
 	// Bind search text
 	queryParts = append(queryParts, fmt.Sprintf(`  BIND ("%s" AS ?textSearch)`, escapeString(params.Query)))
 
 	// Bind class filter (or unbound if not specified)
 	if params.Class != "" {
-		queryParts = append(queryParts, fmt.Sprintf(`  BIND (<%s> AS ?class)`, params.Class))
+		queryParts = append(queryParts, fmt.Sprintf(`  BIND (<%s> AS ?type)`, params.Class))
 	} else {
-		queryParts = append(queryParts, `  BIND (?undef AS ?class)`)
+		queryParts = append(queryParts, `  BIND (?undef AS ?type)`)
 	}
 
 	// Bind property filter (or unbound if not specified)
@@ -48,7 +48,7 @@ func (s *StardogProvider) BuildQuery(params SearchParams) (string, error) {
 	queryParts = append(queryParts, "")
 
 	// Triple pattern for subject, class, and property
-	queryParts = append(queryParts, `  ?subject a ?class ;`)
+	queryParts = append(queryParts, `  ?subject a ?type ;`)
 	queryParts = append(queryParts, `     ?property ?matchedText .`)
 	queryParts = append(queryParts, "")
 

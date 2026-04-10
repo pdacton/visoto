@@ -24,6 +24,7 @@ import (
 	"hutzli.org/visoto/internal/search"
 	"hutzli.org/visoto/internal/sparql"
 	"hutzli.org/visoto/internal/templates"
+	"hutzli.org/visoto/internal/upload"
 )
 
 // ---- Package-level state ----
@@ -68,7 +69,7 @@ func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 	})
 }
 
-// parseDuration maps a query param like "1h","24h","7d","30d" to a time.Duration.
+// parseDuration maps a query param like "1h","24h","7d","30d","3M" to a time.Duration.
 func parseDuration(s string) time.Duration {
 	switch s {
 	case "1h":
@@ -79,6 +80,8 @@ func parseDuration(s string) time.Duration {
 		return 7 * 24 * time.Hour
 	case "30d":
 		return 30 * 24 * time.Hour
+	case "3M":
+		return 90 * 24 * time.Hour
 	default:
 		return 24 * time.Hour
 	}
@@ -197,8 +200,12 @@ func searchHandler(c *gin.Context) {
 	// Create preprocessor with user-selected endpoint
 	preprocessor := prepareQueryInputs(c)
 
-	// Create searcher instance for this request
-	searcher := search.New(preprocessor.SparqlPreprocessor(), "stardog")
+	// Resolve FTS provider from the active endpoint config; fall back to "stardog"
+	providerName := "stardog"
+	if ep := cfg.Application.GetEndpointByName(resolveSelectedEndpointName(c)); ep != nil && ep.SearchProvider != "" {
+		providerName = ep.SearchProvider
+	}
+	searcher := search.New(preprocessor.SparqlPreprocessor(), providerName)
 
 	// Parse search parameters
 	params := search.ParseParams(c)
@@ -208,6 +215,7 @@ func searchHandler(c *gin.Context) {
 		c.HTML(http.StatusOK, "pages/search.html", gin.H{
 			"ClassFilters":    search.GetClassFilters(),
 			"PropertyFilters": search.GetPropertyFilters(),
+			"SelectedLimit":   search.DefaultLimit,
 			"Error":           "",
 			"SparqlEndpoints": cfg.Application.SparqlEndpoints,
 			"EndpointTag":     cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c)),
@@ -226,6 +234,7 @@ func searchHandler(c *gin.Context) {
 		"PropertyFilters":  search.GetPropertyFilters(),
 		"SelectedClass":    params.Class,
 		"SelectedProperty": params.Property,
+		"SelectedLimit":    params.Limit,
 		"SearchResults":    result.Results,
 		"Provider":         result.Provider,
 		"SparqlEndpoints":  cfg.Application.SparqlEndpoints,
@@ -419,6 +428,10 @@ func main() {
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.GET("/search", searchHandler)
 	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey))
+	router.POST("/api/upload", upload.UploadHandler(&cfg.Application))
+	router.GET("/api/named-graphs", upload.NamedGraphsHandler(&cfg.Application))
+	router.DELETE("/api/named-graphs", upload.DeleteNamedGraphHandler(&cfg.Application))
+	router.GET("/api/ontologies", upload.OntologiesHandler(&cfg.Application, cfg.Ontologies))
 	router.GET("/monitoring", monitoringPageHandler)
 	router.GET("/api/monitoring/status", monitoringStatusHandler)
 	router.POST("/api/monitoring/toggle", monitoringToggleHandler)

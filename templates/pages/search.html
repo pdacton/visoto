@@ -1,18 +1,19 @@
 
-<!-- we override the whole header here  -->
 {{ define "header" }}
-  <!-- Page Header -->
-  <div class="row mb-4">
-    <div class="col">
-      <h1 class="page-title">Search</h1>
-      {{ if .Error }}
-        <div class="alert alert-warning">
-          <i class="bi bi-exclamation-triangle"></i>
-          {{ .Error }}
-        </div>
-      {{ end }}
-    </div>
+<div class="mt-3 d-flex flex-column flex-sm-row align-items-start gap-3">
+  <div class="flex-shrink-0">
+    <img src="/static/img/search.svg" alt="Search" width="48" height="48">
   </div>
+  <div>
+    <h1 class="page-title">Search</h1>
+    {{ if .Error }}
+      <div class="alert alert-warning mt-2">
+        <i class="bi bi-exclamation-triangle"></i>
+        {{ .Error }}
+      </div>
+    {{ end }}
+  </div>
+</div>
 {{ end }}
 
 {{ define "pageContent" }}
@@ -30,7 +31,7 @@
 
             <!-- Search Query Input -->
             <div class="mb-3">
-              <label for="search-query" class="form-label">Search Query (Lucene syntax)</label>
+              <label for="search-query" class="form-label">Search Query</label>
               <input
                 type="text"
                 name="q"
@@ -40,14 +41,14 @@
                 value="{{ .Query }}"
                 required>
               <div class="form-text">
-                Examples: <code>ABB</code>, <code>company AND zurich</code>, <code>name:Smith</code>
+                Examples: <code>SBB</code>, <code>Bern</code>, <code>Strompreis</code>
               </div>
             </div>
 
             <div class="row mb-3">
 
               <!-- Class Filter -->
-              <div class="col-md-6 mb-3">
+              <div class="col-md-4 mb-3">
                 <label for="class-filter" class="form-label">RDF Class</label>
                 <select name="class" id="class-filter" class="form-select">
                   {{ range .ClassFilters }}
@@ -61,7 +62,7 @@
               </div>
 
               <!-- Property Filter -->
-              <div class="col-md-6 mb-3">
+              <div class="col-md-4 mb-3">
                 <label for="property-filter" class="form-label">RDF Property</label>
                 <select name="property" id="property-filter" class="form-select">
                   {{ range .PropertyFilters }}
@@ -72,6 +73,20 @@
                   {{ end }}
                 </select>
                 <div class="form-text">Search only within specific property</div>
+              </div>
+
+              <!-- Result Limit -->
+              <div class="col-md-4 mb-3">
+                <label for="limit-input" class="form-label">Max Results</label>
+                <input
+                  type="number"
+                  name="limit"
+                  id="limit-input"
+                  class="form-control"
+                  min="1"
+                  max="500"
+                  value="{{ .SelectedLimit }}">
+                <div class="form-text">Maximum number of results to return</div>
               </div>
 
             </div>
@@ -94,7 +109,8 @@
       {{ template "sparqlTable" (dict
         "result" .SearchResults
         "id" "search-results"
-        "title" (printf "Search Results for \"%s\"" .Query)) }}
+        "title" (printf "Search Results for \"%s\"" .Query)
+        "iconVar" "type") }}
 
       <!-- Provider Info -->
       {{ if .Provider }}

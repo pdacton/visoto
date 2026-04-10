@@ -23,6 +23,7 @@ services:
       start_period: 5s
     networks:
       - visoto-network
+      - qlever-private
 
   caddy:
     build:
@@ -46,11 +47,42 @@ services:
     networks:
       - visoto-network
 
+  # QLever private triplestore — opt-in via: docker compose --profile qlever up -d
+  # Not started by default. Caddy and the internet cannot reach QLever.
+  # To remove: docker compose --profile qlever down [-v to also delete data]
+  qlever:
+    image: docker.io/adfreiburg/qlever
+    profiles: ["qlever"]
+    container_name: qlever
+    entrypoint: /qlever/qlever-server
+    command:
+      - -i
+      - visoto
+      - -p
+      - "7001"
+      - -m
+      - 1.5G
+      - -c
+      - 1G
+      - -e
+      - 256M
+      - -s
+      - 60s
+    volumes:
+      - qlever_data:/data
+    working_dir: /data
+    networks:
+      - qlever-private
+    restart: unless-stopped
+
 networks:
   visoto-network:
+    driver: bridge
+  qlever-private:
     driver: bridge
 
 volumes:
   caddy_data:
   caddy_config:
   visoto_data:
+  qlever_data:

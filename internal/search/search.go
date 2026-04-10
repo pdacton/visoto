@@ -36,14 +36,24 @@ func New(preprocessor *sparql.Preprocessor, providerName string) *Searcher {
 	}
 }
 
+// DefaultLimit is the default number of search results returned when no limit is specified.
+const DefaultLimit = 50
+
 // ParseParams extracts and validates search parameters from request
 func ParseParams(c *gin.Context) SearchParams {
-	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "50"))
+	limit, _ := strconv.Atoi(c.DefaultQuery("limit", strconv.Itoa(DefaultLimit)))
+
+	// Default to rdfs:label when property key is absent (e.g. topbar search ?q=...).
+	// Distinguish from the search page explicitly submitting property="" (Any Property).
+	property := c.Query("property")
+	if property == "" && !c.Request.URL.Query().Has("property") {
+		property = "http://www.w3.org/2000/01/rdf-schema#label"
+	}
 
 	return SearchParams{
 		Query:    c.Query("q"),
 		Class:    c.Query("class"),
-		Property: c.Query("property"),
+		Property: property,
 		Limit:    limit,
 	}
 }
@@ -89,9 +99,27 @@ func (s *Searcher) Execute(params SearchParams, acceptLanguage string) SearchRes
 	}
 
 	result.Results = queryResult
+
+	// Fallback: if native FTS returned no results, retry with SPARQL FILTER(CONTAINS(...)).
+	// SparqlQueryProvider is instantiated directly (not from registry) to avoid recursion
+	// when search_provider = "sparql-query" is already set — that path is a no-op here.
+	if len(queryResult.Bindings) == 0 {
+		fallbackProvider := &SparqlQueryProvider{}
+		if fallbackQuery, err := fallbackProvider.BuildQuery(params); err == nil {
+			if fallbackResult, err := s.preprocessor.ExecuteQuery(fallbackQuery, true, acceptLanguage, ""); err == nil && len(fallbackResult.Bindings) > 0 {
+				result.Results = fallbackResult
+				result.FallbackUsed = true
+				log.Debug("FTS returned no results, used sparql-query fallback",
+					slog.String("query", params.Query),
+					slog.Int("fallback_result_count", len(fallbackResult.Bindings)))
+			}
+		}
+	}
+
 	log.Debug("search completed",
 		slog.String("query", params.Query),
-		slog.Int("result_count", len(queryResult.Bindings)))
+		slog.Int("result_count", len(result.Results.Bindings)),
+		slog.Bool("fallback_used", result.FallbackUsed))
 
 	return result
 }
