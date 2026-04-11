@@ -6,6 +6,7 @@
 package main
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -427,7 +428,8 @@ func main() {
 	})
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.GET("/search", searchHandler)
-	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey))
+	mcpURL := fmt.Sprintf("http://localhost:%d/mcp", cfg.Application.Port)
+	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey, mcpURL))
 	router.POST("/api/upload", upload.UploadHandler(&cfg.Application))
 	router.GET("/api/named-graphs", upload.NamedGraphsHandler(&cfg.Application))
 	router.DELETE("/api/named-graphs", upload.DeleteNamedGraphHandler(&cfg.Application))

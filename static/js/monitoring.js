@@ -10,18 +10,14 @@
 
   let chart = null;
   let currentRange = '24h';
+  let toggling = false;
 
-  // ---- update the enabled badge ----
+  // ---- update the switch state ----
   function updateBadge(enabled) {
-    const badge = document.getElementById('monitor-badge');
-    if (!badge) return;
-    if (enabled) {
-      badge.textContent = 'monitoring enabled';
-      badge.className = 'badge bg-success';
-    } else {
-      badge.textContent = 'monitoring disabled';
-      badge.className = 'badge bg-secondary';
-    }
+    const toggle = document.getElementById('monitoring-toggle');
+    const label = document.getElementById('monitor-badge');
+    if (toggle) toggle.checked = enabled;
+    if (label) label.textContent = enabled ? 'Monitoring enabled' : 'Monitoring disabled';
   }
 
   // ---- render status table ----
@@ -58,7 +54,7 @@
     fetch('/api/monitoring/status')
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        updateBadge(data.enabled);
+        if (!toggling) updateBadge(data.enabled);
         renderStatusTable(data.endpoints);
       })
       .catch(function (err) { console.error('monitoring status error', err); });
@@ -181,6 +177,18 @@
     loadChart(currentRange);
     // Refresh status table every 30 seconds
     setInterval(loadStatus, 30000);
+
+    const toggleInput = document.getElementById('monitoring-toggle');
+    if (toggleInput) {
+      toggleInput.addEventListener('change', function () {
+        toggling = true;
+        fetch('/api/monitoring/toggle', { method: 'POST' })
+          .then(function (r) { return r.json(); })
+          .then(function (d) { updateBadge(d.enabled); })
+          .catch(function () { updateBadge(!toggleInput.checked); }) // revert on error
+          .finally(function () { toggling = false; });
+      });
+    }
   });
 
   // ---- escape HTML helper ----

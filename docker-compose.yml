@@ -50,6 +50,34 @@ services:
   # QLever private triplestore — opt-in via: docker compose --profile qlever up -d
   # Not started by default. Caddy and the internet cannot reach QLever.
   # To remove: docker compose --profile qlever down [-v to also delete data]
+
+  # Builds a bootstrap index on first run (no-op if index already exists).
+  qlever-init:
+    image: docker.io/adfreiburg/qlever
+    profiles: ["qlever"]
+    container_name: qlever-init
+    user: root
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -e
+        if [ ! -f /data/visoto.index.pos ]; then
+          echo "Building bootstrap index..."
+          cp /init/init.ttl /data/init.ttl
+          /qlever/qlever-index -i visoto -f init.ttl -F ttl
+          echo "Bootstrap index complete."
+        else
+          echo "Index already exists, skipping."
+        fi
+    volumes:
+      - qlever_data:/data
+      - ./qlever/data/init.ttl:/init/init.ttl:ro
+    working_dir: /data
+    restart: "no"
+    networks:
+      - qlever-private
+
   qlever:
     image: docker.io/adfreiburg/qlever
     profiles: ["qlever"]
@@ -68,9 +96,14 @@ services:
       - 256M
       - -s
       - 60s
+      - -a
+      - tOLk1n4gdSt00rYs
     volumes:
       - qlever_data:/data
     working_dir: /data
+    depends_on:
+      qlever-init:
+        condition: service_completed_successfully
     networks:
       - qlever-private
     restart: unless-stopped

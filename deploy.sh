@@ -91,7 +91,7 @@ scp ${SCP_OPTS} "${SCRIPT_DIR}/visoto.config" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/go.mod" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/go.sum" "${SSH_TARGET}:${REMOTE_DIR}/"
 if [ "$WITH_QLEVER" = true ]; then
-    scp ${SCP_OPTS} -r "${SCRIPT_DIR}/qlever/Qleverfile" "${SSH_TARGET}:${REMOTE_DIR}/qlever/"
+    scp ${SCP_OPTS} "${SCRIPT_DIR}/qlever/data/init.ttl" "${SSH_TARGET}:${REMOTE_DIR}/qlever/data/"
 fi
 
 # Remove source directories first to avoid stale files from previous deploys
@@ -132,7 +132,8 @@ if ssh ${SSH_OPTS} "${SSH_TARGET}" "curl -s http://localhost:8060/ping" | grep -
     if [ "$WITH_QLEVER" = true ]; then
         echo "  docker compose --profile qlever logs qlever -f # View QLever logs"
         echo "  docker compose --profile qlever down            # Stop all incl. QLever"
-        echo "  docker compose --profile qlever down -v         # Stop and delete QLever data"
+        echo "  docker volume rm visoto_qlever_data             # Delete ONLY QLever index (preserves monitoring DB)"
+        echo "  WARNING: 'down -v' deletes ALL volumes incl. the monitoring database!"
     fi
 else
     echo -e "${RED}Warning: Health check failed${NC}"

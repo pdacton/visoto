@@ -190,35 +190,6 @@
     <script src="/static/js/upload.js"></script>
     <script src="/static/js/named-graphs.js"></script>
 
-    <!-- Monitoring toggle in settings menu -->
-    <script>
-    (function() {
-      function updateMonitoringIcon(enabled) {
-        var icon = document.getElementById('monitoring-toggle-icon');
-        if (!icon) return;
-        icon.innerHTML = enabled
-          ? '<span class="badge bg-success-lt">on</span>'
-          : '<span class="badge bg-secondary-lt">off</span>';
-      }
-
-      var btn = document.getElementById('monitoring-toggle');
-      if (btn) {
-        fetch('/api/monitoring/status')
-          .then(function(r) { return r.json(); })
-          .then(function(d) { updateMonitoringIcon(d.enabled); })
-          .catch(function() {});
-
-        btn.addEventListener('click', function(e) {
-          e.preventDefault();
-          fetch('/api/monitoring/toggle', { method: 'POST' })
-            .then(function(r) { return r.json(); })
-            .then(function(d) { updateMonitoringIcon(d.enabled); })
-            .catch(function() {});
-        });
-      }
-    })();
-    </script>
-
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>

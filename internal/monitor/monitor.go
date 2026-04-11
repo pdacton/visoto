@@ -61,6 +61,7 @@ type Monitor struct {
 	latest   map[string]*Metric // endpoint URL → latest result
 	stopOnce sync.Once
 	stopCh   chan struct{}
+	probeCh  chan struct{} // signals an immediate probe when monitoring is enabled
 }
 
 // New creates a Monitor. Call Start() to begin probing.
@@ -80,6 +81,7 @@ func New(cfg *config.ApplicationConfig, dataDir string) (*Monitor, error) {
 		dataDir: dataDir,
 		latest:  make(map[string]*Metric),
 		stopCh:  make(chan struct{}),
+		probeCh: make(chan struct{}, 1),
 	}
 
 	// Load persisted enabled state (default: false / disabled)
@@ -105,9 +107,17 @@ func (m *Monitor) IsEnabled() bool {
 }
 
 // SetEnabled toggles monitoring on or off and persists the choice.
+// When enabling, signals the prober to run an immediate probe.
 func (m *Monitor) SetEnabled(v bool) {
 	m.enabled.Store(v)
 	m.saveState(v)
+	if v {
+		// Non-blocking send: if a probe signal is already pending, don't queue another.
+		select {
+		case m.probeCh <- struct{}{}:
+		default:
+		}
+	}
 }
 
 // LatestStatus returns the most-recent probe result for every configured endpoint.
@@ -178,6 +188,8 @@ func (m *Monitor) runProber() {
 
 	for {
 		select {
+		case <-m.probeCh:
+			m.probe()
 		case <-ticker.C:
 			if m.IsEnabled() {
 				m.probe()

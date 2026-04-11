@@ -9,7 +9,10 @@
 
 <div class="d-flex align-items-center mb-3">
   <h2 class="mb-0 me-3">Endpoint Response Times</h2>
-  <span id="monitor-badge" class="badge bg-secondary">loading…</span>
+  <label class="form-check form-switch ms-3 mb-0" title="Toggle endpoint monitoring">
+    <input class="form-check-input" type="checkbox" id="monitoring-toggle" />
+    <span class="form-check-label" id="monitor-badge">loading…</span>
+  </label>
 </div>
 
 <!-- Time range selector -->
@@ -28,7 +31,7 @@
   <div class="card-body">
     <canvas id="monitoring-chart" style="max-height: 420px;"></canvas>
     <p id="no-data-msg" class="text-muted text-center py-4" style="display:none;">
-      No data yet. Enable monitoring in the Settings menu and wait for the first probe.
+      No data yet. Enable monitoring above and wait for the first probe.
     </p>
   </div>
 </div>

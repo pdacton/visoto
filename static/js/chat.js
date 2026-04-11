@@ -51,8 +51,24 @@
     if (chatHistory.length > 0) {
       renderHistory();
     } else {
-      // No history - trigger auto-summary
-      generateAutoSummary();
+      // Only trigger auto-summary if the sidebar is currently open
+      if (localStorage.getItem('rightSidebarOpen') === 'true') {
+        generateAutoSummary();
+      } else {
+        // Defer auto-summary until the sidebar is opened for the first time
+        const toggle = document.getElementById('right-sidebar-toggle');
+        if (toggle) {
+          toggle.addEventListener('click', function onFirstOpen() {
+            toggle.removeEventListener('click', onFirstOpen);
+            // Small delay to let the sidebar finish opening
+            setTimeout(function() {
+              if (chatHistory.length === 0 && !isProcessing) {
+                generateAutoSummary();
+              }
+            }, 300);
+          });
+        }
+      }
     }
 
     // Handle form submission
@@ -162,13 +178,28 @@
     // Get accept language from browser
     const acceptLanguage = navigator.language || 'en';
 
+    // Resolve the active endpoint from cookie + page data
+    const selectedEndpointName = (typeof getSelectedEndpoint === 'function') ? getSelectedEndpoint() : '';
+    const endpoints = resourceData.SparqlEndpoints || [];
+    let activeEndpoint = { name: '', url: '' };
+    if (selectedEndpointName) {
+      const match = endpoints.find(ep => ep.Name === selectedEndpointName);
+      if (match) activeEndpoint = { name: match.Name, url: match.URL };
+    }
+    if (!activeEndpoint.name) {
+      // Fall back to the default endpoint
+      const def = endpoints.find(ep => ep.Default) || endpoints[0];
+      if (def) activeEndpoint = { name: def.Name, url: def.URL };
+    }
+
     // Prepare request
     const requestData = {
       resourceIRI: resourceData.ResourceIRI,
       message: message,
       history: chatHistory,
       data: resourceData.QueryResults || {},
-      acceptLanguage: acceptLanguage
+      acceptLanguage: acceptLanguage,
+      activeEndpoint: activeEndpoint
     };
 
     // Call API
@@ -343,6 +374,11 @@
     const loading = document.getElementById('chat-loading');
     if (loading) {
       loading.remove();
+    }
+    // Also remove the initial "Analyzing resource..." placeholder if still present
+    const initial = document.getElementById('chat-initial');
+    if (initial) {
+      initial.remove();
     }
   }
 

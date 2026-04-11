@@ -3,14 +3,15 @@ package chat
 import (
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"hutzli.org/visoto/internal/logger"
 )
 
-// Handler returns a Gin handler function for chat requests
-// The apiKey is passed in to keep the handler stateless
-func Handler(apiKey string) gin.HandlerFunc {
+// Handler returns a Gin handler function for chat requests.
+// apiKey is the Gemini API key; mcpURL is the base URL of the Visoto MCP server (e.g. http://localhost:8060/mcp).
+func Handler(apiKey, mcpURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log := logger.Get()
 
@@ -38,13 +39,20 @@ func Handler(apiKey string) gin.HandlerFunc {
 			slog.String("message", req.Message),
 			slog.Int("historyLength", len(req.History)))
 
-		// Call Gemini API
-		response, err := CallGemini(apiKey, req)
+		// Call Gemini API (with MCP tool support)
+		response, err := CallGemini(apiKey, mcpURL, req)
 		if err != nil {
 			log.Error("gemini API call failed", slog.String("error", err.Error()))
-			c.JSON(http.StatusInternalServerError, ChatResponse{
-				Error: "Failed to generate response. Please try again.",
-			})
+			if strings.HasPrefix(err.Error(), "rate_limit:") {
+				delay := strings.TrimPrefix(err.Error(), "rate_limit: ")
+				c.JSON(http.StatusTooManyRequests, ChatResponse{
+					Error: "Rate limit reached. Please wait " + delay + " and try again.",
+				})
+			} else {
+				c.JSON(http.StatusInternalServerError, ChatResponse{
+					Error: "Failed to generate response. Please try again.",
+				})
+			}
 			return
 		}
 

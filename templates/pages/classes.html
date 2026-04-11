@@ -8,13 +8,13 @@
 
 <div class="row row-deck row-cards mb-3">
 
-  <!-- rdf:Class count -->
+  <!-- rdfs:Class count -->
   <sparql-async id="rdfClassCount" class="d-none">
     SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
-      ?class a rdf:Class .
+      ?class a rdfs:Class .
     }
   </sparql-async>
-  {{ template "sparqlMetric" (dict "queryId" "rdfClassCount" "title" "rdf:Class" "href" "/resource/rdf:Class" "icon" "/static/img/resource/Class.svg") }}
+  {{ template "sparqlMetric" (dict "queryId" "rdfClassCount" "title" "rdfs:Class" "href" "/resource/rdfs:Class" "icon" "/static/img/resource/Class.svg") }}
 
   <!-- owl:Class count -->
   <sparql-async id="owlClassCount" class="d-none">
@@ -24,11 +24,11 @@
   </sparql-async>
   {{ template "sparqlMetric" (dict "queryId" "owlClassCount" "title" "owl:Class" "href" "/resource/owl:Class" "icon" "/static/img/resource/Class.svg") }}
 
-  <!-- implicit classes: used as rdf:type target but not declared as rdf:Class or owl:Class -->
+  <!-- implicit classes: used as rdf:type target but not declared as rdfs:Class or owl:Class -->
   <sparql-async id="implicitClassCount" class="d-none">
     SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
       ?s a ?class .
-      FILTER NOT EXISTS { ?class a rdf:Class }
+      FILTER NOT EXISTS { ?class a rdfs:Class }
       FILTER NOT EXISTS { ?class a owl:Class }
     }
   </sparql-async>
@@ -46,7 +46,7 @@
           {
             # subquery to count instances
             SELECT DISTINCT ?class (COUNT(?instance) AS ?instances) WHERE {
-              { ?class a rdf:Class } UNION { ?class a owl:Class } UNION { ?instance a ?class } .
+              { ?class a rdfs:Class } UNION { ?class a owl:Class } UNION { ?instance a ?class } .
             } GROUP BY ?class
           }
           OPTIONAL { ?class a ?type }
