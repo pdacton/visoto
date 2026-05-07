@@ -171,7 +171,7 @@
 
 <!-- Named Graphs Modal -->
 <div class="modal modal-blur fade" id="namedGraphsModal" tabindex="-1" role="dialog" aria-labelledby="namedGraphsModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
+  <div class="modal-dialog modal-dialog-centered modal-xl" role="document">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="namedGraphsModalLabel">
@@ -196,6 +196,7 @@
                 </th>
                 <th>Graph IRI</th>
                 <th>Label</th>
+                <th class="text-end" style="width: 7rem;">Triples</th>
               </tr>
             </thead>
             <tbody id="ng-tbody"></tbody>
@@ -205,14 +206,27 @@
         <!-- Delete result -->
         <div id="ng-delete-result" class="d-none m-3"></div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-danger me-auto" id="ng-delete-btn" disabled>
+      <div class="modal-footer gap-2">
+        <button type="button" class="btn btn-danger" id="ng-delete-btn" disabled>
           <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete selected
         </button>
-        <button type="button" class="btn btn-outline-danger me-2" id="ng-delete-default-btn">
+        <button type="button" class="btn btn-outline-danger" id="ng-delete-default-btn">
           <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete default graph
         </button>
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Done</button>
+        <div class="ms-auto d-flex gap-2 align-items-center">
+          <select class="form-select form-select-sm" id="ng-export-format" style="width: auto;" aria-label="Export format">
+            <option value="text/turtle">.ttl — Turtle</option>
+            <option value="application/n-quads">.nq — N-Quads</option>
+            <option value="application/n-triples">.nt — N-Triples</option>
+            <option value="application/rdf+xml">.rdf — RDF/XML</option>
+            <option value="application/ld+json">.jsonld — JSON-LD</option>
+            <option value="application/trig">.trig — TriG</option>
+          </select>
+          <button type="button" class="btn btn-primary" id="ng-export-btn" disabled>
+            <i data-lucide="download" style="width: 1rem; height: 1rem;" class="me-1"></i>Export selected
+          </button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Done</button>
+        </div>
       </div>
     </div>
   </div>

@@ -27,7 +27,7 @@
               SELECT DISTINCT ?property { ?s ?property ?o .}
             }
             OPTIONAL { ?property a ?type . }
-            OPTIONAL { ?property rdfs:comment ?comment . FILTER(lang(?comment) = "en" || lang(?comment) = "") }
+            OPTIONAL { ?property rdfs:comment ?comment . FILTER(lang(?comment) = visoto:dispLang || lang(?comment) = "") }
             OPTIONAL { ?property rdfs:domain ?domain . }
             OPTIONAL { ?property rdfs:range ?range . }
           }

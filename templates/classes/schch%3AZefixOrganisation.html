@@ -11,7 +11,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? schema:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 {{ define "pageContent" }}
@@ -23,7 +23,8 @@
       SELECT ?class ?organization ?description WHERE {
         BIND (?? AS ?class)
         ?organization rdf:type ?class .
-        OPTIONAL { ?organization schema:description ?description . }
+        OPTIONAL { ?organization schema:description ?description .
+          FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
       } LIMIT 20000
     </sparql-query>
     {{ template "sparqlTable" (dict 

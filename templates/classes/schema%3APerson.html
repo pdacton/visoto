@@ -1,0 +1,53 @@
+<!-- Person Class Template, listing all instances of schema:Person -->
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Instances of schema:Person -->
+  <div class="mb-3">
+    <sparql-query id="instances" class="d-none">
+      SELECT ?type ?person ?givenName ?familyName ?gender ?email ?telephone
+      WHERE {
+        BIND (?? AS ?type)
+        ?person rdf:type ?type .
+        OPTIONAL { ?person schema:givenName ?givenName . }
+        OPTIONAL { ?person schema:familyName ?familyName . }
+        OPTIONAL { ?person schema:gender ?gender . }
+        OPTIONAL { ?person schema:email ?email . }
+        OPTIONAL { ?person schema:telephone ?telephone . }
+      }
+      LIMIT 20000
+    </sparql-query>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.instances
+        "id" "instances"
+        "title" "Persons"
+        "icon" "circle-dot"
+        "iconVar" "type")
+    }}
+  </div>
+
+  {{ template "classHierarchy" . }}
+
+  {{ template "relationships" . }}
+
+  {{ template "ontologyShacl" . }}
+
+</div>
+{{ end }}

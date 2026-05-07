@@ -58,6 +58,7 @@ type SparqlEndpoint struct {
 	Password       string `toml:"password"`        // Optional basic auth password for write operations
 	AccessToken    string `toml:"access_token"`    // Optional Bearer token for write operations (takes precedence over username/password)
 	SearchProvider string `toml:"search_provider"` // FTS provider: "stardog" (default), "graphdb", "fuseki"
+	ExportProvider string `toml:"export_provider"` // optional export provider override: "graphdb", "gsp", "construct"
 }
 
 // RDFConfig holds RDF-related settings

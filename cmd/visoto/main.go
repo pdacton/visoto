@@ -433,6 +433,7 @@ func main() {
 	router.POST("/api/upload", upload.UploadHandler(&cfg.Application))
 	router.GET("/api/named-graphs", upload.NamedGraphsHandler(&cfg.Application))
 	router.DELETE("/api/named-graphs", upload.DeleteNamedGraphHandler(&cfg.Application))
+	router.GET("/api/export-graphs", upload.ExportNamedGraphsHandler(&cfg.Application))
 	router.GET("/api/ontologies", upload.OntologiesHandler(&cfg.Application, cfg.Ontologies))
 	router.GET("/monitoring", monitoringPageHandler)
 	router.GET("/api/monitoring/status", monitoringStatusHandler)

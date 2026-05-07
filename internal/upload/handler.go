@@ -1,6 +1,7 @@
 package upload
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"hutzli.org/visoto/internal/config"
+	"hutzli.org/visoto/internal/export"
 	"hutzli.org/visoto/internal/logger"
 )
 
@@ -198,10 +200,11 @@ func OntologiesHandler(cfg *config.ApplicationConfig, ontologies []config.Ontolo
 	}
 }
 
-// NamedGraph holds an IRI and optional label for a named graph.
+// NamedGraph holds an IRI, optional label, and triple count for a named graph.
 type NamedGraph struct {
-	IRI   string `json:"iri"`
-	Label string `json:"label"`
+	IRI         string `json:"iri"`
+	Label       string `json:"label"`
+	TripleCount int    `json:"tripleCount"`
 }
 
 // sparqlQuery sends a SPARQL query to the endpoint and returns the parsed bindings.
@@ -255,7 +258,7 @@ func NamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 			return
 		}
 
-		query := `SELECT DISTINCT ?g (SAMPLE(?lbl) AS ?label) WHERE {
+		query := `SELECT ?g (SAMPLE(?lbl) AS ?label) (COUNT(*) AS ?count) WHERE {
   GRAPH ?g { ?s ?p ?o }
   OPTIONAL { ?g <http://www.w3.org/2000/01/rdf-schema#label> ?lbl }
 } GROUP BY ?g ORDER BY ?g LIMIT 1000`
@@ -276,7 +279,11 @@ func NamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 			if lbl, ok := b["label"]; ok {
 				label = lbl.Value
 			}
-			graphs = append(graphs, NamedGraph{IRI: g.Value, Label: label})
+			count := 0
+			if cnt, ok := b["count"]; ok {
+				fmt.Sscanf(cnt.Value, "%d", &count)
+			}
+			graphs = append(graphs, NamedGraph{IRI: g.Value, Label: label, TripleCount: count})
 		}
 		c.JSON(http.StatusOK, gin.H{"graphs": graphs})
 	}
@@ -344,5 +351,118 @@ func DeleteNamedGraphHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 
 		log.Info("named graph deleted", slog.String("graph", graphURI), slog.String("endpoint", ep.URL))
 		c.JSON(http.StatusOK, gin.H{"success": true})
+	}
+}
+
+// isQuadFormat reports whether the MIME type natively encodes named graph membership.
+// Quad formats (N-Quads, TriG) can represent multiple named graphs in a single file.
+func isQuadFormat(mime string) bool {
+	return mime == "application/n-quads" || mime == "application/trig"
+}
+
+// iriToFilename converts a graph IRI to a safe filename with the given extension.
+// e.g. "https://opendata.swiss/id/catalogue/vocabularies" + ".ttl"
+//
+//	→ "opendata.swiss-id-catalogue-vocabularies.ttl"
+func iriToFilename(iri, ext string) string {
+	s := iri
+	if i := strings.Index(s, "://"); i >= 0 {
+		s = s[i+3:]
+	}
+	var b strings.Builder
+	prev := '-'
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '.' {
+			b.WriteRune(r)
+			prev = r
+		} else if prev != '-' {
+			b.WriteRune('-')
+			prev = '-'
+		}
+	}
+	result := strings.Trim(b.String(), "-")
+	if result == "" {
+		result = "graph"
+	}
+	return result + ext
+}
+
+// ExportNamedGraphsHandler handles GET /api/export-graphs.
+// Query params:
+//   - endpoint: SPARQL endpoint name (matches visoto.config entry)
+//   - graph:    one or more named graph IRIs (repeatable: ?graph=iri1&graph=iri2)
+//   - format:   RDF MIME type (default: text/turtle)
+//
+// Single graph or quad format → streams RDF file directly.
+// Multiple graphs + non-quad format → streams a ZIP archive, one file per graph.
+// Tries export providers in order: graphdb → gsp → construct.
+func ExportNamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		log := logger.Get()
+
+		endpointName := c.Query("endpoint")
+		graphIRIs := c.QueryArray("graph")
+		format := c.DefaultQuery("format", "text/turtle")
+
+		ep := cfg.GetEndpointByName(endpointName)
+		if ep == nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "no SPARQL endpoint configured"})
+			return
+		}
+		if len(graphIRIs) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "at least one graph parameter required"})
+			return
+		}
+
+		ext := export.ExtForMIME(format)
+		useZip := len(graphIRIs) > 1 && !isQuadFormat(format)
+
+		if useZip {
+			c.Header("Content-Type", "application/zip")
+			c.Header("Content-Disposition", `attachment; filename="export.zip"`)
+			c.Status(http.StatusOK)
+
+			zw := zip.NewWriter(c.Writer)
+			defer zw.Close()
+
+			for _, iri := range graphIRIs {
+				params := export.ExportParams{GraphIRIs: []string{iri}, Format: format, Endpoint: ep}
+				rc, providerName, err := export.ExportWithFallback(params)
+				if err != nil {
+					log.Error("export failed for graph", slog.String("graph", iri), slog.String("error", err.Error()))
+					continue // skip failed graphs; ZIP may be partial
+				}
+				entryName := iriToFilename(iri, ext)
+				w, err := zw.Create(entryName)
+				if err != nil {
+					rc.Close()
+					log.Error("zip entry creation failed", slog.String("entry", entryName), slog.String("error", err.Error()))
+					continue
+				}
+				_, _ = io.Copy(w, rc)
+				rc.Close()
+				log.Info("export graph to zip", slog.String("provider", providerName), slog.String("graph", iri))
+			}
+		} else {
+			params := export.ExportParams{GraphIRIs: graphIRIs, Format: format, Endpoint: ep}
+			rc, providerName, err := export.ExportWithFallback(params)
+			if err != nil {
+				log.Error("export failed", slog.String("endpoint", ep.URL), slog.String("error", err.Error()))
+				c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
+				return
+			}
+			defer rc.Close()
+
+			log.Info("export succeeded",
+				slog.String("provider", providerName),
+				slog.String("endpoint", ep.URL),
+				slog.Int("graphs", len(graphIRIs)))
+
+			filename := "export" + ext
+			c.Header("Content-Type", format)
+			c.Header("Content-Disposition", `attachment; filename="`+filename+`"`)
+			c.Status(http.StatusOK)
+			_, _ = io.Copy(c.Writer, rc)
+		}
 	}
 }

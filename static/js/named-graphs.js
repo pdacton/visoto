@@ -16,11 +16,35 @@ function ngResetModal() {
   document.getElementById('ng-tbody').innerHTML = '';
   document.getElementById('ng-select-all').checked = false;
   document.getElementById('ng-delete-btn').disabled = true;
+  document.getElementById('ng-export-btn').disabled = true;
 }
 
 function ngUpdateDeleteButton() {
   const anyChecked = document.querySelectorAll('#ng-tbody .ng-row-check:checked').length > 0;
   document.getElementById('ng-delete-btn').disabled = !anyChecked;
+}
+
+function ngUpdateExportButton() {
+  const anyChecked = document.querySelectorAll('#ng-tbody .ng-row-check:checked').length > 0;
+  document.getElementById('ng-export-btn').disabled = !anyChecked;
+}
+
+function ngExportSelected() {
+  const checkboxes = document.querySelectorAll('#ng-tbody .ng-row-check:checked');
+  if (checkboxes.length === 0) return;
+  const iris = Array.from(checkboxes).map(cb => cb.value);
+  const endpoint = ngSelectedEndpoint();
+  const format = document.getElementById('ng-export-format').value;
+  const params = new URLSearchParams();
+  params.set('endpoint', endpoint);
+  params.set('format', format);
+  iris.forEach(iri => params.append('graph', iri));
+  const a = document.createElement('a');
+  a.href = '/api/export-graphs?' + params.toString();
+  a.download = '';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }
 
 function ngRenderTable(graphs) {
@@ -37,6 +61,7 @@ function ngRenderTable(graphs) {
     const tr = document.createElement('tr');
     const iri = g.iri || '';
     const label = g.label || '';
+    const count = typeof g.tripleCount === 'number' ? g.tripleCount.toLocaleString() : '';
 
     tr.innerHTML = `
       <td>
@@ -46,6 +71,7 @@ function ngRenderTable(graphs) {
         <span class="text-truncate d-block" title="${escapeHtml(iri)}" style="max-width: 420px;">${escapeHtml(iri)}</span>
       </td>
       <td>${escapeHtml(label)}</td>
+      <td class="text-end text-muted">${escapeHtml(count)}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -54,6 +80,7 @@ function ngRenderTable(graphs) {
   tbody.querySelectorAll('.ng-row-check').forEach(cb => {
     cb.addEventListener('change', () => {
       ngUpdateDeleteButton();
+      ngUpdateExportButton();
       const all = tbody.querySelectorAll('.ng-row-check');
       const checked = tbody.querySelectorAll('.ng-row-check:checked');
       document.getElementById('ng-select-all').checked = all.length === checked.length;
@@ -176,6 +203,7 @@ function ngToggleAll(e) {
   const checked = e.target.checked;
   document.querySelectorAll('#ng-tbody .ng-row-check').forEach(cb => { cb.checked = checked; });
   ngUpdateDeleteButton();
+  ngUpdateExportButton();
 }
 
 function escapeHtml(str) {
@@ -199,4 +227,5 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('ng-delete-btn').addEventListener('click', ngDeleteSelected);
   document.getElementById('ng-delete-default-btn').addEventListener('click', ngDeleteDefaultGraph);
   document.getElementById('ng-select-all').addEventListener('change', ngToggleAll);
+  document.getElementById('ng-export-btn').addEventListener('click', ngExportSelected);
 });

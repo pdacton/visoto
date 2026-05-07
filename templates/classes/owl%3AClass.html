@@ -24,7 +24,8 @@
         <sparql-query id="instances" class="d-none">
           SELECT DISTINCT ?class ?description WHERE {
             ?class a ?? .
-            OPTIONAL { ?class rdfs:comment|schema:description|dct:description ?description . }
+            OPTIONAL { ?class rdfs:comment|schema:description|dct:description ?description .
+              FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
           }
           ORDER BY ?class
           LIMIT 10000

@@ -6,14 +6,16 @@
 <sparql-query id="subclasses" class="d-none">
   SELECT ?subclass ?description WHERE {
     ?subclass rdfs:subClassOf ?? .
-    OPTIONAL { ?subclass (rdfs:comment|schema:description) ?description . }
+    OPTIONAL { ?subclass (rdfs:comment|schema:description) ?description .
+      FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
   } LIMIT 5000
 </sparql-query>
 
 <sparql-query id="superclasses" class="d-none">
   SELECT ?superclass ?description WHERE {
     ?? rdfs:subClassOf ?superclass .
-    OPTIONAL { ?superclass (rdfs:comment|schema:description) ?description . }
+    OPTIONAL { ?superclass (rdfs:comment|schema:description) ?description .
+      FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
   } LIMIT 5000
 </sparql-query>
 

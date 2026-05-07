@@ -15,7 +15,8 @@
           SELECT DISTINCT ?class ?instance ?description WHERE {
             BIND (?? AS ?class)
             ?instance a ?class .
-            OPTIONAL { ?instance (rdfs:comment|schema:description|dct:description) ?description . }
+            OPTIONAL { ?instance (rdfs:comment|schema:description|dct:description) ?description .
+              FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
           }
           LIMIT 10000
         </sparql-query>
