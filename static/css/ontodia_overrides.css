@@ -17,10 +17,114 @@
 }
 
 /* HALO (selection overlay with buttons) */
-/* Remove dotted line and orange shadow, add light grey shadow */
+/* Selection highlight: a translucent light-grey ring hugging the node box.
+ * Constraints that shape this: we can't FILL the halo (it's painted on top of
+ * the node in a separate widgets layer, so a fill greys the node out), and we
+ * don't touch z-index (that risks hiding the action buttons). The halo box is
+ * measured to sit exactly 5px outside the node card on every side, and the
+ * card uses a 6px (--tblr-border-radius) corner. So we draw the ring with an
+ * `outline` pulled inward 5px via a NEGATIVE outline-offset — its outer edge
+ * lands flush on the card edge — and match the card's radius. outline follows
+ * border-radius and never affects layout, the halo box, or the buttons. */
 .graph-explorer-halo {
   border: none !important;
-  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  /* Ring corners sit ~5px outside the card, so add to the card's 6px radius to
+   * trace (mirror) the node's rounded corner rather than cut inside it. */
+  border-radius: calc(var(--tblr-border-radius) + 8px) !important;
+  outline: 2px solid rgba(var(--tblr-primary-rgb), 0.5) !important;
+  outline-offset: -5px !important;
+}
+
+/* Miro-style white BAR behind the top button row. Drawn as a ::before pseudo
+ * so it renders BEHIND the halo's real button children (which paint after it)
+ * with no z-index needed — the buttons sit on top of the bar automatically.
+ * Anchored at left:50% + translateX(-50%) to match the fixed-width button
+ * cluster above, so it stays centered under the buttons on ANY node width.
+ * Width = cluster span (5 icons at 28px spacing ≈ 132px outer) + padding. */
+.graph-explorer-halo::before {
+  content: "";
+  position: absolute;
+  top: -37px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 148px;
+  height: 34px;
+  background: var(--tblr-bg-surface, #fff);
+  border: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  box-shadow: var(--tblr-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+}
+
+/* ===== HALO BUTTON LAYOUT — fixed-width cluster centered above the node =====
+ * The library docks each halo button to a compass point via absolute
+ * top/right/bottom/left offsets (buttons are 20x20px). We override those to
+ * line all five up in a single row above the top edge.
+ *
+ * IMPORTANT: the cluster is a FIXED-px group centered on the node midpoint,
+ * NOT distributed across the node width. Every button anchors at left:50% and
+ * is offset by a fixed px amount via translateX(calc(-50% ± N)). This keeps
+ * the row a constant ~92px wide regardless of node width, so the white pill
+ * (::before, also anchored at left:50% with a fixed width) always lines up
+ * under the buttons — on narrow AND wide nodes alike. (An earlier version
+ * spread the buttons at left:10/30/50/70/90%, which drifted the fixed pill
+ * off-center on wide nodes.)
+ *
+ * SIZING = Tabler COMPACT scheme: bare 20px icons (Tabler .icon glyph size),
+ * NO 40px hit-box padding. Spacing = 28px between centers (20px icon + 8px
+ * Tabler .btn-list gap). Buttons sit at top:-30px (lifted 4px off the node).
+ *
+ * Order (left -> right): follow, expand, navigate(search), add-to-filter, remove.
+ * Reorder by swapping the ± offsets. */
+.graph-explorer-halo__folow,
+.graph-explorer-halo__navigate,
+.graph-explorer-halo__expand,
+.graph-explorer-halo__add-to-filter,
+.graph-explorer-halo__remove {
+  top: -30px !important;
+  bottom: auto !important;
+  right: auto !important;
+  left: 50% !important;
+  margin-top: 0 !important;
+  margin-left: 0 !important;
+  width: 20px !important;
+  height: 20px !important;
+  /* Standard Tabler action-icon color. The Lucide-masked icons below use
+   * background-color:currentColor, so setting `color` here tints all of them
+   * uniformly (grey #6b7280) instead of the library's original blue glyphs. */
+  color: var(--tblr-secondary) !important;
+}
+
+.graph-explorer-halo__folow         { transform: translateX(calc(-50% - 56px)) !important; }
+.graph-explorer-halo__expand        { transform: translateX(calc(-50% - 28px)) !important; }
+.graph-explorer-halo__navigate      { transform: translateX(-50%) !important; }
+.graph-explorer-halo__add-to-filter { transform: translateX(calc(-50% + 28px)) !important; }
+.graph-explorer-halo__remove        { transform: translateX(calc(-50% + 56px)) !important; }
+
+/* Tabler .btn-action hover, color half only. Tabler action icons rest at
+ * --tblr-secondary (set above) and on hover darken to --tblr-body-color +
+ * gain a --tblr-active-bg pill. We take the color darken (the visible part)
+ * but SKIP the pill: our halo buttons are bare 20px `mask` boxes, so a
+ * `background` would be clipped to the glyph shape (no pill) unless we add a
+ * ::before backing layer and re-do the cluster geometry — out of scope here,
+ * and --tblr-active-bg is only ~4% alpha anyway. Also drop the library's
+ * opacity:.5→1 fade so hover reads as a crisp color change, not a fade-in. */
+.graph-explorer-halo__folow,
+.graph-explorer-halo__navigate,
+.graph-explorer-halo__expand,
+.graph-explorer-halo__add-to-filter,
+.graph-explorer-halo__remove {
+  opacity: 1 !important;
+  transition: color 0.15s ease-in-out !important;
+}
+
+.graph-explorer-halo__folow:hover,
+.graph-explorer-halo__navigate:hover,
+.graph-explorer-halo__expand:hover,
+.graph-explorer-halo__add-to-filter:hover,
+.graph-explorer-halo__remove:hover {
+  color: var(--tblr-body-color) !important;
 }
 
 /* Replace Font Awesome icons with Lucide icons using mask-image */
@@ -152,6 +256,37 @@
   mask-position: center;
 }
 
+/* __folow = "Jump to resource" — Lucide external-link. Converted to a
+ * currentColor mask (was the library's own background-image) so it takes the
+ * shared Tabler-secondary color like the other halo icons. */
+.graph-explorer-halo__folow {
+  background-image: none;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M10 14 21 3'/%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M10 14 21 3'/%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+/* __expand = "reveal additional properties" — Lucide chevrons-down. Same
+ * currentColor-mask conversion so it shares the Tabler-secondary color. */
+.graph-explorer-halo__expand {
+  background-image: none;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 6 5 5 5-5'/%3E%3Cpath d='m7 13 5 5 5-5'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 6 5 5 5-5'/%3E%3Cpath d='m7 13 5 5 5-5'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
 .graph-explorer-halo__add-to-filter,
 .link-in-popup-menu__filter-button {
   background-image: none;
@@ -204,6 +339,22 @@
   mask-repeat: no-repeat;
   -webkit-mask-position: center;
   mask-position: center;
+}
+
+/* Link hover highlight — recolor to the Tabler-primary selection blue.
+ * The visible band on hover is NOT the link line: the library keeps a fat
+ * (12px) transparent `__wrap` path over each link as a click hit-area, and on
+ * hover strokes it translucent grey via
+ *   .graph-explorer-link:hover .graph-explorer-link__wrap { stroke: rgba(140,140,140,.44) }
+ * We override just that stroke to match the node selection ring
+ * (rgba(var(--tblr-primary-rgb), 0.5)). Theme-agnostic — dark mode inherits it.
+ * The arrow line/head themselves stay the light grey set by the linkTemplateResolver.
+ * stroke-width narrows the VISIBLE hover band from the library's 12px to 8px.
+ * We scope the width to :hover only so the resting hit-area stays the full 12px —
+ * `__wrap` doubles as the click target, so shrinking it always narrows clickability. */
+.graph-explorer-link:hover .graph-explorer-link__wrap {
+  stroke: rgba(var(--tblr-primary-rgb), 0.44) !important;
+  stroke-width: 8px !important;
 }
 
 /* Override graph-explorer font with Tabler variables */
@@ -524,9 +675,14 @@
     background-color: var(--tblr-bg-surface-tertiary) !important;
   }
 
-  /* Selection halo - keep subtle in dark mode */
+  /* Selection halo - snug translucent ring around node, no fill (dark mode).
+   * Same outline technique as light mode; only the tint alpha differs. */
   .graph-explorer-halo {
-    box-shadow: 0 0.5rem 1rem rgba(255, 255, 255, 0.1) !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border-radius: calc(var(--tblr-border-radius) + 8px) !important;
+    outline: 2px solid rgba(var(--tblr-primary-rgb), 0.6) !important;
+    outline-offset: -5px !important;
   }
 
   /* Tooltips and popovers */

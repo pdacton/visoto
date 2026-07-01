@@ -35,14 +35,12 @@
     items.unshift({ iri: iri, label: label || shortIri || iri, shortIri: shortIri || '' });
     saveBookmarks(items);
     renderBookmarks();
-    updateBookmarkButton(iri, true);
   }
 
   function removeBookmark(iri) {
     var items = loadBookmarks().filter(function (b) { return b.iri !== iri; });
     saveBookmarks(items);
     renderBookmarks();
-    updateBookmarkButton(iri, false);
   }
 
   function reorderBookmarks(fromIdx, toIdx) {
@@ -54,11 +52,18 @@
     renderBookmarks();
   }
 
-  function isBookmarked(iri) {
-    return loadBookmarks().some(function (b) { return b.iri === iri; });
-  }
-
   // ── Rendering ──────────────────────────────────────────────────────────────
+
+  // Extract the underlying RDF IRI from a Visoto resource link, independent of URL format.
+  // Handles both /resource/<encoded-iri> (path form) and /resource?iri=<encoded-iri> (query form).
+  function extractIri(hrefStr) {
+    var u;
+    try { u = new URL(hrefStr, location.origin); } catch (e) { return null; }
+    var q = u.searchParams.get('iri');
+    if (q) return q;                                 // URL API already decodes query values
+    var m = u.pathname.match(/\/resource\/(.+)/);
+    return m ? decodeURIComponent(m[1]) : null;
+  }
 
   function lastSegment(iri) {
     iri = iri.replace(/\/$/, '');
@@ -158,68 +163,6 @@
       .replace(/"/g, '&quot;');
   }
 
-  // ── "Add bookmark" button on resource pages ────────────────────────────────
-
-  function updateBookmarkButton(iri, bookmarked) {
-    var btn = document.getElementById('bookmark-this-btn');
-    if (!btn || btn.dataset.iri !== iri) return;
-    var icon = btn.querySelector('[data-lucide]');
-    if (bookmarked) {
-      btn.title = 'Remove bookmark';
-      btn.classList.add('active');
-      if (icon) icon.setAttribute('data-lucide', 'bookmark-check');
-    } else {
-      btn.title = 'Bookmark this resource';
-      btn.classList.remove('active');
-      if (icon) icon.setAttribute('data-lucide', 'bookmark');
-    }
-    if (window.lucide) window.lucide.createIcons();
-  }
-
-  function injectBookmarkButton() {
-    var dataEl = document.getElementById('resource-data');
-    if (!dataEl) return; // not a resource page
-
-    var data;
-    try { data = JSON.parse(dataEl.textContent); } catch (e) { return; }
-    var iri = data.ResourceIRI;
-    if (!iri) return;
-
-    // Find the h1 inside .iri-title-wrapper and insert button next to it
-    var wrapper = document.querySelector('.iri-title-wrapper');
-    if (!wrapper) return;
-
-    var btn = document.createElement('button');
-    btn.id = 'bookmark-this-btn';
-    btn.dataset.iri = iri;
-    btn.className = 'btn btn-sm btn-ghost-secondary ms-2 align-middle';
-    btn.title = isBookmarked(iri) ? 'Remove bookmark' : 'Bookmark this resource';
-    if (isBookmarked(iri)) btn.classList.add('active');
-    btn.innerHTML = '<i data-lucide="' + (isBookmarked(iri) ? 'bookmark-check' : 'bookmark') +
-      '" style="width:16px;height:16px;pointer-events:none;"></i>';
-
-    btn.addEventListener('click', function () {
-      var label = document.querySelector('h1') ? document.querySelector('h1').textContent.trim() : '';
-      var shortIri = data.ShortIRI || '';
-      if (isBookmarked(iri)) {
-        removeBookmark(iri);
-      } else {
-        addBookmark(iri, label, shortIri);
-      }
-    });
-
-    // Insert after the h1
-    var h1 = wrapper.querySelector('h1');
-    if (h1) {
-      h1.style.display = 'inline';
-      h1.insertAdjacentElement('afterend', btn);
-    } else {
-      wrapper.appendChild(btn);
-    }
-
-    if (window.lucide) window.lucide.createIcons();
-  }
-
   // ── Drop zone (drop a /resource/… link from the page) ─────────────────────
 
   function initDropZone() {
@@ -262,9 +205,7 @@
           if (uriList) {
             var lines = uriList.split(/\r?\n/).filter(function (l) { return l && !l.startsWith('#'); });
             var firstUrl = lines[0] || '';
-            // Extract IRI from /resource/<iri>
-            var match = firstUrl.match(/\/resource\/(.+)/);
-            if (match) iri = decodeURIComponent(match[1]);
+            iri = extractIri(firstUrl);
           }
         }
 
@@ -281,23 +222,37 @@
 
   // ── Make all resource links draggable ──────────────────────────────────────
 
+  // Populate the drag payload so a resource can be dropped onto the bookmarks
+  // sidebar or the Graph Explorer canvas. `href` is the native /resource/ link
+  // (may be omitted, e.g. when dragging the page title, which has no anchor).
+  function setDragPayload(e, iri, label, href) {
+    e.dataTransfer.setData(DRAG_TYPE_IRI, iri);
+    e.dataTransfer.setData('text/plain', label || '');
+    // Graph Explorer canvas reads this key first; give it the clean RDF IRI
+    // so dropped nodes resolve their real label instead of the /resource/ URL.
+    e.dataTransfer.setData('application/x-graph-explorer-elements', JSON.stringify([iri]));
+    // Also set uri-list so it works as a native browser link drag
+    e.dataTransfer.setData('text/uri-list', href || ('/resource/' + encodeURIComponent(iri)));
+    e.dataTransfer.effectAllowed = 'copyMove';
+  }
+
   function initResourceLinkDrag() {
     document.addEventListener('dragstart', function (e) {
+      // Draggable page title on resource pages (see initTitleDrag).
+      var title = e.target.closest('[data-drag-iri]');
+      if (title) {
+        setDragPayload(e, title.dataset.dragIri, title.textContent.trim());
+        return;
+      }
+
       var anchor = e.target.closest('a[href]');
       if (!anchor) return;
 
       var href = anchor.href || '';
-      var match = href.match(/\/resource\/(.+)/);
-      if (!match) return;
+      var iri = extractIri(href);
+      if (!iri) return;
 
-      var iri = decodeURIComponent(match[1]);
-      var label = anchor.textContent.trim();
-
-      e.dataTransfer.setData(DRAG_TYPE_IRI, iri);
-      e.dataTransfer.setData('text/plain', label);
-      // Also set uri-list so it works as a native browser link drag
-      e.dataTransfer.setData('text/uri-list', href);
-      e.dataTransfer.effectAllowed = 'copyMove';
+      setDragPayload(e, iri, anchor.textContent.trim(), href);
     });
   }
 
@@ -315,6 +270,32 @@
     });
   }
 
+  // ── Make the resource-page title a drag handle ─────────────────────────────
+
+  // On a resource page, make the <h1> title draggable so the resource can be
+  // dragged onto the bookmarks sidebar or the Graph Explorer canvas. The clean
+  // IRI is read from the IRI dropdown link in the title header (see header.html),
+  // which is always present on resource pages.
+  function initTitleDrag() {
+    var wrapper = document.querySelector('.iri-title-wrapper');
+    if (!wrapper) return;
+    var h1 = wrapper.querySelector('h1');
+    if (!h1) return;
+
+    // The dropdown link points at the raw resource IRI; fall back to a copy button.
+    var iriLink = wrapper.querySelector('.iri-dropdown a[href]');
+    var copyBtn = wrapper.querySelector('[data-copy]');
+    var iri = iriLink ? iriLink.getAttribute('href')
+            : copyBtn ? copyBtn.getAttribute('data-copy')
+            : null;
+    if (!iri) return;
+
+    h1.draggable = true;
+    h1.dataset.dragIri = iri;
+    h1.style.cursor = 'grab';
+    h1.title = 'Drag to bookmark or graph';
+  }
+
   // ── Init ───────────────────────────────────────────────────────────────────
 
   document.addEventListener('DOMContentLoaded', function () {
@@ -322,7 +303,7 @@
     initDropZone();
     initRemoveButtons();
     initResourceLinkDrag();
-    injectBookmarkButton();
+    initTitleDrag();
   });
 
 })();
