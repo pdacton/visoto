@@ -137,7 +137,15 @@ func staticPageHandler(c *gin.Context) {
 
 	// Add endpoints and resolved tag to template data
 	data.SparqlEndpoints = cfg.Application.SparqlEndpoints
-	data.EndpointTag = cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c))
+	selectedName := resolveSelectedEndpointName(c)
+	data.EndpointTag = cfg.Application.ResolveEndpointTag(selectedName)
+	// Expose the resolved endpoint URL so client-side pages (e.g. Graph Explorer)
+	// query the same endpoint the user picked in the header.
+	if ep := cfg.Application.GetEndpointByName(selectedName); ep != nil {
+		data.EndpointURL = ep.URL
+	} else {
+		data.EndpointURL = cfg.Application.SparqlEndpoint
+	}
 	data.TemplateName = templateName
 
 	log.Debug("rendering static page",

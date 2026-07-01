@@ -357,6 +357,99 @@
   stroke-width: 8px !important;
 }
 
+/* ===== CANVAS TOOLBAR — Tabler .btn-group of compact .btn-icon buttons =====
+ * The library renders the toolbar as
+ *   .graph-explorer-toolbar > .graph-explorer-btn-group(.-sm)
+ *     > button.graph-explorer-btn.graph-explorer-btn-default > span.fa.fa-*
+ * with 34px boxed buttons, 1px #ccc borders, square corners and dark (#333)
+ * FA glyphs (already remapped to Lucide currentColor masks by the .fa rules
+ * above). We restyle it to match the Tabler toolbar btn-group: a single
+ * connected group, 28px tall, light-grey icons, rounded OUTER corners only. */
+
+/* The group itself: flex row so buttons connect with no gaps. The library
+ * ships it as `display:inline-block`, which lets the buttons keep their own
+ * box model; flex lets us collapse the doubled inner borders cleanly. */
+.graph-explorer-toolbar .graph-explorer-btn-group {
+  display: inline-flex !important;
+  vertical-align: middle;
+}
+
+/* Each toolbar button = Tabler compact icon button. Height 28px, tight
+ * horizontal padding (text buttons like "Clear All"/"PNG" keep a little room),
+ * light-grey icon via `color` (the .fa mask paints with currentColor), and a
+ * single shared Tabler border. Square corners here; the outer corners get
+ * rounded by the first/last-child rules below (btn-group convention). */
+.graph-explorer-toolbar .graph-explorer-btn {
+  height: 28px !important;
+  min-width: 28px !important;
+  padding: 0 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  font-size: 13px !important;
+  line-height: 1 !important;
+  color: var(--tblr-secondary) !important;
+  background-color: var(--tblr-bg-surface, #fff) !important;
+  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+  border-radius: 0 !important;
+  /* Collapse the doubled border between adjacent buttons (Tabler btn-group). */
+  margin-left: calc(-1 * var(--tblr-border-width)) !important;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out !important;
+}
+
+/* Round only the group's outer corners and drop the leading negative margin
+ * on the first button so the group edge stays flush. */
+.graph-explorer-toolbar .graph-explorer-btn-group > .graph-explorer-btn:first-child {
+  margin-left: 0 !important;
+  border-top-left-radius: var(--tblr-border-radius) !important;
+  border-bottom-left-radius: var(--tblr-border-radius) !important;
+}
+/* Round the right end of the button run. The group's actual :last-child is the
+ * language-selector <span>, not a button, so target BOTH the last button in the
+ * group AND the button directly before the language selector — whichever ends
+ * the visual button run gets the rounded right corners. */
+.graph-explorer-toolbar .graph-explorer-btn-group > .graph-explorer-btn:last-child,
+.graph-explorer-toolbar .graph-explorer-btn:has(+ .graph-explorer-toolbar__language-selector) {
+  border-top-right-radius: var(--tblr-border-radius) !important;
+  border-bottom-right-radius: var(--tblr-border-radius) !important;
+}
+
+/* The language selector starts a fresh control, so give it a small gap from
+ * the button run and let it keep its own fully-rounded corners. */
+.graph-explorer-toolbar__language-selector {
+  margin-left: 8px !important;
+}
+
+/* Hovered/active button: darken the icon to body color and add the faint
+ * Tabler hover fill. Raise z-index so the hovered button's full border shows
+ * on top of its neighbours (their negative margins overlap it otherwise). */
+.graph-explorer-toolbar .graph-explorer-btn:hover,
+.graph-explorer-toolbar .graph-explorer-btn:focus {
+  color: var(--tblr-body-color) !important;
+  background-color: var(--tblr-bg-surface-secondary, #f8fafc) !important;
+  position: relative;
+  z-index: 1;
+}
+
+/* Icon glyphs sit at ~18px (Tabler .icon size) inside the 28px button. */
+.graph-explorer-toolbar .graph-explorer-btn .fa {
+  width: 18px !important;
+  height: 18px !important;
+  margin: 0 !important;
+}
+
+/* Language <select> at the end of the toolbar: match the 28px button height
+ * and Tabler form-select sizing so it lines up with the button group. */
+.graph-explorer-toolbar__language-selector select {
+  height: 28px !important;
+  padding: 0 24px 0 8px !important;
+  font-size: 13px !important;
+  color: var(--tblr-body-color) !important;
+  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius) !important;
+}
+
 /* Override graph-explorer font with Tabler variables */
 .graph-explorer,
 .graph-explorer-overlayed-element {

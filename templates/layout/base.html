@@ -62,7 +62,17 @@
         <!-- Body -->
         <div class="page-body">
           <div class="container-fluid">
-            {{ block "pageContent" . }}<p>This is the base page</p>{{ end }}
+            <div id="resource-table-view">
+              {{ block "pageContent" . }}<p>This is the base page</p>{{ end }}
+            </div>
+            {{ if .ResourceIRI }}
+            <!-- Graph view of the current resource. Hidden until the header's Table/Graph
+                 toggle switches to it; the graph is lazily initialized on first show so
+                 Graph Explorer measures a visible (non-zero-size) container. -->
+            <div id="resource-graph-view" class="d-none">
+              {{ template "sparqlGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+            </div>
+            {{ end }}
           </div>
         </div>
 
@@ -197,6 +207,11 @@
     <script>
       lucide.createIcons();
     </script>
+
+    <!-- Resource Table/Graph view toggle (only present on resource pages) -->
+    {{ if .ResourceIRI }}
+    <script src="/static/js/resource-view-toggle.js"></script>
+    {{ end }}
 
     {{ block "pageScripts" . }}{{ end }}
 

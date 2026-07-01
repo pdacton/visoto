@@ -1,10 +1,20 @@
 <!-- Page Header -->
-<ol class="breadcrumb" aria-label="breadcrumbs">
-  <li class="breadcrumb-item"><a href="/">Home</a></li>
-  {{ block "breadcrumb" . }}
+<div class="d-flex align-items-center justify-content-between gap-3">
+  <ol class="breadcrumb mb-0" aria-label="breadcrumbs">
+    <li class="breadcrumb-item"><a href="/">Home</a></li>
+    {{ block "breadcrumb" . }}
+    {{ end }}
+    <li class="breadcrumb-item active">{{ template "pageTitle" . }}</li>
+  </ol>
+  {{ if .ResourceIRI }}
+  <div class="btn-group btn-group-sm ms-auto flex-shrink-0" role="group" aria-label="View mode">
+    <input type="radio" class="btn-check" name="resource-view" id="resource-view-table" data-view="table" autocomplete="off" checked>
+    <label for="resource-view-table" class="btn"><i data-lucide="table-2" class="me-1"></i>Table</label>
+    <input type="radio" class="btn-check" name="resource-view" id="resource-view-graph" data-view="graph" autocomplete="off">
+    <label for="resource-view-graph" class="btn"><i data-lucide="share-2" class="me-1"></i>Graph</label>
+  </div>
   {{ end }}
-  <li class="breadcrumb-item active">{{ template "pageTitle" . }}</li>
-</ol>
+</div>
 <div class="mt-3 d-flex flex-column flex-sm-row align-items-start gap-3">
   <div class="flex-shrink-0">
     {{ block "pageIcon" . }}

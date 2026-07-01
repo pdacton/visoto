@@ -3,7 +3,7 @@
 {{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Graph Explorer Icon" width="40" />{{ end }}
 {{ define "metaTitle" }}Ontodia Test{{ end }}
 {{ define "metaIcon" }}/static/img/graphexplorer.svg{{ end }}
-1
+
 {{ define "pageContent" }}
 <!-- Graph Explorer expects Font Awesome icons, but we're replacing them with Lucide via CSS mask-image (see ontodia_overrides.css) -->
 <link rel="stylesheet" href="/static/css/ontodia_overrides.css">
@@ -13,10 +13,14 @@
 {{ define "pageScripts" }}
 <script src="https://cdn.jsdelivr.net/npm/graph-explorer@1.3.0/dist/graph-explorer-full.min.js"></script>
 <template id="available-icons">{{ iconNames | toJSON }}</template>
+<!-- Endpoint URL resolved server-side from the selectedEndpoint cookie (see staticPageHandler),
+     so Graph Explorer queries the same endpoint chosen in the header. -->
+<template id="endpoint-url">{{ .EndpointURL | toJSON }}</template>
 <script>
 (function() {
   'use strict';
   var AVAILABLE_ICONS = JSON.parse(document.getElementById('available-icons').innerHTML);
+  var ENDPOINT_URL = JSON.parse(document.getElementById('endpoint-url').innerHTML) || 'https://lindas.cz-aws.net/query/';
   var GE = window.GraphExplorer;
   var container = document.getElementById('graph-explorer-root');
 
@@ -53,7 +57,7 @@
 
     var dataProvider = new GE.SparqlDataProvider(
       {
-        endpointUrl: 'https://lindas.cz-aws.net/query/',
+        endpointUrl: ENDPOINT_URL,
         acceptBlankNodes: false,
         queryMethod: GE.SparqlQueryMethod.GET,
       },
@@ -140,11 +144,7 @@
   // unset (fine) but any colour we only put on `connection.stroke` never reaches the
   // arrowhead, because the arrowhead is a separate <marker><path> whose fill is what
   // paints it. Setting markerTarget.fill is the part that recolours the arrow.
-  // TODO: selected-link color (Tabler primary #066fd1, matching the node ring) is
-  //   deferred — renderLink() gets no selection state and _haloLink.scss doesn't
-  //   style the line, so we need to inspect how a selected link renders in the SVG
-  //   DOM first before wiring it (CSS stroke on the selected path, or JS if state
-  //   turns out to be available).
+
   var LINK_LINE = '#e6e7e9';
   var LINK_LABEL = '#1d273b';
 
