@@ -3,7 +3,7 @@
 {{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Graph Explorer Icon" width="40" />{{ end }}
 {{ define "metaTitle" }}Ontodia Test{{ end }}
 {{ define "metaIcon" }}/static/img/graphexplorer.svg{{ end }}
-
+1
 {{ define "pageContent" }}
 <!-- Graph Explorer expects Font Awesome icons, but we're replacing them with Lucide via CSS mask-image (see ontodia_overrides.css) -->
 <link rel="stylesheet" href="/static/css/ontodia_overrides.css">
@@ -125,10 +125,37 @@
     return StandardTemplateWithIconUrl;
   }
 
+  // linkTemplateResolver: style all edges with Tabler-palette neutrals instead of
+  // the library's default black arrowheads / per-type colors.
+  // Hex values mirror Tabler CSS vars (SVG presentation attrs can't use var()):
+  //   #374151  -> line + arrowhead — matches the grey Graph Explorer uses for its
+  //               own UI elements (halo icons, dialog close button); = --tblr-body-color
+  //   #1d273b  -> label text (medium weight, not bold)
+  var LINK_LINE = '#374151';
+  var LINK_LABEL = '#1d273b';
+  function linkTemplateResolver(_linkTypeId) {
+    return {
+      markerTarget: { fill: LINK_LINE, stroke: LINK_LINE },
+      renderLink: function() {
+        return {
+          connection: { stroke: LINK_LINE, 'stroke-width': 1.5 },
+          label: {
+            attrs: {
+              // White backing pill so overlapping labels stay readable (no border).
+              rect: { fill: '#ffffff', stroke: 'none', rx: 3, ry: 3 },
+              text: { fill: LINK_LABEL, 'font-size': 12, 'font-weight': 500 },
+            },
+          },
+        };
+      },
+    };
+  }
+
   var props = {
     ref: onWorkspaceMounted,
     typeStyleResolver: typeStyleResolver,
     elementTemplateResolver: elementTemplateResolver,
+    linkTemplateResolver: linkTemplateResolver,
     languages: [
       { code: 'en', label: 'English' },
       { code: 'de', label: 'German' },

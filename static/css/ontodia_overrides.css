@@ -224,6 +224,81 @@
   object-fit: contain;
 }
 
+/* Node boxes — align with Tabler card styling (radius, border, shadow).
+ * Theme-agnostic: uses --tblr-* variables so light and dark themes both adapt.
+ * overflow:hidden clips the colored accent strip to the rounded corner. */
+.graph-explorer-standard-template__main {
+  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius) !important;
+  box-shadow: var(--tblr-box-shadow-sm) !important;
+  overflow: hidden !important;
+}
+
+/* Expanded properties panel — use Tabler grey for the divider instead of the
+ * node's accent color. Theme-agnostic; dark mode inherits this too. */
+.graph-explorer-standard-template__body {
+  border-left-color: var(--tblr-border-color) !important;
+}
+
+/* Expanded properties dropdown box — the library sets an inline border-color
+ * in the node's accent hue; override to Tabler grey to match the node box. */
+.graph-explorer-standard-template__dropdown {
+  border-color: var(--tblr-border-color) !important;
+}
+
+/* ===== CONNECTIONS MENU — Tabler styling (theme-agnostic) ===== */
+
+/* Outer dialog frame — the library draws a near-black 1px border, square
+ * corners and a dark-tinted shadow. Retint to a Tabler card frame.
+ * NOTE: no overflow:hidden here — the "Connections" title label is positioned
+ * ~10px above the dialog's top edge and would get clipped. */
+.graph-explorer-dialog {
+  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius) !important;
+  box-shadow: var(--tblr-box-shadow) !important;
+}
+
+/* Search inputs — align ALL Graph Explorer text inputs with Tabler form-control.
+ * Covers the Classes filter, Instances search, and Connections-menu search
+ * (they all share .graph-explorer-form-control). Tabler blue border + focus
+ * ring on focus. */
+.graph-explorer-form-control {
+  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius) !important;
+  padding: 0.4375rem 0.75rem !important;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.graph-explorer-form-control:focus {
+  border-color: var(--tblr-primary) !important;
+  box-shadow: 0 0 0 0.25rem rgba(var(--tblr-primary-rgb), 0.25) !important;
+  outline: 0 !important;
+}
+
+/* Connection rows — subtle Tabler separators and hover */
+.link-in-popup-menu {
+  border-radius: var(--tblr-border-radius) !important;
+  transition: background-color 0.12s ease-in-out;
+}
+
+.link-in-popup-menu:hover {
+  background-color: var(--tblr-bg-surface-secondary) !important;
+}
+
+/* Count badges — Tabler badge look (pill, muted surface) */
+.graph-explorer-badge.link-in-popup-menu__count {
+  background-color: var(--tblr-bg-surface-tertiary) !important;
+  color: var(--tblr-secondary) !important;
+  border-radius: 999px !important;
+  font-weight: 600 !important;
+}
+
+/* Separator line between "All" and the individual links */
+.graph-explorer-connections-menu_links-list__hr {
+  border: 0 !important;
+  border-top: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+}
+
 /* Panel backgrounds - use surface color in all themes */
 .graph-explorer-class-tree,
 .graph-explorer-instances-search,
@@ -423,15 +498,14 @@
     color: var(--tblr-primary-fg) !important;
   }
 
-  /* Element nodes on canvas - override inline background colors */
+  /* Element nodes on canvas - override inline background color only;
+   * radius/border-width/shadow come from the shared theme-agnostic rule above. */
   .graph-explorer-standard-template__main {
     background-color: var(--tblr-bg-surface-secondary) !important;
-    border-color: var(--tblr-border-color) !important;
   }
 
   .graph-explorer-standard-template__body {
     background-color: var(--tblr-bg-surface) !important;
-    border-left-color: var(--tblr-border-color) !important;
   }
 
   .graph-explorer-standard-template__body-content {
