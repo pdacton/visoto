@@ -32,16 +32,41 @@
   {{ $endpointUrl := .endpointUrl }}
   {{ $height := or .height "calc(100vh - 200px)" }}
   {{ $lazy := .lazy }}
+  {{ $title := or .title "Graph" }}
+  {{ $icon := or .icon "share-2" }}
 
   <!-- Graph Explorer expects Font Awesome icons, but we're replacing them with Lucide via
        CSS mask-image (see ontodia_overrides.css). Loading the same stylesheet more than once
        is harmless — the browser dedupes identical hrefs. -->
   <link rel="stylesheet" href="/static/css/ontodia_overrides.css">
 
-  <!-- Height is applied via JS from the data island below. Go's html/template rejects a
-       dynamic value interpolated directly into a style="" attribute (CSS context), emitting
-       the ZgotmplZ sentinel; assigning it from a JSON string in JS avoids that. -->
-  <div id="{{ $id }}-root" style="width: 100%; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius);"></div>
+  <!-- Card wrapper — matches the house pattern used by the other sparql-* partials
+       (see templates/partials/sparql-table.html). The header carries the title and the
+       "maximize" (fullscreen) button; the graph canvas lives in the card body. -->
+  <div class="card" id="{{ $id }}-card">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        {{ if $icon }}<i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i>{{ end }}
+        {{ if $title }}<h3 class="card-title mb-0">{{ $title }}</h3>{{ end }}
+      </div>
+      <div class="btn-actions">
+        <a class="btn-action" id="{{ $id }}-maximize" title="Fullscreen" style="cursor: pointer;">
+          <i data-lucide="maximize"></i>
+        </a>
+      </div>
+    </div>
+    <div class="card-body p-0">
+      <!-- Height is applied via JS from the data island below. Go's html/template rejects a
+           dynamic value interpolated directly into a style="" attribute (CSS context), emitting
+           the ZgotmplZ sentinel; assigning it from a JSON string in JS avoids that.
+           The .graph-canvas class is targeted by the .graph-maximized fullscreen CSS. -->
+      <div id="{{ $id }}-root" class="graph-canvas" style="width: 100%;"></div>
+      <!-- Floating exit button, shown only while maximized (see ontodia_overrides.css). -->
+      <button type="button" class="btn btn-icon graph-exit-fullscreen" id="{{ $id }}-exit" title="Exit fullscreen">
+        <i data-lucide="minimize"></i>
+      </button>
+    </div>
+  </div>
 
   <!-- Data islands: available icon names, resolved endpoint URL, starting IRIs, height. -->
   <template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>
@@ -57,6 +82,10 @@
 
       // Go's html/template JS-context escaper safely quotes this string literal.
       var ID = "{{ $id }}";
+
+      // Set once the Graph Explorer workspace mounts; used by the fullscreen toggle and
+      // the resize handler to re-fit the canvas after its size changes.
+      var currentWorkspace = null;
 
       // When lazy, init is deferred until the container is first made visible (the caller
       // dispatches a 'graph:init' event at the -root element). This avoids Graph Explorer
@@ -146,6 +175,8 @@
 
         function onWorkspaceMounted(workspace) {
           if (!workspace) return;
+          // Stash the workspace so the fullscreen toggle / resize handler can re-fit later.
+          currentWorkspace = workspace;
 
           // OWLStatsSettings with LINDAS-specific label properties and prefixes.
           var settings = Object.assign({}, GE.OWLStatsSettings, {
@@ -336,6 +367,51 @@
         if (initialized) return;
         initialized = true;
         whenGraphExplorerReady(init);
+      }
+
+      // --- Fullscreen ("maximize") toggle -----------------------------------------------
+      // Toggling the .graph-maximized class on the card pins the canvas to the viewport
+      // (see .graph-maximized rules in ontodia_overrides.css). We deliberately DON'T use
+      // the JS Fullscreen API — a fixed overlay lets native F11 stack on top for true
+      // edge-to-edge. Graph Explorer only auto-fits once at mount, so re-fit after the box
+      // resizes (both on toggle and on window resize, e.g. F11).
+      function setupFullscreen() {
+        var card = document.getElementById(ID + '-card');
+        var maximizeBtn = document.getElementById(ID + '-maximize');
+        var exitBtn = document.getElementById(ID + '-exit');
+        if (!card || !maximizeBtn || !exitBtn) return;
+
+        function refit() {
+          // zoomToFit re-centers within the resized viewport; guard until the workspace mounts.
+          setTimeout(function() {
+            if (currentWorkspace && currentWorkspace.zoomToFit) currentWorkspace.zoomToFit();
+          }, 100);
+        }
+
+        maximizeBtn.addEventListener('click', function() {
+          card.classList.add('graph-maximized');
+          refit();
+        });
+        exitBtn.addEventListener('click', function() {
+          card.classList.remove('graph-maximized');
+          refit();
+        });
+
+        // Re-fit on viewport resize while maximized (covers native F11 growing the viewport).
+        var resizeTimer;
+        window.addEventListener('resize', function() {
+          if (!card.classList.contains('graph-maximized')) return;
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(function() {
+            if (currentWorkspace && currentWorkspace.zoomToFit) currentWorkspace.zoomToFit();
+          }, 150);
+        });
+      }
+      // Buttons exist in the DOM regardless of GE readiness; wire them up as soon as possible.
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupFullscreen);
+      } else {
+        setupFullscreen();
       }
 
       if (LAZY) {

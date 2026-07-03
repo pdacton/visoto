@@ -866,3 +866,37 @@
     color: var(--tblr-primary) !important;
   }
 }
+
+/* ===== FULLSCREEN ("maximize") ==================================================
+ * Toggled by the maximize/exit buttons in templates/partials/sparql-graph.html.
+ * Goal: the CANVAS ONLY fills the viewport (card chrome hidden), Miro-style. Using
+ * position:fixed + inset:0 pins it to the viewport, so native browser fullscreen
+ * (F11) stacks on top for true edge-to-edge without any JS Fullscreen API.
+ */
+.card.graph-maximized > .card-header {
+  display: none;
+}
+.card.graph-maximized > .card-body {
+  padding: 0;
+}
+.card.graph-maximized .graph-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;             /* above app chrome; below Bootstrap modals (1055+) */
+  height: 100vh !important;  /* overrides the JS-set inline height */
+  border: none;
+  border-radius: 0;
+  background: var(--tblr-bg-surface, #fff);
+}
+
+/* Floating exit button — hidden normally, shown only while maximized. */
+.graph-exit-fullscreen {
+  display: none;
+}
+.card.graph-maximized .graph-exit-fullscreen {
+  display: inline-flex;
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 1060;             /* above the fullscreen canvas */
+}
