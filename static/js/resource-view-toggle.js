@@ -1,16 +1,21 @@
-/* Resource page Table <-> Graph view toggle.
+/* Resource page Table <-> Graph <-> Data view toggle.
  *
  * Wiring (see templates/layout/header.html and templates/layout/base.html):
- *   - Header renders a Tabler btn-check radio group with inputs [data-view="table"|"graph"].
- *     Bootstrap styles the checked radio's label as active for free.
- *   - Body wraps the table content in #resource-table-view and the graph in
- *     #resource-graph-view (starts .d-none).
- *   - The graph partial (templates/partials/sparql-graph.html) is rendered with lazy=true,
- *     so it defers init until it receives a 'graph:init' event on its -root element.
+ *   - Header renders a Tabler btn-check radio group with inputs
+ *     [data-view="table"|"graph"|"data"]. Bootstrap styles the checked radio's
+ *     label as active for free.
+ *   - Body wraps the table content in #resource-table-view, the graph in
+ *     #resource-graph-view, and the data table in #resource-data-view (both the
+ *     graph and data views start .d-none).
+ *   - The graph partial (templates/partials/sparql-graph.html) is rendered with
+ *     lazy=true and initialized on a 'graph:init' event at its -root element.
+ *   - The data view (templates/partials/sparql-async-table.html) is an HTMX
+ *     element with hx-trigger="showData"; the query runs only when we fire that
+ *     event on first reveal.
  *
- * Switching only shows/hides the wrappers — the graph instance is never destroyed, so
- * dragged node positions, expansions and zoom/pan survive repeated toggling. Modeled on
- * bindRangeButtons in static/js/monitoring.js.
+ * Switching only shows/hides the wrappers — neither the graph instance nor the
+ * loaded data table is destroyed, so state (dragged nodes, zoom, table grouping)
+ * survives repeated toggling. Modeled on bindRangeButtons in monitoring.js.
  */
 (function () {
   'use strict';
@@ -19,14 +24,24 @@
     var inputs = document.querySelectorAll('.btn-check[data-view]');
     var tableView = document.getElementById('resource-table-view');
     var graphView = document.getElementById('resource-graph-view');
-    if (!inputs.length || !tableView || !graphView) return; // not a resource page
+    var dataView = document.getElementById('resource-data-view');
+    if (!inputs.length || !tableView) return; // not a resource page
 
     var graphInitialized = false;
+    var dataInitialized = false;
+
+    function showTable() {
+      tableView.classList.remove('d-none');
+      if (graphView) graphView.classList.add('d-none');
+      if (dataView) dataView.classList.add('d-none');
+    }
 
     function showGraph() {
-      // Reveal the container before initializing so Graph Explorer measures a non-zero size.
+      if (!graphView) return;
+      // Reveal before initializing so Graph Explorer measures a non-zero size.
       graphView.classList.remove('d-none');
       tableView.classList.add('d-none');
+      if (dataView) dataView.classList.add('d-none');
       if (!graphInitialized) {
         graphInitialized = true;
         // The graph partial defaults its id to "sparql-graph" (base.html passes none).
@@ -35,10 +50,17 @@
       }
     }
 
-    function showTable() {
-      // Leave the graph instance alive (hidden) so its state is preserved on return.
-      tableView.classList.remove('d-none');
-      graphView.classList.add('d-none');
+    function showData() {
+      if (!dataView) return;
+      dataView.classList.remove('d-none');
+      tableView.classList.add('d-none');
+      if (graphView) graphView.classList.add('d-none');
+      if (!dataInitialized) {
+        dataInitialized = true;
+        // Fire the HTMX trigger on the placeholder to run the query once.
+        var hxEl = dataView.querySelector('[hx-get]');
+        if (hxEl && window.htmx) window.htmx.trigger(hxEl, 'showData');
+      }
     }
 
     // btn-check radios manage their own active styling; we only react to selection.
@@ -47,11 +69,21 @@
         if (!input.checked) return;
         if (input.dataset.view === 'graph') {
           showGraph();
+        } else if (input.dataset.view === 'data') {
+          showData();
         } else {
           showTable();
         }
       });
     });
+
+    // The async table fragment arrives via HTMX; re-run Lucide so the card icon
+    // (and any icon cells) render after the swap.
+    if (dataView) {
+      dataView.addEventListener('htmx:afterSwap', function () {
+        if (window.lucide) window.lucide.createIcons();
+      });
+    }
   }
 
   if (document.readyState === 'loading') {

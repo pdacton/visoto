@@ -141,8 +141,8 @@
         if (urlIri) startIris.push(urlIri);
         // De-duplicate while preserving order.
         startIris = startIris.filter(function(v, i) { return startIris.indexOf(v) === i; });
-        // Preserve demo behavior: fall back to a default when nothing was provided.
-        if (startIris.length === 0) startIris = ['https://ld.admin.ch/canton/2'];
+        // Fall back to a default when nothing was provided.
+        if (startIris.length === 0) startIris = ['http://www.w3.org/2000/01/rdf-schema#Class'];
 
         function onWorkspaceMounted(workspace) {
           if (!workspace) return;

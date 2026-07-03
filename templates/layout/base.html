@@ -72,6 +72,33 @@
             <div id="resource-graph-view" class="d-none">
               {{ template "sparqlGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
             </div>
+            <!-- Data view: every triple touching the current resource, in one table.
+                 The query is expensive and this view is used infrequently, so it is
+                 loaded lazily (hx-trigger="showData") — the toggle JS fires the event
+                 the first time the user opens the Data tab. The <sparql-async> element
+                 is inert at page render (only findAsyncQuery consumes it); ?? is
+                 substituted with the resource IRI by asyncTableHandler. -->
+            <div id="resource-data-view" class="d-none">
+              <sparql-async id="resourceTriples" class="d-none">
+                SELECT ?kind ?property ?value ?type WHERE {
+                  { ?? ?property ?value . FILTER(isLiteral(?value)) BIND("property" AS ?kind) }
+                  UNION
+                  { ?? ?property ?value . FILTER(isIRI(?value)) BIND("outgoing" AS ?kind)
+                    OPTIONAL { ?value a ?type . } }
+                  UNION
+                  { ?value ?property ?? . BIND("incoming" AS ?kind)
+                    OPTIONAL { ?value a ?type . } }
+                } LIMIT 5000
+              </sparql-async>
+              {{ template "sparqlAsyncTable" (dict
+                    "queryId" "resourceTriples"
+                    "iri" .ResourceIRI
+                    "title" "All Triples"
+                    "icon" "database"
+                    "iconVar" "type"
+                    "badgeVar" "kind"
+                    "trigger" "showData") }}
+            </div>
             {{ end }}
           </div>
         </div>

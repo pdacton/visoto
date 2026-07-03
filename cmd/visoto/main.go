@@ -251,38 +251,56 @@ func searchHandler(c *gin.Context) {
 	})
 }
 
+// asyncQueryDirs are the template directories scanned for <sparql-async id=...>
+// declarations. Pages host metric queries; layouts host the resource Data view;
+// instances/classes host per-type resource tables; components are included for
+// forward-looking async consumers.
+var asyncQueryDirs = []string{
+	"templates/pages",
+	"templates/layout",
+	"templates/instances",
+	"templates/classes",
+	"templates/components",
+}
+
+// findAsyncQuery locates the query text of a <sparql-async id=id> element across
+// all async template directories. Shared by metricHandler and asyncTableHandler.
+func findAsyncQuery(id string) (string, bool) {
+	for _, dir := range asyncQueryDirs {
+		files, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, f := range files {
+			if f.IsDir() || !strings.HasSuffix(f.Name(), ".html") {
+				continue
+			}
+			content, err := os.ReadFile(dir + "/" + f.Name())
+			if err != nil {
+				continue
+			}
+			elements, err := parser.ExtractAsyncElements(string(content))
+			if err != nil {
+				continue
+			}
+			for _, el := range elements {
+				if el.ID == id {
+					return el.Content, true
+				}
+			}
+		}
+	}
+	return "", false
+}
+
 // metricHandler serves /api/metric/:id — called by HTMX to lazily load metric counts on the home page.
-// It reads the sparql-async element with the matching id from home.html, executes its query, and returns the count.
+// It reads the sparql-async element with the matching id, executes its query, and returns the count.
 func metricHandler(c *gin.Context) {
 	id := c.Param("id")
 	acceptLanguage := c.GetHeader("Accept-Language")
 
-	// Search all page templates for a sparql-async element matching the requested id
-	query := ""
-	templateFiles, _ := os.ReadDir("templates/pages")
-	for _, f := range templateFiles {
-		if f.IsDir() || !strings.HasSuffix(f.Name(), ".html") {
-			continue
-		}
-		content, err := os.ReadFile("templates/pages/" + f.Name())
-		if err != nil {
-			continue
-		}
-		elements, err := parser.ExtractAsyncElements(string(content))
-		if err != nil {
-			continue
-		}
-		for _, el := range elements {
-			if el.ID == id {
-				query = el.Content
-				break
-			}
-		}
-		if query != "" {
-			break
-		}
-	}
-	if query == "" {
+	query, found := findAsyncQuery(id)
+	if !found {
 		c.String(http.StatusNotFound, "0")
 		return
 	}
@@ -299,6 +317,54 @@ func metricHandler(c *gin.Context) {
 
 	c.Header("Content-Type", "text/html")
 	c.String(http.StatusOK, count)
+}
+
+// asyncTableHandler serves /api/async-table/:id — called by HTMX to lazily load a
+// full SPARQL result table (the sparqlAsyncTable partial). It finds the matching
+// <sparql-async> query, optionally scopes it to a resource IRI (?? -> <iri>),
+// executes it, and returns a rendered sparqlTable HTML fragment.
+//
+// Presentation params are read from the query string so a single generic handler
+// can serve many tables: title, icon, iconVar, badgeVar.
+func asyncTableHandler(c *gin.Context) {
+	id := c.Param("id")
+	acceptLanguage := c.GetHeader("Accept-Language")
+
+	query, found := findAsyncQuery(id)
+	if !found {
+		c.String(http.StatusNotFound, "unknown async query id")
+		return
+	}
+
+	// Resource scoping: substitute the entity placeholder with the given IRI,
+	// mirroring the preprocessor's ?? convention. Queries without ?? are unaffected.
+	if iri := c.Query("iri"); iri != "" {
+		query = strings.ReplaceAll(query, "??", "<"+iri+">")
+	}
+
+	preprocessor := prepareQueryInputs(c)
+	result, err := preprocessor.ExecuteQuery(query, true, acceptLanguage, "")
+	if err != nil {
+		// Surface the error inside the table card (sparqlTable renders result.Error).
+		result.Error = err.Error()
+	}
+
+	params := map[string]any{
+		"result":   result,
+		"id":       id,
+		"title":    c.Query("title"),
+		"icon":     c.Query("icon"),
+		"iconVar":  c.Query("iconVar"),
+		"badgeVar": c.Query("badgeVar"),
+	}
+	html, err := templates.RenderSparqlTable(params)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "failed to render table")
+		return
+	}
+
+	c.Header("Content-Type", "text/html")
+	c.String(http.StatusOK, string(html))
 }
 
 // ---- Monitoring handlers ----
@@ -448,6 +514,7 @@ func main() {
 	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
 	router.GET("/api/monitoring/data", monitoringDataHandler)
 	router.GET("/api/metric/:id", metricHandler)
+	router.GET("/api/async-table/:id", asyncTableHandler)
 	router.GET("/resource/*path", resourcePageHandler)
 	router.Any("/mcp", gin.WrapH(mcpHandler))
 	router.GET("/health", gin.WrapH(mcpHandler))

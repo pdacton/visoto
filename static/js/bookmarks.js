@@ -9,6 +9,7 @@
 (function () {
   var STORAGE_KEY = 'visoto-bookmarks';
   var DRAG_TYPE_IRI = 'text/visoto-iri';
+  var DRAG_TYPE_ICON = 'text/visoto-icon';
   var DRAG_TYPE_IDX = 'text/visoto-bookmark-index';
 
   // ── Storage ────────────────────────────────────────────────────────────────
@@ -29,10 +30,10 @@
 
   // ── Data operations ────────────────────────────────────────────────────────
 
-  function addBookmark(iri, label, shortIri) {
+  function addBookmark(iri, label, shortIri, icon) {
     var items = loadBookmarks();
     if (items.some(function (b) { return b.iri === iri; })) return; // deduplicate
-    items.unshift({ iri: iri, label: label || shortIri || iri, shortIri: shortIri || '' });
+    items.unshift({ iri: iri, label: label || shortIri || iri, shortIri: shortIri || '', icon: icon || '' });
     saveBookmarks(items);
     renderBookmarks();
   }
@@ -99,7 +100,12 @@
       li.dataset.idx = idx;
       li.dataset.iri = item.iri;
 
-      var iconSrc = '/static/img/resource/' + lastSegment(item.iri) + '.svg';
+      // Bookmarks reference instances, not classes. Icons are keyed by RDF type
+      // (Person.svg, Organization.svg, …), which we know only if it was captured
+      // when the bookmark was created; otherwise use the generic instance icon.
+      // Never derive the icon from the instance IRI's last segment — that yields
+      // a bare identifier (e.g. "5359.svg") that never exists and 404s.
+      var iconSrc = item.icon || '/static/img/resource/defaultInstance.svg';
       var label = item.label || item.shortIri || lastSegment(item.iri);
       var href = '/resource/' + encodeURIComponent(item.iri);
 
@@ -107,7 +113,7 @@
         '<a class="nav-link pe-1" href="' + href + '" title="' + escapeHtml(item.iri) + '">' +
           '<span class="nav-link-icon d-none d-lg-inline-block me-2 flex-shrink-0">' +
             '<img src="' + iconSrc + '" alt="" width="16" height="16" ' +
-              'onerror="this.style.display=\'none\'">' +
+              'onerror="this.onerror=null;this.src=\'/static/img/resource/defaultInstance.svg\'">' +
           '</span>' +
           '<span class="nav-link-title text-truncate">' + escapeHtml(label) + '</span>' +
         '</a>' +
@@ -198,6 +204,7 @@
 
         var iri = e.dataTransfer.getData(DRAG_TYPE_IRI);
         var label = e.dataTransfer.getData('text/plain') || '';
+        var icon = e.dataTransfer.getData(DRAG_TYPE_ICON) || '';
 
         // Fall back to text/uri-list (browser native for dragged links)
         if (!iri) {
@@ -211,7 +218,7 @@
 
         if (!iri) return;
         if (!label) label = lastSegment(iri);
-        addBookmark(iri, label, '');
+        addBookmark(iri, label, '', icon);
 
         // Switch to bookmarks tab so user sees the result
         var bookmarksTab = document.getElementById('sidebar-tab-bookmarks');
@@ -225,15 +232,31 @@
   // Populate the drag payload so a resource can be dropped onto the bookmarks
   // sidebar or the Graph Explorer canvas. `href` is the native /resource/ link
   // (may be omitted, e.g. when dragging the page title, which has no anchor).
-  function setDragPayload(e, iri, label, href) {
+  function setDragPayload(e, iri, label, href, icon) {
     e.dataTransfer.setData(DRAG_TYPE_IRI, iri);
     e.dataTransfer.setData('text/plain', label || '');
+    // Carry the type icon (e.g. .../Person.svg) so a bookmark drop can show it.
+    if (icon) e.dataTransfer.setData(DRAG_TYPE_ICON, icon);
     // Graph Explorer canvas reads this key first; give it the clean RDF IRI
     // so dropped nodes resolve their real label instead of the /resource/ URL.
     e.dataTransfer.setData('application/x-graph-explorer-elements', JSON.stringify([iri]));
     // Also set uri-list so it works as a native browser link drag
     e.dataTransfer.setData('text/uri-list', href || ('/resource/' + encodeURIComponent(iri)));
     e.dataTransfer.effectAllowed = 'copyMove';
+  }
+
+  // Look for a class/type icon rendered near a dragged resource link (e.g. the
+  // Person.svg / Organization.svg image that SPARQL tables place next to each
+  // row). Returns the icon URL if it points at a real type icon, else ''.
+  function findTypeIcon(anchor) {
+    var row = anchor.closest('tr, li, .card, td') || anchor.parentElement;
+    var img = anchor.querySelector && anchor.querySelector('img[src*="/img/resource/"]');
+    if (!img && row) img = row.querySelector('img[src*="/img/resource/"]');
+    if (!img) return '';
+    var src = img.getAttribute('src') || '';
+    // Ignore the generic fallbacks — they carry no type information.
+    if (/\/(default|defaultClass|defaultInstance|standard)\.svg$/.test(src)) return '';
+    return src;
   }
 
   function initResourceLinkDrag() {
@@ -252,7 +275,7 @@
       var iri = extractIri(href);
       if (!iri) return;
 
-      setDragPayload(e, iri, anchor.textContent.trim(), href);
+      setDragPayload(e, iri, anchor.textContent.trim(), href, findTypeIcon(anchor));
     });
   }
 

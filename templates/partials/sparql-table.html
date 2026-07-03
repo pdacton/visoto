@@ -105,7 +105,17 @@
   {{ if $id }}
     <script>
       /* eslint-disable */
-      document.addEventListener('DOMContentLoaded', function() {
+      // Run on DOMContentLoaded for pre-rendered tables, or immediately if the
+      // document is already loaded (e.g. this partial was injected via HTMX after
+      // page load, as in the async Data view). Defined once, guarded by a flag.
+      window.sparqlTableOnReady = window.sparqlTableOnReady || function(fn) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', fn);
+        } else {
+          fn();
+        }
+      };
+      window.sparqlTableOnReady(function() {
         var sparqlEndpointBtn = document.querySelector(".sparql-endpoint-{{ $id }}");
         if (sparqlEndpointBtn) {
           sparqlEndpointBtn.addEventListener("click", function(e) {
@@ -124,7 +134,14 @@
   {{ if and $id $hasResults }}
     <script>
       /* eslint-disable */
-      document.addEventListener('DOMContentLoaded', function() {
+      window.sparqlTableOnReady = window.sparqlTableOnReady || function(fn) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', fn);
+        } else {
+          fn();
+        }
+      };
+      window.sparqlTableOnReady(function() {
         // Parse embedded JSON data from template elements
         var vars = JSON.parse(document.getElementById("{{ $id }}-vars").innerHTML.trim());
         var bindings = JSON.parse(document.getElementById("{{ $id }}-bindings").innerHTML.trim());

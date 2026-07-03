@@ -1,0 +1,53 @@
+<!--
+  Partial template for a lazily-loaded SPARQL result table.
+
+  Renders a spinner placeholder that HTMX swaps with a fully-featured sparqlTable
+  fragment (grouping, search, CSV/JSON/XLSX export, label resolution) fetched from
+  /api/async-table/:queryId. A table-returning sibling of sparqlMetric.
+
+  The query itself is declared separately in a <sparql-async id="..."> element on
+  the same page/layout/component; the handler finds it by id and executes it only
+  when this element is triggered.
+
+  Usage:
+    <sparql-async id="myTable">SELECT ... WHERE { ... }</sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+          "queryId" "myTable"
+          "title"   "My Table"
+          "icon"    "database"
+          "iconVar" "type"
+          "badgeVar" "kind") }}
+
+  Parameters (via dict):
+    - queryId:  (required) id matching the <sparql-async> element
+    - iri:      (optional) resource IRI; substituted for ?? in the query
+    - title:    (optional) card title, passed through to sparqlTable
+    - icon:     (optional) Lucide icon name for the card header
+    - iconVar:  (optional) SPARQL var whose IRI selects a resource row icon
+    - badgeVar: (optional) SPARQL var rendered as a Tabler badge
+    - trigger:  (optional) HTMX trigger; defaults to "load" (eager, like metrics).
+                Pass a custom event (e.g. "showData") to defer until first reveal.
+-->
+
+{{ define "sparqlAsyncTable" }}
+
+  {{ $queryId := .queryId }}
+  {{ $trigger := or .trigger "load" }}
+  {{/* Build the query string appending only params that are actually set, so
+       absent dict keys don't emit Go's "<no value>" sentinel into the URL. */}}
+  {{ $url := printf "/api/async-table/%s?_=1" $queryId }}
+  {{ with .iri }}{{ $url = printf "%s&iri=%s" $url (urlquery .) }}{{ end }}
+  {{ with .title }}{{ $url = printf "%s&title=%s" $url (urlquery .) }}{{ end }}
+  {{ with .icon }}{{ $url = printf "%s&icon=%s" $url (urlquery .) }}{{ end }}
+  {{ with .iconVar }}{{ $url = printf "%s&iconVar=%s" $url (urlquery .) }}{{ end }}
+  {{ with .badgeVar }}{{ $url = printf "%s&badgeVar=%s" $url (urlquery .) }}{{ end }}
+
+  <div hx-get="{{ $url }}"
+       hx-trigger="{{ $trigger }}"
+       hx-swap="innerHTML">
+    <div class="text-center p-4">
+      <span class="spinner-border text-muted" role="status" aria-hidden="true"></span>
+    </div>
+  </div>
+
+{{ end }}
