@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -113,6 +114,18 @@ func Load(configPath string) (*Config, error) {
 
 	// Parse prefix strings into Prefix structs
 	cfg.RDF.ParsedPrefixes = cfg.RDF.ParsePrefixStrings()
+
+	// The PORT env var, when set, overrides the port from the config file.
+	// This lets a second instance run on a different port without editing
+	// visoto.config (e.g. PORT=8061 go run ./cmd/visoto/).
+	if portEnv := os.Getenv("PORT"); portEnv != "" {
+		port, err := strconv.Atoi(portEnv)
+		if err != nil || port < 1 || port > 65535 {
+			return cfg, fmt.Errorf("invalid PORT env var %q: must be an integer in 1..65535", portEnv)
+		}
+		cfg.Application.Port = port
+		logger.Get().Info("port overridden by PORT env var", slog.Int("port", port))
+	}
 
 	return cfg, nil
 }
