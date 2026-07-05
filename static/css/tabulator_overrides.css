@@ -130,26 +130,28 @@
    COLUMN RESIZE HANDLES
    ============================================================ */
 
-/* Header column resize handles */
-.tabulator .tabulator-header .tabulator-col-resize-handle {
+/* Column resize handles.
+   IMPORTANT: the header and body handles MUST share the same width and margins.
+   Tabulator lays each column's resize handle inside the column at its edge, so a
+   handle that is wider in the header than in the body makes each header column
+   fractionally wider than its body cell — that difference accumulates left-to-right
+   and drifts the header labels out of alignment with the cell text (each column
+   off by a few px more than the last). Keep both rules dimensionally identical. */
+.tabulator .tabulator-header .tabulator-col-resize-handle,
+.tabulator .tabulator-row .tabulator-col-resize-handle {
     position: relative;
-    width: 4px;
-    margin-left: -2px;
-    margin-right: -2px;
+    width: 5px;
+    margin-left: -3px;
+    margin-right: -3px;
     background-color: transparent;
     transition: background-color 0.2s ease-in-out;
 }
 
+/* Only the header handle is interactive (draggable to resize) */
 .tabulator .tabulator-header .tabulator-col-resize-handle:hover {
     background-color: var(--tblr-primary);
     opacity: 0.5;
     cursor: col-resize;
-}
-
-/* Row cell resize handles (visual only, not interactive) */
-.tabulator-row .tabulator-col-resize-handle {
-    width: 1px;
-    background-color: transparent;
 }
 
 /* ============================================================

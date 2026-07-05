@@ -1,0 +1,119 @@
+{{ define "pageTitle" }}Plazi Classification{{ end }}
+{{ define "pageSubtitle" }}An overview of the Plazi biological classification of living organisms.{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/TaxonName.svg" alt="Plazi Classification" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/TaxonName.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>About Plazi</h2>
+
+<p>
+  <a href="https://plazi.org/" target="_blank" rel="noopener">Plazi</a> is a not-for-profit
+  organisation that liberates taxonomic knowledge from the scientific literature. It converts
+  descriptions of species &mdash; so-called <em>treatments</em> &mdash; from published
+  articles into machine-readable, openly accessible data, and publishes them as linked data.
+</p>
+
+<p>
+  Every organism described in the literature is placed within a hierarchical
+  <strong>classification</strong>. At its very top sit a handful of kingdoms that group all
+  living things. Each kingdom below is represented by a
+  <a href="/resource/http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FTaxonName">TaxonName</a>
+  resource that you can explore in Visoto to drill down through the tree of life.
+</p>
+
+<div class="row row-deck row-cards mt-4">
+
+  <!-- Animalia -->
+  <div class="col-sm-6 col-lg-4">
+    <a class="card card-link h-100" href="/resource/http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FAnimalia">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <span class="avatar me-3">
+            <img src="/static/img/resource/TaxonName.svg" alt="TaxonName">
+          </span>
+          <h3 class="card-title m-0">Animalia</h3>
+        </div>
+        <div class="text-secondary mt-auto">Animals &mdash; multicellular organisms that feed on other organisms.</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Plantae -->
+  <div class="col-sm-6 col-lg-4">
+    <a class="card card-link h-100" href="/resource/http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FPlantae">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <span class="avatar me-3">
+            <img src="/static/img/resource/TaxonName.svg" alt="TaxonName">
+          </span>
+          <h3 class="card-title m-0">Plantae</h3>
+        </div>
+        <div class="text-secondary mt-auto">Plants &mdash; mostly photosynthetic organisms, from mosses to flowering plants.</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Fungi -->
+  <div class="col-sm-6 col-lg-4">
+    <a class="card card-link h-100" href="/resource/http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FFungi">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <span class="avatar me-3">
+            <img src="/static/img/resource/TaxonName.svg" alt="TaxonName">
+          </span>
+          <h3 class="card-title m-0">Fungi</h3>
+        </div>
+        <div class="text-secondary mt-auto">Fungi &mdash; moulds, yeasts and mushrooms that absorb nutrients from their surroundings.</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Bacteria -->
+  <div class="col-sm-6 col-lg-4">
+    <a class="card card-link h-100" href="/resource/http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FBacteria">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <span class="avatar me-3">
+            <img src="/static/img/resource/TaxonName.svg" alt="TaxonName">
+          </span>
+          <h3 class="card-title m-0">Bacteria</h3>
+        </div>
+        <div class="text-secondary mt-auto">Bacteria &mdash; single-celled prokaryotic microorganisms found in nearly every habitat.</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Chromista -->
+  <div class="col-sm-6 col-lg-4">
+    <a class="card card-link h-100" href="/resource/http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FChromista">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <span class="avatar me-3">
+            <img src="/static/img/resource/TaxonName.svg" alt="TaxonName">
+          </span>
+          <h3 class="card-title m-0">Chromista</h3>
+        </div>
+        <div class="text-secondary mt-auto">Chromists &mdash; algae and protists such as diatoms, brown algae and water moulds.</div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Protozoa -->
+  <div class="col-sm-6 col-lg-4">
+    <a class="card card-link h-100" href="/resource/http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FProtozoa">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <span class="avatar me-3">
+            <img src="/static/img/resource/TaxonName.svg" alt="TaxonName">
+          </span>
+          <h3 class="card-title m-0">Protozoa</h3>
+        </div>
+        <div class="text-secondary mt-auto">Protozoa &mdash; single-celled eukaryotic organisms such as amoebae and flagellates.</div>
+      </div>
+    </a>
+  </div>
+
+</div>
+
+{{ end }}
