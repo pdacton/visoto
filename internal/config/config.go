@@ -54,6 +54,7 @@ type SparqlEndpoint struct {
 	Default  bool   `toml:"default"`  // Optional: mark as default
 	Monitor  bool   `toml:"monitor"`  // Enable health monitoring for this endpoint
 	Tag      string `toml:"tag"`      // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
+	Slug     string `toml:"slug"`     // Unique URL-safe identifier for the ?endpoint= query param (shareable links)
 	Username       string `toml:"username"`        // Optional basic auth username for write operations
 	Password       string `toml:"password"`        // Optional basic auth password for write operations
 	AccessToken    string `toml:"access_token"`    // Optional Bearer token for write operations (takes precedence over username/password)
@@ -166,6 +167,17 @@ func (a *ApplicationConfig) GetEndpointByName(name string) *SparqlEndpoint {
 	}
 	if len(a.SparqlEndpoints) > 0 {
 		return &a.SparqlEndpoints[0]
+	}
+	return nil
+}
+
+// GetEndpointBySlug returns the SparqlEndpoint with the given slug (case-insensitive),
+// or nil if no endpoint has that slug configured. Endpoints with an empty Slug never match.
+func (a *ApplicationConfig) GetEndpointBySlug(slug string) *SparqlEndpoint {
+	for i := range a.SparqlEndpoints {
+		if a.SparqlEndpoints[i].Slug != "" && strings.EqualFold(a.SparqlEndpoints[i].Slug, slug) {
+			return &a.SparqlEndpoints[i]
+		}
 	}
 	return nil
 }

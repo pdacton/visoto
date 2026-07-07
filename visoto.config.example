@@ -16,12 +16,17 @@ gemini_api_key = "YOUR_GEMINI_API_KEY_HERE" # Get from: https://aistudio.google.
 #   monitor — enable health monitoring on the /monitoring dashboard
 #   tag     — logical group label; exposed to templates as .EndpointTag so templates
 #             can conditionally show endpoint-specific content (e.g. {{ if eq .EndpointTag "lindas" }})
+#   slug    — unique, URL-safe identifier for this endpoint (must be unique across all
+#             entries, unlike tag). Enables shareable links via ?endpoint=<slug>, which
+#             overrides the selectedEndpoint cookie for that request and updates it to
+#             match. Omit to leave an endpoint unreachable via the query param.
 [[application.sparqlEndpoints]]
 name = "LINDAS prod"
 url = "https://ld.admin.ch/query/"
 default = true
 monitor = true
 tag = "lindas"
+slug = "lindas-prod"
 # access_token = "YOUR_TOKEN_HERE"  # optional: Bearer token for write operations (Upload data feature)
 # username = ""                      # alternative: basic auth (used only if access_token is absent)
 # password = ""
@@ -32,24 +37,28 @@ name = "LINDAS int"
 url = "https://int.lindas.admin.ch/query/"
 monitor = true
 tag = "lindas"
+slug = "lindas-int"
 
 [[application.sparqlEndpoints]]
 name = "LINDAS test"
 url = "https://test.lindas.admin.ch/query/"
 monitor = true
 tag = "lindas"
+slug = "lindas-test"
 
 [[application.sparqlEndpoints]]
 name = "LINDASnext prod"
 url = "https://lindas.cz-aws.net/query/"
 monitor = true
 tag = "lindas"
+slug = "lindasnext-prod"
 
 [[application.sparqlEndpoints]]
 name = "LINDASnext int"
 url = "https://lindas.int.cz-aws.net/query/"
 monitor = false
 tag = "lindas"
+slug = "lindasnext-int"
 
 # GraphDB endpoint with Simple FTS (no Lucene connector required)
 # [[application.sparqlEndpoints]]

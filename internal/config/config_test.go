@@ -150,6 +150,50 @@ func TestGetPort(t *testing.T) {
 	}
 }
 
+// TestGetEndpointBySlug tests the GetEndpointBySlug lookup method
+func TestGetEndpointBySlug(t *testing.T) {
+	cfg := Config{
+		Application: ApplicationConfig{
+			SparqlEndpoints: []SparqlEndpoint{
+				{Name: "LINDAS prod", URL: "https://ld.admin.ch/query/", Slug: "lindas-prod"},
+				{Name: "LINDAS int", URL: "https://int.lindas.admin.ch/query/", Slug: "lindas-int"},
+				{Name: "No slug", URL: "https://example.com/sparql"},
+			},
+		},
+	}
+
+	tests := []struct {
+		name    string
+		slug    string
+		wantNil bool
+		wantURL string
+	}{
+		{"exact match", "lindas-prod", false, "https://ld.admin.ch/query/"},
+		{"case-insensitive match", "LINDAS-PROD", false, "https://ld.admin.ch/query/"},
+		{"different endpoint", "lindas-int", false, "https://int.lindas.admin.ch/query/"},
+		{"no match", "unknown-slug", true, ""},
+		{"empty slug never matches empty-slug entries", "", true, ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := cfg.Application.GetEndpointBySlug(tt.slug)
+			if tt.wantNil {
+				if got != nil {
+					t.Errorf("GetEndpointBySlug(%q) = %+v, want nil", tt.slug, got)
+				}
+				return
+			}
+			if got == nil {
+				t.Fatalf("GetEndpointBySlug(%q) = nil, want endpoint with URL %q", tt.slug, tt.wantURL)
+			}
+			if got.URL != tt.wantURL {
+				t.Errorf("GetEndpointBySlug(%q).URL = %q, want %q", tt.slug, got.URL, tt.wantURL)
+			}
+		})
+	}
+}
+
 // TestParsePrefixStrings_SPARQL tests parsing SPARQL format prefixes
 func TestParsePrefixStrings_SPARQL(t *testing.T) {
 	tests := []struct {

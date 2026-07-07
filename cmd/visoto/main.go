@@ -35,9 +35,31 @@ var mon *monitor.Monitor
 
 // ---- Request helpers ----
 
-// resolveSelectedEndpointName reads and URL-decodes the selectedEndpoint cookie.
-// Returns empty string if the cookie is absent or cannot be decoded.
+// resolveSelectedEndpointName determines the selected endpoint name for this request.
+// An explicit ?endpoint=<slug> query param takes precedence and refreshes the
+// selectedEndpoint cookie to match, so shared links both work immediately and
+// persist across subsequent navigation that drops the query string. Otherwise
+// falls back to the selectedEndpoint cookie. Returns empty string if neither
+// resolves to a configured endpoint.
 func resolveSelectedEndpointName(c *gin.Context) string {
+	if slug := c.Query("endpoint"); slug != "" {
+		if ep := cfg.Application.GetEndpointBySlug(slug); ep != nil {
+			// Write the Set-Cookie header directly rather than via c.SetCookie, which would
+			// additionally url.QueryEscape the already-escaped value (double-encoding it) and
+			// use '+' for spaces — a format the client-side decodeURIComponent (endpoint-switcher.js)
+			// never converts back. url.PathEscape matches encodeURIComponent's %20 encoding instead.
+			http.SetCookie(c.Writer, &http.Cookie{
+				Name:     "selectedEndpoint",
+				Value:    url.PathEscape(ep.Name),
+				Path:     "/",
+				MaxAge:   31536000,
+				SameSite: http.SameSiteLaxMode,
+			})
+			return ep.Name
+		}
+		logger.Get().Warn("unknown endpoint slug in URL", slog.String("slug", slug))
+	}
+
 	selected, err := c.Cookie("selectedEndpoint")
 	if err != nil || selected == "" {
 		return ""

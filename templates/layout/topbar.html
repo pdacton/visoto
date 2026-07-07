@@ -40,7 +40,7 @@
       <div class="nav-item me-2 d-flex align-items-center">
         <select class="form-select form-select-sm" id="endpoint-selector" name="endpoint" style="width: auto;" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Select SPARQL endpoint" data-bs-original-title="Select SPARQL endpoint">
           {{ range .SparqlEndpoints }}
-            <option value="{{ .Name }}">{{ .Name }}</option>
+            <option value="{{ .Name }}" data-slug="{{ .Slug }}">{{ .Name }}</option>
           {{ end }}
         </select>
       </div>

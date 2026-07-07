@@ -34,6 +34,27 @@ function switchEndpoint(name) {
     location.reload();  // Reload to apply new endpoint
 }
 
+/**
+ * Keeps the visible URL's ?endpoint= param in sync with the active endpoint's slug,
+ * via history.replaceState (no navigation), so the address bar is always an accurate,
+ * shareable snapshot even when the active endpoint came from a cookie/default rather
+ * than an explicit query param. Removes a stale param if the active endpoint has no slug.
+ * @param {HTMLSelectElement} endpointSelect - The endpoint <select> element
+ */
+function syncEndpointUrlParam(endpointSelect) {
+    const option = endpointSelect.selectedOptions[0];
+    const slug = option && option.dataset.slug;
+    const url = new URL(window.location.href);
+    if (slug) {
+        if (url.searchParams.get('endpoint') === slug) return;
+        url.searchParams.set('endpoint', slug);
+    } else {
+        if (!url.searchParams.has('endpoint')) return;
+        url.searchParams.delete('endpoint');
+    }
+    history.replaceState(null, '', url);
+}
+
 // Update UI on page load
 document.addEventListener('DOMContentLoaded', function() {
     const selected = getSelectedEndpoint();
@@ -47,7 +68,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add change event listener to trigger endpoint switch
     if (endpointSelect) {
         endpointSelect.addEventListener('change', function(e) {
+            // Sync the URL to the new selection *before* reloading: otherwise the
+            // reload re-requests the pre-switch ?endpoint= (still in the address bar
+            // from the previous sync), which would take precedence over the
+            // freshly-set cookie server-side and silently revert this switch.
+            syncEndpointUrlParam(e.target);
             switchEndpoint(e.target.value);
         });
+
+        syncEndpointUrlParam(endpointSelect);
     }
 });
