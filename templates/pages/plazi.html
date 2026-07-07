@@ -24,6 +24,46 @@
 
 <div class="row row-deck row-cards mt-4">
 
+  <!-- Async instance-count queries, one per kingdom. Each is consumed by the
+       inline hx-get count in its card below via /api/metric/:id. The handler
+       matches these by their literal id, so they cannot be generated in a loop. -->
+  <sparql-async id="AnimaliaCount" class="d-none">
+    SELECT (COUNT(?taxonName) AS ?count) WHERE {
+      ?taxonName a dwcFP:TaxonName .
+      ?taxonName dwc:kingdom "Animalia" .
+    }
+  </sparql-async>
+  <sparql-async id="PlantaeCount" class="d-none">
+    SELECT (COUNT(?taxonName) AS ?count) WHERE {
+      ?taxonName a dwcFP:TaxonName .
+      ?taxonName dwc:kingdom "Plantae" .
+    }
+  </sparql-async>
+  <sparql-async id="FungiCount" class="d-none">
+    SELECT (COUNT(?taxonName) AS ?count) WHERE {
+      ?taxonName a dwcFP:TaxonName .
+      ?taxonName dwc:kingdom "Fungi" .
+    }
+  </sparql-async>
+  <sparql-async id="BacteriaCount" class="d-none">
+    SELECT (COUNT(?taxonName) AS ?count) WHERE {
+      ?taxonName a dwcFP:TaxonName .
+      ?taxonName dwc:kingdom "Bacteria" .
+    }
+  </sparql-async>
+  <sparql-async id="ChromistaCount" class="d-none">
+    SELECT (COUNT(?taxonName) AS ?count) WHERE {
+      ?taxonName a dwcFP:TaxonName .
+      ?taxonName dwc:kingdom "Chromista" .
+    }
+  </sparql-async>
+  <sparql-async id="ProtozoaCount" class="d-none">
+    SELECT (COUNT(?taxonName) AS ?count) WHERE {
+      ?taxonName a dwcFP:TaxonName .
+      ?taxonName dwc:kingdom "Protozoa" .
+    }
+  </sparql-async>
+
   <!-- Animalia -->
   <div class="col-sm-6 col-lg-4">
     <a class="card card-link h-100" href="/resource/http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FAnimalia">
@@ -33,6 +73,15 @@
           <h3 class="card-title m-0">Animalia</h3>
         </div>
         <div class="text-secondary mt-auto">Animals &mdash; multicellular organisms that feed on other organisms.</div>
+        <div class="mt-2">
+          <span class="h2 m-0"
+                hx-get="/api/metric/AnimaliaCount"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="text-secondary">taxon names</span>
+        </div>
       </div>
     </a>
   </div>
@@ -46,6 +95,15 @@
           <h3 class="card-title m-0">Plantae</h3>
         </div>
         <div class="text-secondary mt-auto">Plants &mdash; mostly photosynthetic organisms, from mosses to flowering plants.</div>
+        <div class="mt-2">
+          <span class="h2 m-0"
+                hx-get="/api/metric/PlantaeCount"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="text-secondary">taxon names</span>
+        </div>
       </div>
     </a>
   </div>
@@ -59,6 +117,15 @@
           <h3 class="card-title m-0">Fungi</h3>
         </div>
         <div class="text-secondary mt-auto">Fungi &mdash; moulds, yeasts and mushrooms that absorb nutrients from their surroundings.</div>
+        <div class="mt-2">
+          <span class="h2 m-0"
+                hx-get="/api/metric/FungiCount"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="text-secondary">taxon names</span>
+        </div>
       </div>
     </a>
   </div>
@@ -72,6 +139,15 @@
           <h3 class="card-title m-0">Bacteria</h3>
         </div>
         <div class="text-secondary mt-auto">Bacteria &mdash; single-celled prokaryotic microorganisms found in nearly every habitat.</div>
+        <div class="mt-2">
+          <span class="h2 m-0"
+                hx-get="/api/metric/BacteriaCount"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="text-secondary">taxon names</span>
+        </div>
       </div>
     </a>
   </div>
@@ -85,6 +161,15 @@
           <h3 class="card-title m-0">Chromista</h3>
         </div>
         <div class="text-secondary mt-auto">Chromists &mdash; algae and protists such as diatoms, brown algae and water moulds.</div>
+        <div class="mt-2">
+          <span class="h2 m-0"
+                hx-get="/api/metric/ChromistaCount"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="text-secondary">taxon names</span>
+        </div>
       </div>
     </a>
   </div>
@@ -98,6 +183,15 @@
           <h3 class="card-title m-0">Protozoa</h3>
         </div>
         <div class="text-secondary mt-auto">Protozoa &mdash; single-celled eukaryotic organisms such as amoebae and flagellates.</div>
+        <div class="mt-2">
+          <span class="h2 m-0"
+                hx-get="/api/metric/ProtozoaCount"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="text-secondary">taxon names</span>
+        </div>
       </div>
     </a>
   </div>
