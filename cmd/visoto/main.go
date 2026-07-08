@@ -342,21 +342,41 @@ func asyncTableHandler(c *gin.Context) {
 		query = strings.ReplaceAll(query, "??", "<"+iri+">")
 	}
 
-	preprocessor := prepareQueryInputs(c)
-	result, err := preprocessor.ExecuteQuery(query, true, acceptLanguage, "")
-	if err != nil {
-		// Surface the error inside the table card (sparqlTable renders result.Error).
-		result.Error = err.Error()
-	}
-
 	params := map[string]any{
-		"result":   result,
 		"id":       id,
 		"title":    c.Query("title"),
 		"icon":     c.Query("icon"),
 		"iconVar":  c.Query("iconVar"),
 		"badgeVar": c.Query("badgeVar"),
 	}
+
+	// Remote mode: render only the table shell (Tabulator fetches pages from
+	// /api/async-table-data/:id). The full query is never executed here, so a
+	// large class doesn't materialize inline.
+	if c.Query("remote") == "1" {
+		params["remote"] = true
+		params["iri"] = c.Query("iri")
+		params["sortVar"] = c.Query("sortVar")
+		params["searchProp"] = c.Query("searchProp")
+		params["pageSize"] = c.Query("pageSize")
+		params["result"] = sparql.QueryResult{}
+		html, err := templates.RenderSparqlTable(params)
+		if err != nil {
+			c.String(http.StatusInternalServerError, "failed to render table")
+			return
+		}
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, string(html))
+		return
+	}
+
+	preprocessor := prepareQueryInputs(c)
+	result, err := preprocessor.ExecuteQuery(query, true, acceptLanguage, "")
+	if err != nil {
+		// Surface the error inside the table card (sparqlTable renders result.Error).
+		result.Error = err.Error()
+	}
+	params["result"] = result
 	html, err := templates.RenderSparqlTable(params)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "failed to render table")
@@ -515,6 +535,7 @@ func main() {
 	router.GET("/api/monitoring/data", monitoringDataHandler)
 	router.GET("/api/metric/:id", metricHandler)
 	router.GET("/api/async-table/:id", asyncTableHandler)
+	router.GET("/api/async-table-data/:id", asyncTableDataHandler)
 	router.GET("/resource/*path", resourcePageHandler)
 	router.Any("/mcp", gin.WrapH(mcpHandler))
 	router.GET("/health", gin.WrapH(mcpHandler))

@@ -21,7 +21,7 @@
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-async id="taxonNameInstances" class="d-none">
-      SELECT ?taxonName ?rank ?kingdom ?phylum ?class ?order ?family ?genus ?species ?parentName
+      SELECT ?taxonName ?rank ?kingdom ?phylum ?class ?order ?family ?genus ?species
       WHERE {
         ?taxonName rdf:type ?? .
         OPTIONAL { ?taxonName dwc:rank ?rank . }
@@ -33,15 +33,17 @@
         OPTIONAL { ?taxonName dwc:genus ?genus . }
         OPTIONAL { ?taxonName dwc:species ?species . }
       }
-      LIMIT 50000
     </sparql-async>
     {{ template "sparqlAsyncTable" (dict
         "queryId" "taxonNameInstances"
         "iri" .ResourceIRI
         "title" "Taxon Names"
-        "icon" "sprout"
-        "iconVar" "taxonName"
-        "badgeVar" "rank")
+        "icon" "bug"
+        "iconVar" "TaxonName"
+        "badgeVar" "rank"
+        "remote" true
+        "pageSize" 1000
+        "sortVar" "taxonName")
     }}
   </div>
 </div>

@@ -23,9 +23,15 @@
   {{ $collapsed := .collapsed }}
   {{ $iconVar := .iconVar }}
   {{ $badgeVar := .badgeVar }}
-  {{ $hasResults := gt (len $result.Bindings) 0 }}
+  {{ $remote := .remote }}
+  {{ $sortVar := .sortVar }}
+  {{ $searchProp := .searchProp }}
+  {{ $pageSize := or .pageSize "10000" }}
+  {{/* Remote tables fetch data lazily via ajax, so they behave as "has results"
+       for header/controls/init even though no rows are embedded inline. */}}
+  {{ $hasResults := or (gt (len $result.Bindings) 0) $remote }}
   {{ $hasError := $result.Error }}
-  {{ $collapsed = or $collapsed (not $hasResults) $hasError }}
+  {{ $collapsed = or $collapsed (and (not $hasResults) (not $remote)) $hasError }}
 
   <!-- card to enclose the table -->
   <div class="card" {{ if or $hasError (not $hasResults) }}style="background-color: var(--tblr-bg-surface-secondary);"{{ end }}>
@@ -40,7 +46,13 @@
         {{ if and $id $hasResults }}
           <input type="text" id="search-{{ $id }}" class="search-table form-control form-control-sm text-secondary" style="min-width: 150px; max-width: 300px;" placeholder="Search...">
         {{ end }}
-          {{ if and $id $hasResults }}
+          {{ if $remote }}
+            <!-- Remote: search box filters the loaded page instantly; this button
+                 escalates to a full-class backend search across all instances. -->
+            <a id="search-all-{{ $id }}" class="btn btn-sm btn-outline-primary d-none" style="cursor:pointer; white-space:nowrap;" title="Search all instances on the server">
+              <i data-lucide="search" style="width:1em;height:1em;"></i> <span id="search-all-label-{{ $id }}">Search all</span>
+            </a>
+          {{ else if and $id $hasResults }}
             <select id="groupby-{{ $id }}" class="form-select form-select-sm text-muted" style="min-width: 100px; padding-right: 1.5rem; background-size: 0.75rem; background-position: right 0.5rem center;">
               <option value="" class="text-muted">Group by...</option>
               {{ range $result.Vars }}
@@ -57,7 +69,7 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               {{ if $hasResults }}
-                <li><h6 class="dropdown-header">Download</h6></li>
+                <li><h6 class="dropdown-header">Download{{ if $remote }} (current page){{ end }}</h6></li>
                 <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> CSV</a></li>
                 <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> JSON</a></li>
                 <li><a class="dropdown-item download-xlsx-{{ $id }}" href="#"><i data-lucide="table-2" style="width:1em;height:1em;"></i> Excel (XLSX)</a></li>
@@ -90,9 +102,11 @@
           <!-- Empty div for Tabulator to render into -->
           <div id="{{ $id }}-table"></div>
 
+          {{ if not $remote }}
           <!-- Inline JSON data: vars is array of column names, bindings is array of row objects -->
           <template id="{{ $id }}-vars">{{ toJSON $result.Vars }}</template>
           <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
+          {{ end }}
           {{ if $iconVar }}<template id="{{ $id }}-icon-var">{{ $iconVar }}</template><template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>{{ end }}
           {{ if $badgeVar }}<template id="{{ $id }}-badge-var">{{ $badgeVar }}</template>{{ end }}
         {{ end }}
@@ -131,7 +145,7 @@
   {{ end }}
 
   <!-- Tabulator.js initialization for this table (only when results exist) -->
-  {{ if and $id $hasResults }}
+  {{ if and $id $hasResults (not $remote) }}
     <script>
       /* eslint-disable */
       window.sparqlTableOnReady = window.sparqlTableOnReady || function(fn) {
@@ -436,6 +450,221 @@
             }
           });
         }
+      });
+    </script>
+  {{ end }}
+
+  <!-- Tabulator.js initialization for REMOTE (server-paginated) tables. Columns
+       and rows come from /api/async-table-data/:id one page at a time. -->
+  {{ if and $id $remote }}
+    <script>
+      /* eslint-disable */
+      window.sparqlTableOnReady = window.sparqlTableOnReady || function(fn) {
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', fn);
+        } else {
+          fn();
+        }
+      };
+      window.sparqlTableOnReady(function() {
+        var iconVar = {{ if $iconVar }}"{{ $iconVar }}"{{ else }}null{{ end }};
+        var badgeVar = {{ if $badgeVar }}"{{ $badgeVar }}"{{ else }}null{{ end }};
+        var availableIcons = null;
+        var iconEl = document.getElementById("{{ $id }}-available-icons");
+        if (iconVar && iconEl) { availableIcons = JSON.parse(iconEl.innerHTML.trim()); }
+
+        // Ajax data source. The custom ?search param is toggled by "Search all N".
+        var baseAjaxUrl = "/api/async-table-data/{{ $id }}?iri={{ urlquery .iri }}&sortVar={{ urlquery $sortVar }}";
+        var searchProp = "{{ $searchProp }}";
+        var pageSize = parseInt("{{ $pageSize }}", 10) || 10000;
+        var searchTerm = "";           // active backend search (empty = browse mode)
+        var totalRows = null;          // last_row from the server, for the button label
+
+        // ---- cell rendering (mirrors the local path) ----
+        function escapeHtml(text) {
+          if (!text) return '';
+          var div = document.createElement('div');
+          div.textContent = text;
+          return div.innerHTML;
+        }
+        function renderBinding(binding) {
+          if (!binding) return '';
+          if (binding.Type === 'uri') {
+            var display = escapeHtml(binding.DisplayText || binding.Value);
+            return '<a href="/resource/' + encodeURIComponent(binding.Value) + '">' + display + '</a>';
+          }
+          return escapeHtml(binding.DisplayText || binding.Value);
+        }
+        function htmlCellFormatter(cell) { return renderBinding(cell.getValue()); }
+        function plainValueAccessor(value) { return value ? (value.DisplayText || value.Value || '') : ''; }
+        function badgeCellFormatter(cell) {
+          var value = cell.getValue();
+          if (!value) return '';
+          var uri = value.Value || '';
+          var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+          var badge = '<span class="badge bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
+          if (value.Type === 'uri' && uri) {
+            return '<a href="/resource/' + encodeURIComponent(uri) + '">' + badge + '</a>';
+          }
+          return badge;
+        }
+        function iriToName(uri) {
+          try { uri = decodeURIComponent(uri); } catch(e) {}
+          var name = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
+          if (name.includes(':')) name = name.split(':').pop();
+          return name;
+        }
+        function iconCellFormatter(cell) {
+          var b = cell.getValue();
+          if (!b || !b.Value) return '';
+          var name = iriToName(b.Value);
+          var img = '';
+          if (availableIcons && availableIcons[name]) {
+            img = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">';
+          } else if (availableIcons && availableIcons[name + '.fallback']) {
+            img = '<img src="/static/img/resource/' + name + '.fallback.svg" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">';
+          }
+          return img + renderBinding(b);
+        }
+        function valueSorter(a, b) {
+          var valA = a ? (a.DisplayText || a.Value || '') : '';
+          var valB = b ? (b.DisplayText || b.Value || '') : '';
+          var numA = parseFloat(valA), numB = parseFloat(valB);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+          return String(valA).localeCompare(String(valB));
+        }
+
+        function buildColumns(vars) {
+          return (vars || []).map(function(varName) {
+            var isBadge = badgeVar && varName === badgeVar;
+            var isIcon = iconVar && varName === iconVar;
+            return {
+              title: varName, field: varName,
+              formatter: isIcon ? iconCellFormatter : (isBadge ? badgeCellFormatter : htmlCellFormatter),
+              sorter: valueSorter,
+              accessorDownload: plainValueAccessor
+            };
+          });
+        }
+
+        // Adapt our {last_page,last_row,vars,data} envelope; set columns on first page.
+        var columnsSet = false;
+        function ajaxResponse(url, params, response) {
+          if (response.error) {
+            console.warn("remote table error:", response.error);
+          }
+          if (!columnsSet && response.vars && response.vars.length) {
+            table.setColumns(buildColumns(response.vars));
+            columnsSet = true;
+          }
+          if (typeof response.last_row === "number") {
+            totalRows = response.last_row;
+            updateSearchAllLabel();
+          }
+          // Map each row's bindings map to a flat {field: binding} object.
+          var rows = (response.data || []).map(function(binding) {
+            var row = {};
+            (response.vars || []).forEach(function(v) { row[v] = binding[v] || null; });
+            return row;
+          });
+          return { last_page: response.last_page || 1, data: rows };
+        }
+
+        var table = new Tabulator("#{{ $id }}-table", {
+          // fitColumns (not fitDataStretch) keeps layout O(columns), not O(rows) —
+          // remote pages can be large, and per-cell width measurement janks badly.
+          layout: "fitColumns",
+          renderHorizontal: "virtual",
+          renderVertical: "virtual",
+          movableColumns: true,
+          columns: [],
+          pagination: true,
+          paginationMode: "remote",
+          ajaxURL: baseAjaxUrl,
+          ajaxURLGenerator: function(url, config, params) {
+            var u = url + "&page=" + (params.page || 1) + "&size=" + pageSize;
+            if (searchTerm) {
+              u += "&search=" + encodeURIComponent(searchTerm);
+              if (searchProp) u += "&searchProp=" + encodeURIComponent(searchProp);
+            }
+            return u;
+          },
+          paginationSize: pageSize,
+          paginationCounter: "rows",
+          sortMode: "remote",
+          ajaxResponse: ajaxResponse,
+          langs: {
+            "default": { "pagination": {
+              "first": "<i data-lucide='chevrons-left'></i>", "first_title": "First Page",
+              "prev": "<i data-lucide='chevron-left'></i>", "prev_title": "Prev Page",
+              "next": "<i data-lucide='chevron-right'></i>", "next_title": "Next Page",
+              "last": "<i data-lucide='chevrons-right'></i>", "last_title": "Last Page"
+            }}
+          }
+        });
+
+        table.on("tableBuilt", function() { if (window.lucide) lucide.createIcons(); });
+        table.on("renderComplete", function() { if (window.lucide) lucide.createIcons(); });
+
+        // ---- search: local-first filter over the loaded page + backend escalation ----
+        var searchInput = document.getElementById("search-{{ $id }}");
+        var searchAllBtn = document.getElementById("search-all-{{ $id }}");
+        var searchAllLabel = document.getElementById("search-all-label-{{ $id }}");
+
+        function currentTerm() { return searchInput ? searchInput.value.trim() : ""; }
+        function updateSearchAllLabel() {
+          if (!searchAllLabel) return;
+          var n = (totalRows != null) ? totalRows.toLocaleString() : "all";
+          searchAllLabel.textContent = searchTerm ? ("Searching all " + n) : ("Search all " + n);
+        }
+
+        if (searchInput) {
+          var searchTimeout;
+          searchInput.addEventListener("input", function(e) {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+              var val = e.target.value.toLowerCase();
+              // Instant local filter over the currently loaded page.
+              if (!val) { table.clearFilter(); } else {
+                table.setFilter(function(data) {
+                  for (var key in data) {
+                    var b = data[key];
+                    if (b) {
+                      var text = b.DisplayText || b.Value || '';
+                      if (String(text).toLowerCase().indexOf(val) !== -1) return true;
+                    }
+                  }
+                  return false;
+                });
+              }
+              // Reveal the escalation button when there's a term to search server-side.
+              if (searchAllBtn) {
+                if (currentTerm()) { searchAllBtn.classList.remove("d-none"); }
+                else { searchAllBtn.classList.add("d-none"); if (searchTerm) { searchTerm = ""; columnsSet = true; table.setData(baseAjaxUrl); } }
+                updateSearchAllLabel();
+              }
+            }, 150);
+          });
+        }
+
+        if (searchAllBtn) {
+          searchAllBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            searchTerm = currentTerm();
+            table.clearFilter();          // backend now does the filtering
+            table.setData(baseAjaxUrl);   // re-fetch page 1 with ?search=
+            updateSearchAllLabel();
+          });
+        }
+
+        // ---- downloads (loaded page only, in remote mode) ----
+        var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
+        var csvBtn = document.querySelector(".download-csv-{{ $id }}");
+        if (csvBtn) csvBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("csv", filename + ".csv", { bom: true }); });
+        var jsonBtn = document.querySelector(".download-json-{{ $id }}");
+        if (jsonBtn) jsonBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("json", filename + ".json"); });
+        var xlsxBtn = document.querySelector(".download-xlsx-{{ $id }}");
+        if (xlsxBtn) xlsxBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) }); });
       });
     </script>
   {{ end }}

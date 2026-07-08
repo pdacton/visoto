@@ -314,6 +314,14 @@ func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLang
 	return p.executeQueryWithContext(context.Background(), query, resolveLabels, acceptLanguage, endpoint)
 }
 
+// ExecuteQueryWithContext executes a raw SPARQL query bound to the given context,
+// so callers can enforce a per-request timeout (unlike ExecuteQuery, which uses
+// context.Background()). Used by the remote paginated table endpoint, where a
+// single page query can run several seconds against a large class.
+func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
+	return p.executeQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint)
+}
+
 // QueryIsClass checks whether the given IRI is a class by looking for:
 // - rdfs:subClassOf relationships (as subject or object)
 // - incoming rdf:type statements (implicitly defined classes)

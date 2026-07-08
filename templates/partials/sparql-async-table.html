@@ -1,9 +1,10 @@
 <!--
   Partial template for a lazily-loaded SPARQL result table.
 
-  Renders a spinner placeholder that HTMX swaps with a fully-featured sparqlTable
-  fragment (grouping, search, CSV/JSON/XLSX export, label resolution) fetched from
-  /api/async-table/:queryId. A table-returning sibling of sparqlMetric.
+  Renders a placeholder card (real icon + title, shimmering skeleton rows) that
+  HTMX swaps with a fully-featured sparqlTable fragment (grouping, search,
+  CSV/JSON/XLSX export, label resolution) fetched from /api/async-table/:queryId.
+  A table-returning sibling of sparqlMetric.
 
   The query itself is declared separately in a <sparql-async id="..."> element on
   the same page/layout/component; the handler finds it by id and executes it only
@@ -27,6 +28,13 @@
     - badgeVar: (optional) SPARQL var rendered as a Tabler badge
     - trigger:  (optional) HTMX trigger; defaults to "load" (eager, like metrics).
                 Pass a custom event (e.g. "showData") to defer until first reveal.
+    - remote:   (optional) if true, render a remote-paginated table: Tabulator
+                fetches one page at a time from /api/async-table-data/:queryId
+                instead of embedding the full result set. For large classes.
+    - pageSize: (optional, remote) rows per page (default 10000).
+    - sortVar:  (optional, remote) key/pagination-anchor variable (required in
+                remote mode, e.g. "taxonName").
+    - searchProp: (optional, remote) name property IRI used by "Search all N".
 -->
 
 {{ define "sparqlAsyncTable" }}
@@ -41,12 +49,30 @@
   {{ with .icon }}{{ $url = printf "%s&icon=%s" $url (urlquery .) }}{{ end }}
   {{ with .iconVar }}{{ $url = printf "%s&iconVar=%s" $url (urlquery .) }}{{ end }}
   {{ with .badgeVar }}{{ $url = printf "%s&badgeVar=%s" $url (urlquery .) }}{{ end }}
+  {{ if .remote }}{{ $url = printf "%s&remote=1" $url }}
+    {{ with .sortVar }}{{ $url = printf "%s&sortVar=%s" $url (urlquery .) }}{{ end }}
+    {{ with .searchProp }}{{ $url = printf "%s&searchProp=%s" $url (urlquery .) }}{{ end }}
+    {{ with .pageSize }}{{ $url = printf "%s&pageSize=%s" $url (urlquery (printf "%v" .)) }}{{ end }}
+  {{ end }}
 
   <div hx-get="{{ $url }}"
        hx-trigger="{{ $trigger }}"
        hx-swap="innerHTML">
-    <div class="text-center p-4">
-      <span class="spinner-border text-muted" role="status" aria-hidden="true"></span>
+    <!-- Placeholder card mirroring the sparqlTable header so the swap doesn't jump -->
+    <div class="card placeholder-glow" aria-busy="true">
+      {{ if or .icon .title }}
+        <div class="card-header d-flex align-items-center gap-2">
+          {{ with .icon }}<i data-lucide="{{ . }}" style="width: 1.5em; height: 1.5em;"></i>{{ end }}
+          {{ with .title }}<h3 class="card-title mb-0">{{ . }}</h3>{{ end }}
+        </div>
+      {{ end }}
+      <div class="card-body">
+        <!-- Columns are unknown pre-query, so row widths are decorative; kept
+             short because empty/error results swap in a collapsed card -->
+        <div class="mb-2"><span class="placeholder col-3 me-2"></span><span class="placeholder col-4 me-2"></span><span class="placeholder col-2"></span></div>
+        <div class="mb-2"><span class="placeholder col-2 me-2"></span><span class="placeholder col-5 me-2"></span><span class="placeholder col-3"></span></div>
+        <div><span class="placeholder col-4 me-2"></span><span class="placeholder col-3 me-2"></span><span class="placeholder col-2"></span></div>
+      </div>
     </div>
   </div>
 
