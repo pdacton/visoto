@@ -1,6 +1,7 @@
-# Binaries
-visoto
-main
+# Binaries (anchored to repo root so source dirs like cmd/visoto/ and
+# internal/mcp/ are not swallowed by the binary-name patterns)
+/visoto
+/main
 
 # Go build artifacts
 *.exe
@@ -31,7 +32,7 @@ go.work
 .playwright-mcp/
 
 # Binaries (named)
-mcp
+/mcp
 
 # IDE specific files
 .idea/
