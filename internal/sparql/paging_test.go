@@ -100,59 +100,84 @@ func TestMembershipBody(t *testing.T) {
 	}
 }
 
-func TestBuildPagedQuery_FastPath(t *testing.T) {
+func TestDeriveKeyVar(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"a form", "SELECT ?org ?name WHERE { ?org a ?? . OPTIONAL { ?org <p> ?name } }", "org"},
+		{"rdf:type form", "SELECT ?taxonName WHERE {\n  ?taxonName rdf:type ?? .\n}", "taxonName"},
+		{"full type IRI", "SELECT ?x WHERE { ?x <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?? }", "x"},
+		{"bind attribute query has no key var", "SELECT ?p ?v WHERE { BIND(?? AS ?s) ?s ?p ?v }", ""},
+		{"membership to a variable, not ??", "SELECT ?inst WHERE { ?inst a ?class }", ""},
+		{"no membership at all", "SELECT ?v WHERE { ?? <p> ?v }", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := DeriveKeyVar(tt.in); got != tt.want {
+				t.Errorf("DeriveKeyVar() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestBuildWorkingSetQuery_FastPath(t *testing.T) {
 	class := "https://schema.ld.admin.ch/ZefixOrganisation"
 	declared := "SELECT ?org ?name WHERE { ?org a ?? . OPTIONAL { ?org <http://schema.org/name> ?name } } LIMIT 20000"
 
-	got := BuildPagedQuery(declared, class, "org", "", "http://schema.org/name", 1000, 2000)
+	got := BuildWorkingSetQuery(declared, class, "org", "", "http://schema.org/name", 20000)
 
 	// ?? substituted.
 	if strings.Contains(got, "??") {
 		t.Errorf("?? placeholder not substituted: %s", got)
 	}
-	// Membership triple replaced by a paginated subquery.
-	if !strings.Contains(got, "ORDER BY ?org LIMIT 1000 OFFSET 2000") {
-		t.Errorf("expected paginated subquery, got: %s", got)
+	// Membership triple replaced by a capped subquery with NO OFFSET.
+	if !strings.Contains(got, "ORDER BY ?org LIMIT 20000") {
+		t.Errorf("expected capped subquery, got: %s", got)
 	}
-	// The declared trailing LIMIT is gone; the OPTIONAL is preserved.
-	if strings.Contains(got, "LIMIT 20000") {
-		t.Errorf("declared LIMIT not stripped: %s", got)
+	if strings.Contains(got, "OFFSET") {
+		t.Errorf("working-set query must not contain OFFSET: %s", got)
 	}
+	// The OPTIONAL is preserved.
 	if !strings.Contains(got, "OPTIONAL { ?org <http://schema.org/name> ?name }") {
 		t.Errorf("OPTIONAL body not preserved: %s", got)
 	}
-	// Fast path replaces in place — no outer "SELECT * WHERE { {subquery}\n{declared} }" wrapper.
+	// Fast path replaces in place — no wrapping fallback.
 	if strings.Contains(got, "SELECT * WHERE") {
 		t.Errorf("fast path should not use the wrapping fallback: %s", got)
 	}
 }
 
-func TestBuildPagedQuery_Fallback(t *testing.T) {
+func TestBuildWorkingSetQuery_Fallback(t *testing.T) {
 	class := "https://x/C"
 	// Membership expressed via a variable (BIND) — the regex won't match, so the
-	// whole query must be wrapped with deterministic paging on the key var.
+	// whole query must be wrapped with the deterministic cap on the key var.
 	declared := "SELECT ?inst WHERE { BIND(?? AS ?class) ?inst a ?class }"
 
-	got := BuildPagedQuery(declared, class, "inst", "", "", 500, 0)
+	got := BuildWorkingSetQuery(declared, class, "inst", "", "", 500)
 
 	if !strings.Contains(got, "SELECT * WHERE") {
 		t.Errorf("expected wrapping fallback, got: %s", got)
 	}
-	if !strings.Contains(got, "ORDER BY ?inst LIMIT 500 OFFSET 0") {
-		t.Errorf("fallback still applies paging on key var, got: %s", got)
+	if !strings.Contains(got, "ORDER BY ?inst LIMIT 500") {
+		t.Errorf("fallback still applies the cap on key var, got: %s", got)
+	}
+	if strings.Contains(got, "OFFSET") {
+		t.Errorf("working-set query must not contain OFFSET: %s", got)
 	}
 	if strings.Contains(got, "??") {
 		t.Errorf("?? placeholder not substituted in fallback: %s", got)
 	}
 }
 
-func TestBuildPagedQuery_SearchInjected(t *testing.T) {
+func TestBuildWorkingSetQuery_SearchInjected(t *testing.T) {
 	class := "https://x/C"
 	declared := "SELECT ?org WHERE { ?org a ?? }"
 
-	got := BuildPagedQuery(declared, class, "org", "Migros", "http://schema.org/name", 100, 0)
+	got := BuildWorkingSetQuery(declared, class, "org", "Migros", "http://schema.org/name", 100)
 	if !strings.Contains(got, `CONTAINS(LCASE(STR(?org)), "migros")`) {
-		t.Errorf("search filter not injected into paged query: %s", got)
+		t.Errorf("search filter not injected into working-set query: %s", got)
 	}
 }
 

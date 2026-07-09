@@ -121,6 +121,15 @@ func (p *Preprocessor) finalizeQuery(query string, acceptLanguage string) string
 	return prefixBlock + query
 }
 
+// FinalizeQuery is the exported form of finalizeQuery: it returns the query as it
+// would be sent to the endpoint (PREFIXes prepended, visoto:dispLang resolved)
+// WITHOUT executing it. Used by the working-set table shell to embed the same
+// query string the inline path would surface, so the "Execute on endpoint" button
+// opens the identical query without a network round-trip.
+func (p *Preprocessor) FinalizeQuery(query string, acceptLanguage string) string {
+	return p.finalizeQuery(query, acceptLanguage)
+}
+
 // --- Endpoint resolution ---
 
 // resolveEndpoint determines which endpoint URL to use
@@ -316,8 +325,8 @@ func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLang
 
 // ExecuteQueryWithContext executes a raw SPARQL query bound to the given context,
 // so callers can enforce a per-request timeout (unlike ExecuteQuery, which uses
-// context.Background()). Used by the remote paginated table endpoint, where a
-// single page query can run several seconds against a large class.
+// context.Background()). Used by the working-set table endpoint, where a
+// single working-set query can run several seconds against a large class.
 func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
 	return p.executeQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint)
 }

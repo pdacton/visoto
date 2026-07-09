@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -49,17 +50,25 @@ func resolveSelectedEndpointName(c *gin.Context) string {
 	return selected
 }
 
+// resolveEndpointURL returns the SPARQL endpoint URL selected for this request
+// (cookie override, else config default). Used to key per-endpoint caches so the
+// endpoint switcher can't serve stale cross-endpoint data.
+func resolveEndpointURL(c *gin.Context) string {
+	endpoint := cfg.Application.SparqlEndpoint
+	if name := resolveSelectedEndpointName(c); name != "" {
+		if epURL, exists := cfg.Application.GetNamedEndpointsMap()[name]; exists {
+			endpoint = epURL
+		}
+	}
+	return endpoint
+}
+
 // prepareQueryInputs creates a preprocessor with user-selected default endpoint
 func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 
 	// Determine default endpoint for this request either from cookie or config default
 	namedEndpoints := cfg.Application.GetNamedEndpointsMap()
-	endpoint := cfg.Application.SparqlEndpoint
-	if name := resolveSelectedEndpointName(c); name != "" {
-		if epURL, exists := namedEndpoints[name]; exists {
-			endpoint = epURL
-		}
-	}
+	endpoint := resolveEndpointURL(c)
 
 	// Create query inputs for preprocessor
 	return parser.New(sparql.QueryInput{
@@ -336,12 +345,6 @@ func asyncTableHandler(c *gin.Context) {
 		return
 	}
 
-	// Resource scoping: substitute the entity placeholder with the given IRI,
-	// mirroring the preprocessor's ?? convention. Queries without ?? are unaffected.
-	if iri := c.Query("iri"); iri != "" {
-		query = strings.ReplaceAll(query, "??", "<"+iri+">")
-	}
-
 	params := map[string]any{
 		"id":       id,
 		"title":    c.Query("title"),
@@ -350,39 +353,71 @@ func asyncTableHandler(c *gin.Context) {
 		"badgeVar": c.Query("badgeVar"),
 	}
 
-	// Remote mode: render only the table shell (Tabulator fetches pages from
-	// /api/async-table-data/:id). The full query is never executed here, so a
-	// large class doesn't materialize inline.
-	if c.Query("remote") == "1" {
-		params["remote"] = true
-		params["iri"] = c.Query("iri")
-		params["sortVar"] = c.Query("sortVar")
-		params["searchProp"] = c.Query("searchProp")
-		params["pageSize"] = c.Query("pageSize")
-		params["result"] = sparql.QueryResult{}
-		html, err := templates.RenderSparqlTable(params)
-		if err != nil {
-			c.String(http.StatusInternalServerError, "failed to render table")
-			return
-		}
-		c.Header("Content-Type", "text/html")
-		c.String(http.StatusOK, string(html))
-		return
+	// Auto-detect the working-set mode: a class-instance query has a "?key a ??"
+	// membership triple, so its key var is derivable AND we're scoped to a class
+	// IRI. Count the class (cheap, cached) and, above the threshold, render the
+	// working-set shell (Tabulator loads a bounded set from
+	// /api/async-table-data/:id). Everything else — attribute/relationship tables
+	// (BIND(?? AS ?s), no key var) and small classes — renders inline as before.
+	iri := c.Query("iri")
+	keyVar := sparql.DeriveKeyVar(query)
+	preprocessor := prepareQueryInputs(c)
+
+	// Substitute the entity placeholder once, up front, so both the inline path
+	// (which executes it) and the working-set shell (which embeds it for the
+	// "Execute on endpoint" button) use the same full query. Queries without ??
+	// are unaffected.
+	fullQuery := query
+	if iri != "" {
+		fullQuery = strings.ReplaceAll(query, "??", "<"+iri+">")
 	}
 
-	preprocessor := prepareQueryInputs(c)
-	result, err := preprocessor.ExecuteQuery(query, true, acceptLanguage, "")
+	if keyVar != "" && iri != "" {
+		endpoint := resolveEndpointURL(c)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
+		searchProp := c.DefaultQuery("searchProp", "http://www.w3.org/2000/01/rdf-schema#label")
+		total := cachedInstanceCount(ctx, preprocessor, id, endpoint, iri, keyVar, "", searchProp, acceptLanguage)
+		cancel()
+		if total > defaultMaxWorkingSet {
+			params["workingSet"] = true
+			params["iri"] = iri
+			params["keyVar"] = keyVar
+			params["total"] = total
+			params["complete"] = false
+			params["searchProp"] = c.Query("searchProp") // author hint; may be empty
+			params["max"] = c.Query("max")
+			// Embed the full class query (finalized: PREFIXes added, ?? substituted)
+			// so the card's "Execute on endpoint" button opens it in YASGUI, exactly
+			// like an inline table. The working-set data itself is loaded separately
+			// and lazily from /api/async-table-data/:id — this query is NOT executed
+			// here, so query cost stays flat.
+			params["result"] = sparql.QueryResult{
+				Query:    preprocessor.FinalizeQuery(fullQuery, acceptLanguage),
+				Endpoint: endpoint,
+			}
+			renderTableFragment(c, params)
+			return
+		}
+	}
+
+	// Inline path: execute the full query and embed the whole result set.
+	result, err := preprocessor.ExecuteQuery(fullQuery, true, acceptLanguage, "")
 	if err != nil {
 		// Surface the error inside the table card (sparqlTable renders result.Error).
 		result.Error = err.Error()
 	}
 	params["result"] = result
+	renderTableFragment(c, params)
+}
+
+// renderTableFragment renders the sparqlTable partial and writes it as an HTML
+// fragment, or a 500 on render failure.
+func renderTableFragment(c *gin.Context, params map[string]any) {
 	html, err := templates.RenderSparqlTable(params)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "failed to render table")
 		return
 	}
-
 	c.Header("Content-Type", "text/html")
 	c.String(http.StatusOK, string(html))
 }

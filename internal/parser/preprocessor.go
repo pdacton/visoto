@@ -102,6 +102,12 @@ func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string
 	return p.sp.ExecuteQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint)
 }
 
+// FinalizeQuery returns the query as it would be sent to the endpoint (PREFIXes
+// prepended, visoto:dispLang resolved) without executing it.
+func (p *Preprocessor) FinalizeQuery(query string, acceptLanguage string) string {
+	return p.sp.FinalizeQuery(query, acceptLanguage)
+}
+
 // QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI
 func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 	return p.sp.QueryTypes(iri)
