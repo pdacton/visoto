@@ -45,17 +45,23 @@ var mon *monitor.Monitor
 func resolveSelectedEndpointName(c *gin.Context) string {
 	if slug := c.Query("endpoint"); slug != "" {
 		if ep := cfg.Application.GetEndpointBySlug(slug); ep != nil {
-			// Write the Set-Cookie header directly rather than via c.SetCookie, which would
-			// additionally url.QueryEscape the already-escaped value (double-encoding it) and
-			// use '+' for spaces — a format the client-side decodeURIComponent (endpoint-switcher.js)
-			// never converts back. url.PathEscape matches encodeURIComponent's %20 encoding instead.
-			http.SetCookie(c.Writer, &http.Cookie{
-				Name:     "selectedEndpoint",
-				Value:    url.PathEscape(ep.Name),
-				Path:     "/",
-				MaxAge:   31536000,
-				SameSite: http.SameSiteLaxMode,
-			})
+			// This helper runs several times per request (endpoint URL, tag, search
+			// provider lookups); only the first call may emit the Set-Cookie header,
+			// or the response carries duplicates.
+			if _, alreadySet := c.Get("selectedEndpointCookieSet"); !alreadySet {
+				c.Set("selectedEndpointCookieSet", true)
+				// Write the Set-Cookie header directly rather than via c.SetCookie, which would
+				// additionally url.QueryEscape the already-escaped value (double-encoding it) and
+				// use '+' for spaces — a format the client-side decodeURIComponent (endpoint-switcher.js)
+				// never converts back. url.PathEscape matches encodeURIComponent's %20 encoding instead.
+				http.SetCookie(c.Writer, &http.Cookie{
+					Name:     "selectedEndpoint",
+					Value:    url.PathEscape(ep.Name),
+					Path:     "/",
+					MaxAge:   31536000,
+					SameSite: http.SameSiteLaxMode,
+				})
+			}
 			return ep.Name
 		}
 		logger.Get().Warn("unknown endpoint slug in URL", slog.String("slug", slug))
