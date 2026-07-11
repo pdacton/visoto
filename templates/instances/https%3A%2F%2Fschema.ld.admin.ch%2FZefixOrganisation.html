@@ -18,37 +18,59 @@
 <div>
 
   <div class="mt-3">
-    <sparql-async id="zefixAttributes" class="d-none">
-      SELECT ?attribute ?value WHERE {
-        ?? ?attribute ?value .
-        FILTER ( isLiteral( ?value ) )
-      } LIMIT 100
-    </sparql-async>
-    {{ template "sparqlAsyncTable" (dict "queryId" "zefixAttributes" "iri" .ResourceIRI "title" "Attributes" "icon" "tags") }}
-  </div>
-
-  <div class="mt-3">
-    <sparql-async id="zefixOutgoing" class="d-none">
-      SELECT ?relationship ?destination ?type  WHERE {
+    <sparql-query id="attributes" class="d-none">
+      SELECT ?property ?value WHERE {
         BIND (?? AS ?s)
-        ?s ?relationship ?destination .
-        OPTIONAL { ?destination a ?type . }
-        FILTER (isIRI( ?destination))
-        FILTER (?relationship != rdf:type)
-      } LIMIT 100
-    </sparql-async>
-    {{ template "sparqlAsyncTable" (dict "queryId" "zefixOutgoing" "iri" .ResourceIRI "title" "Outgoing Relationships" "icon" "expand" "iconVar" "type") }}
-  </div>
-
-  <div class="mt-3">
-    <sparql-async id="zefixIncoming" class="d-none">
-      SELECT ?type ?source ?relationship WHERE {
-        BIND (?? AS ?s)
-        ?source ?relationship ?s .
-        OPTIONAL { ?source a ?type . }
+        ?s ?property ?value .
+        FILTER (isLiteral(?value))
       } LIMIT 1000
-    </sparql-async>
-    {{ template "sparqlAsyncTable" (dict "queryId" "zefixIncoming" "iri" .ResourceIRI "title" "Incoming Relationships" "icon" "shrink" "iconVar" "type") }}
+    </sparql-query>
+    {{ template "sparqlGrid" (dict
+          "result" .QueryResults.attributes
+          "id" "attributes"
+          "title" "Attributes"
+          "icon" "tags")
+    }}
+  </div>
+
+  <div class="row">
+    <div class="col-lg mt-3">
+      <sparql-query id="identifiers" class="d-none">
+        SELECT ?property ?value WHERE {
+          BIND (?? AS ?s)
+          {
+            ?s schema:identifier ?id .
+            ?id schema:name ?property ;
+                schema:value ?value .
+          } UNION {
+            ?s schema:additionalType ?value .
+            BIND (schema:additionalType AS ?property)
+          }
+        } LIMIT 100
+      </sparql-query>
+      {{ template "sparqlGrid" (dict
+            "result" .QueryResults.identifiers
+            "id" "identifiers"
+            "title" "Identifiers"
+            "icon" "fingerprint")
+      }}
+    </div>
+    <div class="col-lg mt-3">
+      <sparql-query id="address" class="d-none">
+        SELECT ?property ?value WHERE {
+          BIND (?? AS ?s)
+          ?s schema:address ?address .
+          ?address ?property ?value .
+          FILTER (isLiteral(?value))
+        } LIMIT 100
+      </sparql-query>
+      {{ template "sparqlGrid" (dict
+            "result" .QueryResults.address
+            "id" "address"
+            "title" "Address"
+            "icon" "map-pin")
+      }}
+    </div>
   </div>
 
 </div>

@@ -4,6 +4,7 @@ package parser
 // and orchestrates query execution via the sparql package.
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -93,6 +94,18 @@ func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLa
 // ExecuteQuery executes a raw SPARQL query and returns simplified results
 func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string, endpoint string) (sparql.QueryResult, error) {
 	return p.sp.ExecuteQuery(query, resolveLabels, acceptLanguage, endpoint)
+}
+
+// ExecuteQueryWithContext executes a raw SPARQL query bound to the given context,
+// allowing the caller to enforce a per-request timeout.
+func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string) (sparql.QueryResult, error) {
+	return p.sp.ExecuteQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint)
+}
+
+// FinalizeQuery returns the query as it would be sent to the endpoint (PREFIXes
+// prepended, visoto:dispLang resolved) without executing it.
+func (p *Preprocessor) FinalizeQuery(query string, acceptLanguage string) string {
+	return p.sp.FinalizeQuery(query, acceptLanguage)
 }
 
 // QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI

@@ -1,0 +1,47 @@
+<!-- TaxonName Class Template — lists all instances of dwcFP:TaxonName in an async table -->
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Name{{ end }}{{ end }}
+{{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Name{{ end }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}Scientific names in the Plazi taxonomic classification.{{ end }}
+
+{{ define "pageIcon" }}<img src="/static/img/resource/TaxonName.svg" alt="Taxon Name" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/TaxonName.svg{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-async id="taxonNameInstances" class="d-none">
+      SELECT ?taxonName ?rank ?kingdom ?phylum ?class ?order ?family ?genus ?species
+      WHERE {
+        ?taxonName rdf:type ?? .
+        OPTIONAL { ?taxonName dwc:rank ?rank . }
+        OPTIONAL { ?taxonName dwc:kingdom ?kingdom . }
+        OPTIONAL { ?taxonName dwc:phylum ?phylum . }
+        OPTIONAL { ?taxonName dwc:class ?class . }
+        OPTIONAL { ?taxonName dwc:order ?order . }
+        OPTIONAL { ?taxonName dwc:family ?family . }
+        OPTIONAL { ?taxonName dwc:genus ?genus . }
+        OPTIONAL { ?taxonName dwc:species ?species . }
+      }
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "taxonNameInstances"
+        "iri" .ResourceIRI
+        "title" "Taxon Names"
+        "icon" "bug"
+        "iconVar" "TaxonName"
+        "badgeVar" "rank")
+    }}
+  </div>
+</div>
+{{ end }}

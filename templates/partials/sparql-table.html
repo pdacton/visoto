@@ -12,6 +12,16 @@
     - collapsed: (optional) if true, card starts in collapsed state
     - iconVar: (optional) SPARQL variable name whose IRI is used to look up a resource icon
     - badgeVar: (optional) SPARQL variable name to render as a Tabler badge instead of a link
+
+  Working-set mode (set by the async-table handler for large classes):
+    - workingSet: true  → Tabulator loads a bounded set once from
+                          /api/async-table-data/:id, then pages/sorts/searches it
+                          locally. No rows are embedded inline.
+    - keyVar:     class-membership key variable (pagination/ordering anchor)
+    - total:      exact instance count of the class (for the banner)
+    - complete:   whether the loaded set is the whole in-scope population
+    - searchProp: optional name property IRI used by the "Search all" rebuild
+    - max:        working-set cap (rows fetched per load)
 -->
 
 {{ define "sparqlTable" }}
@@ -23,9 +33,21 @@
   {{ $collapsed := .collapsed }}
   {{ $iconVar := .iconVar }}
   {{ $badgeVar := .badgeVar }}
-  {{ $hasResults := gt (len $result.Bindings) 0 }}
+  {{/* Working-set mode: the frontend fetches a bounded set once from
+       /api/async-table-data/:id, then pages/sorts/searches it locally. Rows are
+       not embedded inline. "complete" = the set is the whole in-scope population;
+       when false, a banner + "Search all" rebuild appear. */}}
+  {{ $workingSet := .workingSet }}
+  {{ $keyVar := .keyVar }}
+  {{ $searchProp := .searchProp }}
+  {{ $total := .total }}
+  {{ $complete := .complete }}
+  {{ $max := or .max "20000" }}
+  {{/* Working-set tables load lazily via ajax, so they behave as "has results"
+       for header/controls/init even though no rows are embedded inline. */}}
+  {{ $hasResults := or (gt (len $result.Bindings) 0) $workingSet }}
   {{ $hasError := $result.Error }}
-  {{ $collapsed = or $collapsed (not $hasResults) $hasError }}
+  {{ $collapsed = or $collapsed (and (not $hasResults) (not $workingSet)) $hasError }}
 
   <!-- card to enclose the table -->
   <div class="card" {{ if or $hasError (not $hasResults) }}style="background-color: var(--tblr-bg-surface-secondary);"{{ end }}>
@@ -38,10 +60,21 @@
       </div>
       <div class="btn-actions ms-auto">
         {{ if and $id $hasResults }}
-          <input type="text" id="search-{{ $id }}" class="search-table form-control form-control-sm text-secondary" style="min-width: 150px; max-width: 300px;" placeholder="Search...">
+          <input type="text" id="search-{{ $id }}" class="search-table form-control form-control-sm text-secondary" style="min-width: 150px; max-width: 300px;" placeholder="{{ if and $workingSet $searchProp }}Search names...{{ else }}Search...{{ end }}">
         {{ end }}
+          {{ if $workingSet }}
+            <!-- Working set: the search box filters the loaded set instantly; this
+                 button (shown only when the set is incomplete) rebuilds the working
+                 set from a full-class backend search. -->
+            <a id="search-all-{{ $id }}" class="btn btn-sm btn-outline-primary d-none" style="cursor:pointer; white-space:nowrap;" title="Search all instances on the server">
+              <i data-lucide="search" style="width:1em;height:1em;"></i> <span id="search-all-label-{{ $id }}">Search all</span>
+            </a>
+          {{ end }}
           {{ if and $id $hasResults }}
-            <select id="groupby-{{ $id }}" class="form-select form-select-sm text-muted" style="min-width: 100px; padding-right: 1.5rem; background-size: 0.75rem; background-position: right 0.5rem center;">
+            <!-- Group-by operates on the loaded set (the whole class when complete,
+                 the working set otherwise). Column names come from the first data
+                 response in working-set mode, so this is populated client-side. -->
+            <select id="groupby-{{ $id }}" class="form-select form-select-sm text-muted" style="min-width: 100px; padding-right: 1.5rem; background-size: 0.75rem; background-position: right 0.5rem center;"{{ if $workingSet }} data-ws-groupby="1"{{ end }}>
               <option value="" class="text-muted">Group by...</option>
               {{ range $result.Vars }}
               <option value="{{ . }}">{{ . }}</option>
@@ -57,7 +90,7 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               {{ if $hasResults }}
-                <li><h6 class="dropdown-header">Download</h6></li>
+                <li><h6 class="dropdown-header">Download{{ if $workingSet }} (loaded set){{ end }}</h6></li>
                 <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> CSV</a></li>
                 <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> JSON</a></li>
                 <li><a class="dropdown-item download-xlsx-{{ $id }}" href="#"><i data-lucide="table-2" style="width:1em;height:1em;"></i> Excel (XLSX)</a></li>
@@ -87,12 +120,22 @@
             No results found.
           </div>
         {{ else }}
+          {{ if $workingSet }}
+          <!-- Completeness banner: hidden until the first data response reports the
+               loaded/total counts; only stays visible when the set is incomplete. -->
+          <div id="ws-banner-{{ $id }}" class="alert alert-info d-none rounded-0 border-start-0 border-end-0 border-top-0 mb-0 py-2 px-3 d-flex align-items-center gap-2" role="status">
+            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
+            <span id="ws-banner-text-{{ $id }}"></span>
+          </div>
+          {{ end }}
           <!-- Empty div for Tabulator to render into -->
           <div id="{{ $id }}-table"></div>
 
+          {{ if not $workingSet }}
           <!-- Inline JSON data: vars is array of column names, bindings is array of row objects -->
           <template id="{{ $id }}-vars">{{ toJSON $result.Vars }}</template>
           <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
+          {{ end }}
           {{ if $iconVar }}<template id="{{ $id }}-icon-var">{{ $iconVar }}</template><template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>{{ end }}
           {{ if $badgeVar }}<template id="{{ $id }}-badge-var">{{ $badgeVar }}</template>{{ end }}
         {{ end }}
@@ -101,7 +144,10 @@
 
   </div>
 
-  <!-- Always-emitted: SPARQL endpoint handler -->
+  <!-- Endpoint handler: opens the query on the public YASGUI endpoint. Both inline
+       and working-set tables embed a query — inline embeds the executed query,
+       working-set embeds the full class query (finalized, ?? substituted) that its
+       shell was built with — so both can open it. -->
   {{ if $id }}
     <script>
       /* eslint-disable */
@@ -130,7 +176,11 @@
     </script>
   {{ end }}
 
-  <!-- Tabulator.js initialization for this table (only when results exist) -->
+  <!-- Tabulator.js init. One code path serves both data sources: the inline path
+       reads the embedded <template> JSON; the working-set path fetches a bounded
+       set once from /api/async-table-data/:id. In BOTH cases every interaction —
+       pagination, sort, typed search, group-by — is LOCAL over the loaded rows.
+       Working-set mode adds a completeness banner and a "Search all" rebuild. -->
   {{ if and $id $hasResults }}
     <script>
       /* eslint-disable */
@@ -142,65 +192,32 @@
         }
       };
       window.sparqlTableOnReady(function() {
-        // Parse embedded JSON data from template elements
-        var vars = JSON.parse(document.getElementById("{{ $id }}-vars").innerHTML.trim());
-        var bindings = JSON.parse(document.getElementById("{{ $id }}-bindings").innerHTML.trim());
-        var rowCount = bindings.length;
+        var WORKING_SET = {{ if $workingSet }}true{{ else }}false{{ end }};
 
-        // HTML escape helper
+        // ---- shared cell rendering / sorting ----
         function escapeHtml(text) {
           if (!text) return '';
           var div = document.createElement('div');
           div.textContent = text;
           return div.innerHTML;
         }
-
-        // Render a binding value as HTML (replicates Go's RenderHTML)
         function renderBinding(binding) {
           if (!binding) return '';
           if (binding.Type === 'uri') {
             var display = escapeHtml(binding.DisplayText || binding.Value);
-            var href = '/resource/' + encodeURIComponent(binding.Value);
-            return '<a href="' + href + '">' + display + '</a>';
+            return '<a href="/resource/' + encodeURIComponent(binding.Value) + '">' + display + '</a>';
           }
           return escapeHtml(binding.DisplayText || binding.Value);
         }
-
-        // Transform bindings to Tabulator row format (store raw bindings; HTML rendered lazily by formatters)
-        var tableData = bindings.map(function(binding) {
-          var row = {};
-          vars.forEach(function(varName) {
-            row[varName] = binding[varName] || null;
-          });
-          return row;
-        });
-
-        // Custom sorter using display value
+        function htmlCellFormatter(cell) { return renderBinding(cell.getValue()); }
+        function plainValueAccessor(value) { return value ? (value.DisplayText || value.Value || '') : ''; }
         function valueSorter(a, b) {
           var valA = a ? (a.DisplayText || a.Value || '') : '';
           var valB = b ? (b.DisplayText || b.Value || '') : '';
-
-          // Try numeric comparison first
-          var numA = parseFloat(valA);
-          var numB = parseFloat(valB);
-          if (!isNaN(numA) && !isNaN(numB)) {
-            return numA - numB;
-          }
-
+          var numA = parseFloat(valA), numB = parseFloat(valB);
+          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
           return String(valA).localeCompare(String(valB));
         }
-
-        // Custom formatter: renders a raw SPARQL binding as HTML (lazy — called only for visible cells)
-        function htmlCellFormatter(cell) {
-          return renderBinding(cell.getValue());
-        }
-
-        // Accessor for downloads: extract plain text value from raw binding
-        function plainValueAccessor(value) {
-          return value ? (value.DisplayText || value.Value || '') : '';
-        }
-
-        // Helper to create groupBy function for a field
         function makeGroupByFn(field) {
           return function(data) {
             var val = data[field];
@@ -208,150 +225,271 @@
           };
         }
 
-        // Read optional iconVar from embedded data (set when iconVar parameter is passed)
+        // Optional icon/badge config (emitted as <template> islands for both modes).
         var iconVarEl = document.getElementById("{{ $id }}-icon-var");
         var iconVar = iconVarEl ? iconVarEl.innerHTML.trim() : null;
-
-        // Read optional badgeVar from embedded data (set when badgeVar parameter is passed)
         var badgeVarEl = document.getElementById("{{ $id }}-badge-var");
         var badgeVar = badgeVarEl ? badgeVarEl.innerHTML.trim() : null;
+        var availableIcons = null;
+        if (iconVar) {
+          var iconsEl = document.getElementById("{{ $id }}-available-icons");
+          if (iconsEl) availableIcons = JSON.parse(iconsEl.innerHTML.trim());
+        }
 
-        // Badge formatter: renders the last path segment of a URI as a Tabler badge with a link
         function badgeCellFormatter(cell) {
           var value = cell.getValue();
           if (!value) return '';
           var uri = value.Value || '';
-          // Extract last path segment for display (e.g. "Completed" from a URI)
           var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
           var badge = '<span class="badge bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
           if (value.Type === 'uri' && uri) {
-            var href = '/resource/' + encodeURIComponent(uri);
-            return '<a href="' + href + '">' + badge + '</a>';
+            return '<a href="/resource/' + encodeURIComponent(uri) + '">' + badge + '</a>';
           }
           return badge;
         }
-
-        // Load icon support data if iconVar is configured
-        var availableIcons = null;
-        if (iconVar) {
-          availableIcons = JSON.parse(document.getElementById("{{ $id }}-available-icons").innerHTML.trim());
-        }
-
         function iriToName(uri) {
           try { uri = decodeURIComponent(uri); } catch(e) {}
           var name = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
-          // Handle CURIEs like "rdf:Property" — strip the prefix
           if (name.includes(':')) name = name.split(':').pop();
           return name;
         }
-
-        // Icon formatter: replaces cell text with an icon image when one is available
         function iconCellFormatter(cell) {
           var b = cell.getValue();
           if (!b || !b.Value) return '';
           var name = iriToName(b.Value);
           var img = '';
-          if (availableIcons[name]) {
+          if (availableIcons && availableIcons[name]) {
             img = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">';
-          } else if (availableIcons[name + '.fallback']) {
+          } else if (availableIcons && availableIcons[name + '.fallback']) {
             img = '<img src="/static/img/resource/' + name + '.fallback.svg" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">';
           }
           return img + renderBinding(b);
         }
 
-        // Build column definitions from vars
-        var firstBinding = bindings[0] || {};
-        var columns = vars.map(function(varName) {
-          var binding = firstBinding[varName];
-          var isLiteral = binding && binding.Type === 'literal';
-          var isBadge = badgeVar && varName === badgeVar;
-          var isIcon = iconVar && varName === iconVar;
-
-          return {
-            title: varName,
-            field: varName,
-            formatter: isIcon ? iconCellFormatter : (isBadge ? badgeCellFormatter : htmlCellFormatter),
-            variableHeight: isLiteral,
-            sorter: valueSorter,
-            accessorDownload: plainValueAccessor
-          };
-        });
-
-        // Tabulator configuration
-        var tableConfig = {
-          data: tableData,
-          columns: columns,
-          layout: "fitDataStretch",
-          resizableColumnFit: true,
-          renderHorizontal: "virtual",
-          movableColumns: true,
-          sortMode: "local",
-          langs: {
-            "default": {
-              "pagination": {
-                "first": "<i data-lucide='chevrons-left'></i>",
-                "first_title": "First Page",
-                "prev": "<i data-lucide='chevron-left'></i>",
-                "prev_title": "Prev Page",
-                "next": "<i data-lucide='chevron-right'></i>",
-                "next_title": "Next Page",
-                "last": "<i data-lucide='chevrons-right'></i>",
-                "last_title": "Last Page"
-              }
-            }
-          }
-        };
-
-        // Enable pagination for larger datasets
-        if (rowCount > 10) {
-          tableConfig.pagination = "local";
-          tableConfig.paginationSize = 10;
-          tableConfig.paginationSizeSelector = [10, 25, 50, 100, true];
-          tableConfig.paginationCounter = "rows";
+        // Build column definitions from a var list + a sample row (for literal
+        // detection, which drives variableHeight).
+        function buildColumns(vars, sampleRow) {
+          sampleRow = sampleRow || {};
+          return (vars || []).map(function(varName) {
+            var binding = sampleRow[varName];
+            var isLiteral = binding && binding.Type === 'literal';
+            var isBadge = badgeVar && varName === badgeVar;
+            var isIcon = iconVar && varName === iconVar;
+            return {
+              title: varName,
+              field: varName,
+              formatter: isIcon ? iconCellFormatter : (isBadge ? badgeCellFormatter : htmlCellFormatter),
+              variableHeight: isLiteral,
+              sorter: valueSorter,
+              accessorDownload: plainValueAccessor
+            };
+          });
         }
 
-        var table = new Tabulator("#{{ $id }}-table", tableConfig);
+        // Map a list of SPARQL binding rows ({var: binding}) to Tabulator rows.
+        function toTableData(vars, bindings) {
+          return (bindings || []).map(function(binding) {
+            var row = {};
+            vars.forEach(function(v) { row[v] = binding[v] || null; });
+            return row;
+          });
+        }
 
-        // Initialize Lucide icons after table is built
-        table.on("tableBuilt", function() {
-          if (window.lucide) {
-            lucide.createIcons();
+        var paginationLangs = {
+          "default": { "pagination": {
+            "first": "<i data-lucide='chevrons-left'></i>", "first_title": "First Page",
+            "prev": "<i data-lucide='chevron-left'></i>", "prev_title": "Prev Page",
+            "next": "<i data-lucide='chevron-right'></i>", "next_title": "Next Page",
+            "last": "<i data-lucide='chevrons-right'></i>", "last_title": "Last Page"
+          }}
+        };
+
+        // Base config shared by both modes: local pagination/sort over the loaded
+        // rows. fitColumns keeps layout O(columns) — important for a 20k working set
+        // (fitDataStretch measures every cell and janks). Inline (small) tables use
+        // fitDataStretch for nicer sizing.
+        function baseConfig(layout) {
+          return {
+            layout: layout,
+            resizableColumnFit: true,
+            renderHorizontal: "virtual",
+            renderVertical: "virtual",
+            movableColumns: true,
+            sortMode: "local",
+            pagination: "local",
+            paginationSize: 10,
+            paginationSizeSelector: [10, 50, 100],
+            paginationCounter: "rows",
+            langs: paginationLangs
+          };
+        }
+
+        var table;
+
+        // ---- INLINE mode: rows embedded in <template> islands ----
+        if (!WORKING_SET) {
+          var vars = JSON.parse(document.getElementById("{{ $id }}-vars").innerHTML.trim());
+          var bindings = JSON.parse(document.getElementById("{{ $id }}-bindings").innerHTML.trim());
+          var cfg = baseConfig("fitDataStretch");
+          cfg.data = toTableData(vars, bindings);
+          cfg.columns = buildColumns(vars, bindings[0]);
+          // Small tables don't need a pager.
+          if (bindings.length <= 10) { cfg.pagination = false; }
+          table = new Tabulator("#{{ $id }}-table", cfg);
+        } else {
+          // ---- WORKING-SET mode: fetch a bounded set once, then all-local ----
+          var cfg = baseConfig("fitColumns");
+          cfg.data = [];
+          cfg.columns = [];
+          table = new Tabulator("#{{ $id }}-table", cfg);
+        }
+
+        table.on("tableBuilt", function() { if (window.lucide) lucide.createIcons(); });
+        table.on("renderComplete", function() { if (window.lucide) lucide.createIcons(); });
+
+        // ================= WORKING-SET data loading =================
+        var wsBaseUrl = "/api/async-table-data/{{ $id }}?iri={{ urlquery .iri }}&keyVar={{ urlquery $keyVar }}&max={{ urlquery $max }}";
+        {{ if $searchProp }}wsBaseUrl += "&searchProp={{ urlquery $searchProp }}";{{ end }}
+        var wsColumnsSet = false;
+        var wsSearchTerm = "";           // active backend search ("" = browse)
+        var wsComplete = {{ if $complete }}true{{ else }}false{{ end }};
+        var wsTotal = {{ if $total }}{{ $total }}{{ else }}0{{ end }};
+
+        var bannerEl = document.getElementById("ws-banner-{{ $id }}");
+        var bannerTextEl = document.getElementById("ws-banner-text-{{ $id }}");
+        var searchAllBtn = document.getElementById("search-all-{{ $id }}");
+        var searchAllLabel = document.getElementById("search-all-label-{{ $id }}");
+        var groupBySelect = document.getElementById("groupby-{{ $id }}");
+
+        function fmtNum(n) { return (n != null) ? Number(n).toLocaleString() : "?"; }
+
+        function updateBanner(loaded) {
+          if (!bannerEl) return;
+          if (wsComplete) { bannerEl.classList.add("d-none"); return; }
+          bannerEl.classList.remove("d-none");
+          if (wsSearchTerm) {
+            bannerTextEl.textContent = "Showing the first " + fmtNum(loaded) +
+              " matches for “" + wsSearchTerm + "” — refine your search to narrow further.";
+          } else {
+            bannerTextEl.textContent = "Showing " + fmtNum(loaded) + " of " + fmtNum(wsTotal) +
+              " — use “Search all” to search the full class.";
           }
-        });
+          if (window.lucide) lucide.createIcons({ nodes: [bannerEl] });
+        }
 
-        // Search filter with debounce
+        function updateSearchAllLabel() {
+          if (!searchAllLabel) return;
+          searchAllLabel.textContent = wsSearchTerm
+            ? ("Searching all " + fmtNum(wsTotal))
+            : ("Search all " + fmtNum(wsTotal));
+        }
+
+        // Fetch a working set (browse or search) and load it into the table.
+        function loadWorkingSet(term) {
+          var url = wsBaseUrl;
+          if (term) url += "&search=" + encodeURIComponent(term);
+          if (bannerEl) {
+            bannerEl.classList.remove("d-none");
+            bannerTextEl.textContent = term ? ("Searching for “" + term + "”…") : "Loading…";
+          }
+          return fetch(url, { headers: { "Accept": "application/json" } })
+            .then(function(r) { return r.json(); })
+            .then(function(resp) {
+              if (resp.error) { console.warn("working-set error:", resp.error); }
+              var vars = resp.vars || [];
+              var rows = toTableData(vars, resp.data || []);
+              if (!wsColumnsSet && vars.length) {
+                table.setColumns(buildColumns(vars, (resp.data || [])[0]));
+                wsColumnsSet = true;
+                populateGroupBy(vars);
+              }
+              if (typeof resp.total === "number") wsTotal = resp.total;
+              wsComplete = !!resp.complete;
+              wsSearchTerm = term || "";
+              table.setData(rows);          // local pagination/sort/search from here
+              table.clearFilter();
+              updateBanner(rows.length);
+              updateSearchAllLabel();
+              // The escalation button only makes sense while the set is incomplete.
+              if (searchAllBtn) {
+                if (!wsComplete && currentTerm()) searchAllBtn.classList.remove("d-none");
+                else searchAllBtn.classList.add("d-none");
+              }
+              return rows;
+            })
+            .catch(function(e) {
+              console.warn("working-set fetch failed:", e);
+              if (bannerTextEl) bannerTextEl.textContent = "Failed to load data.";
+            });
+        }
+
+        // Group-by options are unknown until the first working-set response.
+        function populateGroupBy(vars) {
+          if (!groupBySelect || !groupBySelect.dataset.wsGroupby) return;
+          if (groupBySelect.options.length > 1) return; // already populated
+          vars.forEach(function(v) {
+            var opt = document.createElement("option");
+            opt.value = v; opt.textContent = v;
+            groupBySelect.appendChild(opt);
+          });
+        }
+
+        if (WORKING_SET) {
+          loadWorkingSet("");
+        }
+
+        // ================= search (local filter + optional backend rebuild) =================
+        function currentTerm() {
+          var el = document.getElementById("search-{{ $id }}");
+          return el ? el.value.trim() : "";
+        }
+
         var searchInput = document.getElementById("search-{{ $id }}");
         if (searchInput) {
           var searchTimeout;
           searchInput.addEventListener("input", function(e) {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(function() {
-              var searchValue = e.target.value.toLowerCase();
-              if (!searchValue) {
-                table.clearFilter();
-                return;
-              }
-
-              table.setFilter(function(data) {
-                for (var key in data) {
-                  var b = data[key];
-                  if (b) {
-                    var text = b.DisplayText || b.Value || '';
-                    if (String(text).toLowerCase().indexOf(searchValue) !== -1) {
-                      return true;
+              var val = e.target.value.toLowerCase();
+              // Instant local filter over the currently loaded rows (works the same
+              // for inline and working-set data).
+              if (!val) { table.clearFilter(); } else {
+                table.setFilter(function(data) {
+                  for (var key in data) {
+                    var b = data[key];
+                    if (b) {
+                      var text = b.DisplayText || b.Value || '';
+                      if (String(text).toLowerCase().indexOf(val) !== -1) return true;
                     }
                   }
+                  return false;
+                });
+              }
+              // In working-set mode, reveal the backend-rebuild button whenever the
+              // set is incomplete and there's a term (local filtering can only see
+              // the loaded subset). When the term is cleared, drop back to browse.
+              if (WORKING_SET && searchAllBtn) {
+                if (!wsComplete && currentTerm()) {
+                  searchAllBtn.classList.remove("d-none");
+                } else {
+                  searchAllBtn.classList.add("d-none");
+                  if (wsSearchTerm) loadWorkingSet(""); // return to browse working set
                 }
-                return false;
-              });
+              }
             }, 150);
           });
         }
 
-        // Toggle expand/collapse all groups button
+        if (searchAllBtn) {
+          searchAllBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            loadWorkingSet(currentTerm()); // rebuild the working set from the server
+          });
+        }
+
+        // ================= group-by (local, with localStorage) =================
         var toggleGroupsBtn = document.getElementById("toggle-groups-{{ $id }}");
         var groupsExpanded = true;
-
         function setToggleBtnState(expanded) {
           groupsExpanded = expanded;
           var iconName = expanded ? "list-chevrons-down-up" : "list-chevrons-up-down";
@@ -359,7 +497,6 @@
           toggleGroupsBtn.innerHTML = '<i data-lucide="' + iconName + '"></i>';
           if (window.lucide) lucide.createIcons({ nodes: [toggleGroupsBtn] });
         }
-
         if (toggleGroupsBtn) {
           toggleGroupsBtn.addEventListener("click", function() {
             var newExpanded = !groupsExpanded;
@@ -375,29 +512,6 @@
           });
         }
 
-        // Download handlers
-        var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
-
-        var csvBtn = document.querySelector(".download-csv-{{ $id }}");
-        if (csvBtn) csvBtn.addEventListener("click", function(e) {
-          e.preventDefault();
-          table.download("csv", filename + ".csv", { bom: true });
-        });
-
-        var jsonBtn = document.querySelector(".download-json-{{ $id }}");
-        if (jsonBtn) jsonBtn.addEventListener("click", function(e) {
-          e.preventDefault();
-          table.download("json", filename + ".json");
-        });
-
-        var xlsxBtn = document.querySelector(".download-xlsx-{{ $id }}");
-        if (xlsxBtn) xlsxBtn.addEventListener("click", function(e) {
-          e.preventDefault();
-          table.download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) });
-        });
-
-        // GroupBy dropdown with localStorage persistence
-        var groupBySelect = document.getElementById("groupby-{{ $id }}");
         if (groupBySelect) {
           function applyGroupBy(field) {
             if (field === "") {
@@ -411,34 +525,32 @@
               }
             }
           }
-
-          // Restore saved grouping after table is built
           table.on("tableBuilt", function() {
             try {
               var savedGroupBy = localStorage.getItem("tabulator-groupby-{{ $id }}");
-              if (savedGroupBy !== null) {
+              if (savedGroupBy !== null && (!groupBySelect.dataset.wsGroupby)) {
                 groupBySelect.value = savedGroupBy;
                 applyGroupBy(savedGroupBy);
               }
-            } catch (e) {
-              console.warn("localStorage unavailable:", e);
-            }
+            } catch (e) { console.warn("localStorage unavailable:", e); }
           });
-
           groupBySelect.addEventListener("change", function(e) {
-            var selectedField = e.target.value;
-            applyGroupBy(selectedField);
-
-            try {
-              localStorage.setItem("tabulator-groupby-{{ $id }}", selectedField);
-            } catch (e) {
-              console.warn("localStorage unavailable:", e);
-            }
+            applyGroupBy(e.target.value);
+            try { localStorage.setItem("tabulator-groupby-{{ $id }}", e.target.value); }
+            catch (e) { console.warn("localStorage unavailable:", e); }
           });
         }
+
+        // ================= downloads (loaded rows) =================
+        var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
+        var csvBtn = document.querySelector(".download-csv-{{ $id }}");
+        if (csvBtn) csvBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("csv", filename + ".csv", { bom: true }); });
+        var jsonBtn = document.querySelector(".download-json-{{ $id }}");
+        if (jsonBtn) jsonBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("json", filename + ".json"); });
+        var xlsxBtn = document.querySelector(".download-xlsx-{{ $id }}");
+        if (xlsxBtn) xlsxBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) }); });
       });
     </script>
   {{ end }}
-
 
 {{ end }}
