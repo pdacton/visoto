@@ -135,6 +135,30 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 
+  // Highlight the sidebar link matching the current URL and reopen its parent
+  // submenu (Tabler convention: `active` on the item, `show` on the dropdown).
+  // Hrefs mix raw and percent-encoded IRIs, so compare decoded pathnames.
+  function decodedPath(path) {
+    try { return decodeURIComponent(path); } catch (e) { return path; }
+  }
+  const currentPath = decodedPath(window.location.pathname);
+  document.querySelectorAll('#sidebar-panel-nav a[href]').forEach(function (link) {
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#')) return;
+    if (decodedPath(new URL(href, window.location.origin).pathname) !== currentPath) return;
+    link.classList.add('active');
+    const dropdown = link.closest('.nav-item.dropdown');
+    if (dropdown) {
+      const toggle = dropdown.querySelector('.dropdown-toggle');
+      const menu = dropdown.querySelector('.dropdown-menu');
+      if (toggle && menu) {
+        toggle.classList.add('show');
+        toggle.setAttribute('aria-expanded', 'true');
+        menu.classList.add('show');
+      }
+    }
+  });
+
   // Handle resize - reinitialize on breakpoint change
   let wasMobile = isMobile();
   window.addEventListener('resize', function() {
