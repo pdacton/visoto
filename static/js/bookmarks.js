@@ -112,7 +112,7 @@
       li.innerHTML =
         '<a class="nav-link pe-1" href="' + href + '" title="' + escapeHtml(item.iri) + '">' +
           '<span class="nav-link-icon d-none d-lg-inline-block me-2 flex-shrink-0">' +
-            '<img src="' + iconSrc + '" alt="" width="16" height="16" ' +
+            '<img src="' + escapeHtml(iconSrc) + '" alt="" width="16" height="16" ' +
               'onerror="this.onerror=null;this.src=\'/static/img/resource/defaultInstance.svg\'">' +
           '</span>' +
           '<span class="nav-link-title text-truncate">' + escapeHtml(label) + '</span>' +

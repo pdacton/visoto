@@ -135,8 +135,11 @@ func staticPageHandler(c *gin.Context) {
 	// Extract page name from URL parameter
 	pageName := c.Param("page")
 
-	// Validate: must end with .html
-	if !strings.HasSuffix(pageName, ".html") {
+	// Validate: must end with .html and must be a bare filename — the gin route
+	// (/:page) already rejects extra path segments, but guard against traversal
+	// explicitly so the template path below can never escape templates/pages/.
+	if !strings.HasSuffix(pageName, ".html") ||
+		strings.Contains(pageName, "..") || strings.ContainsAny(pageName, `/\`) {
 		c.String(http.StatusNotFound, "Page not found")
 		return
 	}

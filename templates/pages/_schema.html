@@ -52,6 +52,16 @@
     return decoded.includes('#') ? decoded.split('#').pop() : decoded.split('/').pop();
   }
 
+  // localName() percent-decodes, so its output can contain characters that
+  // validIri() rejected in encoded form — always escape before innerHTML.
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
   function sparql(query, accept) {
     return fetch(ENDPOINT_URL, {
       method: 'POST',
@@ -343,8 +353,8 @@
   function renderSchema(store, cls) {
     statusEl.innerHTML =
       '<div class="text-secondary small">Schema derived from ' +
-      '<a href="/resource/' + encodeURIComponent(instanceIRI) + '" target="_blank"><code>' + localName(instanceIRI) + '</code></a>' +
-      ' (anchored on <code>' + localName(cls) + '</code>) &mdash; ' +
+      '<a href="/resource/' + encodeURIComponent(instanceIRI) + '" target="_blank"><code>' + escapeHtml(localName(instanceIRI)) + '</code></a>' +
+      ' (anchored on <code>' + escapeHtml(localName(cls)) + '</code>) &mdash; ' +
       Object.keys(store.elements).length + ' classes, ' + store.links.length + ' relations</div>';
 
     function onWorkspaceMounted(workspace) {
