@@ -41,7 +41,7 @@
   Default Behavior (no config):
     - All nodes render as rounded rectangles with neutral gray styling (default classDef)
     - No edge reversal
-    - Node clicks navigate to /resource/{uri}
+    - Node clicks navigate to /resource?iri={uri}
 
   SPARQL Query Requirements:
     - Must return at least three variables: ?from, ?predicate, ?to
@@ -565,7 +565,7 @@
                   e.preventDefault();
                   e.stopPropagation();
 
-                  var url = '/resource/' + encodeURIComponent(idToUri[nodeId]);
+                  var url = '/resource?iri=' + encodeURIComponent(idToUri[nodeId]);
                   if (e.ctrlKey || e.metaKey) {
                     // Ctrl/Cmd+Click: open in new tab
                     window.open(url, '_blank');

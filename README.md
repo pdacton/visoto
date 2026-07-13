@@ -122,7 +122,8 @@ static/            — CSS, JS, images
 |---|---|---|
 | `GET` | `/` | Home page |
 | `GET` | `/search` | Full-text search |
-| `GET` | `/resource/*path` | Resource page (IRI-based) |
+| `GET` | `/resource?iri=<IRI>` | Resource page (IRI-based) |
+| `GET` | `/resource/*path` | Legacy path form — 301 redirect to `/resource?iri=` |
 | `GET` | `/monitoring` | Endpoint monitoring dashboard |
 | `GET` | `/api/monitoring/status` | Monitoring status (JSON) |
 | `POST` | `api/monitoring/toggle` | Enable/disable monitoring |

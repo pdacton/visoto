@@ -353,7 +353,7 @@
   function renderSchema(store, cls) {
     statusEl.innerHTML =
       '<div class="text-secondary small">Schema derived from ' +
-      '<a href="/resource/' + encodeURIComponent(instanceIRI) + '" target="_blank"><code>' + escapeHtml(localName(instanceIRI)) + '</code></a>' +
+      '<a href="/resource?iri=' + encodeURIComponent(instanceIRI) + '" target="_blank"><code>' + escapeHtml(localName(instanceIRI)) + '</code></a>' +
       ' (anchored on <code>' + escapeHtml(localName(cls)) + '</code>) &mdash; ' +
       Object.keys(store.elements).length + ' classes, ' + store.links.length + ' relations</div>';
 
@@ -402,7 +402,7 @@
       viewOptions: {
         onIriClick: function(iriEvent) {
           var iri = iriEvent.iri || iriEvent;
-          window.open('/resource/' + encodeURIComponent(iri), '_blank');
+          window.open('/resource?iri=' + encodeURIComponent(iri), '_blank');
         },
       },
     });

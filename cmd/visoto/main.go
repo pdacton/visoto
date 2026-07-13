@@ -197,17 +197,30 @@ func staticPageHandler(c *gin.Context) {
 	c.HTML(http.StatusOK, templateName, data)
 }
 
+// legacyResourceRedirectHandler permanently redirects old path-form resource
+// URLs (/resource/<iri>) to the canonical query form (/resource?iri=<iri>).
+// Other query params (e.g. ?endpoint=) are carried over; the browser keeps
+// any #view fragment across the redirect on its own.
+func legacyResourceRedirectHandler(c *gin.Context) {
+	iri := strings.TrimPrefix(c.Param("path"), "/")
+	target := "/resource?iri=" + url.QueryEscape(iri)
+	if raw := c.Request.URL.RawQuery; raw != "" {
+		target += "&" + raw
+	}
+	c.Redirect(http.StatusMovedPermanently, target)
+}
+
 func resourcePageHandler(c *gin.Context) {
 
-	// extract iri from path
-	iri := strings.TrimPrefix(c.Param("path"), "/")
+	// extract iri from query param
+	iri := c.Query("iri")
 
 	// Get language preference from request
 	language := c.GetHeader("Accept-Language")
 
 	// log request
 	log := logger.Get()
-	log.Debug("processing resource page request", slog.String("path", c.Param("path")), slog.String("iri", iri))
+	log.Debug("processing resource page request", slog.String("iri", iri))
 
 	// Create preprocessor with user-selected endpoint (inside cookie)
 	preprocessor := prepareQueryInputs(c)
@@ -612,7 +625,8 @@ func main() {
 	router.GET("/api/metric/:id", metricHandler)
 	router.GET("/api/async-table/:id", asyncTableHandler)
 	router.GET("/api/async-table-data/:id", asyncTableDataHandler)
-	router.GET("/resource/*path", resourcePageHandler)
+	router.GET("/resource", resourcePageHandler)
+	router.GET("/resource/*path", legacyResourceRedirectHandler)
 	router.Any("/mcp", gin.WrapH(mcpHandler))
 	router.GET("/health", gin.WrapH(mcpHandler))
 	router.GET("/:page", staticPageHandler)

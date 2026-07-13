@@ -1,7 +1,7 @@
 // bookmarks.js
 // Manages a personal bookmarks list in the left sidebar.
 // - Resources can be added via the "Add" button on resource pages or by
-//   dragging any /resource/… link into the sidebar drop zone.
+//   dragging any resource link into the sidebar drop zone.
 // - Items can be reordered by dragging within the list.
 // - Items can be removed with the × button.
 // - All state persists in localStorage under 'visoto-bookmarks'.
@@ -107,7 +107,7 @@
       // a bare identifier (e.g. "5359.svg") that never exists and 404s.
       var iconSrc = item.icon || '/static/img/resource/defaultInstance.svg';
       var label = item.label || item.shortIri || lastSegment(item.iri);
-      var href = '/resource/' + encodeURIComponent(item.iri);
+      var href = '/resource?iri=' + encodeURIComponent(item.iri);
 
       li.innerHTML =
         '<a class="nav-link pe-1" href="' + href + '" title="' + escapeHtml(item.iri) + '">' +
@@ -169,7 +169,7 @@
       .replace(/"/g, '&quot;');
   }
 
-  // ── Drop zone (drop a /resource/… link from the page) ─────────────────────
+  // ── Drop zone (drop a resource link from the page) ─────────────────────
 
   function initDropZone() {
     var dropZone = document.getElementById('bookmarks-drop-zone');
@@ -230,7 +230,7 @@
   // ── Make all resource links draggable ──────────────────────────────────────
 
   // Populate the drag payload so a resource can be dropped onto the bookmarks
-  // sidebar or the Graph Explorer canvas. `href` is the native /resource/ link
+  // sidebar or the Graph Explorer canvas. `href` is the native resource link
   // (may be omitted, e.g. when dragging the page title, which has no anchor).
   function setDragPayload(e, iri, label, href, icon) {
     e.dataTransfer.setData(DRAG_TYPE_IRI, iri);
@@ -238,10 +238,10 @@
     // Carry the type icon (e.g. .../Person.svg) so a bookmark drop can show it.
     if (icon) e.dataTransfer.setData(DRAG_TYPE_ICON, icon);
     // Graph Explorer canvas reads this key first; give it the clean RDF IRI
-    // so dropped nodes resolve their real label instead of the /resource/ URL.
+    // so dropped nodes resolve their real label instead of the resource URL.
     e.dataTransfer.setData('application/x-graph-explorer-elements', JSON.stringify([iri]));
     // Also set uri-list so it works as a native browser link drag
-    e.dataTransfer.setData('text/uri-list', href || ('/resource/' + encodeURIComponent(iri)));
+    e.dataTransfer.setData('text/uri-list', href || ('/resource?iri=' + encodeURIComponent(iri)));
     e.dataTransfer.effectAllowed = 'copyMove';
   }
 

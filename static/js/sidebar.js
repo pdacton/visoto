@@ -137,15 +137,30 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Highlight the sidebar link matching the current URL and reopen its parent
   // submenu (Tabler convention: `active` on the item, `show` on the dropdown).
-  // Hrefs mix raw and percent-encoded IRIs, so compare decoded pathnames.
+  // Resource links are compared by their IRI (canonical /resource?iri= form;
+  // the legacy /resource/<iri> path form is still understood), other links by
+  // decoded pathname.
   function decodedPath(path) {
     try { return decodeURIComponent(path); } catch (e) { return path; }
   }
-  const currentPath = decodedPath(window.location.pathname);
+  function resourceIri(u) {
+    const q = u.searchParams.get('iri');
+    if (q) return q;
+    const m = u.pathname.match(/^\/resource\/(.+)/);
+    return m ? decodedPath(m[1]) : null;
+  }
+  const currentUrl = new URL(window.location.href);
+  const currentIri = resourceIri(currentUrl);
+  const currentPath = decodedPath(currentUrl.pathname);
   document.querySelectorAll('#sidebar-panel-nav a[href]').forEach(function (link) {
     const href = link.getAttribute('href');
     if (!href || href.startsWith('#')) return;
-    if (decodedPath(new URL(href, window.location.origin).pathname) !== currentPath) return;
+    const linkUrl = new URL(href, window.location.origin);
+    const linkIri = resourceIri(linkUrl);
+    const matches = currentIri
+      ? linkIri === currentIri
+      : (!linkIri && decodedPath(linkUrl.pathname) === currentPath);
+    if (!matches) return;
     link.classList.add('active');
     const dropdown = link.closest('.nav-item.dropdown');
     if (dropdown) {

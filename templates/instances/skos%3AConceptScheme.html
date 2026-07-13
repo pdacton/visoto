@@ -1,7 +1,7 @@
 <!-- Concept Scheme Instance Template  -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/resource/skos:ConceptScheme">Concept Scheme</a></li>
+  <li class="breadcrumb-item"><a href="/resource?iri=skos:ConceptScheme">Concept Scheme</a></li>
 {{ end }}
 
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>

@@ -15,6 +15,7 @@ import (
 // funcMap defines custom template functions available in all templates
 var funcMap = template.FuncMap{
 	"render":          sparql.Binding.RenderHTML,
+	"resourceHref":    sparql.ResourceHref,
 	"dict":            makeDict,
 	"resourceIcon":    resource.GetIconForResource,
 	"iconNames":       resource.GetIconNames,

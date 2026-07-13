@@ -205,7 +205,7 @@
           if (!binding) return '';
           if (binding.Type === 'uri') {
             var display = escapeHtml(binding.DisplayText || binding.Value);
-            return '<a href="/resource/' + encodeURIComponent(binding.Value) + '">' + display + '</a>';
+            return '<a href="/resource?iri=' + encodeURIComponent(binding.Value) + '">' + display + '</a>';
           }
           return escapeHtml(binding.DisplayText || binding.Value);
         }
@@ -243,7 +243,7 @@
           var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
           var badge = '<span class="badge bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
           if (value.Type === 'uri' && uri) {
-            return '<a href="/resource/' + encodeURIComponent(uri) + '">' + badge + '</a>';
+            return '<a href="/resource?iri=' + encodeURIComponent(uri) + '">' + badge + '</a>';
           }
           return badge;
         }

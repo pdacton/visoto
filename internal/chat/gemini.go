@@ -16,6 +16,7 @@ import (
 	mcpTransport "github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
 	"hutzli.org/visoto/internal/logger"
+	"hutzli.org/visoto/internal/sparql"
 )
 
 const (
@@ -394,7 +395,7 @@ func convertHTMLLinksToMarkdown(text string) string {
 	return htmlLinkPattern.ReplaceAllString(text, "[$2]($1)")
 }
 
-// transformIRIsToLinks converts bare URIs and markdown links to use the /resource/ prefix.
+// transformIRIsToLinks converts bare URIs and markdown links to Visoto resource links.
 func transformIRIsToLinks(text string) string {
 	// Handle URIs already in markdown format: [text](https://...)
 	markdownPattern := regexp.MustCompile(`\[([^\]]+)\]\((https?://[^)]+)\)`)
@@ -403,9 +404,7 @@ func transformIRIsToLinks(text string) string {
 		if len(submatches) == 3 {
 			label := submatches[1]
 			uri := submatches[2]
-			if !strings.HasPrefix(uri, "/resource/") {
-				return fmt.Sprintf("[%s](/resource/%s)", label, uri)
-			}
+			return fmt.Sprintf("[%s](%s)", label, sparql.ResourceHref(uri))
 		}
 		return match
 	})
@@ -419,7 +418,7 @@ func transformIRIsToLinks(text string) string {
 			uri := submatches[2]
 			suffix := submatches[3]
 			label := extractLabel(uri)
-			return fmt.Sprintf("%s[%s](/resource/%s)%s", prefix, label, uri, suffix)
+			return fmt.Sprintf("%s[%s](%s)%s", prefix, label, sparql.ResourceHref(uri), suffix)
 		}
 		return match
 	})

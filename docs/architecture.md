@@ -32,9 +32,9 @@ Caddy is for production deployments and can be ommitted for local development â€
 
 ## Request Lifecycle
 
-This is what happens when a browser requests `/resource/<IRI>`:
+This is what happens when a browser requests `/resource?iri=<IRI>`:
 
-1. **Gin router** receives the request and decodes the IRI from the URL path.
+1. **Gin router** receives the request and decodes the IRI from the `iri` query parameter. (Legacy `/resource/<IRI>` path URLs are 301-redirected to this form.)
 
 2. **`resource.New()`** normalizes the IRI, computes its shortened (prefixed) form using the configured RDF prefixes (e.g., `http://www.w3.org/2004/02/skos/core#Concept` â†’ `skos:Concept`).
 

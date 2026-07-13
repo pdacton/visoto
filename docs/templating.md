@@ -1,6 +1,6 @@
 # Template Authoring Guide
 
-Visoto uses Go's `html/template` package for server-side rendering. When a user visits `/resource/<IRI>`, Visoto selects the best-matching template file, executes all SPARQL queries embedded in that file in parallel, and renders the result as HTML.
+Visoto uses Go's `html/template` package for server-side rendering. When a user visits `/resource?iri=<IRI>`, Visoto selects the best-matching template file, executes all SPARQL queries embedded in that file in parallel, and renders the result as HTML.
 
 Templates are loaded at startup and cached in memory. **Restart the server to pick up new or changed template files.**
 
@@ -353,7 +353,7 @@ Filename: `schema%3APerson.html`. This is an instance template (for resources th
 
 {{ define "breadcrumb" }}
   <li class="breadcrumb-item">
-    <a href="/resource/schema%3APerson">Person</a>
+    <a href="/resource?iri=schema%3APerson">Person</a>
   </li>
 {{ end }}
 
@@ -384,7 +384,7 @@ Filename: `schema%3APerson.html`. This is an instance template (for resources th
 go run ./cmd/visoto/
 ```
 
-Visit `/resource/<IRI-of-a-person>` — the new template renders automatically.
+Visit `/resource?iri=<IRI-of-a-person>` — the new template renders automatically.
 
 ### Step 4: Conditionally show endpoint-specific content
 

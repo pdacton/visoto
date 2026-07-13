@@ -2,7 +2,7 @@
 
 <sparql-query id="breadcrumbs" class="d-none"> SELECT ?conceptScheme { ?? skos:inScheme ?conceptScheme . } </sparql-query>
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/resource/skos:ConceptScheme">Concept Scheme</a></li>
+  <li class="breadcrumb-item"><a href="/resource?iri=skos:ConceptScheme">Concept Scheme</a></li>
   {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
     <li class="breadcrumb-item">{{ render ((index $binding "conceptScheme")) }}</li>
   {{ end }}

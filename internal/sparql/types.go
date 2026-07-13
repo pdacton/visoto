@@ -15,12 +15,18 @@ type Binding struct {
 	DisplayText string // human-readable display string (resolved label for URIs, literal value otherwise)
 }
 
+// ResourceHref returns the canonical Visoto page URL for an IRI,
+// using the query-param form: /resource?iri=<escaped-iri>.
+func ResourceHref(iri string) string {
+	return "/resource?iri=" + url.QueryEscape(iri)
+}
+
 // RenderHTML returns an HTML link if the type is "uri", raw HTML if the type is "html",
 // otherwise returns escaped plain text
 func (b Binding) RenderHTML() template.HTML {
 	switch b.Type {
 	case "uri":
-		return template.HTML(`<a href="/resource/` + url.QueryEscape(b.Value) + `">` + template.HTMLEscapeString(b.DisplayText) + `</a>`)
+		return template.HTML(`<a href="` + ResourceHref(b.Value) + `">` + template.HTMLEscapeString(b.DisplayText) + `</a>`)
 	case "html":
 		return template.HTML(b.DisplayText)
 	default:

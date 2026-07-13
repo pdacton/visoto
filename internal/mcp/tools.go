@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/url"
 	"strings"
 	"time"
 
@@ -32,7 +31,7 @@ type toolContext struct {
 
 // visotoLink returns the Visoto resource URL for a given IRI.
 func (tc *toolContext) visotoLink(iri string) string {
-	return fmt.Sprintf("http://localhost:%d/resource/%s", tc.cfg.Application.Port, url.QueryEscape(iri))
+	return fmt.Sprintf("http://localhost:%d%s", tc.cfg.Application.Port, sparql.ResourceHref(iri))
 }
 
 // --- helper: execute one query and wrap in toolResult ---

@@ -58,16 +58,16 @@ You should see log output confirming the server started on the configured port.
 
 ## 5. Browse a Resource
 
-Navigate to a resource by IRI. The IRI is percent-encoded in the URL path:
+Navigate to a resource by IRI, passed as the `iri` query parameter:
 
 ```
-http://localhost:8060/resource/skos%3AConceptScheme
+http://localhost:8060/resource?iri=skos%3AConceptScheme
 ```
 
-You can also use the full IRI:
+You can also use the full IRI (percent-encoded; `#` in particular must stay `%23`):
 
 ```
-http://localhost:8060/resource/http%3A%2F%2Fwww.w3.org%2F2004%2F02%2Fskos%2Fcore%23ConceptScheme
+http://localhost:8060/resource?iri=http%3A%2F%2Fwww.w3.org%2F2004%2F02%2Fskos%2Fcore%23ConceptScheme
 ```
 
 Or use the search page at `http://localhost:8060/search` to find resources by keyword.
