@@ -3,9 +3,11 @@ package upload
 import (
 	"archive/zip"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -47,6 +49,50 @@ func mimeForURL(rawURL string) string {
 	}
 	ext := path.Ext(u.Path)
 	return mimeForExtension(ext)
+}
+
+// validateRemoteURL rejects URL-mode upload targets that could be abused for
+// SSRF: only http/https schemes, and (unless allowPrivate) no hosts resolving
+// to loopback, private, link-local, or unspecified addresses.
+func validateRemoteURL(rawURL string, allowPrivate bool) error {
+	u, err := url.Parse(rawURL)
+	if err != nil {
+		return fmt.Errorf("invalid URL: %w", err)
+	}
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return fmt.Errorf("unsupported URL scheme %q (only http and https are allowed)", u.Scheme)
+	}
+	if allowPrivate {
+		return nil
+	}
+	ips, err := net.LookupIP(u.Hostname())
+	if err != nil {
+		return fmt.Errorf("cannot resolve host %q: %w", u.Hostname(), err)
+	}
+	for _, ip := range ips {
+		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() ||
+			ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
+			return fmt.Errorf("URL host resolves to a private or local address (%s); set allow_private_upload_urls in visoto.config to permit this", ip)
+		}
+	}
+	return nil
+}
+
+// fetchRemoteURL GETs rawURL after SSRF validation, re-validating every
+// redirect hop so a public URL cannot bounce to an internal one.
+func fetchRemoteURL(rawURL string, allowPrivate bool) (*http.Response, error) {
+	if err := validateRemoteURL(rawURL, allowPrivate); err != nil {
+		return nil, err
+	}
+	client := &http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("stopped after 10 redirects")
+			}
+			return validateRemoteURL(req.URL.String(), allowPrivate)
+		},
+	}
+	return client.Get(rawURL)
 }
 
 // sendToEndpoint POSTs rdfBody to the Graph Store HTTP Protocol endpoint.
@@ -125,7 +171,7 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		if remoteURL != "" {
 			// --- URL mode: fetch remote RDF server-side ---
 			log.Debug("fetching remote RDF URL", slog.String("url", remoteURL))
-			resp, err := http.Get(remoteURL) //nolint:gosec // URL is user-supplied but only fetched server-side
+			resp, err := fetchRemoteURL(remoteURL, cfg.AllowPrivateUploadURLs)
 			if err != nil {
 				c.JSON(http.StatusBadGateway, gin.H{"success": false, "error": fmt.Sprintf("failed to fetch URL: %v", err)})
 				return

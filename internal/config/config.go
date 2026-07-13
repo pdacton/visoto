@@ -46,6 +46,11 @@ type ApplicationConfig struct {
 	SparqlEndpoints []SparqlEndpoint  `toml:"sparqlEndpoints"`  // Named endpoints for menu
 	Timeout         int               `toml:"timeout"`          // timeout in seconds
 	GeminiAPIKey    string            `toml:"gemini_api_key"`   // API key for Google Gemini
+
+	// AllowPrivateUploadURLs permits the URL-mode upload (/api/upload) to fetch
+	// private, loopback, and link-local addresses. Off by default to prevent
+	// SSRF; enable in dev/test configs that fetch from http://localhost.
+	AllowPrivateUploadURLs bool `toml:"allow_private_upload_urls"`
 }
 
 // SparqlEndpoint represents a named SPARQL endpoint configuration
