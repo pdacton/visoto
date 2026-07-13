@@ -19,6 +19,11 @@
  * Switching only shows/hides the wrappers — neither the graph instances nor the
  * loaded data table is destroyed, so state (dragged nodes, zoom, table grouping)
  * survives repeated toggling. Modeled on bindRangeButtons in monitoring.js.
+ *
+ * The active view is mirrored in the URL hash (#Graph, #Data, #Schema; no hash
+ * for the default Table view) so links can address a specific view. The hash is
+ * read case-insensitively and written via history.replaceState so toggling
+ * doesn't pile up history entries or trigger an anchor scroll.
  */
 (function () {
   'use strict';
@@ -85,20 +90,55 @@
       }
     }
 
+    function selectView(view) {
+      if (view === 'graph') {
+        showGraph();
+      } else if (view === 'data') {
+        showData();
+      } else if (view === 'schema') {
+        showSchema();
+      } else {
+        showTable();
+      }
+    }
+
+    // Capitalized to match the button labels; table (the default) gets no hash.
+    var HASH_BY_VIEW = { graph: '#Graph', data: '#Data', schema: '#Schema' };
+
+    function viewFromHash() {
+      var h = location.hash.slice(1).toLowerCase();
+      return (h === 'graph' || h === 'data' || h === 'schema' || h === 'table') ? h : null;
+    }
+
+    function syncHash(view) {
+      var url = HASH_BY_VIEW[view] || location.pathname + location.search;
+      history.replaceState(null, '', url);
+    }
+
+    function applyView(view) {
+      var input = document.querySelector('.btn-check[data-view="' + view + '"]');
+      if (input) input.checked = true;
+      selectView(view);
+    }
+
     // btn-check radios manage their own active styling; we only react to selection.
     inputs.forEach(function (input) {
       input.addEventListener('change', function () {
         if (!input.checked) return;
-        if (input.dataset.view === 'graph') {
-          showGraph();
-        } else if (input.dataset.view === 'data') {
-          showData();
-        } else if (input.dataset.view === 'schema') {
-          showSchema();
-        } else {
-          showTable();
-        }
+        selectView(input.dataset.view);
+        syncHash(input.dataset.view);
       });
+    });
+
+    // Honor a view named in the URL on load (e.g. a shared link ending #Schema).
+    var initialView = viewFromHash();
+    if (initialView && initialView !== 'table') applyView(initialView);
+
+    // Manual hash edits / same-page anchor links; our own replaceState calls
+    // don't fire hashchange, so this only reacts to external changes.
+    window.addEventListener('hashchange', function () {
+      var view = viewFromHash();
+      if (view) applyView(view);
     });
 
     // The async table fragment arrives via HTMX; re-run Lucide so the card icon
