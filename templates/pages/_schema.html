@@ -1,0 +1,433 @@
+{{ define "pageTitle" }}Data Schema (derived){{ end }}
+{{ define "pageSubtitle"}}An informal schema reconstructed from the actual data around one instance, drawn as a UML-style class diagram.{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Schema Icon" width="40" />{{ end }}
+{{ define "metaTitle" }}Data Schema{{ end }}
+{{ define "metaIcon" }}/static/img/graphexplorer.svg{{ end }}
+
+{{ define "pageContent" }}
+<link rel="stylesheet" href="/static/css/ontodia_overrides.css">
+<div id="schema-status" class="mb-2"></div>
+<div id="graph-explorer-root" style="height: calc(100vh - 240px); width: 100%; border: 1px solid var(--tblr-border-color); border-radius: var(--tblr-border-radius);"></div>
+{{ end }}
+
+{{ define "pageScripts" }}
+<script src="https://cdn.jsdelivr.net/npm/graph-explorer@1.3.0/dist/graph-explorer-full.min.js"></script>
+<template id="available-icons">{{ iconNames | toJSON }}</template>
+<template id="endpoint-url">{{ .EndpointURL | toJSON }}</template>
+<script>
+(function() {
+  'use strict';
+  var AVAILABLE_ICONS = JSON.parse(document.getElementById('available-icons').innerHTML);
+  var ENDPOINT_URL = JSON.parse(document.getElementById('endpoint-url').innerHTML) || 'https://ld.admin.ch/query/';
+  var GE = window.GraphExplorer;
+  var container = document.getElementById('graph-explorer-root');
+  var statusEl = document.getElementById('schema-status');
+
+  if (!GE || !GE.Workspace) {
+    container.innerHTML = '<div class="alert alert-danger m-3">Failed to load Graph Explorer library</div>';
+    return;
+  }
+
+  var RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
+  var RDFS_LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
+
+  // ---------------------------------------------------------------------------
+  // 1. Parameters: ?iri= is the sample instance, ?class= the class the derived
+  //    schema is anchored on (auto-detected from the instance's types if absent).
+  // ---------------------------------------------------------------------------
+  var urlParams = new URLSearchParams(window.location.search);
+  var instanceIRI = urlParams.get('iri') || 'https://ld.admin.ch/municipality/371';
+  var classIRI = urlParams.get('class') || null;
+
+  function validIri(iri) {
+    return /^https?:\/\/[^<>"{}|\\^`\s]+$/.test(iri);
+  }
+  if (!validIri(instanceIRI) || (classIRI && !validIri(classIRI))) {
+    statusEl.innerHTML = '<div class="alert alert-danger">Invalid IRI parameter</div>';
+    return;
+  }
+
+  function localName(iri) {
+    var decoded = decodeURIComponent(iri);
+    return decoded.includes('#') ? decoded.split('#').pop() : decoded.split('/').pop();
+  }
+
+  function sparql(query, accept) {
+    return fetch(ENDPOINT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/sparql-query', 'Accept': accept },
+      body: query,
+    }).then(function(res) {
+      if (!res.ok) throw new Error('SPARQL request failed: ' + res.status);
+      return res.text();
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // 2. The projection query: derives the informal schema around the instance and
+  //    projects it straight into "UML" triples — class boxes (rdfs:Class nodes),
+  //    object properties as edges, datatype properties as literal attribute rows.
+  //    Same derivation core as the SHACL artifact query (docs/scratchpad: shacl-derive.rq).
+  // ---------------------------------------------------------------------------
+  function vizQuery(instance, cls) {
+    return [
+      'PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>',
+      'PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>',
+      'PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>',
+      'CONSTRUCT {',
+      '  ?class a rdfs:Class ; rdfs:label ?classLbl .',
+      '  ?nbr   a rdfs:Class ; rdfs:label ?nbrLbl .',
+      '  ?src ?p ?tgt .',
+      '  ?class ?p ?attr .',
+      '} WHERE {',
+      '  VALUES (?instance ?class) { (<' + instance + '> <' + cls + '>) }',
+      '  {',
+      '    SELECT ?dir ?p ?dt ?oc ?kind (COUNT(*) AS ?count) WHERE {',
+      '      VALUES ?instance { <' + instance + '> }',
+      '      {',
+      '        BIND("out" AS ?dir)',
+      '        ?instance ?p ?o .',
+      '        FILTER(?p != rdf:type)',
+      '        OPTIONAL { ?o a ?ocx }',
+      '        BIND(IF(isLiteral(?o), DATATYPE(?o), ?ub) AS ?dt)',
+      '        BIND(IF(isIRI(?o), COALESCE(?ocx, ?ub), ?ub) AS ?oc)',
+      '        BIND(IF(isIRI(?o) && !BOUND(?ocx), true, ?ub) AS ?kind)',
+      '      } UNION {',
+      '        BIND("in" AS ?dir)',
+      '        ?s ?p ?instance .',
+      '        FILTER(?p NOT IN (rdf:type, rdf:first, rdf:rest))',
+      '        OPTIONAL { ?s a ?ocx }',
+      '        BIND(COALESCE(?ocx, ?ub) AS ?oc)',
+      '        BIND(IF(!BOUND(?ocx), true, ?ub) AS ?kind)',
+      '      }',
+      '    } GROUP BY ?dir ?p ?dt ?oc ?kind',
+      '  }',
+      '  BIND(IF(BOUND(?dt), REPLACE(STR(?dt), STR(xsd:), "xsd:"), ?ub) AS ?attr)',
+      '  BIND(IF(!BOUND(?dt), COALESCE(?oc, rdfs:Resource), ?ub) AS ?nbr)',
+      '  BIND(IF(?dir = "out" && BOUND(?nbr), ?class, IF(?dir = "in", ?nbr, ?ub)) AS ?src)',
+      '  BIND(IF(?dir = "out" && BOUND(?nbr), ?nbr,   IF(?dir = "in", ?class, ?ub)) AS ?tgt)',
+      '  BIND(REPLACE(STR(?class), "^.*[/#]", "") AS ?classLbl)',
+      '  BIND(IF(BOUND(?nbr), REPLACE(STR(?nbr), "^.*[/#]", ""), ?ub) AS ?nbrLbl)',
+      '}',
+    ].join('\n');
+  }
+
+  // ---------------------------------------------------------------------------
+  // 3. Minimal N-Triples parser — sufficient for CONSTRUCT output (IRIs and
+  //    plain/typed literals, no blank nodes since the query never emits them).
+  // ---------------------------------------------------------------------------
+  function unescapeNt(s) {
+    return s.replace(/\\u([0-9A-Fa-f]{4})/g, function(_, h) { return String.fromCharCode(parseInt(h, 16)); })
+            .replace(/\\(.)/g, function(_, c) {
+              return c === 'n' ? '\n' : c === 't' ? '\t' : c === 'r' ? '\r' : c;
+            });
+  }
+  function parseNTriples(text) {
+    var triples = [];
+    var lineRe = /^<([^>]*)>\s+<([^>]*)>\s+(.+?)\s*\.\s*$/;
+    var litRe = /^"((?:[^"\\]|\\.)*)"(?:@([A-Za-z][A-Za-z0-9-]*)|\^\^<([^>]*)>)?$/;
+    text.split('\n').forEach(function(line) {
+      line = line.trim();
+      if (!line || line.charAt(0) === '#') return;
+      var m = line.match(lineRe);
+      if (!m) return;
+      var s = m[1], p = m[2], oRaw = m[3], o;
+      if (oRaw.charAt(0) === '<') {
+        o = { type: 'iri', value: oRaw.slice(1, -1) };
+      } else {
+        var lm = oRaw.match(litRe);
+        if (!lm) return;
+        o = { type: 'literal', value: unescapeNt(lm[1]), language: lm[2] || '' };
+      }
+      triples.push({ s: s, p: p, o: o });
+    });
+    return triples;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 4. In-memory DataProvider over the projected schema triples.
+  //    (The CDN bundle has no RDFDataProvider, so we implement the interface
+  //    ourselves — trivial over a page-sized graph.)
+  // ---------------------------------------------------------------------------
+  function buildStore(triples) {
+    var elements = {};   // iri -> ElementModel
+    var links = [];      // LinkModel[]
+
+    function element(iri) {
+      if (!elements[iri]) {
+        elements[iri] = {
+          id: iri,
+          types: [],
+          label: { values: [] },
+          properties: {},
+        };
+      }
+      return elements[iri];
+    }
+
+    triples.forEach(function(t) {
+      var el = element(t.s);
+      if (t.p === RDF_TYPE && t.o.type === 'iri') {
+        el.types.push(t.o.value);
+      } else if (t.p === RDFS_LABEL && t.o.type === 'literal') {
+        el.label.values.push({ value: t.o.value, language: t.o.language });
+      } else if (t.o.type === 'literal') {
+        if (!el.properties[t.p]) el.properties[t.p] = { type: 'string', values: [] };
+        el.properties[t.p].values.push({ value: t.o.value, language: t.o.language });
+      } else {
+        element(t.o.value);
+        links.push({ linkTypeId: t.p, sourceId: t.s, targetId: t.o.value });
+      }
+    });
+
+    Object.keys(elements).forEach(function(iri) {
+      var el = elements[iri];
+      if (el.label.values.length === 0) {
+        el.label.values.push({ value: localName(iri), language: '' });
+      }
+    });
+
+    return { elements: elements, links: links };
+  }
+
+  function makeSchemaProvider(store) {
+    function label(iri) {
+      return { values: [{ value: localName(iri), language: '' }] };
+    }
+    function linkTypeList() {
+      var counts = {};
+      store.links.forEach(function(l) { counts[l.linkTypeId] = (counts[l.linkTypeId] || 0) + 1; });
+      return Object.keys(counts).map(function(id) {
+        return { id: id, label: label(id), count: counts[id] };
+      });
+    }
+    function elementDict(iris) {
+      var dict = {};
+      iris.forEach(function(iri) {
+        if (store.elements[iri]) dict[iri] = store.elements[iri];
+      });
+      return dict;
+    }
+    function matchesText(el, text) {
+      if (!text) return true;
+      var t = text.toLowerCase();
+      return el.id.toLowerCase().indexOf(t) >= 0 ||
+        el.label.values.some(function(v) { return v.value.toLowerCase().indexOf(t) >= 0; });
+    }
+
+    return {
+      classTree: function() {
+        return Promise.resolve([{
+          id: 'http://www.w3.org/2000/01/rdf-schema#Class',
+          label: { values: [{ value: 'Class', language: '' }] },
+          count: Object.keys(store.elements).length,
+          children: [],
+        }]);
+      },
+      classInfo: function(params) {
+        return Promise.resolve(params.classIds.map(function(id) {
+          return { id: id, label: label(id), count: 0, children: [] };
+        }));
+      },
+      propertyInfo: function(params) {
+        var dict = {};
+        params.propertyIds.forEach(function(id) { dict[id] = { id: id, label: label(id) }; });
+        return Promise.resolve(dict);
+      },
+      linkTypes: function() { return Promise.resolve(linkTypeList()); },
+      linkTypesInfo: function(params) {
+        return Promise.resolve(params.linkTypeIds.map(function(id) {
+          return { id: id, label: label(id) };
+        }));
+      },
+      elementInfo: function(params) {
+        return Promise.resolve(elementDict(params.elementIds));
+      },
+      linksInfo: function(params) {
+        var inSet = {};
+        params.elementIds.forEach(function(id) { inSet[id] = true; });
+        return Promise.resolve(store.links.filter(function(l) {
+          return inSet[l.sourceId] && inSet[l.targetId];
+        }));
+      },
+      linkTypesOf: function(params) {
+        var counts = {};
+        store.links.forEach(function(l) {
+          if (l.sourceId === params.elementId) {
+            counts[l.linkTypeId] = counts[l.linkTypeId] || { id: l.linkTypeId, inCount: 0, outCount: 0 };
+            counts[l.linkTypeId].outCount++;
+          }
+          if (l.targetId === params.elementId) {
+            counts[l.linkTypeId] = counts[l.linkTypeId] || { id: l.linkTypeId, inCount: 0, outCount: 0 };
+            counts[l.linkTypeId].inCount++;
+          }
+        });
+        return Promise.resolve(Object.keys(counts).map(function(k) { return counts[k]; }));
+      },
+      linkElements: function(params) {
+        var iris = [];
+        store.links.forEach(function(l) {
+          if (params.linkId && l.linkTypeId !== params.linkId) return;
+          if (l.sourceId === params.elementId && params.direction !== 'in') iris.push(l.targetId);
+          if (l.targetId === params.elementId && params.direction !== 'out') iris.push(l.sourceId);
+        });
+        return Promise.resolve(elementDict(iris));
+      },
+      filter: function(params) {
+        var iris;
+        if (params.refElementId) {
+          iris = [];
+          store.links.forEach(function(l) {
+            if (params.refElementLinkId && l.linkTypeId !== params.refElementLinkId) return;
+            if (l.sourceId === params.refElementId && params.linkDirection !== 'in') iris.push(l.targetId);
+            if (l.targetId === params.refElementId && params.linkDirection !== 'out') iris.push(l.sourceId);
+          });
+        } else {
+          iris = Object.keys(store.elements);
+        }
+        var dict = {};
+        iris.forEach(function(iri) {
+          var el = store.elements[iri];
+          if (!el) return;
+          if (params.elementTypeId && el.types.indexOf(params.elementTypeId) < 0) return;
+          if (!matchesText(el, params.text)) return;
+          dict[iri] = el;
+        });
+        return Promise.resolve(dict);
+      },
+    };
+  }
+
+  // ---------------------------------------------------------------------------
+  // 5. Rendering: same Tabler-grey link styling as ontodia.html, all class boxes
+  //    placed and expanded so the attribute rows show (UML look).
+  // ---------------------------------------------------------------------------
+  var LINK_LINE = '#e6e7e9';
+  var LINK_LABEL = '#1d273b';
+  var LINK_DEFAULT = {
+    markerTarget: { fill: LINK_LINE, stroke: LINK_LINE },
+    renderLink: function() {
+      return {
+        connection: { stroke: LINK_LINE, 'stroke-width': 1.5 },
+        label: { attrs: {
+          rect: { fill: '#ffffff', stroke: 'none', rx: 3, ry: 3 },
+          text: { fill: LINK_LABEL, 'font-size': 12, 'font-weight': 500 },
+        } },
+      };
+    },
+  };
+
+  function typeStyleResolver(types) {
+    var fallback = null;
+    for (var i = 0; i < types.length; i++) {
+      var name = localName(types[i]);
+      if (AVAILABLE_ICONS[name]) return { icon: '/static/img/resource/' + name + '.svg' };
+      if (!fallback && AVAILABLE_ICONS[name + '.fallback']) fallback = name;
+    }
+    if (fallback) return { icon: '/static/img/resource/' + fallback + '.fallback.svg' };
+    return { icon: '/static/img/resource/defaultClass.svg' };
+  }
+
+  class StandardTemplateWithIconUrl extends GE.StandardTemplate {
+    render() {
+      var name = localName(this.props.iri || '');
+      if (AVAILABLE_ICONS[name]) {
+        this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.svg' });
+      } else if (AVAILABLE_ICONS[name + '.fallback']) {
+        this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.fallback.svg' });
+      }
+      return super.render();
+    }
+  }
+
+  function renderSchema(store, cls) {
+    statusEl.innerHTML =
+      '<div class="text-secondary small">Schema derived from ' +
+      '<a href="/resource/' + encodeURIComponent(instanceIRI) + '" target="_blank"><code>' + localName(instanceIRI) + '</code></a>' +
+      ' (anchored on <code>' + localName(cls) + '</code>) &mdash; ' +
+      Object.keys(store.elements).length + ' classes, ' + store.links.length + ' relations</div>';
+
+    function onWorkspaceMounted(workspace) {
+      if (!workspace) return;
+      var model = workspace.getModel();
+      model.importLayout({
+        dataProvider: makeSchemaProvider(store),
+        preloadedElements: {},
+        layoutData: undefined,
+      });
+
+      var iris = Object.keys(store.elements);
+      var cols = Math.ceil(Math.sqrt(iris.length));
+      iris.forEach(function(iri, i) {
+        var el = model.createElement(iri);
+        if (el) {
+          el.setPosition({ x: (i % cols) * 300, y: Math.floor(i / cols) * 200 });
+        }
+      });
+
+      Promise.resolve(model.requestElementData(iris))
+        .then(function() { return model.requestLinksOfType(); })
+        .then(function() {
+          // Expand only boxes that actually have attribute rows — expanding the
+          // rest just renders a noisy "no properties" placeholder.
+          model.elements.forEach(function(el) {
+            var data = store.elements[el.iri];
+            var hasAttrs = data && Object.keys(data.properties).length > 0;
+            if (hasAttrs && el.setExpanded) el.setExpanded(true);
+          });
+          setTimeout(function() {
+            workspace.forceLayout();
+            workspace.zoomToFit();
+          }, 300);
+        });
+    }
+
+    GE.renderTo(GE.Workspace, container, {
+      ref: onWorkspaceMounted,
+      typeStyleResolver: typeStyleResolver,
+      elementTemplateResolver: function() { return StandardTemplateWithIconUrl; },
+      linkTemplateResolver: function() { return LINK_DEFAULT; },
+      languages: [{ code: 'en', label: 'English' }],
+      language: 'en',
+      viewOptions: {
+        onIriClick: function(iriEvent) {
+          var iri = iriEvent.iri || iriEvent;
+          window.open('/resource/' + encodeURIComponent(iri), '_blank');
+        },
+      },
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // 6. Bootstrap: detect the anchor class if not given, then derive and render.
+  // ---------------------------------------------------------------------------
+  function detectClass() {
+    if (classIRI) return Promise.resolve(classIRI);
+    var q = 'SELECT ?c WHERE { <' + instanceIRI + '> a ?c }';
+    return sparql(q, 'application/sparql-results+json').then(function(text) {
+      var bindings = JSON.parse(text).results.bindings;
+      if (bindings.length === 0) throw new Error('Instance has no rdf:type — cannot anchor a schema');
+      var types = bindings.map(function(b) { return b.c.value; });
+      // Prefer a LINDAS domain class over generic role classes (DefinedTerm etc.)
+      var preferred = types.filter(function(t) { return t.indexOf('schema.ld.admin.ch') >= 0; });
+      return preferred[preferred.length - 1] || types[0];
+    });
+  }
+
+  statusEl.innerHTML = '<div class="text-secondary small">Deriving schema&hellip;</div>';
+  detectClass()
+    .then(function(cls) {
+      return sparql(vizQuery(instanceIRI, cls), 'application/n-triples').then(function(nt) {
+        var store = buildStore(parseNTriples(nt));
+        if (Object.keys(store.elements).length === 0) {
+          throw new Error('Derivation returned no triples');
+        }
+        renderSchema(store, cls);
+      });
+    })
+    .catch(function(err) {
+      statusEl.innerHTML = '<div class="alert alert-danger">Schema derivation failed: ' + err.message + '</div>';
+    });
+})();
+</script>
+{{ end }}

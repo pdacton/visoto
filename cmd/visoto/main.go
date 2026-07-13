@@ -234,7 +234,15 @@ func resourcePageHandler(c *gin.Context) {
 
 	// Add endpoints and resolved tag to template data
 	r.Data.SparqlEndpoints = cfg.Application.SparqlEndpoints
-	r.Data.EndpointTag = cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c))
+	selectedName := resolveSelectedEndpointName(c)
+	r.Data.EndpointTag = cfg.Application.ResolveEndpointTag(selectedName)
+	// Expose the resolved endpoint URL so client-side views (Graph, Schema) query
+	// the same endpoint the user picked in the header.
+	if ep := cfg.Application.GetEndpointByName(selectedName); ep != nil {
+		r.Data.EndpointURL = ep.URL
+	} else {
+		r.Data.EndpointURL = cfg.Application.SparqlEndpoint
+	}
 	r.Data.ShortIRI = r.ShortIRI
 	r.Data.TemplateName = r.TemplateName
 

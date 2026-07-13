@@ -99,6 +99,12 @@
                     "badgeVar" "kind"
                     "trigger" "showData") }}
             </div>
+            <!-- Schema view: an informal schema derived from the actual data around the
+                 resource, drawn as a UML-style class diagram. Like the graph view it is
+                 lazily initialized on first show (the toggle JS fires 'schema:init'). -->
+            <div id="resource-schema-view" class="d-none">
+              {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+            </div>
             {{ end }}
           </div>
         </div>
