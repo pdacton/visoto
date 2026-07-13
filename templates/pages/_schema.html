@@ -436,7 +436,7 @@
       });
     })
     .catch(function(err) {
-      statusEl.innerHTML = '<div class="alert alert-danger">Schema derivation failed: ' + err.message + '</div>';
+      statusEl.innerHTML = '<div class="alert alert-danger">Schema derivation failed: ' + escapeHtml(err.message) + '</div>';
     });
 })();
 </script>

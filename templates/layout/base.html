@@ -22,12 +22,13 @@
     <link rel="icon" type="image/svg+xml" href="{{block "metaIcon" .}}{{ resourceIcon . }}{{ end }}">
 
     <!-- bootstrap, tabler, tabulator includes -->
-    <link rel="stylesheet" href="https://unpkg.com/@tabler/core@1.4.0/dist/css/tabler.css">
-    <!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/css/tabler.css" /> -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/wunderbaum@0/dist/wunderbaum.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
+    <!-- CDN assets are version-pinned with SRI hashes; when bumping a version,
+         recompute: curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A -->
+    <link rel="stylesheet" href="https://unpkg.com/@tabler/core@1.4.0/dist/css/tabler.css" integrity="sha384-XpUSnjkXlA07hV1j91nGSKOORHBS/tq5PL2KFmoE5YU7NiHhUiTy4CJZ2OI5Tcps" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css" integrity="sha384-9/lguyjxX4X2JRIrcVvJakGfMwhYLJtS4Wx9uTDPdiR6+RrD2dxUUR+1kAFa2cNQ" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/wunderbaum@0.14.1/dist/wunderbaum.css" integrity="sha384-82MpovyB83ouHTPksVC1IFarT2nlj8sT03wv5b63VRDlFbiRZxYRm3DbGTTPbOMN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" integrity="sha384-4Y0nObtF3CbKnh+lpzmAVdAMtQXl+ganWiiv73RcGVdRdfVIya8Cao1C8ZsVRRDz" crossorigin="anonymous">
 
     <!-- overrides -->
     <link rel="stylesheet" href="/static/css/tabler_overrides.css">
@@ -119,9 +120,8 @@
       </div>
     </div>
 
-    <script src="https://unpkg.com/@tabler/core@1.4.0/dist/js/tabler.js"></script>
-    <!-- <script src="https://cdn.jsdelivr.net/npm/@tabler/core@1.4.0/dist/js/tabler.js"></script> -->
-    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2/dist/htmx.min.js"></script>
+    <script src="https://unpkg.com/@tabler/core@1.4.0/dist/js/tabler.js" integrity="sha384-+L11I0K/7niuERIzrVf6fiTapgkBs8Nl5jnFIvMxDbjizGkKfqBOxjC3HkTMVAq5" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
     <script>
       // Initialize Bootstrap tooltips - required for Bootstrap 5
       // Tooltips must be explicitly initialized as they are opt-in for performance reasons
@@ -132,10 +132,10 @@
         return new tabler.bootstrap.Tooltip(tooltipTriggerEl)
       })
     </script>
-    <script type="text/javascript" src="https://unpkg.com/tabulator-tables/dist/js/tabulator.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/wunderbaum@0/dist/wunderbaum.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.3.1/dist/js/tabulator.min.js" integrity="sha384-SKSq3cuuVWdfrjtLz9wNlqE0bMc903yMS5zGnFtwvfddplgxa1hywtiLyw1CbSHO" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/wunderbaum@0.14.1/dist/wunderbaum.umd.min.js" integrity="sha384-PXnlsX9aLAfpCyM4xQFMMm2hDxkXhCG4ec5Fqk2wf2eDGCph7+rc5y9cp21ykCw2" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js" integrity="sha384-RH2xi4eIQ/gjtbs9fUXM68sLSi99C7ZWBRX1vDrVv6GQXRibxXLbwO2NGZB74MbU" crossorigin="anonymous"></script>
     <script>
       hljs.highlightAll();
       document.querySelectorAll('code.language-json .hljs-attr').forEach(function(el) {
@@ -211,7 +211,7 @@
         });
       })();
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js" integrity="sha384-yc/c2Lk1s2V2ir1rxvjo8YyVD9PlOlYTqpNr3Wm1WIuAA30GlDYNx6U5104OiavY" crossorigin="anonymous"></script>
     <script src="/static/js/darkmode.js"></script>
     <script src="/static/js/sidebar.js"></script>
     <script src="/static/js/bookmarks.js"></script>
@@ -236,7 +236,7 @@
     <script src="/static/js/named-graphs.js"></script>
 
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
     <script>
       lucide.createIcons();
     </script>
