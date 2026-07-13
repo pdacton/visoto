@@ -31,10 +31,11 @@ func (b Binding) RenderHTML() template.HTML {
 // QueryInput holds the inputs for SPARQL query processing:
 // endpoint resolution, prefix substitution, and query execution.
 type QueryInput struct {
-	EndpointURL    string            // Default SPARQL endpoint URL
-	Timeout        time.Duration     // Global timeout for all queries
-	Prefixes       []config.Prefix   // RDF prefix declarations
-	NamedEndpoints map[string]string // Named endpoints: name -> URL mapping
+	EndpointURL     string            // Default SPARQL endpoint URL
+	Timeout         time.Duration     // Global timeout for all queries
+	Prefixes        []config.Prefix   // RDF prefix declarations
+	NamedEndpoints  map[string]string // Named endpoints: name -> URL mapping
+	MagicProperties map[string]string // visoto:<key> tokens expanded to property paths
 }
 
 // QueryResult stores simplified SPARQL results for template consumption

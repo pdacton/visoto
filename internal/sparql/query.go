@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -110,11 +111,45 @@ func topLanguage(acceptLanguage string) string {
 	return langs[0]
 }
 
+// expandMagicProperties replaces configured visoto:<key> tokens with their
+// property paths from [rdf.magic_properties] in visoto.config. The expansion is
+// wrapped in parentheses so alternations (a|b|c) stay intact when the token is
+// used inside a larger property path. Keys are applied longest-first and matched
+// with a trailing word boundary so one key never partially matches another token.
+// "dispLang" is reserved for the built-in language substitution.
+func (p *Preprocessor) expandMagicProperties(query string) string {
+	if len(p.config.MagicProperties) == 0 || !strings.Contains(query, "visoto:") {
+		return query
+	}
+	keys := make([]string, 0, len(p.config.MagicProperties))
+	for k := range p.config.MagicProperties {
+		if k == "dispLang" {
+			continue
+		}
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(i, j int) bool {
+		if len(keys[i]) != len(keys[j]) {
+			return len(keys[i]) > len(keys[j])
+		}
+		return keys[i] < keys[j]
+	})
+	for _, k := range keys {
+		re := regexp.MustCompile(`visoto:` + regexp.QuoteMeta(k) + `\b`)
+		query = re.ReplaceAllString(query, "("+p.config.MagicProperties[k]+")")
+	}
+	return query
+}
+
 // finalizeQuery substitutes magic tokens and adds PREFIX declarations to a query.
-// visoto:dispLang is replaced with the browser's top language preference (e.g. "de").
+// visoto:dispLang is replaced with the browser's top language preference (e.g. "de");
+// other visoto:<key> tokens come from [rdf.magic_properties] in visoto.config.
+// Magic properties expand before prefix extraction, so prefixes used inside an
+// expansion are declared automatically.
 func (p *Preprocessor) finalizeQuery(query string, acceptLanguage string) string {
 	lang := topLanguage(acceptLanguage)
 	query = strings.ReplaceAll(query, "visoto:dispLang", fmt.Sprintf("%q", lang))
+	query = p.expandMagicProperties(query)
 	declaredPrefixes := extractDeclaredPrefixes(query)
 	usedPrefixes := extractUsedPrefixes(query)
 	prefixBlock := buildNeededPrefixBlock(p.config.Prefixes, usedPrefixes, declaredPrefixes)

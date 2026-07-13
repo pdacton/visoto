@@ -23,7 +23,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
 <sparql-query id="districtValidity" class="d-none">
   SELECT * WHERE {
     ?? vl:version ?version .

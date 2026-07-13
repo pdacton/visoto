@@ -229,3 +229,78 @@ func TestFinalizeQuery(t *testing.T) {
 		})
 	}
 }
+
+func TestFinalizeQueryMagicProperties(t *testing.T) {
+	prefixes := []config.Prefix{
+		{Name: "rdfs", URI: "http://www.w3.org/2000/01/rdf-schema#"},
+		{Name: "schema", URI: "http://schema.org/"},
+		{Name: "dct", URI: "http://purl.org/dc/terms/"},
+		{Name: "dc", URI: "http://purl.org/dc/elements/1.1/"},
+	}
+
+	preproc := New(QueryInput{
+		EndpointURL: "http://example.com/sparql",
+		Prefixes:    prefixes,
+		MagicProperties: map[string]string{
+			"description": "rdfs:comment|schema:description|dct:description|dc:description",
+			"desc":        "rdfs:comment",
+			"dispLang":    "should-never-be-used",
+		},
+	})
+
+	tests := []struct {
+		name        string
+		query       string
+		wantContain []string
+		wantOmit    []string
+	}{
+		{
+			name:        "token expands parenthesized and its prefixes get declared",
+			query:       "SELECT ?d WHERE { ?s visoto:description ?d }",
+			wantContain: []string{"(rdfs:comment|schema:description|dct:description|dc:description)", "PREFIX rdfs:", "PREFIX schema:", "PREFIX dct:", "PREFIX dc:"},
+			wantOmit:    []string{"visoto:description"},
+		},
+		{
+			name:        "word boundary: description is not partially matched by desc",
+			query:       "SELECT ?d WHERE { ?s visoto:desc ?d }",
+			wantContain: []string{"(rdfs:comment)"},
+			wantOmit:    []string{"(rdfs:comment)ription", "visoto:desc"},
+		},
+		{
+			name:        "token usable inside a longer property path",
+			query:       "SELECT ?d WHERE { ?s visoto:description/rdfs:label ?d }",
+			wantContain: []string{"(rdfs:comment|schema:description|dct:description|dc:description)/rdfs:label"},
+		},
+		{
+			name:        "dispLang stays the built-in language substitution",
+			query:       `SELECT ?d WHERE { ?s rdfs:label ?d . FILTER (lang(?d) = visoto:dispLang) }`,
+			wantContain: []string{`lang(?d) = "en"`},
+			wantOmit:    []string{"should-never-be-used"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := preproc.finalizeQuery(tt.query, "")
+			for _, want := range tt.wantContain {
+				if !strings.Contains(got, want) {
+					t.Errorf("finalizeQuery() should contain %q, got:\n%s", want, got)
+				}
+			}
+			for _, omit := range tt.wantOmit {
+				if strings.Contains(got, omit) {
+					t.Errorf("finalizeQuery() should not contain %q, got:\n%s", omit, got)
+				}
+			}
+		})
+	}
+}
+
+func TestFinalizeQueryNoMagicProperties(t *testing.T) {
+	preproc := New(QueryInput{EndpointURL: "http://example.com/sparql"})
+	query := "SELECT ?d WHERE { ?s visoto:description ?d }"
+	got := preproc.finalizeQuery(query, "")
+	if !strings.Contains(got, "visoto:description") {
+		t.Errorf("with no magic properties configured the token should pass through, got:\n%s", got)
+	}
+}

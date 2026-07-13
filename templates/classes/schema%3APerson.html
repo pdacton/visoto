@@ -11,7 +11,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 {{ define "pageContent" }}
@@ -21,7 +21,7 @@
 
   <!-- Instances of schema:Person -->
   <div class="mb-3">
-    <sparql-query id="instances" class="d-none">
+    <sparql-async id="personInstances" class="d-none">
       SELECT ?type ?person ?givenName ?familyName ?gender ?email ?telephone
       WHERE {
         BIND (?? AS ?type)
@@ -33,10 +33,10 @@
         OPTIONAL { ?person schema:telephone ?telephone . }
       }
       LIMIT 20000
-    </sparql-query>
-    {{ template "sparqlTable" (dict
-        "result" .QueryResults.instances
-        "id" "instances"
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "personInstances"
+        "iri" .ResourceIRI
         "title" "Persons"
         "icon" "circle-dot"
         "iconVar" "type")

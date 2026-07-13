@@ -13,7 +13,7 @@
 <div>
   <!-- instances of this class -->
   <div class="mt-0">
-    <sparql-query id="instances" class="d-none">
+    <sparql-async id="districtInstances" class="d-none">
       SELECT ?type ?district ?identifier ?canton ?validFrom ?validThrough (COUNT(?municipality) AS ?municipalities)
       WHERE {
         BIND (?? AS ?type)
@@ -30,10 +30,10 @@
       GROUP BY ?type ?district ?identifier ?canton ?validFrom ?validThrough
       ORDER BY ?canton ?identifier
       LIMIT 20000
-    </sparql-query>
-    {{ template "sparqlTable" (dict
-        "result" .QueryResults.instances
-        "id" "instances"
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "districtInstances"
+        "iri" .ResourceIRI
         "title" "Districts"
         "icon" "circle-dot"
         "iconVar" "type")

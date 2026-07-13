@@ -196,6 +196,12 @@ SPARQL queries are embedded in template files using `<sparql-query>` custom elem
   ```sparql
   FILTER (lang(?label) = visoto:dispLang || lang(?label) = "en" || lang(?label) = "")
   ```
+- **Magic properties** — any other `visoto:<key>` token is expanded to the property path configured under `[rdf.magic_properties]` in `visoto.config`, wrapped in parentheses. With
+  ```toml
+  [rdf.magic_properties]
+  description = "rdfs:comment|schema:description|dct:description|dc:description"
+  ```
+  the query `?? visoto:description ?description` becomes `?? (rdfs:comment|schema:description|dct:description|dc:description) ?description`. Because the parentheses are added automatically, the token can be used anywhere a property path is valid, including inside longer paths (`visoto:description/rdfs:label`). Prefixes used inside the expansion are declared automatically. The key `dispLang` is reserved.
 
 **Async queries (HTMX):** For heavy aggregate queries (e.g., counts), use `<sparql-async>` instead of `<sparql-query>`. The count is loaded after the page renders via HTMX. Pair with the `sparqlMetric` partial:
 ```html

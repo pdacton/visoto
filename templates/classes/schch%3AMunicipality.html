@@ -16,14 +16,14 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? (rdfs:comment|schema:description) ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
   <div class="mt-0">
-    <sparql-query id="instances" class="d-none">
+    <sparql-async id="municipalityInstances" class="d-none">
       SELECT ?type ?municipality ?identifier ?district ?canton ?validFrom ?validThrough (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
       WHERE {
         BIND (?? AS ?type)
@@ -40,10 +40,10 @@
       }
       GROUP BY ?type ?municipality ?district ?canton ?identifier ?validFrom ?validThrough
       LIMIT 20000
-    </sparql-query>
-    {{ template "sparqlTable" (dict
-        "result" .QueryResults.instances
-        "id" "instances"
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "municipalityInstances"
+        "iri" .ResourceIRI
         "title" "Municipalities"
         "icon" "circle-dot"
         "iconVar" "type")

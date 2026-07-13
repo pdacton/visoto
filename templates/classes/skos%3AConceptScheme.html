@@ -21,7 +21,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-query id="instances" class="d-none">
+        <sparql-async id="skosConceptSchemeInstances" class="d-none">
           SELECT ?type ?scheme ?publisher ?status ?definition ?identifier ?conceptCount WHERE {
             BIND (?? AS ?type)
             ?scheme a ?type .
@@ -50,10 +50,10 @@
             }
 
           } LIMIT 10000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.instances
-            "id" "instances"
+        </sparql-async>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "skosConceptSchemeInstances"
+            "iri" .ResourceIRI
             "title" "Available SKOS Concept Schemas"
             "icon" "circle-dot"
             "badgeVar" "status"

@@ -4,7 +4,7 @@
 -->
 
 <sparql-query id="pageTitle"    class="d-none">SELECT ?title { ?? (rdfs:label|schema:name|skos:prefLabel|dc:title|rico:title) ?title . }</sparql-query>
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? visoto:description ?description . }</sparql-query>
 <sparql-query id="pageClasses"  class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 
 {{ define "pageTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}

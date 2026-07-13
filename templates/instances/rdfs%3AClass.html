@@ -11,21 +11,19 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-query id="instances" class="d-none">
-          SELECT DISTINCT ?class ?instance ?description WHERE {
-            BIND (?? AS ?class)
-            ?instance a ?class .
-            OPTIONAL { ?instance (rdfs:comment|schema:description|dct:description) ?description .
+        <sparql-async id="classInstances" class="d-none">
+          SELECT ?instance ?description WHERE {
+            ?instance a ?? .
+            OPTIONAL { ?instance visoto:description ?description .
               FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
           }
-          LIMIT 10000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.instances
-            "id" "instances"
+        </sparql-async>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "classInstances"
+            "iri" .ResourceIRI
             "title" "Instances of this class"
             "icon" "circle-dot"
-            "iconVar" "class")
+            "iconVar" "instance")
         }}
       </div>
     </div>
@@ -77,7 +75,6 @@
     </div>
   </div>
 
-  {{ template "relationships" . }}
 
   {{ template "ontologyShacl" . }}
 

@@ -21,7 +21,7 @@
 <div>
   <!-- instances of this class -->
   <div class="mt-0">
-    <sparql-query id="instances" class="d-none">
+    <sparql-async id="cantonInstances" class="d-none">
       SELECT ?type ?canton ?identifier ?name_de ?name_fr ?name_it ?name_rm ?name_en
       WHERE {
         BIND (?? AS ?type)
@@ -36,10 +36,10 @@
       }
       ORDER BY ?identifier
       LIMIT 10000
-    </sparql-query>
-    {{ template "sparqlTable" (dict
-        "result" .QueryResults.instances
-        "id" "instances"
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "cantonInstances"
+        "iri" .ResourceIRI
         "title" "Cantons"
         "icon" "circle-dot"
         "iconVar" "type")

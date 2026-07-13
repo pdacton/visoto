@@ -100,10 +100,11 @@ func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 
 	// Create query inputs for preprocessor
 	return parser.New(sparql.QueryInput{
-		EndpointURL:    endpoint,
-		Timeout:        cfg.GetTimeout(),
-		Prefixes:       cfg.RDF.ParsedPrefixes,
-		NamedEndpoints: namedEndpoints,
+		EndpointURL:     endpoint,
+		Timeout:         cfg.GetTimeout(),
+		Prefixes:        cfg.RDF.ParsedPrefixes,
+		NamedEndpoints:  namedEndpoints,
+		MagicProperties: cfg.RDF.MagicProperties,
 	})
 }
 
@@ -570,10 +571,11 @@ func main() {
 
 	// Build MCP handler (fixed default endpoint, no per-request cookie logic)
 	mcpPreprocessor := sparql.New(sparql.QueryInput{
-		EndpointURL:    cfg.Application.SparqlEndpoint,
-		Timeout:        cfg.GetTimeout(),
-		Prefixes:       cfg.RDF.ParsedPrefixes,
-		NamedEndpoints: cfg.Application.GetNamedEndpointsMap(),
+		EndpointURL:     cfg.Application.SparqlEndpoint,
+		Timeout:         cfg.GetTimeout(),
+		Prefixes:        cfg.RDF.ParsedPrefixes,
+		NamedEndpoints:  cfg.Application.GetNamedEndpointsMap(),
+		MagicProperties: cfg.RDF.MagicProperties,
 	})
 	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor)
 

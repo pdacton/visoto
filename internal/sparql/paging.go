@@ -14,8 +14,12 @@ import (
 //
 //   - count: SELECT (COUNT(*) AS ?count) WHERE { ?key a <class> }   (class only)
 //   - working set: the declared query with the "?key a <class>" membership triple
-//     replaced by an ordered, capped IRI subquery (optionally search-filtered);
-//     OPTIONALs join over only those keys.
+//     replaced by a capped IRI subquery (optionally search-filtered); OPTIONALs
+//     join over only those keys. The subquery is deliberately UNORDERED: an
+//     ORDER BY ?key forces the store to sort the whole class before LIMIT
+//     (measured ~80s on cube:Observation's 12.8M instances vs ~1s unordered,
+//     past the 60s request timeout), and nothing needs the order — there is no
+//     OFFSET and the frontend sorts/pages the set locally.
 //
 // Everything here is a pure function over strings / QueryResult: no HTTP, config,
 // or endpoint access, so it is unit-testable in isolation.
@@ -51,8 +55,8 @@ func MembershipTriplePattern(keyVar string) *regexp.Regexp {
 
 // MembershipBody builds the inner WHERE body that selects the key IRIs of the
 // class, optionally restricted to those whose name property CONTAINS the search
-// term. Shared by the working-set query (wrapped with ORDER BY/LIMIT) and the
-// count query (wrapped with COUNT), so both scope to the same instance set.
+// term. Shared by the working-set query (wrapped with LIMIT) and the count
+// query (wrapped with COUNT), so both scope to the same instance set.
 func MembershipBody(classIRI, keyVar, term, searchProp string) string {
 	body := fmt.Sprintf("?%s a <%s>", keyVar, classIRI)
 	if term == "" {
@@ -84,9 +88,9 @@ func StringLiteral(s string) string {
 
 // BuildWorkingSetQuery rewrites the declared instance query to load a single
 // bounded "working set" (the working-set table model): the "?key a <class>"
-// membership triple is replaced by an ordered IRI subquery capped at LIMIT max
+// membership triple is replaced by an unordered IRI subquery capped at LIMIT max
 // with NO OFFSET, so the client receives the whole class when it fits under max,
-// or the first max keys otherwise, and the OPTIONALs join over only those keys.
+// or an arbitrary max keys otherwise, and the OPTIONALs join over only those keys.
 // When term != "" the subquery is search-filtered so the working set is rebuilt
 // from the server's matches. Any trailing LIMIT/OFFSET in the declared query is
 // stripped. The ?? entity placeholder is substituted with the class IRI,
@@ -99,8 +103,8 @@ func BuildWorkingSetQuery(declared, classIRI, keyVar, term, searchProp string, m
 	q := StripTrailingLimitOffset(declared)
 
 	inner := fmt.Sprintf(
-		"{ SELECT ?%s WHERE { %s } ORDER BY ?%s LIMIT %d }",
-		keyVar, MembershipBody(classIRI, keyVar, term, searchProp), keyVar, max,
+		"{ SELECT ?%s WHERE { %s } LIMIT %d }",
+		keyVar, MembershipBody(classIRI, keyVar, term, searchProp), max,
 	)
 
 	re := MembershipTriplePattern(keyVar)
@@ -108,7 +112,7 @@ func BuildWorkingSetQuery(declared, classIRI, keyVar, term, searchProp string, m
 		return re.ReplaceAllString(q, inner)
 	}
 	// Fallback: declared query didn't contain a recognizable membership triple.
-	// Wrap it, still applying the deterministic cap on the key var. The logged
+	// Wrap it, still applying the cap on the key var. The logged
 	// shape stays visible via the "Execute on endpoint" button.
 	return fmt.Sprintf("SELECT * WHERE { %s\n%s }", inner, q)
 }

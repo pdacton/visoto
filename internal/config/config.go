@@ -65,9 +65,10 @@ type SparqlEndpoint struct {
 
 // RDFConfig holds RDF-related settings
 type RDFConfig struct {
-	Prefixes       []string `toml:"prefixes"`
-	ParsedPrefixes []Prefix
-	TypePriority   []string `toml:"type_priority"` // Priority order for RDF types in template resolution
+	Prefixes        []string          `toml:"prefixes"`
+	ParsedPrefixes  []Prefix
+	TypePriority    []string          `toml:"type_priority"`    // Priority order for RDF types in template resolution
+	MagicProperties map[string]string `toml:"magic_properties"` // visoto:<key> tokens expanded to property paths in queries
 }
 
 // Prefix represents a single RDF prefix definition

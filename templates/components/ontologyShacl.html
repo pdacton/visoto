@@ -5,22 +5,32 @@
 
 <sparql-query id="ontology" class="d-none">
   SELECT ?subject ?property ?object WHERE {
-    BIND (?? AS ?object)
-    ?subject ?property ?object .
-    FILTER (?property IN (
-      schema:rangeIncludes,
-      schema:domainIncludes,
-      rdfs:range,
-      rdfs:domain
-    ) || STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
+
+    {
+      SELECT ?subject ?property ?object WHERE {
+        BIND (?? AS ?subject)
+        ?subject ?property ?object .
+      } LIMIT 1000
+    }
+
+    FILTER ( ?property IN ( schema:rangeIncludes,schema:domainIncludes,rdfs:range,rdfs:domain ) || 
+             STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
+
   } LIMIT 1000
 </sparql-query>
 
 <sparql-query id="shacl" class="d-none">
   SELECT ?subject ?property ?object WHERE {
-    BIND (?? AS ?object)
-    ?subject ?property ?object .
+
+    {
+      SELECT ?subject ?property ?object WHERE {
+        BIND (?? AS ?subject)
+        ?subject ?property ?object .
+      } LIMIT 1000
+    }
+
     FILTER (STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+
   } LIMIT 1000
 </sparql-query>
 

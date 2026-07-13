@@ -11,7 +11,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-query id="instances" class="d-none">
+        <sparql-async id="dcatCatalogInstances" class="d-none">
           SELECT ?type ?instance (COUNT(?dataset) AS ?datasets) ?dctype ?description  WHERE {
             BIND (?? AS ?class)
             ?instance (rdf:type|owl:type) ?class .
@@ -25,10 +25,10 @@
           } GROUP BY ?type ?instance ?description ?dctype
           ORDER BY ?instance
           LIMIT 10000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.instances
-            "id" "instances"
+        </sparql-async>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "dcatCatalogInstances"
+            "iri" .ResourceIRI
             "title" "Catalogs"
             "icon" "books"
             "iconVar" "type")

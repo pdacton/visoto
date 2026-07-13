@@ -11,7 +11,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? (rdfs:comment|schema:description) ?description . }</sparql-query>
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? visoto:description ?description . }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
@@ -24,17 +24,17 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-query id="instances" class="d-none">
+        <sparql-async id="skosConceptInstances" class="d-none">
           SELECT ?instance ?description WHERE {
             BIND (?? AS ?class)
             ?instance (rdf:type|owl:type) ?class .
             OPTIONAL { ?instance schema:description ?description .
               FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
           } LIMIT 50000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.instances
-            "id" "instances"
+        </sparql-async>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "skosConceptInstances"
+            "iri" .ResourceIRI
             "title" "Available SKOS Concepts"
             "icon" "circle-dot")
         }}

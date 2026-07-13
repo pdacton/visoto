@@ -132,12 +132,16 @@ func TestBuildWorkingSetQuery_FastPath(t *testing.T) {
 	if strings.Contains(got, "??") {
 		t.Errorf("?? placeholder not substituted: %s", got)
 	}
-	// Membership triple replaced by a capped subquery with NO OFFSET.
-	if !strings.Contains(got, "ORDER BY ?org LIMIT 20000") {
+	// Membership triple replaced by a capped subquery with NO OFFSET and no
+	// ORDER BY (sorting the whole class is what made huge classes time out).
+	if !strings.Contains(got, "{ SELECT ?org WHERE { ?org a <"+class+"> } LIMIT 20000 }") {
 		t.Errorf("expected capped subquery, got: %s", got)
 	}
 	if strings.Contains(got, "OFFSET") {
 		t.Errorf("working-set query must not contain OFFSET: %s", got)
+	}
+	if strings.Contains(got, "ORDER BY") {
+		t.Errorf("working-set subquery must be unordered: %s", got)
 	}
 	// The OPTIONAL is preserved.
 	if !strings.Contains(got, "OPTIONAL { ?org <http://schema.org/name> ?name }") {
@@ -160,7 +164,7 @@ func TestBuildWorkingSetQuery_Fallback(t *testing.T) {
 	if !strings.Contains(got, "SELECT * WHERE") {
 		t.Errorf("expected wrapping fallback, got: %s", got)
 	}
-	if !strings.Contains(got, "ORDER BY ?inst LIMIT 500") {
+	if !strings.Contains(got, "{ SELECT ?inst WHERE { ?inst a <"+class+"> } LIMIT 500 }") {
 		t.Errorf("fallback still applies the cap on key var, got: %s", got)
 	}
 	if strings.Contains(got, "OFFSET") {

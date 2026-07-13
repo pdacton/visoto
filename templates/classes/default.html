@@ -16,7 +16,7 @@
             BIND (?? AS ?class) .
             ?instance a ?class .
             OPTIONAL {
-              ?instance rdfs:comment|schema:description|dct:description ?description .
+              ?instance visoto:description ?description .
               FILTER (lang(?description) = visoto:dispLang || lang(?description) = "")
             }
           }
