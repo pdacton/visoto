@@ -12,6 +12,8 @@
     - collapsed: (optional) if true, card starts in collapsed state
     - iconVar: (optional) SPARQL variable name whose IRI is used to look up a resource icon
     - badgeVar: (optional) SPARQL variable name to render as a Tabler badge instead of a link
+    - groupBy: (optional) SPARQL variable the table is initially grouped by; a
+               grouping the user picked earlier (persisted in localStorage) wins
 
   Working-set mode (set by the async-table handler for large classes):
     - workingSet: true  → Tabulator loads a bounded set once from
@@ -33,6 +35,7 @@
   {{ $collapsed := .collapsed }}
   {{ $iconVar := .iconVar }}
   {{ $badgeVar := .badgeVar }}
+  {{ $groupBy := or .groupBy "" }}
   {{/* Working-set mode: the frontend fetches a bounded set once from
        /api/async-table-data/:id, then pages/sorts/searches it locally. Rows are
        not embedded inline. "complete" = the set is the whole in-scope population;
@@ -526,13 +529,19 @@
             }
           }
           table.on("tableBuilt", function() {
+            // Author-provided initial grouping; an explicit user choice saved in
+            // localStorage (including "" = no grouping) takes precedence.
+            var initialGroupBy = "{{ $groupBy }}";
             try {
               var savedGroupBy = localStorage.getItem("tabulator-groupby-{{ $id }}");
               if (savedGroupBy !== null && (!groupBySelect.dataset.wsGroupby)) {
-                groupBySelect.value = savedGroupBy;
-                applyGroupBy(savedGroupBy);
+                initialGroupBy = savedGroupBy;
               }
             } catch (e) { console.warn("localStorage unavailable:", e); }
+            if (initialGroupBy !== "") {
+              groupBySelect.value = initialGroupBy;
+              applyGroupBy(initialGroupBy);
+            }
           });
           groupBySelect.addEventListener("change", function(e) {
             applyGroupBy(e.target.value);

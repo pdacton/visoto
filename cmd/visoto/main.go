@@ -404,6 +404,7 @@ func asyncTableHandler(c *gin.Context) {
 		"icon":     c.Query("icon"),
 		"iconVar":  c.Query("iconVar"),
 		"badgeVar": c.Query("badgeVar"),
+		"groupBy":  c.Query("groupBy"),
 	}
 
 	// Auto-detect the working-set mode: a class-instance query has a "?key a ??"

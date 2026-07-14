@@ -26,6 +26,7 @@
     - icon:     (optional) Lucide icon name for the card header
     - iconVar:  (optional) SPARQL var whose IRI selects a resource row icon
     - badgeVar: (optional) SPARQL var rendered as a Tabler badge
+    - groupBy:  (optional) SPARQL var the table is initially grouped by
     - trigger:  (optional) HTMX trigger; defaults to "load" (eager, like metrics).
                 Pass a custom event (e.g. "showData") to defer until first reveal.
     - searchProp: (optional) name property IRI used by the working-set "Search all"
@@ -51,6 +52,7 @@
   {{ with .icon }}{{ $url = printf "%s&icon=%s" $url (urlquery .) }}{{ end }}
   {{ with .iconVar }}{{ $url = printf "%s&iconVar=%s" $url (urlquery .) }}{{ end }}
   {{ with .badgeVar }}{{ $url = printf "%s&badgeVar=%s" $url (urlquery .) }}{{ end }}
+  {{ with .groupBy }}{{ $url = printf "%s&groupBy=%s" $url (urlquery .) }}{{ end }}
   {{/* Working-set hints — the handler auto-detects the mode; these are only used
        when it decides a class is large. searchProp scopes the "Search all"
        rebuild; max caps the working-set size. */}}

@@ -9,8 +9,9 @@
 <div class="row">
   <div class="col">
 
+    <!-- lazy-loaded so the page shell renders before the heavy grouping query -->
     <div class="mb-3">
-      <sparql-query id="multiAttribution" class="d-none">
+      <sparql-async id="multiAttribution" class="d-none">
         SELECT ?example ?type WHERE {
           {
             SELECT DISTINCT ?types (SAMPLE(?instance) AS ?example) WHERE {
@@ -23,10 +24,9 @@
           }
           ?example a ?type .
         }
-      </sparql-query>
-      {{ template "sparqlTable" (dict
-          "result" .QueryResults.multiAttribution
-          "id" "multiAttribution"
+      </sparql-async>
+      {{ template "sparqlAsyncTable" (dict
+          "queryId" "multiAttribution"
           "title" "Type Combinations with Multiple Classes"
           "icon" "circles-relation"
           "iconVar" "type")
