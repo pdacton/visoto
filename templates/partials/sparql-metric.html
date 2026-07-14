@@ -3,7 +3,7 @@
   The count is loaded asynchronously via HTMX from /api/metric/:queryId.
 
   Usage:
-    {{ template "sparqlMetric" (dict "queryId" "termSetCount" "title" "Defined Term Sets" "href" "/resource/schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "termSetCount" "title" "Defined Term Sets" "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
 
   Parameters (via dict):
     - queryId: ID matching the <sparql-async> element in the page template
