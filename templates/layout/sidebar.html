@@ -75,58 +75,41 @@
               </a>
             </li>
 
-            <!-- Concept Schemes -->
-            <li class="nav-item">
-              <a class="nav-link" href="/resource?iri=skos:ConceptScheme">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/ConceptScheme.svg" alt="SKOS Concept Scheme">
-                </span>
-                <span class="nav-link-title">Concept Schemes</span>
-              </a>
-            </li>
-
-            <!-- Defined Term Sets -->
-            <li class="nav-item">
-              <a class="nav-link" href="/resource?iri=schema:DefinedTermSet">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/DefinedTermSet.fallback.svg" alt="Defined Term Set">
-                </span>
-                <span class="nav-link-title">Defined Term Sets</span>
-              </a>
-            </li>
-
-            <!-- Data catalog -->
+            <!-- Government -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Dataset.svg" alt="Dataset">
+                  <img src="/static/img/resource/Government.svg" alt="Government">
                 </span>
-                <span class="nav-link-title">Data Catalog</span>
+                <span class="nav-link-title">Government</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=dcat:Catalog">Catalog</a>
-                <a class="dropdown-item" href="/resource?iri=dcat:Dataset">Dataset</a>
-                <a class="dropdown-item" href="/resource?iri=dcat:Distribution">Distribution</a>
-                <a class="dropdown-item" href="/resource?iri=schema:Dataset">Dataset (schema.org)</a>
-                <a class="dropdown-item" href="/resource?iri=void:Dataset">Dataset (VoID)</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FPoliticalParty">Political Parties</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FGovernmentOrganization">Government Organizations</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FParliamentaryCommittee">Parliamentary Committee</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestEntity">Procedural Request</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationEntity">Request Information</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationActivity">Request Activity</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FParliamentaryAffairIdentifierEntity">Affair Identifier</a>
               </div>
             </li>
 
-            <!-- Cubes -->
+            <!-- Geo Data -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Cube.svg" alt="Cube">
+                  <img src="/static/img/resource/Location.svg" alt="Geo Data">
                 </span>
-                <span class="nav-link-title">Cubes</span>
+                <span class="nav-link-title">Geo Data</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=cube:Cube">cube:Cube</a>
-                <a class="dropdown-item" href="/resource?iri=cube:ObservationSet">cube:ObservationSet</a>
-                <a class="dropdown-item" href="/resource?iri=cube:Observation">cube:Observation</a>
-                <a class="dropdown-item" href="/resource?iri=cube:SharedDimension">cube:SharedDimension</a>
-                <a class="dropdown-item" href="/resource?iri=cube:KeyDimension">cube:KeyDimension</a>
-                <a class="dropdown-item" href="/resource?iri=cube:MeasureDimension">cube:MeasureDimension</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FPostalAddress">Postal Addresses</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ9687">Buildings</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Stop">Transport Stops</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FOperatingPoint">Operating Points</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FAdministrativeArea">Administrative Areas</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2FCantonalTerritory">Cantonal Territories</a>
               </div>
             </li>
 
@@ -158,41 +141,6 @@
                 <a class="dropdown-item" href="/resource?iri=schema:TrainStation">Train Station</a>
                 <a class="dropdown-item" href="/resource?iri=schema:BusStop">Bus Stop</a>
                 <a class="dropdown-item" href="/resource?iri=schema:Airport">Airport</a>
-              </div>
-            </li>
-
-            <!-- Geo Data -->
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Location.svg" alt="Geo Data">
-                </span>
-                <span class="nav-link-title">Geo Data</span>
-              </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FPostalAddress">Postal Addresses</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ9687">Buildings</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Stop">Transport Stops</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FOperatingPoint">Operating Points</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FAdministrativeArea">Administrative Areas</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2FCantonalTerritory">Cantonal Territories</a>
-              </div>
-            </li>
-
-            <!-- Records in Contexts (RiC) -->
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/RecordSet.svg" alt="Records in Contexts">
-                </span>
-                <span class="nav-link-title">Archives (RiC)</span>
-              </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23RecordSet">RecordSet</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Record">Record</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Instantiation">Instantiation</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Activity">Activity</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23RecordResourceToRecordResourceRelation">Record Relation</a>
               </div>
             </li>
 
@@ -231,29 +179,20 @@
               </a>
             </li>
 
-            <!-- Plazi Treatments -->
-            <li class="nav-item">
-              <a class="nav-link" href="/resource?iri=http%3A%2F%2Fplazi.org%2Fvocab%2Ftreatment%23Treatment">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Treatment.svg" alt="Plazi Treatment">
-                </span>
-                <span class="nav-link-title">Plazi Treatments</span>
-              </a>
-            </li>
-
-            <!-- Parliamentary Affairs -->
+            <!-- Records in Contexts (RiC) Archives -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Government.svg" alt="Parliamentary Affairs">
+                  <img src="/static/img/resource/RecordSet.svg" alt="Records in Contexts">
                 </span>
-                <span class="nav-link-title">Parliamentary Affairs</span>
+                <span class="nav-link-title">Archives (RiC)</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestEntity">Procedural Request</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationEntity">Request Information</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationActivity">Request Activity</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FParliamentaryAffairIdentifierEntity">Affair Identifier</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23RecordSet">RecordSet</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Record">Record</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Instantiation">Instantiation</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Activity">Activity</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23RecordResourceToRecordResourceRelation">Record Relation</a>
               </div>
             </li>
 
@@ -267,6 +206,61 @@
               </a>
             </li>
 
+            <!-- Concept Schemes -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource?iri=skos:ConceptScheme">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/ConceptScheme.svg" alt="SKOS Concept Scheme">
+                </span>
+                <span class="nav-link-title">Concept Schemes</span>
+              </a>
+            </li>
+
+            <!-- Data catalog -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Dataset.svg" alt="Dataset">
+                </span>
+                <span class="nav-link-title">Data Catalog</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=dcat:Catalog">Catalog</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Dataset">Dataset</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Distribution">Distribution</a>
+                <a class="dropdown-item" href="/resource?iri=schema:Dataset">Dataset (schema.org)</a>
+                <a class="dropdown-item" href="/resource?iri=void:Dataset">Dataset (VoID)</a>
+              </div>
+            </li>
+
+            <!-- Cubes -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Cube.svg" alt="Cube">
+                </span>
+                <span class="nav-link-title">Cubes</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=cube:Cube">cube:Cube</a>
+                <a class="dropdown-item" href="/resource?iri=cube:ObservationSet">cube:ObservationSet</a>
+                <a class="dropdown-item" href="/resource?iri=cube:Observation">cube:Observation</a>
+                <a class="dropdown-item" href="/resource?iri=cube:SharedDimension">cube:SharedDimension</a>
+                <a class="dropdown-item" href="/resource?iri=cube:KeyDimension">cube:KeyDimension</a>
+                <a class="dropdown-item" href="/resource?iri=cube:MeasureDimension">cube:MeasureDimension</a>
+              </div>
+            </li>
+
+            <!-- Defined Term Sets -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource?iri=schema:DefinedTermSet">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/DefinedTermSet.fallback.svg" alt="Defined Term Set">
+                </span>
+                <span class="nav-link-title">Defined Term Sets</span>
+              </a>
+            </li>
+            
           {{ else if eq .EndpointTag "stadtzuerich" }}
 
             <!-- Stadt Zürich: placeholder, to be customized -->
@@ -310,6 +304,114 @@
                 <a class="dropdown-item" href="/resource?iri=dcat:Dataset">Dataset</a>
                 <a class="dropdown-item" href="/resource?iri=dcat:Distribution">Distribution</a>
               </div>
+            </li>
+
+          {{ else if eq .EndpointTag "swisstopo" }}
+
+            <!-- Features (GeoSPARQL) -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource?iri=http%3A%2F%2Fwww.opengis.net%2Font%2Fgeosparql%23Feature">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Feature.svg" alt="Feature">
+                </span>
+                <span class="nav-link-title">Features</span>
+              </a>
+            </li>
+
+            <!-- Geometries (GeoSPARQL) -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource?iri=http%3A%2F%2Fwww.opengis.net%2Font%2Fgeosparql%23Geometry">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Geometry.svg" alt="Geometry">
+                </span>
+                <span class="nav-link-title">Geometries</span>
+              </a>
+            </li>
+
+            <!-- Postal Addresses -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource?iri=schema:PostalAddress">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/PostalAddress.svg" alt="Postal Address">
+                </span>
+                <span class="nav-link-title">Postal Addresses</span>
+              </a>
+            </li>
+
+            <!-- Transportation -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Traffic.svg" alt="Transportation">
+                </span>
+                <span class="nav-link-title">Transportation</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FTransportLink">Transport Links</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FTransportNode">Transport Nodes</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FOperatingPoint">Operating Points</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Stop">Transport Stops</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ62447">Aerodromes</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1497053">Mountain Landing Sites</a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ9687">Road Traffic Accidents</a>
+              </div>
+            </li>
+
+            <!-- Administrative Units -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/AdministrativeArea.svg" alt="Administrative Units">
+                </span>
+                <span class="nav-link-title">Administrative Units</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fld.admin.ch%2Fech%2F71%2FMunicipalityVersion">Municipality Versions</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ14872996">Municipal Boundaries</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2FCantonalTerritory">Cantonal Territories</a>
+                <a class="dropdown-item" href="/resource?iri=schema:AdministrativeArea">Administrative Areas</a>
+                <a class="dropdown-item" href="/resource?iri=schema:Place">Places</a>
+              </div>
+            </li>
+
+            <!-- Environment & Energy -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Location.svg" alt="Environment and Energy">
+                </span>
+                <span class="nav-link-title">Environment &amp; Energy</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ15911738">Hydropower Plants</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ567998">Bathing Waters</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1924376">Air Quality Stations</a>
+              </div>
+            </li>
+
+            <!-- Data catalog -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Dataset.svg" alt="Dataset">
+                </span>
+                <span class="nav-link-title">Data Catalog</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=schema:Dataset">Dataset (schema.org)</a>
+                <a class="dropdown-item" href="/resource?iri=void:Dataset">Dataset (VoID)</a>
+              </div>
+            </li>
+
+            <!-- Concept Schemes -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource?iri=skos:ConceptScheme">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/ConceptScheme.svg" alt="SKOS Concept Scheme">
+                </span>
+                <span class="nav-link-title">Concept Schemes</span>
+              </a>
             </li>
 
           {{ else if eq .EndpointTag "datacatalog" }}
