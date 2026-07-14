@@ -190,6 +190,17 @@ func (a *ApplicationConfig) GetEndpointByName(name string) *SparqlEndpoint {
 	return nil
 }
 
+// GetEndpointByURL returns the SparqlEndpoint with the given URL, or nil if
+// no configured endpoint uses that URL.
+func (a *ApplicationConfig) GetEndpointByURL(url string) *SparqlEndpoint {
+	for i := range a.SparqlEndpoints {
+		if a.SparqlEndpoints[i].URL == url {
+			return &a.SparqlEndpoints[i]
+		}
+	}
+	return nil
+}
+
 // GetEndpointBySlug returns the SparqlEndpoint with the given slug (case-insensitive),
 // or nil if no endpoint has that slug configured. Endpoints with an empty Slug never match.
 func (a *ApplicationConfig) GetEndpointBySlug(slug string) *SparqlEndpoint {

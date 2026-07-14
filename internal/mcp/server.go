@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"net/http"
 
 	goMcp "github.com/mark3labs/mcp-go/mcp"
@@ -8,6 +9,14 @@ import (
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/sparql"
 )
+
+// serverInstructions is returned to MCP clients in the initialize response and
+// primes the connected assistant on how to use the tools and cite Visoto links.
+const serverInstructions = `Visoto is a web application for exploring RDF / Linked Data through SPARQL. All tools are read-only.
+
+Getting started: call list_endpoints to see which SPARQL endpoints are configured, then use discover_classes and search_by_label to orient yourself before writing SPARQL queries. Configured RDF prefixes are injected into queries automatically.
+
+Linking: tool results include visoto_link / <variable>_visoto_link URLs pointing at Visoto's interactive visualization page for each resource. When you mention a resource, class, or query result in your answer, cite it as a markdown link using its visoto_link so the user can open it in Visoto.`
 
 // NewServer creates and returns a configured MCP HTTP handler.
 // The returned mux handles POST /mcp (MCP streamable HTTP) and GET /health.
@@ -21,6 +30,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 		"Visoto SPARQL MCP",
 		"1.0.0",
 		server.WithToolCapabilities(false),
+		server.WithInstructions(serverInstructions),
 	)
 
 	// list_endpoints — no parameters
@@ -62,7 +72,9 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 			goMcp.WithDescription(
 				"Execute a SPARQL SELECT query against a configured endpoint. "+
 					"Configured RDF prefixes (rdf:, schema:, dct:, etc.) are injected automatically — no need to declare them. "+
-					"Returns results as JSON rows. On failure, returns helpful hints.",
+					"Returns results as JSON rows; URI values come with a <variable>_visoto_link URL to Visoto's "+
+					"visualization page — cite these as markdown links when presenting results. "+
+					"On failure, returns helpful hints.",
 			),
 			goMcp.WithString("query",
 				goMcp.Description("SPARQL SELECT query text. Prefixes are injected automatically."),
@@ -121,7 +133,8 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 	// get_resource
 	mcpServer.AddTool(
 		goMcp.NewTool("get_resource",
-			goMcp.WithDescription("Retrieve all RDF triples (predicate–object pairs) for a given resource IRI."),
+			goMcp.WithDescription("Retrieve all RDF triples (predicate–object pairs) for a given resource IRI. "+
+				"The result's visoto_link points at Visoto's interactive page for the resource — cite it as a markdown link."),
 			goMcp.WithString("iri",
 				goMcp.Description("The full IRI of the resource to retrieve, e.g. https://ld.admin.ch/municipality/351."),
 				goMcp.Required(),
@@ -184,9 +197,14 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 		tc.handleCountInstances,
 	)
 
-	// Build the streamable HTTP transport (POST /mcp)
+	// Build the streamable HTTP transport (POST /mcp). The context func derives
+	// the public base URL from each request so visoto_link fields point at the
+	// origin the client actually reached us on (proxy-aware; localhost in dev).
 	httpServer := server.NewStreamableHTTPServer(mcpServer,
 		server.WithStateLess(true),
+		server.WithHTTPContextFunc(func(ctx context.Context, r *http.Request) context.Context {
+			return contextWithBaseURL(ctx, BaseURLFromRequest(r, cfg.Application.Port))
+		}),
 	)
 
 	mux := http.NewServeMux()

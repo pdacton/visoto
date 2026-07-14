@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 
@@ -29,14 +30,22 @@ type toolContext struct {
 	cfg          *config.Config
 }
 
-// visotoLink returns the Visoto resource URL for a given IRI.
-func (tc *toolContext) visotoLink(iri string) string {
-	return fmt.Sprintf("http://localhost:%d%s", tc.cfg.Application.Port, sparql.ResourceHref(iri))
+// visotoLink returns the Visoto resource-page URL for a given IRI. The base URL
+// is derived from the incoming request (stored in ctx by the HTTP transport);
+// endpointURL, when it maps to a configured endpoint with a slug, is preserved
+// as the canonical &endpoint=<slug> query param so the link opens against the
+// same endpoint the query ran on.
+func (tc *toolContext) visotoLink(ctx context.Context, iri, endpointURL string) string {
+	link := baseURLFromContext(ctx, tc.cfg.Application.Port) + sparql.ResourceHref(iri)
+	if ep := tc.cfg.Application.GetEndpointByURL(endpointURL); ep != nil && ep.Slug != "" {
+		link += "&endpoint=" + url.QueryEscape(ep.Slug)
+	}
+	return link
 }
 
 // --- helper: execute one query and wrap in toolResult ---
 
-func (tc *toolContext) run(query, endpoint string, resolveLabels bool) toolResult {
+func (tc *toolContext) run(ctx context.Context, query, endpoint string, resolveLabels bool) toolResult {
 	result, _ := tc.preprocessor.ExecuteQuery(query, resolveLabels, "", endpoint)
 
 	rows := make([]map[string]any, 0, len(result.Bindings))
@@ -45,7 +54,7 @@ func (tc *toolContext) run(query, endpoint string, resolveLabels bool) toolResul
 		for k, v := range binding {
 			row[k] = v.DisplayText
 			if v.Type == "uri" {
-				row[k+"_visoto_link"] = tc.visotoLink(v.Value)
+				row[k+"_visoto_link"] = tc.visotoLink(ctx, v.Value, result.Endpoint)
 			}
 		}
 		rows = append(rows, row)
@@ -175,7 +184,7 @@ func (tc *toolContext) handleCheckEndpoint(_ context.Context, request goMcp.Call
 }
 
 // handleRunSPARQLQuery executes a raw SPARQL SELECT query.
-func (tc *toolContext) handleRunSPARQLQuery(_ context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+func (tc *toolContext) handleRunSPARQLQuery(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	query := getStringParam(request, "query")
 	if query == "" {
 		return goMcp.NewToolResultError("parameter 'query' is required"), nil
@@ -183,32 +192,32 @@ func (tc *toolContext) handleRunSPARQLQuery(_ context.Context, request goMcp.Cal
 	endpoint := getStringParam(request, "endpoint")
 	resolveLabels := getBoolParam(request, "resolve_labels", false)
 
-	r := tc.run(query, endpoint, resolveLabels)
+	r := tc.run(ctx, query, endpoint, resolveLabels)
 	return toMCPResult(r)
 }
 
 // handleDiscoverClasses lists distinct RDF types in the endpoint.
-func (tc *toolContext) handleDiscoverClasses(_ context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+func (tc *toolContext) handleDiscoverClasses(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	limit := getIntParam(request, "limit", 100)
 	endpoint := getStringParam(request, "endpoint")
 
 	query := fmt.Sprintf(queryDiscoverClasses, limit)
-	r := tc.run(query, endpoint, false)
+	r := tc.run(ctx, query, endpoint, false)
 	return toMCPResult(r)
 }
 
 // handleDiscoverProperties lists distinct predicates used in the endpoint.
-func (tc *toolContext) handleDiscoverProperties(_ context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+func (tc *toolContext) handleDiscoverProperties(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	limit := getIntParam(request, "limit", 100)
 	endpoint := getStringParam(request, "endpoint")
 
 	query := fmt.Sprintf(queryDiscoverProperties, limit)
-	r := tc.run(query, endpoint, false)
+	r := tc.run(ctx, query, endpoint, false)
 	return toMCPResult(r)
 }
 
 // handleGetResource returns all triples for a given IRI.
-func (tc *toolContext) handleGetResource(_ context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+func (tc *toolContext) handleGetResource(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	iri := getStringParam(request, "iri")
 	if iri == "" {
 		return goMcp.NewToolResultError("parameter 'iri' is required"), nil
@@ -216,13 +225,13 @@ func (tc *toolContext) handleGetResource(_ context.Context, request goMcp.CallTo
 	endpoint := getStringParam(request, "endpoint")
 
 	query := fmt.Sprintf(queryGetResource, iri)
-	r := tc.run(query, endpoint, true)
-	r.VisotoLink = tc.visotoLink(iri)
+	r := tc.run(ctx, query, endpoint, true)
+	r.VisotoLink = tc.visotoLink(ctx, iri, r.EndpointUsed)
 	return toMCPResult(r)
 }
 
 // handleSearchByLabel searches resources by label text.
-func (tc *toolContext) handleSearchByLabel(_ context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+func (tc *toolContext) handleSearchByLabel(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	text := getStringParam(request, "text")
 	if text == "" {
 		return goMcp.NewToolResultError("parameter 'text' is required"), nil
@@ -238,12 +247,12 @@ func (tc *toolContext) handleSearchByLabel(_ context.Context, request goMcp.Call
 		query = fmt.Sprintf(querySearchByLabel, text, limit)
 	}
 
-	r := tc.run(query, endpoint, false)
+	r := tc.run(ctx, query, endpoint, false)
 	return toMCPResult(r)
 }
 
 // handleCountInstances returns instance counts per class or for a specific class.
-func (tc *toolContext) handleCountInstances(_ context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+func (tc *toolContext) handleCountInstances(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	classIRI := getStringParam(request, "class_iri")
 	endpoint := getStringParam(request, "endpoint")
 
@@ -254,6 +263,6 @@ func (tc *toolContext) handleCountInstances(_ context.Context, request goMcp.Cal
 		query = queryCountInstances
 	}
 
-	r := tc.run(query, endpoint, false)
+	r := tc.run(ctx, query, endpoint, false)
 	return toMCPResult(r)
 }

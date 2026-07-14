@@ -14,4 +14,5 @@ type TemplateData struct {
 	SparqlEndpoints []config.SparqlEndpoint       // SPARQL endpoints for menu (no sensitive data)
 	EndpointTag     string                        // Tag of the currently selected endpoint (e.g. "lindas", "stadtzuerich")
 	EndpointURL     string                        // Resolved URL of the currently selected endpoint (for client-side use, e.g. Graph Explorer)
+	BaseURL         string                        // Public base URL of this instance derived from the request (e.g. https://visoto.example.org)
 }

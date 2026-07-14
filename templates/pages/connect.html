@@ -1,0 +1,166 @@
+{{ define "pageTitle" }}Connect your AI{{ end }}
+{{ define "pageSubtitle" }}Use your own AI assistant on this data — via the Model Context Protocol (MCP).{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/resource/DataService.svg" alt="Connect your AI" width="48" height="48">{{end}}
+{{ define "metaIcon" }}/static/img/resource/DataService.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<div class="row row-cards">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <p>
+          Visoto ships an <a href="https://modelcontextprotocol.io/" target="_blank">MCP</a> server that lets AI assistants
+          explore the same SPARQL endpoints you see here — discover classes, search by label, run queries — and link their
+          answers back to Visoto's visualizations. Connect it to your own assistant and ask questions there, using your own
+          subscription. The built-in Resource Assistant stays available as the zero-setup default.
+        </p>
+        <p class="text-muted mb-0">
+          <i data-lucide="info" style="width:1em;" aria-hidden="true"></i>
+          Most AI services require a paid plan to add custom connectors, and can only reach the server when it is publicly
+          accessible over HTTPS.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Your MCP server URL</h3>
+      </div>
+      <div class="card-body">
+        <div class="input-group">
+          <input type="text" class="form-control font-monospace" id="mcp-url" value="{{ .BaseURL }}/mcp" readonly>
+          <button class="btn btn-primary mcp-copy-btn" type="button" data-copy="{{ .BaseURL }}/mcp" title="Copy MCP URL">
+            <i data-lucide="copy" aria-hidden="true"></i>&nbsp;<span class="mcp-copy-label">Copy</span>
+          </button>
+        </div>
+        <small class="text-muted">Transport: streamable HTTP · read-only · no authentication or API key required.</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">
+        <h3 class="card-title">Set it up in your assistant</h3>
+      </div>
+      <div class="card-body">
+        <ul class="nav nav-tabs" data-bs-toggle="tabs" role="tablist">
+          <li class="nav-item" role="presentation">
+            <a class="nav-link active" data-bs-toggle="tab" href="#connect-claude" role="tab" aria-selected="true">Claude</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" data-bs-toggle="tab" href="#connect-chatgpt" role="tab" aria-selected="false" tabindex="-1">ChatGPT</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" data-bs-toggle="tab" href="#connect-lechat" role="tab" aria-selected="false" tabindex="-1">Mistral Le Chat</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" data-bs-toggle="tab" href="#connect-qwen" role="tab" aria-selected="false" tabindex="-1">Qwen</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" data-bs-toggle="tab" href="#connect-openrouter" role="tab" aria-selected="false" tabindex="-1">OpenRouter</a>
+          </li>
+          <li class="nav-item" role="presentation">
+            <a class="nav-link" data-bs-toggle="tab" href="#connect-apertus" role="tab" aria-selected="false" tabindex="-1">Apertus</a>
+          </li>
+        </ul>
+
+        <div class="tab-content pt-3">
+
+          <div class="tab-pane show active" id="connect-claude" role="tabpanel">
+            <p class="text-muted">Requires a Claude Pro plan or higher.</p>
+            <ol>
+              <li>Open <a href="https://claude.ai/settings/connectors" target="_blank">claude.ai &rarr; Settings &rarr; Connectors</a></li>
+              <li>Click <strong>Add custom connector</strong>, name it <code>Visoto</code> and paste the MCP URL above</li>
+              <li>In a chat, open the <strong>search &amp; tools</strong> menu and enable the Visoto connector</li>
+            </ol>
+            <p class="mb-1"><strong>Claude Desktop</strong> — connectors are account-level: added on claude.ai, it appears in the desktop app automatically.</p>
+            <p class="mb-1"><strong>Claude Code</strong> — one command:</p>
+            <pre><code class="language-bash">claude mcp add --transport http visoto {{ .BaseURL }}/mcp</code></pre>
+          </div>
+
+          <div class="tab-pane" id="connect-chatgpt" role="tabpanel">
+            <p class="text-muted">Requires ChatGPT Plus or higher; custom connectors live behind Developer mode.</p>
+            <ol>
+              <li>Open <strong>Settings &rarr; Connectors &rarr; Advanced</strong> and enable <strong>Developer mode</strong></li>
+              <li>Create a new connector and paste the MCP URL above (no authentication)</li>
+              <li>Enable the connector in the chat's tools menu — re-enable it per chat if needed</li>
+            </ol>
+            <p class="text-muted mb-0">ChatGPT only accepts remote HTTPS MCP servers, so it must reach this instance's public URL.</p>
+          </div>
+
+          <div class="tab-pane" id="connect-lechat" role="tabpanel">
+            <ol>
+              <li>In Le Chat, open the <strong>connectors</strong> panel from the sidebar</li>
+              <li>Click <strong>Add a custom connector</strong> and paste the MCP URL above (leave the API key empty)</li>
+              <li>Save, then enable the connector in your chat</li>
+            </ol>
+          </div>
+
+          <div class="tab-pane" id="connect-qwen" role="tabpanel">
+            <p class="text-muted">MCP support lives in the Qwen Chat desktop app.</p>
+            <ol>
+              <li>Open <strong>MCP settings</strong> in Qwen Chat Desktop</li>
+              <li>Click <strong>Add MCP</strong> and paste the MCP URL above</li>
+              <li>Enable the server in your chat</li>
+            </ol>
+          </div>
+
+          <div class="tab-pane" id="connect-openrouter" role="tabpanel">
+            <p class="text-muted">For advanced users. OpenRouter's own chat can't consume external MCP servers — instead, use
+              OpenRouter as the model backend (GPT, Gemini, DeepSeek, and hundreds more with one key) inside an MCP-capable client.</p>
+            <ol>
+              <li>Create an API key at <a href="https://openrouter.ai/keys" target="_blank">openrouter.ai/keys</a></li>
+              <li>Add it to an MCP-capable chat client (e.g. <a href="https://www.librechat.ai/" target="_blank">LibreChat</a> or
+                  <a href="https://cherry-ai.com/" target="_blank">Cherry Studio</a>) as an OpenAI-compatible provider</li>
+              <li>Register the MCP URL above as a tool/MCP server in that client</li>
+            </ol>
+          </div>
+
+          <div class="tab-pane" id="connect-apertus" role="tabpanel">
+            <p class="text-muted">Apertus, the Swiss open-source model by EPFL/ETH Zürich, has no first-party chat app with MCP
+              connectors — use the same client pattern as the OpenRouter tab.</p>
+            <ol>
+              <li>Get access to an OpenAI-compatible Apertus endpoint (e.g. via the
+                  <a href="https://publicai.co/" target="_blank">Public AI inference utility</a> or Swisscom's Swiss AI platform)</li>
+              <li>Add it as a provider in an MCP-capable client (see the OpenRouter tab for candidates)</li>
+              <li>Register the MCP URL above as a tool/MCP server in that client</li>
+            </ol>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-1"><strong>Privacy &amp; trust</strong> — the server is read-only: it can list endpoints and prefixes,
+          discover classes and properties, and run SPARQL <code>SELECT</code> queries against the configured public endpoints.
+          It holds no account data and requires no key.</p>
+        <p class="text-muted mb-0">These six are just walkthroughs — any MCP-capable client works.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ end }}
+
+{{ define "pageScripts" }}
+<script>
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.mcp-copy-btn');
+  if (!btn) return;
+  navigator.clipboard.writeText(btn.dataset.copy).then(() => {
+    const label = btn.querySelector('.mcp-copy-label');
+    if (!label) return;
+    label.textContent = 'Copied!';
+    setTimeout(() => { label.textContent = 'Copy'; }, 1500);
+  });
+});
+</script>
+{{ end }}

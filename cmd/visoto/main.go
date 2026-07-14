@@ -188,6 +188,8 @@ func staticPageHandler(c *gin.Context) {
 		data.EndpointURL = cfg.Application.SparqlEndpoint
 	}
 	data.TemplateName = templateName
+	// Public origin for pages that render absolute URLs (e.g. the MCP URL on /connect.html)
+	data.BaseURL = mcpserver.BaseURLFromRequest(c.Request, cfg.Application.Port)
 
 	log.Debug("rendering static page",
 		slog.String("templateName", templateName),
