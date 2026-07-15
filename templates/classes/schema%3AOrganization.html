@@ -1,0 +1,52 @@
+<!-- schema:Organization Class Template, listing all instances of this class -->
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  <!-- Instances of schema:Organization.
+       Column choice is data-driven (LINDAS prod, 816k instances, 97% Zefix):
+       CompanyUID (structured schema:identifier node), additionalType (legal
+       form / org type), addressLocality and description have the widest
+       coverage and are the most useful for narrowing down an organization. -->
+  <div class="mb-3">
+    <sparql-async id="organizationInstances" class="d-none">
+      SELECT ?organization ?companyUID ?additionalType ?addressLocality ?description WHERE {
+        ?organization a ?? .
+        OPTIONAL {
+          ?organization schema:identifier ?idNode .
+          ?idNode schema:name "CompanyUID" ; schema:value ?companyUID .
+        }
+        OPTIONAL { ?organization schema:additionalType ?additionalType . }
+        OPTIONAL { ?organization schema:address/schema:addressLocality ?addressLocality . }
+        OPTIONAL { ?organization schema:description ?description .
+          FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
+      }
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "organizationInstances"
+        "iri" .ResourceIRI
+        "title" "Organizations"
+        "icon" "circle-dot"
+        "iconVar" "organization"
+        "searchProp" "http://schema.org/name")
+    }}
+  </div>
+
+  {{ template "classHierarchy" . }}
+
+</div>
+{{ end }}
