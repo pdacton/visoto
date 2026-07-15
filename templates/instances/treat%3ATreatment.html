@@ -1,0 +1,43 @@
+<!-- Treatment Instance Template
+     A treat:Treatment is the section of a publication describing a taxon. Shows its
+     attributes, the taxon concept it augments, the material citations and figures it
+     cites, and the work it was published in. -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+  <li class="breadcrumb-item"><a href="/resource?iri=treat:Treatment">Treatment</a></li>
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  <!-- Attributes (all literal values: title, creator, date, ...) -->
+  {{ template "literals" . }}
+
+  <!-- Resources cited by this treatment (material citations, figures, ...) -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="citedResources" class="d-none">
+          SELECT ?cited ?type WHERE {
+            ?? (cito:cites|trt:citesMaterialCitation) ?cited .
+            OPTIONAL { ?cited a ?type . }
+            FILTER (isIRI(?cited))
+          } LIMIT 300
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.citedResources
+            "id" "citedResources"
+            "title" "Cites"
+            "icon" "quote"
+            "iconVar" "type")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing / incoming relationships (collapsed) -->
+  {{ template "relationships" . }}
+
+{{ end }}

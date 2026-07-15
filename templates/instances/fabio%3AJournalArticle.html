@@ -1,0 +1,37 @@
+<!-- JournalArticle Instance Template
+     A fabio:JournalArticle is a source publication for Plazi treatments. Shows its
+     bibliographic attributes and the treatments published in it. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  <!-- Bibliographic attributes (title, creator, date, journal, pages, ...) -->
+  {{ template "literals" . }}
+
+  <!-- Treatments published in this article -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="publishedTreatments" class="d-none">
+          SELECT ?treatment ?title ?date WHERE {
+            ?treatment trt:publishedIn ?? .
+            OPTIONAL { ?treatment dc:title ?title . }
+            OPTIONAL { ?treatment dc:date ?date . }
+          } LIMIT 300
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.publishedTreatments
+            "id" "publishedTreatments"
+            "title" "Treatments Published In"
+            "icon" "file-description"
+            "iconVar" "Treatment")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing / incoming relationships (collapsed) -->
+  {{ template "relationships" . }}
+
+{{ end }}

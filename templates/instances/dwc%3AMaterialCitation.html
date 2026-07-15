@@ -1,0 +1,43 @@
+<!-- MaterialCitation Instance Template
+     A dwc:MaterialCitation is a specimen / material record cited within a Plazi
+     taxonomic treatment. Shows its Darwin Core attributes, the treatment(s) that
+     cite it, and its taxonomic / collection relationships. -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+  <li class="breadcrumb-item"><a href="/resource?iri=dwc:MaterialCitation">Material Citation</a></li>
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  <!-- Darwin Core attributes (all literal values) -->
+  {{ template "literals" . }}
+
+  <!-- Treatments that cite this material -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="citingTreatments" class="d-none">
+          SELECT ?treatment ?type WHERE {
+            ?treatment (trt:citesMaterialCitation|treat:citesMaterialCitation|dwc:relatedResourceID) ?? .
+            OPTIONAL { ?treatment a ?type . }
+            FILTER (isIRI(?treatment))
+          } LIMIT 200
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.citingTreatments
+            "id" "citingTreatments"
+            "title" "Cited by Treatments"
+            "icon" "file-description"
+            "iconVar" "type")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing / incoming relationships (collapsed) -->
+  {{ template "relationships" . }}
+
+{{ end }}

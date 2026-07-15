@@ -1,0 +1,45 @@
+<!-- JournalArticle Class Template — lists instances of fabio:JournalArticle in an async working-set table -->
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Journal Article{{ end }}{{ end }}
+{{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Journal Article{{ end }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}Journal articles cited as the source of Plazi taxonomic treatments.{{ end }}
+
+{{ define "pageIcon" }}<img src="/static/img/resource/JournalArticle.svg" alt="Journal Article" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/JournalArticle.svg{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-async id="journalArticleInstances" class="d-none">
+      SELECT ?article ?title ?creator ?date ?journal ?volume ?startPage
+      WHERE {
+        ?article rdf:type ?? .
+        OPTIONAL { ?article dc:title ?title . }
+        OPTIONAL { ?article dc:creator ?creator . }
+        OPTIONAL { ?article dc:date ?date . }
+        OPTIONAL { ?article bibo:journal ?journal . }
+        OPTIONAL { ?article bibo:volume ?volume . }
+        OPTIONAL { ?article bibo:startPage ?startPage . }
+      }
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "journalArticleInstances"
+        "iri" .ResourceIRI
+        "title" "Journal Articles"
+        "icon" "article"
+        "iconVar" "JournalArticle"
+        "badgeVar" "journal")
+    }}
+  </div>
+</div>
+{{ end }}

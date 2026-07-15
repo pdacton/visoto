@@ -1,0 +1,41 @@
+<!-- Book Class Template — lists instances of fabio:Book in an async working-set table -->
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Book{{ end }}{{ end }}
+{{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Book{{ end }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}Books cited as the source of Plazi taxonomic treatments.{{ end }}
+
+{{ define "pageIcon" }}<img src="/static/img/resource/Book.svg" alt="Book" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Book.svg{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-async id="bookInstances" class="d-none">
+      SELECT ?book ?title ?creator ?date
+      WHERE {
+        ?book rdf:type ?? .
+        OPTIONAL { ?book dc:title ?title . }
+        OPTIONAL { ?book dc:creator ?creator . }
+        OPTIONAL { ?book dc:date ?date . }
+      }
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "bookInstances"
+        "iri" .ResourceIRI
+        "title" "Books"
+        "icon" "book"
+        "iconVar" "Book")
+    }}
+  </div>
+</div>
+{{ end }}

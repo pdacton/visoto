@@ -83,7 +83,7 @@ You'll be prompted for:
 - **URL Encoding**: Automatically encodes instance URI for filename (e.g., `schch:Canton` → `schch%3ACanton.html`)
 - **Backup on Update**: Creates `.backup` file before overwriting existing templates
 - **Example Comments**: Includes helpful comments showing how to customize queries
-- **Partial Integration**: Uses the more basic Visoto partials (`sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlMermaidFlow`)
+- **Partial Integration**: Uses the Visoto partials — `sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlMermaidFlow`, the graph-embedding partials `sparqlGraph` / `schemaGraph`, and `sparqlAsyncTable` (lazy HTMX working-set table) for any large related-resource lists
 - **Component Integration**: uses the pre-built, ready to use building blocks (`pageHeader`, `literals`, `relationships`, `classHierarchy`, `ontologyShacl`)
 - **Smart Filtering**: Excludes class/subclass relationships (no `rdf:type`, `rdfs:subClassOf`)
 

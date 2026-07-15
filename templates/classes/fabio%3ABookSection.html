@@ -1,0 +1,43 @@
+<!-- BookSection Class Template — lists instances of fabio:BookSection in an async working-set table -->
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Book Section{{ end }}{{ end }}
+{{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Book Section{{ end }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}Book chapters and sections cited as the source of Plazi taxonomic treatments.{{ end }}
+
+{{ define "pageIcon" }}<img src="/static/img/resource/BookSection.svg" alt="Book Section" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/BookSection.svg{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-async id="bookSectionInstances" class="d-none">
+      SELECT ?section ?title ?creator ?date ?startPage ?endPage
+      WHERE {
+        ?section rdf:type ?? .
+        OPTIONAL { ?section dc:title ?title . }
+        OPTIONAL { ?section dc:creator ?creator . }
+        OPTIONAL { ?section dc:date ?date . }
+        OPTIONAL { ?section bibo:startPage ?startPage . }
+        OPTIONAL { ?section bibo:endPage ?endPage . }
+      }
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "bookSectionInstances"
+        "iri" .ResourceIRI
+        "title" "Book Sections"
+        "icon" "book-2"
+        "iconVar" "BookSection")
+    }}
+  </div>
+</div>
+{{ end }}

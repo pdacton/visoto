@@ -1,0 +1,50 @@
+<!-- TaxonConcept Class Template — lists instances of dwcFP:TaxonConcept in an async working-set table -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+{{ end }}
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Concept{{ end }}{{ end }}
+{{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Concept{{ end }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}Taxonomic concepts — a scientific name under a given authority and rank — in the Plazi classification.{{ end }}
+
+{{ define "pageIcon" }}<img src="/static/img/resource/TaxonConcept.svg" alt="Taxon Concept" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/TaxonConcept.svg{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-async id="taxonConceptInstances" class="d-none">
+      SELECT ?taxonConcept ?rank ?authority ?kingdom ?phylum ?class ?order ?family
+      WHERE {
+        ?taxonConcept rdf:type ?? .
+        OPTIONAL { ?taxonConcept dwc:rank ?rank . }
+        OPTIONAL { ?taxonConcept dwc:authority ?authority . }
+        OPTIONAL { ?taxonConcept dwc:kingdom ?kingdom . }
+        OPTIONAL { ?taxonConcept dwc:phylum ?phylum . }
+        OPTIONAL { ?taxonConcept dwc:class ?class . }
+        OPTIONAL { ?taxonConcept dwc:order ?order . }
+        OPTIONAL { ?taxonConcept dwc:family ?family . }
+      }
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "taxonConceptInstances"
+        "iri" .ResourceIRI
+        "title" "Taxon Concepts"
+        "icon" "bug"
+        "iconVar" "TaxonConcept"
+        "badgeVar" "rank")
+    }}
+  </div>
+</div>
+{{ end }}

@@ -1,0 +1,40 @@
+<!-- Figure Class Template — lists instances of fabio:Figure in an async working-set table -->
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:description) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Figure{{ end }}{{ end }}
+{{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Figure{{ end }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}Figures and illustrations extracted from Plazi taxonomic publications.{{ end }}
+
+{{ define "pageIcon" }}<img src="/static/img/resource/Figure.svg" alt="Figure" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Figure.svg{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-async id="figureInstances" class="d-none">
+      SELECT ?figure ?description ?representation
+      WHERE {
+        ?figure rdf:type ?? .
+        OPTIONAL { ?figure dc:description ?description . }
+        OPTIONAL { ?figure fabio:hasRepresentation ?representation . }
+      }
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "figureInstances"
+        "iri" .ResourceIRI
+        "title" "Figures"
+        "icon" "photo"
+        "iconVar" "Figure")
+    }}
+  </div>
+</div>
+{{ end }}

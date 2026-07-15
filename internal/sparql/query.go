@@ -209,7 +209,6 @@ func (p *Preprocessor) querySparqlEndpoint(ctx context.Context, endpointURL, que
 		slog.String("url", req.URL.String()),
 		slog.String("content-type", req.Header.Get("Content-Type")),
 		slog.String("accept", req.Header.Get("Accept")),
-		slog.String("body", encodedParams),
 		slog.Int("body_length", len(encodedParams)))
 
 	resp, err := p.httpClient.Do(req)

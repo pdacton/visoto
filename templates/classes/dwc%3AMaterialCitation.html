@@ -1,0 +1,50 @@
+<!-- MaterialCitation Class Template — lists instances of dwc:MaterialCitation in an async working-set table -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+{{ end }}
+
+<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+{{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Material Citation{{ end }}{{ end }}
+{{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Material Citation{{ end }}{{ end }}
+
+<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}Specimen and material records cited within Plazi taxonomic treatments.{{ end }}
+
+{{ define "pageIcon" }}<img src="/static/img/resource/MaterialCitation.svg" alt="Material Citation" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/MaterialCitation.svg{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  <!-- instances of this class -->
+  <div class="mt-0">
+    <sparql-async id="materialCitationInstances" class="d-none">
+      SELECT ?materialCitation ?catalogNumber ?scientificName ?typeStatus ?country ?locality ?recordedBy ?collectionCode
+      WHERE {
+        ?materialCitation rdf:type ?? .
+        OPTIONAL { ?materialCitation dwc:catalogNumber ?catalogNumber . }
+        OPTIONAL { ?materialCitation dwc:scientificName ?scientificName . }
+        OPTIONAL { ?materialCitation dwc:typeStatus ?typeStatus . }
+        OPTIONAL { ?materialCitation dwc:country ?country . }
+        OPTIONAL { ?materialCitation dwc:locality ?locality . }
+        OPTIONAL { ?materialCitation dwc:recordedBy ?recordedBy . }
+        OPTIONAL { ?materialCitation dwc:collectionCode ?collectionCode . }
+      }
+    </sparql-async>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "materialCitationInstances"
+        "iri" .ResourceIRI
+        "title" "Material Citations"
+        "icon" "flask"
+        "iconVar" "MaterialCitation"
+        "badgeVar" "typeStatus")
+    }}
+  </div>
+</div>
+{{ end }}

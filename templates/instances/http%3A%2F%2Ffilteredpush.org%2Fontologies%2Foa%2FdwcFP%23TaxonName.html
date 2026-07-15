@@ -1,0 +1,43 @@
+<!-- TaxonName Instance Template
+     A dwcFP:TaxonName is a scientific name in the Plazi classification. Shows its
+     Darwin Core attributes and the taxon concepts built on this name. -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+  <li class="breadcrumb-item"><a href="/resource?iri=dwcFP:TaxonName">Taxon Name</a></li>
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  <!-- Darwin Core attributes (all literal values) -->
+  {{ template "literals" . }}
+
+  <!-- Taxon concepts that use this name -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="usingConcepts" class="d-none">
+          SELECT ?concept ?rank ?authority WHERE {
+            ?concept trt:hasTaxonName ?? .
+            OPTIONAL { ?concept dwc:rank ?rank . }
+            OPTIONAL { ?concept dwc:authority ?authority . }
+          } LIMIT 200
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.usingConcepts
+            "id" "usingConcepts"
+            "title" "Taxon Concepts"
+            "icon" "bug"
+            "iconVar" "TaxonConcept"
+            "badgeVar" "rank")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing / incoming relationships (collapsed) -->
+  {{ template "relationships" . }}
+
+{{ end }}

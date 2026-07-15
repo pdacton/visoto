@@ -25,6 +25,19 @@ var funcMap = template.FuncMap{
 	"firstValue":      firstValue,
 	"lastPathSegment": lastPathSegment,
 	"groupByValue":    groupByValue,
+	"safeURL":         safeURL,
+}
+
+// safeURL marks an http(s) URL as safe for use in a URL attribute context
+// (e.g. an <img src> or <a href>), bypassing html/template's URL sanitizer
+// which otherwise blanks values it cannot statically prove are safe.
+// Only http:// and https:// URLs are trusted; anything else is dropped so a
+// non-URL literal can never smuggle in a javascript: or data: scheme.
+func safeURL(raw string) template.URL {
+	if strings.HasPrefix(raw, "https://") || strings.HasPrefix(raw, "http://") {
+		return template.URL(raw)
+	}
+	return template.URL("")
 }
 
 // makeDict creates a map from alternating key-value pairs

@@ -1,5 +1,9 @@
 <!-- TaxonName Class Template — lists all instances of dwcFP:TaxonName in an async table -->
 
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+{{ end }}
+
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Name{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Name{{ end }}{{ end }}

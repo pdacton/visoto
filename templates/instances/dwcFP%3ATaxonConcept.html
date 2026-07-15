@@ -1,0 +1,43 @@
+<!-- TaxonConcept Instance Template
+     A dwcFP:TaxonConcept is a scientific name under a given authority and rank in
+     the Plazi classification. Shows its Darwin Core attributes, the taxon name it is
+     built on, and the treatments that augment it. -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+  <li class="breadcrumb-item"><a href="/resource?iri=dwcFP:TaxonConcept">Taxon Concept</a></li>
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  <!-- Darwin Core attributes (all literal values) -->
+  {{ template "literals" . }}
+
+  <!-- Treatments that augment this concept -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="augmentingTreatments" class="d-none">
+          SELECT ?treatment ?title ?date WHERE {
+            ?treatment trt:augmentsTaxonConcept ?? .
+            OPTIONAL { ?treatment dc:title ?title . }
+            OPTIONAL { ?treatment dc:date ?date . }
+          } LIMIT 200
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.augmentingTreatments
+            "id" "augmentingTreatments"
+            "title" "Augmented by Treatments"
+            "icon" "file-description"
+            "iconVar" "Treatment")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing / incoming relationships (collapsed) -->
+  {{ template "relationships" . }}
+
+{{ end }}

@@ -1,0 +1,58 @@
+<!-- Figure Instance Template
+     A fabio:Figure is an illustration extracted from a Plazi publication. Shows its
+     description, the representation image, and the treatments that cite it. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  <!-- Attributes (description, ...) -->
+  {{ template "literals" . }}
+
+  <!-- Representation image(s) -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="figureRepresentations" class="d-none">
+          SELECT ?representation WHERE {
+            ?? fabio:hasRepresentation ?representation .
+          } LIMIT 20
+        </sparql-query>
+        {{ range $binding := .QueryResults.figureRepresentations.Bindings }}
+          <div class="card mb-3">
+            <div class="card-body text-center">
+              <img src="{{ safeURL (index $binding "representation").Value }}" alt="Figure representation"
+                   class="img-fluid rounded" loading="lazy" style="max-height: 480px;">
+            </div>
+          </div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Treatments that cite this figure -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="citingTreatments" class="d-none">
+          SELECT ?treatment ?title WHERE {
+            ?treatment cito:cites ?? .
+            OPTIONAL { ?treatment dc:title ?title . }
+            FILTER (isIRI(?treatment))
+          } LIMIT 200
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.citingTreatments
+            "id" "citingTreatments"
+            "title" "Cited by Treatments"
+            "icon" "file-description"
+            "iconVar" "Treatment")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing / incoming relationships (collapsed) -->
+  {{ template "relationships" . }}
+
+{{ end }}

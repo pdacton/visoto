@@ -61,15 +61,22 @@ You'll be prompted for:
 
 ### Basic Template (`--basic`)
 - Title, subtitle, and metadata queries
-- **Instances list** (primary focus)
+- **Instances list** (primary focus) — rendered with `sparqlAsyncTable`
 - Subclasses section, collapsed
 - Superclasses section, collapsed
 
 ### Standard Template ('--standard', default)
 - Title, subtitle, and metadata queries
-- **Instances list** with relevant properties
+- **Instances list** with relevant properties — rendered with `sparqlAsyncTable`
 - Subclasses section
 - Superclasses section
+
+> **Instances table:** always use the `sparqlAsyncTable` partial for the instances
+> list. It lazy-loads via HTMX and uses the auto-detected working-set model (one
+> bounded fetch, all interactions local) so the page stays fast even for very large
+> classes (e.g. `dwcFP:TaxonName`, ~918k instances). A plain `sparqlTable` would
+> try to load every instance and choke on the big graphs. All existing class
+> templates in `templates/classes/` use `sparqlAsyncTable`.
 
 ### Advanced Template (`--advanced`)
 - All standard sections
@@ -83,7 +90,7 @@ You'll be prompted for:
 - **URL Encoding**: Automatically encodes class URI for filename (e.g., `schch:Canton` → `schch%3ACanton.html`)
 - **Backup on Update**: Creates `.backup` file before overwriting existing templates
 - **Example Comments**: Includes helpful comments showing how to customize queries
-- **Partial Integration**: Uses the more basic Visoto partials (`sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlMermaidFlow`)
+- **Partial Integration**: Uses the Visoto partials — `sparqlAsyncTable` (lazy HTMX working-set table; the default for the instances list), `sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlMermaidFlow`, and the graph-embedding partials `sparqlGraph` / `schemaGraph`
 - **Component Integration**: uses the pre-built, ready to use building blocks (`pageHeader`, `literals`, `relationships`, `classHierarchy`, `ontologyShacl`)
 
 ## Configuration
@@ -103,11 +110,46 @@ Templates are created in:
 
 ## SPARQL Query Introspection
 
-The skill automatically runs SPARQL queries to:
+### Preparation: analyze a sample instance
+
+Before generating the template, **fetch and analyze a real instance of the class**
+using the visoto MCP server (curl as fallback only):
+
+1. Use `search_by_label` (with `type_filter` set to the class IRI) or a small
+   `run_sparql_query` (`SELECT ?s WHERE { ?s a <class> } LIMIT 1`) to find one
+   instance IRI.
+2. Call `get_resource` on that IRI to see its actual properties, values, and
+   relationships. This shows you what the instances really look like — which
+   attributes are populated, which carry a human-readable label, an identifier,
+   a status, a description, etc.
+
+Use this sample to inform the column choices below, rather than guessing from the
+class IRI alone.
+
+The skill also runs SPARQL queries to:
 1. **Discover properties**: Find common properties used by instances of the class
 2. **Count instances**: Estimate the number of instances
 3. **Check hierarchy**: Detect subclasses and superclasses
 4. **Suggest columns**: Recommend relevant columns for the instances table
+
+### Choosing columns for the instances table
+
+From the sample instance and the discovered properties, **pick up to seven
+attributes that best describe an instance** for the `sparqlAsyncTable`. Favor the
+attributes a person would use to recognize and tell apart instances, typically:
+
+- a **label / name** (almost always include this as the first column),
+- a **description** (e.g. `visoto:description`),
+- an **identifier / ID** (registry number, code, IRI fragment),
+- a **status** or lifecycle state (active/dissolved, valid/invalid, …),
+- a **type / category** that subdivides the class,
+- a **date** (created, valid-from, modified),
+- one or two other **high-signal, well-populated** attributes.
+
+Prefer properties that are populated across most instances (a per-predicate
+`COUNT` is a good proxy for how useful a column is) and skip sparse or purely
+technical ones. Cap the table at **seven columns** for readability — additional
+attributes belong on the instance page, not the class table.
 
 This information is displayed before creating the template and used to generate sensible default queries.
 
@@ -120,11 +162,16 @@ This information is displayed before creating the template and used to generate 
 
 ## Workflow
 
-1. **Query SPARQL endpoint** to gather information about the class
-2. **Display findings** (instance count, common properties, hierarchy)
-3. **Generate template** with appropriate SPARQL queries and partials
-4. **Create/update file** with backup if updating
-5. **Show success message** with file path and next steps
+1. **Analyze a sample instance** — fetch one instance of the class via the visoto
+   MCP server (`get_resource`) to see its real properties and values
+2. **Query SPARQL endpoint** to gather information about the class (property
+   frequency, instance count, hierarchy)
+3. **Choose instance-table columns** — pick up to seven attributes that best
+   describe an instance (label, description, ID, status, …)
+4. **Display findings** (instance count, chosen columns, hierarchy)
+5. **Generate template** with appropriate SPARQL queries and partials
+6. **Create/update file** with backup if updating
+7. **Show success message** with file path and next steps
 
 ---
 

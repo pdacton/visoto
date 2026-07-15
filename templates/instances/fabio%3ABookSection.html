@@ -1,0 +1,59 @@
+<!-- BookSection Instance Template
+     A fabio:BookSection is a book chapter serving as a source publication for Plazi
+     treatments. Shows its bibliographic attributes, its component parts (figures),
+     and the treatments published in it. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  <!-- Bibliographic attributes (title, creator, date, pages, ...) -->
+  {{ template "literals" . }}
+
+  <!-- Component parts (figures, ...) -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="parts" class="d-none">
+          SELECT ?part ?type WHERE {
+            ?? fabio:hasPart ?part .
+            OPTIONAL { ?part a ?type . }
+          } LIMIT 300
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.parts
+            "id" "parts"
+            "title" "Parts"
+            "icon" "photo"
+            "iconVar" "type")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Treatments published in this section -->
+  <div class="row">
+    <div class="col">
+      <div class="mb-3">
+        <sparql-query id="publishedTreatments" class="d-none">
+          SELECT ?treatment ?title ?date WHERE {
+            ?treatment trt:publishedIn ?? .
+            OPTIONAL { ?treatment dc:title ?title . }
+            OPTIONAL { ?treatment dc:date ?date . }
+          } LIMIT 300
+        </sparql-query>
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.publishedTreatments
+            "id" "publishedTreatments"
+            "title" "Treatments Published In"
+            "icon" "file-description"
+            "iconVar" "Treatment")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Outgoing / incoming relationships (collapsed) -->
+  {{ template "relationships" . }}
+
+{{ end }}
