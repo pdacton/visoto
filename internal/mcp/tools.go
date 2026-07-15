@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -196,12 +198,19 @@ func (tc *toolContext) handleRunSPARQLQuery(ctx context.Context, request goMcp.C
 	return toMCPResult(r)
 }
 
-// handleDiscoverClasses lists distinct RDF types in the endpoint.
+// handleDiscoverClasses lists distinct RDF types in the endpoint, optionally
+// scoped to a single named graph.
 func (tc *toolContext) handleDiscoverClasses(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	limit := getIntParam(request, "limit", 100)
 	endpoint := getStringParam(request, "endpoint")
+	graph := getStringParam(request, "graph")
 
-	query := fmt.Sprintf(queryDiscoverClasses, limit)
+	var query string
+	if graph != "" {
+		query = fmt.Sprintf(queryDiscoverClassesInGraph, graph, limit)
+	} else {
+		query = fmt.Sprintf(queryDiscoverClasses, limit)
+	}
 	r := tc.run(ctx, query, endpoint, false)
 	return toMCPResult(r)
 }
@@ -249,6 +258,75 @@ func (tc *toolContext) handleSearchByLabel(ctx context.Context, request goMcp.Ca
 
 	r := tc.run(ctx, query, endpoint, false)
 	return toMCPResult(r)
+}
+
+// handleListNamedGraphs lists the named graphs in the endpoint. It tries
+// GraphDB's onto:graphs system predicate first (fast, with per-graph triple
+// estimates); stores that don't support it match 0 rows, triggering a
+// portable rdf:type scan without counts.
+func (tc *toolContext) handleListNamedGraphs(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+	limit := getIntParam(request, "limit", 500)
+	endpoint := getStringParam(request, "endpoint")
+
+	r := tc.run(ctx, fmt.Sprintf(queryListNamedGraphsGraphDB, limit), endpoint, false)
+	if r.Error == "" && r.RowCount == 0 {
+		r = tc.run(ctx, fmt.Sprintf(queryListNamedGraphsPortable, limit), endpoint, false)
+		if r.Error == "" {
+			r.Hints = append(r.Hints, "This endpoint does not support GraphDB's onto:graphs system predicate; used a portable rdf:type scan instead (slower on large stores; triple counts unavailable).")
+		}
+	} else if r.Error == "" {
+		tc.addTripleEstimates(&r, endpoint)
+	}
+	if r.Error == "" && r.RowCount == limit {
+		r.Hints = append(r.Hints, fmt.Sprintf("Result may be truncated at limit=%d — raise the limit parameter to see more graphs.", limit))
+	}
+	return toMCPResult(r)
+}
+
+// addTripleEstimates enriches each graph row with an approximate triple count
+// from GraphDB's sys:statistics pseudo-graph, then sorts rows by size
+// descending. Fast path only — other stores return wrong results or errors
+// for the statistics pseudo-graph.
+func (tc *toolContext) addTripleEstimates(r *toolResult, endpoint string) {
+	queries := make([]sparql.ExtractedQuery, 0, len(r.Results))
+	for _, row := range r.Results {
+		if iri, ok := row["graph"].(string); ok && iri != "" {
+			queries = append(queries, sparql.ExtractedQuery{
+				ID:       iri,
+				Query:    fmt.Sprintf(queryGraphTripleCountGraphDB, iri),
+				Endpoint: endpoint,
+			})
+		}
+	}
+	counts := tc.preprocessor.ExecuteQueriesParallel(queries, tc.cfg.GetTimeout(), "")
+
+	enriched := false
+	for _, row := range r.Results {
+		iri, _ := row["graph"].(string)
+		result, ok := counts[iri]
+		if !ok || result.Error != "" || len(result.Bindings) == 0 {
+			continue
+		}
+		if v, found := result.Bindings[0]["triples"]; found {
+			if n, err := strconv.Atoi(v.Value); err == nil {
+				row["triples_estimate"] = n
+				enriched = true
+			}
+		}
+	}
+	if !enriched {
+		return
+	}
+
+	sort.SliceStable(r.Results, func(i, j int) bool {
+		ni, iOk := r.Results[i]["triples_estimate"].(int)
+		nj, jOk := r.Results[j]["triples_estimate"].(int)
+		if iOk != jOk {
+			return iOk // rows with an estimate sort before rows without
+		}
+		return ni > nj
+	})
+	r.Hints = append(r.Hints, "triples_estimate comes from GraphDB index statistics and is approximate.")
 }
 
 // handleCountInstances returns instance counts per class or for a specific class.

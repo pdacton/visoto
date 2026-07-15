@@ -95,9 +95,14 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 	// discover_classes
 	mcpServer.AddTool(
 		goMcp.NewTool("discover_classes",
-			goMcp.WithDescription("Discover the most common RDF types/classes in an endpoint, ordered by instance count."),
+			goMcp.WithDescription("Discover the most common RDF types/classes in an endpoint, ordered by instance count. "+
+				"Provide graph to scope discovery to a single named graph."),
 			goMcp.WithString("endpoint",
 				goMcp.Description("Endpoint name or URL. Uses the default endpoint if omitted."),
+			),
+			goMcp.WithString("graph",
+				goMcp.Description("Optional named-graph IRI to scope discovery to a single graph, "+
+					"e.g. https://lindas.admin.ch/fch/termdat. Fast even on very large graphs."),
 			),
 			goMcp.WithNumber("limit",
 				goMcp.Description("Maximum number of classes to return. Default: 100."),
@@ -195,6 +200,30 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
 		tc.handleCountInstances,
+	)
+
+	// list_named_graphs
+	mcpServer.AddTool(
+		goMcp.NewTool("list_named_graphs",
+			goMcp.WithDescription(
+				"List the named graphs in a SPARQL triple store with approximate triple counts per graph. "+
+					"Fast on GraphDB-based stores (like LINDAS); falls back to a slower portable scan without "+
+					"counts elsewhere (only graphs containing rdf:type triples are found there). "+
+					"Use discover_classes with the graph parameter to see what a graph contains.",
+			),
+			goMcp.WithString("endpoint",
+				goMcp.Description("Endpoint name or URL. Uses the default endpoint if omitted."),
+			),
+			goMcp.WithNumber("limit",
+				goMcp.Description("Maximum number of graphs to return. Default: 500."),
+				goMcp.DefaultNumber(500),
+				goMcp.Min(1),
+				goMcp.Max(5000),
+			),
+			goMcp.WithReadOnlyHintAnnotation(true),
+			goMcp.WithDestructiveHintAnnotation(false),
+		),
+		tc.handleListNamedGraphs,
 	)
 
 	// Build the streamable HTTP transport (POST /mcp). The context func derives

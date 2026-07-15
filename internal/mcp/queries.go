@@ -59,3 +59,40 @@ WHERE { ?s a <%s> }
 `
 
 const queryCheckEndpoint = `ASK {}`
+
+// GraphDB system predicate: lists all named graphs in ~0.3s on LINDAS.
+// Non-GraphDB stores match nothing (0 rows) — the handler falls back to
+// queryListNamedGraphsPortable. Full IRI on purpose — avoids depending on
+// a configured onto: prefix.
+const queryListNamedGraphsGraphDB = `
+SELECT ?graph
+WHERE { ?s <http://www.ontotext.com/graphs> ?graph }
+LIMIT %d
+`
+
+// Portable fallback. The rdf:type restriction is load-bearing: an
+// unrestricted { ?s ?p ?o } scan times out on large stores.
+const queryListNamedGraphsPortable = `
+SELECT DISTINCT ?graph
+WHERE { GRAPH ?graph { ?s a ?t } }
+LIMIT %d
+`
+
+// GraphDB statistics-based triple count for one named graph (~0.16s).
+// Approximate (index statistics); GraphDB-only — other stores return wrong
+// results (QLever: 0) or errors (Virtuoso: HTTP 400), so never run it on
+// the fallback path.
+const queryGraphTripleCountGraphDB = `
+SELECT (COUNT(*) AS ?triples)
+FROM <http://www.ontotext.com/owlim/system#statistics>
+WHERE { GRAPH <%s> { ?s ?p ?o } }
+`
+
+// Graph-scoped variant of queryDiscoverClasses (<1s even on huge graphs).
+const queryDiscoverClassesInGraph = `
+SELECT ?type (COUNT(?s) AS ?count)
+WHERE { GRAPH <%s> { ?s a ?type } }
+GROUP BY ?type
+ORDER BY DESC(?count)
+LIMIT %d
+`
