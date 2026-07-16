@@ -114,6 +114,53 @@
     border-color: var(--tblr-border-color-translucent);
 }
 
+/* Literal cells capped by maxInitialWidth wrap instead of clipping, clamped to a
+   few lines. Scoped to body rows so header cells keep the default nowrap.
+   line-height is pinned so the max-height calc cuts exactly on a line boundary
+   (3 lines + 12px vertical cell padding each side, measured 2026-07-16).
+   max-height caps the cell's LAYOUT height, so Tabulator's row measurement stays
+   honest — do not replace with a visual-only clamp like -webkit-line-clamp. */
+.tabulator .tabulator-row .tabulator-cell.vs-cell-wrap {
+    --vs-wrap-lines: 3;
+    --vs-wrap-line-height: 20px;
+    white-space: normal;
+    line-height: var(--vs-wrap-line-height);
+    max-height: calc(var(--vs-wrap-lines) * var(--vs-wrap-line-height) + 24px);
+    overflow: hidden;
+}
+
+/* Fade-out over the last visible line, only when content is actually hidden.
+   .vs-clipped is toggled per cell in sparql-table.html (markClippedCells). */
+.tabulator .tabulator-row .tabulator-cell.vs-cell-wrap.vs-clipped::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: calc(var(--vs-wrap-line-height) + 12px);
+    background: linear-gradient(to bottom, transparent, var(--tblr-bg-surface) 90%);
+    pointer-events: none;
+}
+
+/* Keep the fade color in sync with the row hover background */
+.tabulator .tabulator-row.tabulator-selectable:hover .tabulator-cell.vs-cell-wrap.vs-clipped::after {
+    background: linear-gradient(to bottom, transparent, var(--tblr-bg-surface-tertiary) 90%);
+}
+
+/* Full-text hover tooltip on clipped cells - match Tabler tooltip styling */
+.tabulator-tooltip {
+    max-width: min(36em, 80vw);
+    background: var(--tblr-bg-surface-dark, #182433);
+    color: var(--tblr-light, #fcfdfe);
+    border: none;
+    border-radius: var(--tblr-border-radius, 4px);
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+    line-height: 1.4;
+    box-shadow: var(--tblr-box-shadow, 0 0.5rem 1rem rgba(0, 0, 0, 0.15));
+    white-space: normal;
+}
+
 /* Links in table cells */
 .tabulator .tabulator-cell a {
     color: var(--tblr-link-color);

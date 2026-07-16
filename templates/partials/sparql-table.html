@@ -273,19 +273,39 @@
         // detection, which drives variableHeight).
         function buildColumns(vars, sampleRow) {
           sampleRow = sampleRow || {};
+          // Heuristic cap so one long literal can't push other columns out of view
+          // (fitDataStretch otherwise sizes columns to full content width). Window
+          // width, not container width: always measurable, even in hidden containers.
+          // maxInitialWidth only bounds the initial fit — users can drag wider.
+          var capWidth = Math.max(Math.floor(window.innerWidth / 4), 250);
           return (vars || []).map(function(varName) {
             var binding = sampleRow[varName];
             var isLiteral = binding && binding.Type === 'literal';
             var isBadge = badgeVar && varName === badgeVar;
             var isIcon = iconVar && varName === iconVar;
-            return {
+            var col = {
               title: varName,
               field: varName,
               formatter: isIcon ? iconCellFormatter : (isBadge ? badgeCellFormatter : htmlCellFormatter),
               variableHeight: isLiteral,
+              maxInitialWidth: capWidth,
               sorter: valueSorter,
               accessorDownload: plainValueAccessor
             };
+            // Capped literal cells wrap and are clamped to a few lines (see
+            // .vs-cell-wrap in tabulator_overrides.css); the full text is shown
+            // in a hover tooltip, but only when the clamp actually hides content.
+            if (isLiteral) {
+              col.cssClass = "vs-cell-wrap";
+              col.tooltip = function(e, cell) {
+                var el = cell.getElement();
+                // "" suppresses the tooltip; false would render a literal "false"
+                // (Tabulator 6.3.1 treats false as content, see its loadTooltip)
+                if (el.scrollHeight <= el.clientHeight + 1) return "";
+                return plainValueAccessor(cell.getValue());
+              };
+            }
+            return col;
           });
         }
 
@@ -309,12 +329,13 @@
 
         // Base config shared by both modes: local pagination/sort over the loaded
         // rows. fitColumns keeps layout O(columns) — important for a 20k working set
-        // (fitDataStretch measures every cell and janks). Inline (small) tables use
-        // fitDataStretch for nicer sizing.
+        // (fitData* measures every cell and janks). Inline (small) tables use
+        // fitDataStretch: content-sized columns, last column stretches to fill the
+        // card. NOT fitDataFill — it re-runs layout on mouseup and discards manual
+        // column resizes (Tabulator 6.3.1).
         function baseConfig(layout) {
           return {
             layout: layout,
-            resizableColumnFit: true,
             renderHorizontal: "virtual",
             renderVertical: "virtual",
             movableColumns: true,
@@ -349,6 +370,23 @@
 
         table.on("tableBuilt", function() { if (window.lucide) lucide.createIcons(); });
         table.on("renderComplete", function() { if (window.lucide) lucide.createIcons(); });
+
+        // Mark clamped literal cells whose content is actually hidden, so the CSS
+        // fade-out indicator only appears on truly truncated cells.
+        function markClippedCells() {
+          document.querySelectorAll("#{{ $id }}-table .tabulator-cell.vs-cell-wrap").forEach(function(el) {
+            el.classList.toggle("vs-clipped", el.scrollHeight > el.clientHeight + 1);
+          });
+        }
+        table.on("renderComplete", markClippedCells);
+        table.on("columnResized", markClippedCells);
+
+        // Tabulator 6.3.1 keeps a shown tooltip open after the mouse leaves the
+        // cell (its mouseoutCheck only cancels pending tooltips); hide it via the
+        // tooltip module's own cleanup path.
+        table.on("cellMouseOut", function() {
+          if (table.modules && table.modules.tooltip) table.modules.tooltip.clearPopup();
+        });
 
         // ================= WORKING-SET data loading =================
         var wsBaseUrl = "/api/async-table-data/{{ $id }}?iri={{ urlquery .iri }}&keyVar={{ urlquery $keyVar }}&max={{ urlquery $max }}";
