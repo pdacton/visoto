@@ -216,7 +216,7 @@
     viewOptions: {
       onIriClick: function(iriEvent) {
         var iri = iriEvent.iri || iriEvent;
-        window.open('/resource/' + encodeURIComponent(iri), '_blank');
+        window.open(visotoResourceHref(iri), '_blank');
       },
     },
   };

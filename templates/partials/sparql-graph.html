@@ -353,7 +353,7 @@
           viewOptions: {
             onIriClick: function(iriEvent) {
               var iri = iriEvent.iri || iriEvent;
-              window.open('/resource?iri=' + encodeURIComponent(iri), '_blank');
+              window.open(visotoResourceHref(iri), '_blank');
             },
           },
         };

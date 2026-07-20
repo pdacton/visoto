@@ -565,7 +565,7 @@
                   e.preventDefault();
                   e.stopPropagation();
 
-                  var url = '/resource?iri=' + encodeURIComponent(idToUri[nodeId]);
+                  var url = visotoResourceHref(idToUri[nodeId]);
                   if (e.ctrlKey || e.metaKey) {
                     // Ctrl/Cmd+Click: open in new tab
                     window.open(url, '_blank');
