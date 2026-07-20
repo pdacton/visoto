@@ -13,6 +13,7 @@ Available skills in `.claude/skills/`:
 - **branding** - Apply Visoto brand guidelines for RDF visualization tool including visual identity, voice, technical conventions, and code standards
 - **instanceTemplate** - Generate Visoto template files for RDF instances showing attributes, relationships, and connections
 - **classTemplate** - Generate Visoto template files for RDF classes showing instances and class hierarchy
+- **iconGeneration** - Generate resource icons (squircle + Lucide icon + accent color) into static/img/resource/
 
 Use these skills when working on related tasks.
 
