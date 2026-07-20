@@ -27,6 +27,7 @@
     - iconVar:  (optional) SPARQL var whose IRI selects a resource row icon
     - badgeVar: (optional) SPARQL var rendered as a Tabler badge
     - groupBy:  (optional) SPARQL var the table is initially grouped by
+    - collapsed: (optional) if truthy, the loaded table's card starts collapsed
     - trigger:  (optional) HTMX trigger; defaults to "load" (eager, like metrics).
                 Pass a custom event (e.g. "showData") to defer until first reveal.
     - searchProp: (optional) name property IRI used by the working-set "Search all"
@@ -53,6 +54,7 @@
   {{ with .iconVar }}{{ $url = printf "%s&iconVar=%s" $url (urlquery .) }}{{ end }}
   {{ with .badgeVar }}{{ $url = printf "%s&badgeVar=%s" $url (urlquery .) }}{{ end }}
   {{ with .groupBy }}{{ $url = printf "%s&groupBy=%s" $url (urlquery .) }}{{ end }}
+  {{ if .collapsed }}{{ $url = printf "%s&collapsed=1" $url }}{{ end }}
   {{/* Working-set hints — the handler auto-detects the mode; these are only used
        when it decides a class is large. searchProp scopes the "Search all"
        rebuild; max caps the working-set size. */}}
@@ -70,6 +72,9 @@
           {{ with .title }}<h3 class="card-title mb-0">{{ . }}</h3>{{ end }}
         </div>
       {{ end }}
+      {{/* When the loaded table will start collapsed, the placeholder shows only its
+           header — skipping the skeleton body avoids an expanded-then-collapsed flash. */}}
+      {{ if not .collapsed }}
       <div class="card-body">
         <!-- Columns are unknown pre-query, so row widths are decorative; kept
              short because empty/error results swap in a collapsed card -->
@@ -77,6 +82,7 @@
         <div class="mb-2"><span class="placeholder col-2 me-2"></span><span class="placeholder col-5 me-2"></span><span class="placeholder col-3"></span></div>
         <div><span class="placeholder col-4 me-2"></span><span class="placeholder col-3 me-2"></span><span class="placeholder col-2"></span></div>
       </div>
+      {{ end }}
     </div>
   </div>
 

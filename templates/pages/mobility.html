@@ -1,0 +1,606 @@
+{{ define "pageTitle" }}Mobility &amp; Transport{{ end }}
+{{ define "pageSubtitle" }}Where Swiss public transport stops, what it costs to travel between them, and who flies.{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Station.svg" alt="Mobility &amp; Transport" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Station.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>About this theme</h2>
+
+<p>
+  Four LINDAS graphs describe how people move around Switzerland. They are not four
+  independent datasets &mdash; they stack. The
+  <strong>service point register (DiDok)</strong> holds the <em>places</em>: every stop, station,
+  quay and cable-car terminal in the country. <strong>NOVA</strong> holds the <em>prices</em>
+  between those places. The <strong>Open Transport Data schema</strong> is the <em>dictionary</em>
+  that defines the terms both of them use. Alongside them, the
+  <strong>Federal Office of Civil Aviation</strong> publishes aviation statistics, which stand on
+  their own.
+</p>
+
+<!-- Metric strip: one bounded COUNT per headline figure. -->
+<sparql-async id="mobilityStopCount" class="d-none">
+  SELECT (COUNT(?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityOperatorCount" class="d-none">
+  SELECT (COUNT(?org) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?org a schema:Organization .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityRelationCount" class="d-none">
+  SELECT (COUNT(?rel) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/nova&gt; {
+      ?rel a &lt;https://lod.opentransportdata.swiss/vocab/Relation&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityObservationCount" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foca/cube&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "mobilityStopCount"
+      "title" "Stops"
+      "href" "/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Station"
+      "icon" "/static/img/resource/Station.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "mobilityOperatorCount"
+      "title" "Operators"
+      "href" "/resource?iri=http%3A%2F%2Fschema.org%2FOrganization"
+      "icon" "/static/img/resource/Organization.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "mobilityRelationCount"
+      "title" "Priced Relations"
+      "href" "/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FRelation"
+      "icon" "/static/img/resource/Relation.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "mobilityObservationCount"
+      "title" "Aviation Observations"
+      "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
+      "icon" "/static/img/resource/Cube.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- The network                                                    -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">The network: where you can go</h2>
+
+<p>
+  Every stop in the register carries a means of transport, and the spread of those values tells
+  the Swiss story better than any summary could. Buses dominate by an order of magnitude, as they
+  do anywhere. What is distinctive is the third group below: cable cars, chairlifts, funiculars
+  and rack railways are not tourist attractions filed away in a separate registry &mdash; they sit
+  in the same national register as the trams of Zurich, with the same kind of identifier, because
+  in Switzerland a cable car up a mountain is simply public transport.
+</p>
+
+<!--
+  Each card links to the mode's own resource page, where the stops served by that mean of
+  transport are listed. Counts are distinct stops, loaded lazily like the metrics above.
+  A map belongs here: every stop carries wgs84 lat/long. Deferred for now — when it lands,
+  it goes directly below this heading, above the bands.
+
+  One <sparql-async> per mode: the metric handler matches these by their literal id, so
+  they cannot be generated from a loop over the cards.
+-->
+<sparql-async id="mobilityMode-bus" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/bus&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-train" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/train&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-tram" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/tram&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-metro" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/metro&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-cable-car" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/cable-car&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-chairlift" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/chairlift&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-cable-railway" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/cable-railway&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-rack-railway" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/rack-railway&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-boat" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/boat&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="mobilityMode-elevator" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/elevator&gt; .
+    }
+  }
+</sparql-async>
+
+<h3 class="mt-4">Road &amp; rail</h3>
+<div class="row row-deck row-cards">
+  {{ template "mobilityModeCard" (dict "slug" "bus"   "label" "Bus"   "desc" "Post buses and municipal services — the backbone of the network.") }}
+  {{ template "mobilityModeCard" (dict "slug" "train" "label" "Train" "desc" "Everything from intercity rail to narrow-gauge mountain lines.") }}
+  {{ template "mobilityModeCard" (dict "slug" "tram"  "label" "Tram"  "desc" "Street-running networks in the larger cities.") }}
+  {{ template "mobilityModeCard" (dict "slug" "metro" "label" "Metro" "desc" "Switzerland's only metro runs in Lausanne.") }}
+</div>
+
+<h3 class="mt-4">Mountain</h3>
+<div class="row row-deck row-cards">
+  {{ template "mobilityModeCard" (dict "slug" "cable-car"     "label" "Cable car"     "desc" "Gondolas and aerial tramways, timetabled like any other line.") }}
+  {{ template "mobilityModeCard" (dict "slug" "chairlift"     "label" "Chairlift"     "desc" "Open lifts, most numerous of the mountain modes.") }}
+  {{ template "mobilityModeCard" (dict "slug" "cable-railway" "label" "Funicular"     "desc" "Cable-hauled railways climbing steep slopes.") }}
+  {{ template "mobilityModeCard" (dict "slug" "rack-railway"  "label" "Rack railway"  "desc" "Cog railways for gradients ordinary adhesion cannot manage.") }}
+</div>
+
+<h3 class="mt-4">Water &amp; other</h3>
+<div class="row row-deck row-cards">
+  {{ template "mobilityModeCard" (dict "slug" "boat"     "label" "Boat"     "desc" "Lake and river landing stages.") }}
+  {{ template "mobilityModeCard" (dict "slug" "elevator" "label" "Elevator" "desc" "Four public lifts are registered as transport stops in their own right.") }}
+</div>
+
+<!-- Counted live rather than written into the prose: the register is reloaded periodically
+     and the totals drift. -->
+<sparql-async id="mobilityMode-unknown" class="d-none">
+  SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
+      ?stop a gtfs:Station ;
+            &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; &lt;https://lod.opentransportdata.swiss/mean-of-transport/unknown&gt; .
+    }
+  }
+</sparql-async>
+
+<p class="text-secondary mt-3">
+  A further
+  <span hx-get="/api/metric/mobilityMode-unknown" hx-trigger="load" hx-swap="innerHTML">
+    <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+  </span>
+  stops are recorded with an <em>unknown</em> mean of transport, and stops served by several modes
+  are counted once per mode, so the figures above sum to more than the total number of stops.
+</p>
+
+<!-- ============================================================= -->
+<!-- NOVA fare model                                                -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">What it costs: the NOVA fare model</h2>
+
+<p>
+  NOVA describes Swiss public-transport pricing, and it is by far the largest graph in this theme.
+  It does not contain timetables or ticket prices you can look up directly; it contains the
+  <em>machinery</em> that produces a price. That machinery comes in two flavours, which is the key
+  to reading the class list below.
+</p>
+
+<div class="row row-cards mb-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="grid-3x3" class="me-2"></i>Zone-based pricing
+        </h3>
+        <p class="text-secondary mb-0">
+          Used by the regional fare networks. Stops are grouped into a
+          <a href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FZone">Zone</a>,
+          zones are collected into a
+          <a href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FZoningPlan">ZoningPlan</a>
+          (a region may run several &mdash; one for season tickets, another for single journeys),
+          and the price follows from how many zones you cross.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="route" class="me-2"></i>Direct-traffic pricing
+        </h3>
+        <p class="text-secondary mb-0">
+          Used for journeys across the national network. A
+          <a href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FRelation">Relation</a>
+          is a priced connection between two stops, and a
+          <a href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FPreistabelle">Preistabelle</a>
+          (price table) assigns the fare. With over half a million relations, this is where the
+          bulk of the graph lives.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 class="mt-4">Fare networks</h3>
+
+<p>
+  An <a href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FAlliance">Alliance</a>
+  (<em>Verbund</em>) is a regional fare union &mdash; the body whose zone plan applies where you
+  are travelling. Most people in Switzerland hold a season ticket issued by one of these.
+</p>
+
+<sparql-async id="mobilityAlliances" class="d-none">
+  SELECT ?alliance ?label WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/nova&gt; {
+      ?alliance a &lt;https://lod.opentransportdata.swiss/vocab/Alliance&gt; .
+      OPTIONAL { ?alliance rdfs:label ?label }
+    }
+  } ORDER BY ?label
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "mobilityAlliances"
+      "title" "Fare networks (Verbünde)"
+      "icon" "ticket"
+      "collapsed" true) }}
+</div>
+
+<h3 class="mt-4">Classes in the NOVA graph</h3>
+
+<p>
+  Roughly half of this vocabulary is untranslated German, so the descriptions below come from the
+  Open Transport Data schema and are worth reading as a glossary:
+  <em>Tarifwertpreisauspraegung</em> and <em>Relationsgebiet</em> are not self-explanatory to
+  anyone.
+</p>
+
+<sparql-async id="mobilityNovaClasses" class="d-none">
+  SELECT ?class ?description ?instances WHERE {
+    {
+      SELECT ?class (COUNT(?s) AS ?instances) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sbb/nova&gt; {
+          ?s a ?class .
+        }
+      } GROUP BY ?class
+    }
+    OPTIONAL {
+      GRAPH &lt;https://lindas.admin.ch/sbb/otd-schema&gt; {
+        ?class rdfs:comment ?description .
+        FILTER (STR(?description) != "")
+      }
+    }
+  } ORDER BY DESC(?instances)
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "mobilityNovaClasses"
+      "title" "NOVA classes"
+      "icon" "shapes"
+      "iconVar" "class"
+      "collapsed" true) }}
+</div>
+
+<!-- ============================================================= -->
+<!-- FOCA aviation                                                  -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">By air: civil aviation</h2>
+
+<p>
+  The Federal Office of Civil Aviation (FOCA / BAZL) publishes its statistics as
+  <a href="/resource?iri=https%3A%2F%2Fcube.link%2FCube">data cubes</a>. The graph holds eighteen
+  of them, but that number overstates the variety: they are re-published versions of just three
+  subjects. The cards below point at the current version of each.
+</p>
+
+<div class="row row-deck row-cards">
+
+  <div class="col-md-4">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Ftransport.ld.admin.ch%2Ffoca%2FFOCA_Air_traffic_movements%2F8">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <i data-lucide="plane-takeoff" class="me-3"></i>
+          <h3 class="card-title m-0">Air traffic movements</h3>
+        </div>
+        <div class="text-secondary mt-auto">
+          Annual movements per aerodrome, by category. One movement is a single take-off
+          <em>or</em> landing &mdash; a return flight counts as two.
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Ftransport.ld.admin.ch%2Ffoca%2FPassenger_statistics%2F3">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <i data-lucide="users" class="me-3"></i>
+          <h3 class="card-title m-0">Passengers</h3>
+        </div>
+        <div class="text-secondary mt-auto">
+          Passengers at aerodromes and mountain landing sites &mdash; the latter a category of
+          airfield few countries would need.
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Ftransport.ld.admin.ch%2Ffoca%2FAir_passengers_rights%2F4">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <i data-lucide="scale" class="me-3"></i>
+          <h3 class="card-title m-0">Passenger rights</h3>
+        </div>
+        <div class="text-secondary mt-auto">
+          Reports filed by air passengers each year. FOCA pursues those within its jurisdiction;
+          unsigned or incomplete reports close automatically after six months.
+        </div>
+      </div>
+    </a>
+  </div>
+
+</div>
+
+<p class="text-secondary mt-3">
+  Earlier versions of each cube remain published and can be reached from the
+  <a href="/resource?iri=https%3A%2F%2Fcube.link%2FCube">cube list</a>; an older
+  <em>Air traffic statistics movements</em> series is also present.
+</p>
+
+<!-- ============================================================= -->
+<!-- Vocabulary                                                     -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">The vocabulary</h2>
+
+<p>
+  The Open Transport Data schema is tiny &mdash; a few hundred triples &mdash; but it defines the
+  terms that the seven million triples of NOVA are written in. It is the Rosetta Stone for
+  everything above.
+</p>
+
+<sparql-async id="mobilityOtdClasses" class="d-none">
+  SELECT ?class ?label ?comment WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sbb/otd-schema&gt; {
+      ?class a rdfs:Class .
+      OPTIONAL { ?class rdfs:label ?label }
+      OPTIONAL { ?class rdfs:comment ?comment . FILTER (STR(?comment) != "") }
+    }
+  } ORDER BY ?class
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "mobilityOtdClasses"
+      "title" "Open Transport Data classes"
+      "icon" "book-marked"
+      "iconVar" "class"
+      "collapsed" true) }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">The datasets</h2>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Dataset</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsbb%2Fdidok">Service points (DiDok)</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">SBB &mdash; Swiss Federal Railways</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-content"><code>https://lindas.admin.ch/sbb/didok</code></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~983,000 triples</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">
+          Stops with coordinates, elevation, canton, municipality and operator; linked to
+          <code>geo.ld.admin.ch</code> via <code>owl:sameAs</code>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Landing page</div>
+        <div class="datagrid-content">
+          <a href="https://opentransportdata.swiss" target="_blank" rel="noopener">opentransportdata.swiss</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Dataset</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsbb%2Fnova">NOVA fare data</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">SBB &mdash; Swiss Federal Railways</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-content"><code>https://lindas.admin.ch/sbb/nova</code></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~7.3 million triples &mdash; the largest in this theme</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">Zone plans, fare networks, priced relations and price tables</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Landing page</div>
+        <div class="datagrid-content">
+          <a href="https://opentransportdata.swiss" target="_blank" rel="noopener">opentransportdata.swiss</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Dataset</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoca%2Fcube">Civil aviation statistics</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">FOCA &mdash; Federal Office of Civil Aviation</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-content"><code>https://lindas.admin.ch/foca/cube</code></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~1.7 million triples &mdash; 18 cubes, 3 subjects</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">Movements, passengers and passenger-rights reports by year and aerodrome</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Landing page</div>
+        <div class="datagrid-content">
+          <a href="https://www.bazl.admin.ch" target="_blank" rel="noopener">bazl.admin.ch</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Dataset</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsbb%2Fotd-schema">Open Transport Data schema</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">SBB &mdash; Swiss Federal Railways</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-content"><code>https://lindas.admin.ch/sbb/otd-schema</code></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~300 triples &mdash; 15 classes, 48 properties</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">The vocabulary underpinning DiDok and NOVA</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">SPARQL endpoint</div>
+        <div class="datagrid-content">
+          <a href="https://lindas.admin.ch/query" target="_blank" rel="noopener">lindas.admin.ch/query</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ end }}
+
+
+{{/*
+  Card for one mean of transport. The stop count is loaded lazily from a matching
+  <sparql-async id="mobilityMode-<slug>"> declared below, so each card needs its own
+  query block — the metric handler resolves them by literal id and cannot loop.
+*/}}
+{{ define "mobilityModeCard" }}
+  <div class="col-sm-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fmean-of-transport%2F{{ .slug }}">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <img src="/static/img/resource/{{ .slug }}.svg" alt="" width="40" height="40" class="me-3">
+          <h3 class="card-title m-0">{{ .label }}</h3>
+        </div>
+        <div class="text-secondary mt-auto">{{ .desc }}</div>
+        <div class="mt-2">
+          <span class="h2 m-0"
+                hx-get="/api/metric/mobilityMode-{{ .slug }}"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="text-secondary">stops</span>
+        </div>
+      </div>
+    </a>
+  </div>
+{{ end }}

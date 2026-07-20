@@ -1,0 +1,197 @@
+<!-- cube:Cube Instance Template — dataset profile: version status, dimensions,
+     observation count, and a jump-off to visualize.admin.ch -->
+
+{{ template "pageHeader" . }}
+
+<sparql-query id="title" class="d-none">
+  SELECT ?title WHERE {
+    ?? schema:name ?title .
+    FILTER(lang(?title) = visoto:dispLang || lang(?title) = "")
+  } LIMIT 1
+</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageSubtitle" class="d-none">
+  SELECT ?description WHERE {
+    ?? visoto:description ?description .
+  } LIMIT 1
+</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+<!-- Version check: expiry date of THIS cube plus the newest non-expired sibling
+     (LINDAS convention: versions are numeric IRI tail segments, .../cube/N). -->
+<sparql-query id="cubeVersionCheck" class="d-none">
+  SELECT ?expires ?newest ?newestVersion WHERE {
+    OPTIONAL { ?? schema:expires ?expires }
+    OPTIONAL {
+      BIND(REPLACE(STR(??), "/[0-9]+$", "/") AS ?base)
+      ?newest a cube:Cube .
+      FILTER(STRSTARTS(STR(?newest), ?base))
+      FILTER(STR(?newest) != STR(??))
+      FILTER(REGEX(REPLACE(STR(?newest), ?base, ""), "^/?[0-9]+$"))
+      FILTER NOT EXISTS { ?newest schema:expires ?e2 }
+      OPTIONAL { ?newest schema:version ?newestVersion }
+    }
+  } ORDER BY DESC(?newestVersion) LIMIT 1
+</sparql-query>
+
+<!-- Marker IRIs announcing which applications carry this cube. -->
+<sparql-query id="cubeApps" class="d-none">
+  SELECT ?app WHERE {
+    ?? schema:workExample ?app .
+    FILTER(isIRI(?app))
+  } LIMIT 10
+</sparql-query>
+
+{{ define "pageContent" }}
+<div>
+
+  {{ $vc := .QueryResults.cubeVersionCheck }}
+  {{ if $vc.Bindings }}
+    {{ $b := index $vc.Bindings 0 }}
+    {{ $exp := index $b "expires" }}
+    {{/* index on a missing key yields a zero Binding struct (truthy), so test .Value */}}
+    {{ if $exp.Value }}
+      <div class="alert alert-warning" role="alert">
+        <div class="d-flex align-items-center gap-2">
+          <i data-lucide="alert-triangle"></i>
+          <div>
+            <strong>This version is superseded</strong> &mdash; it expired {{ $exp.Value }}.
+            {{ $newest := index $b "newest" }}
+            {{ if $newest.Value }}
+              <a href="/resource?iri={{ urlquery $newest.Value }}" class="alert-link">Open the current version</a>.
+            {{ end }}
+          </div>
+        </div>
+      </div>
+    {{ end }}
+  {{ end }}
+
+  {{ range $binding := .QueryResults.cubeApps.Bindings }}
+    {{ if eq (index $binding "app").Value "https://ld.admin.ch/application/visualize" }}
+      <div class="mb-3">
+        <a href="https://visualize.admin.ch/browse?dataset={{ urlquery $.ResourceIRI }}&dataSource=Prod"
+           target="_blank" rel="noopener" class="btn btn-primary">
+          <i data-lucide="chart-column" class="me-1" style="width:1.1em;height:1.1em;"></i>
+          Open in visualize.admin.ch
+        </a>
+      </div>
+    {{ end }}
+  {{ end }}
+
+  <!-- Headline figures for this cube -->
+  <sparql-async id="cubeObservationCount" class="d-none">
+    SELECT (COUNT(?obs) AS ?count) WHERE {
+      ?? cube:observationSet/cube:observation ?obs .
+    }
+  </sparql-async>
+  <sparql-async id="cubeDimensionCount" class="d-none">
+    SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
+      ?? cube:observationConstraint/sh:property/sh:path ?dim .
+      FILTER(?dim != rdf:type)
+      FILTER(?dim != cube:observedBy)
+    }
+  </sparql-async>
+  <sparql-async id="cubeVersionMetric" class="d-none">
+    SELECT (COALESCE(SAMPLE(?v), "&ndash;") AS ?count) WHERE {
+      OPTIONAL { ?? schema:version ?v }
+    }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "cubeObservationCount"
+        "iri" .ResourceIRI
+        "title" "Observations"
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
+        "icon" "/static/img/resource/Cube.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "cubeDimensionCount"
+        "iri" .ResourceIRI
+        "title" "Dimensions"
+        "href" "#dimensions") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "cubeVersionMetric"
+        "iri" .ResourceIRI
+        "title" "Version"
+        "href" "#versions") }}
+  </div>
+
+  <!-- Dimensions decoded from the SHACL observation constraint -->
+  <div class="row" id="dimensions">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-async id="cubeDimensions" class="d-none">
+          SELECT ?dimension ?name ?scaleType ?dataKind ?datatype ?values WHERE {
+            { SELECT ?dim (SAMPLE(?n) AS ?name) (SAMPLE(?sc) AS ?scaleType)
+                     (SAMPLE(?dk) AS ?dataKind) (SAMPLE(?dt) AS ?datatype)
+                     (COUNT(DISTINCT ?inVal) AS ?values)
+              WHERE {
+                ?? cube:observationConstraint/sh:property ?p .
+                ?p sh:path ?dim .
+                FILTER(?dim != rdf:type)
+                FILTER(?dim != cube:observedBy)
+                OPTIONAL { ?p schema:name ?n .
+                           FILTER(lang(?n) = visoto:dispLang || lang(?n) = "en") }
+                OPTIONAL { ?p meta:scaleType ?sc }
+                OPTIONAL { ?p meta:dataKind/rdf:type ?dk }
+                OPTIONAL { ?p sh:datatype ?dt }
+                OPTIONAL { ?p sh:in/rdf:rest*/rdf:first ?inVal }
+              } GROUP BY ?dim }
+            BIND(?dim AS ?dimension)
+          }
+          ORDER BY ?name
+          LIMIT 200
+        </sparql-async>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "cubeDimensions"
+            "iri" .ResourceIRI
+            "title" "Dimensions"
+            "icon" "columns-3")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Other versions of this cube (numeric-tail sibling heuristic; empty for
+       unversioned cubes) -->
+  <div class="row" id="versions">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-async id="cubeVersions" class="d-none">
+          SELECT ?cube ?version ?status ?modified ?expires WHERE {
+            BIND(REPLACE(STR(??), "/[0-9]+$", "/") AS ?base)
+            ?cube a cube:Cube .
+            FILTER(STRSTARTS(STR(?cube), ?base))
+            FILTER(STR(?cube) != STR(??))
+            FILTER(REGEX(REPLACE(STR(?cube), ?base, ""), "^/?[0-9]+$"))
+            OPTIONAL { ?cube schema:version ?version }
+            OPTIONAL { ?cube schema:creativeWorkStatus/schema:name ?status .
+                       FILTER(lang(?status) = visoto:dispLang || lang(?status) = "en") }
+            OPTIONAL { ?cube schema:dateModified ?modified }
+            OPTIONAL { ?cube schema:expires ?expires }
+          }
+          ORDER BY DESC(?modified)
+          LIMIT 100
+        </sparql-async>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "cubeVersions"
+            "iri" .ResourceIRI
+            "title" "Other Versions"
+            "icon" "history"
+            "badgeVar" "status"
+            "collapsed" true)
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Attributes (name, description, dates, keywords, ...) -->
+  {{ template "literals" . }}
+
+  <!-- Incoming / outgoing connections -->
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

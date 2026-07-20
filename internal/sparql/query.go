@@ -108,7 +108,9 @@ func topLanguage(acceptLanguage string) string {
 	if len(langs) == 0 {
 		return "en"
 	}
-	return langs[0]
+	// RDF language tags on LINDAS are base codes ("en", "de"), so an "en-US"
+	// browser preference must compare as "en" or every lang() filter misses.
+	return strings.SplitN(langs[0], "-", 2)[0]
 }
 
 // expandMagicProperties replaces configured visoto:<key> tokens with their

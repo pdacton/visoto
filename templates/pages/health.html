@@ -1,0 +1,388 @@
+{{ define "pageTitle" }}Health{{ end }}
+{{ define "pageSubtitle" }}How Switzerland recorded a pandemic, and how it watches its medicine cabinet.{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Health.svg" alt="Health" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Health.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>About this theme</h2>
+
+<p>
+  Two LINDAS graphs cover public health, and they could hardly be more different in temperament.
+  The <strong>FOPH COVID-19 graph</strong> is a sealed archive: the complete daily record of the
+  pandemic in Switzerland &mdash; cases, deaths, hospitalizations, vaccinations &mdash; frozen at
+  1&nbsp;January 2023, when mandatory daily reporting ended. The
+  <strong>FONES supply-disruptions graph</strong> is its opposite, a living feed: every day the
+  Federal Office for National Economic Supply publishes a fresh snapshot of which vital medicines
+  are currently unavailable, and when they are expected back.
+</p>
+
+<!-- Metric strip: one bounded query per headline figure. -->
+<sparql-async id="healthCovidObservations" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+<sparql-async id="healthVaccinationRecords" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
+      &lt;https://health.ld.admin.ch/foph/covid19/vaccine-doses&gt; cube:observationSet/cube:observation ?obs .
+    }
+  }
+</sparql-async>
+<!-- Open disruptions are counted in the latest daily snapshot of the main cube (not the
+     daily-aggregate cube, which can lag a few days behind) so this figure always matches
+     the "currently in short supply" table below. -->
+<sparql-async id="healthOpenDisruptions" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; {
+      {
+        SELECT (MAX(?d) AS ?latest) WHERE {
+          &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; cube:observationSet/cube:observation ?o .
+          ?o schema:validFrom ?d .
+        }
+      }
+      &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; cube:observationSet/cube:observation ?obs .
+      ?obs schema:validFrom ?latest ;
+           &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/status&gt; &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/status/open&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="healthMedicinesTracked" class="d-none">
+  SELECT (COUNT(DISTINCT ?product) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; {
+      ?product a schema:DefinedTerm .
+      FILTER(STRSTARTS(STR(?product), "https://lindas.admin.ch/fones/supply-disruptions/product/"))
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "healthCovidObservations"
+      "title" "COVID-19 Observations"
+      "href" "/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Faffected"
+      "icon" "/static/img/resource/Pandemic.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "healthVaccinationRecords"
+      "title" "Vaccination Data Points"
+      "href" "/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Fvaccine-doses"
+      "icon" "/static/img/resource/Vaccination.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "healthOpenDisruptions"
+      "title" "Open Supply Disruptions"
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffones%2Fsupply-disruptions"
+      "icon" "/static/img/resource/Shortage.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "healthMedicinesTracked"
+      "title" "Medicines Tracked"
+      "href" "/resource?iri=http%3A%2F%2Fschema.org%2FDefinedTerm"
+      "icon" "/static/img/resource/Medicine.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- FOPH pandemic record                                           -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">The pandemic record</h2>
+
+<sparql-async id="healthReportingDays" class="d-none">
+  SELECT (COUNT(DISTINCT ?date) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
+      &lt;https://health.ld.admin.ch/foph/covid19/affected&gt; cube:observationSet/cube:observation ?obs .
+      ?obs &lt;https://health.ld.admin.ch/foph/covid19/dimension/date&gt; ?date .
+    }
+  }
+</sparql-async>
+
+<p>
+  From 24&nbsp;February 2020 &mdash; the day Switzerland confirmed its first case &mdash; to
+  1&nbsp;January 2023, the Federal Office of Public Health logged the pandemic day by day:
+  <span hx-get="/api/metric/healthReportingDays" hx-trigger="load" hx-swap="innerHTML">
+    <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+  </span>
+  days of reporting, for the country as a whole and for every canton. The data is organised as
+  three <a href="/resource?iri=https%3A%2F%2Fcube.link%2FCube">data cubes</a>, and unlike most
+  LINDAS datasets this one will never grow again: it is the finished statistical record of an
+  event, kept precisely because it is finished.
+</p>
+
+<div class="row row-deck row-cards">
+
+  <div class="col-md-4">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Faffected">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <i data-lucide="activity" class="me-3"></i>
+          <h3 class="card-title m-0">Cases, deaths &amp; hospitalizations</h3>
+        </div>
+        <div class="text-secondary mt-auto">
+          The epidemiological core: daily and cumulative counts per canton and for the whole
+          country, each with the reference population.
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Fvaccine-doses">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <i data-lucide="syringe" class="me-3"></i>
+          <h3 class="card-title m-0">Vaccine doses</h3>
+        </div>
+        <div class="text-secondary mt-auto">
+          Doses administered by region and by vaccine &mdash; the largest of the three cubes,
+          because every day is broken down per manufacturer.
+        </div>
+      </div>
+    </a>
+  </div>
+
+  <div class="col-md-4">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Fvaccinated-population">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <i data-lucide="users" class="me-3"></i>
+          <h3 class="card-title m-0">Vaccinated population</h3>
+        </div>
+        <div class="text-secondary mt-auto">
+          People rather than doses: how many residents of each canton held which vaccination
+          status, from first dose to second booster.
+        </div>
+      </div>
+    </a>
+  </div>
+
+</div>
+
+<h3 class="mt-4">The vaccines</h3>
+
+<p>
+  Six vaccines were administered in Switzerland, and each is modelled as a
+  <a href="/resource?iri=http%3A%2F%2Fschema.org%2FTherapeuticProcedure">therapeutic procedure</a>
+  linked to its manufacturer &mdash; the two bivalent variants are recorded separately from the
+  original formulations. The vaccinated-population cube slices its counts by vaccination status,
+  a small controlled vocabulary worth reading before querying that cube.
+</p>
+
+<sparql-async id="healthVaccines" class="d-none">
+  SELECT ?vaccine ?name WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
+      ?vaccine a schema:TherapeuticProcedure ;
+               schema:name ?name .
+      FILTER(LANG(?name) = "en")
+      FILTER(?vaccine != &lt;https://health.ld.admin.ch/foph/covid19/vaccinationProvider/all&gt;)
+    }
+  } ORDER BY ?name
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "healthVaccines"
+      "title" "Vaccines"
+      "icon" "syringe"
+      "collapsed" true) }}
+</div>
+
+<sparql-async id="healthVaccinationStatus" class="d-none">
+  SELECT ?status (SAMPLE(?n) AS ?name) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
+      ?status a schema:DefinedTerm ;
+              schema:name ?n .
+      FILTER(STRSTARTS(STR(?status), "https://health.ld.admin.ch/foph/covid19/vaccinationStatus/"))
+      FILTER(LANG(?n) = "en" || LANG(?n) = "")
+    }
+  } GROUP BY ?status ORDER BY ?status
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "healthVaccinationStatus"
+      "title" "Vaccination statuses"
+      "icon" "list-checks"
+      "collapsed" true) }}
+</div>
+
+<!-- ============================================================= -->
+<!-- FONES supply disruptions                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">The medicine cabinet</h2>
+
+<p>
+  Companies that market vital medicines for human use in Switzerland are legally required to
+  report supply disruptions to the Federal Office for National Economic Supply. The graph turns
+  those reports into a rolling series of daily snapshots: one observation is <em>one medicine on
+  one day</em>, carrying its <abbr title="Anatomical Therapeutic Chemical classification (WHO)">ATC
+  code</abbr>, package identifier (GTIN), the date the disruption began, the expected end, and a
+  recommendation for prescribers. To see the situation <em>today</em>, you read the latest
+  snapshot &mdash; which is exactly what the tables below do. A companion cube tracks just the
+  daily totals of open and closed disruptions over time.
+</p>
+
+<sparql-async id="healthDisruptedMedicines" class="d-none">
+  SELECT ?product (SAMPLE(?n) AS ?name) ?atc ?since ?until WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; {
+      {
+        SELECT (MAX(?d) AS ?latest) WHERE {
+          &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; cube:observationSet/cube:observation ?o .
+          ?o schema:validFrom ?d .
+        }
+      }
+      &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; cube:observationSet/cube:observation ?obs .
+      ?obs schema:validFrom ?latest ;
+           &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/status&gt; &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/status/open&gt; ;
+           &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/product-name&gt; ?product ;
+           &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/atc-code&gt; ?atc ;
+           &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/start-date&gt; ?since ;
+           &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/expected-end-disruption&gt; ?until .
+      ?product schema:name ?n .
+    }
+  } GROUP BY ?product ?atc ?since ?until ORDER BY ?atc
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "healthDisruptedMedicines"
+      "title" "Medicines currently in short supply"
+      "icon" "pill"
+      "collapsed" true) }}
+</div>
+
+<p>
+  Grouping the open disruptions by the first letter of their ATC code &mdash; the anatomical main
+  group &mdash; shows <em>which kinds</em> of medicines run short. It is rarely the everyday
+  painkillers: cancer therapies and anti-infectives usually dominate the list, the categories with
+  the most fragile supply chains.
+</p>
+
+<sparql-async id="healthAtcGroups" class="d-none">
+  SELECT ?group ?label (COUNT(?obs) AS ?disruptions) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; {
+      {
+        SELECT (MAX(?d) AS ?latest) WHERE {
+          &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; cube:observationSet/cube:observation ?o .
+          ?o schema:validFrom ?d .
+        }
+      }
+      &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; cube:observationSet/cube:observation ?obs .
+      ?obs schema:validFrom ?latest ;
+           &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/status&gt; &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/status/open&gt; ;
+           &lt;https://lindas.admin.ch/fones/supply-disruptions/dimension/atc-code&gt; ?atc .
+    }
+    BIND(SUBSTR(?atc, 1, 1) AS ?group)
+    VALUES (?group ?label) {
+      ("A" "Alimentary tract and metabolism")
+      ("B" "Blood and blood forming organs")
+      ("C" "Cardiovascular system")
+      ("D" "Dermatologicals")
+      ("G" "Genito-urinary system and sex hormones")
+      ("H" "Systemic hormonal preparations")
+      ("J" "Antiinfectives for systemic use")
+      ("L" "Antineoplastic and immunomodulating agents")
+      ("M" "Musculo-skeletal system")
+      ("N" "Nervous system")
+      ("P" "Antiparasitic products")
+      ("R" "Respiratory system")
+      ("S" "Sensory organs")
+      ("V" "Various")
+    }
+  } GROUP BY ?group ?label ORDER BY DESC(?disruptions)
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "healthAtcGroups"
+      "title" "Open disruptions by ATC group"
+      "icon" "layers"
+      "collapsed" true) }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">The datasets</h2>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Dataset</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Faffected">COVID-19 epidemiology &amp; vaccination</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">FOPH &mdash; Federal Office of Public Health</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-content"><code>https://lindas.admin.ch/foph/covid19</code></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~4.3 million triples &mdash; 3 cubes</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">
+          Daily cases, deaths and hospitalizations per canton; vaccine doses by region and vaccine;
+          vaccinated population by status (24 Feb 2020 &ndash; 1 Jan 2023)
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Landing page</div>
+        <div class="datagrid-content">
+          <a href="https://www.bag.admin.ch" target="_blank" rel="noopener">bag.admin.ch</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Dataset</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffones%2Fsupply-disruptions">Medicine supply disruptions</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">FONES &mdash; Federal Office for National Economic Supply</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-content"><code>https://lindas.admin.ch/fones/supply-disruptions</code></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~52,000 triples &mdash; updated daily</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">
+          Daily snapshots of open disruptions per medicine (ATC code, GTIN, start and expected end)
+          plus a daily open/closed aggregate
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Landing page</div>
+        <div class="datagrid-content">
+          <a href="https://www.bwl.admin.ch" target="_blank" rel="noopener">bwl.admin.ch</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">SPARQL endpoint</div>
+        <div class="datagrid-content">
+          <a href="https://lindas.admin.ch/query" target="_blank" rel="noopener">lindas.admin.ch/query</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ end }}

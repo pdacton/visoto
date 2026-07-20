@@ -1,0 +1,226 @@
+<!-- cube:Cube Class Template — data-catalog view of LINDAS cubes -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <p class="text-secondary">
+    A <strong>Cube</strong> is a versioned statistical dataset described with the
+    <a href="https://cube.link/" target="_blank" rel="noopener">cube.link</a> vocabulary:
+    a set of observations sharing the same dimensions, published with rich metadata
+    (publisher, themes, status, versions). Superseded versions stay in the graph and are
+    marked with an expiry date &mdash; the table below hides them by default.
+  </p>
+
+  <!-- Metric strip: counts are queried live (LINDAS counts drift). -->
+  <sparql-async id="cubeTotal" class="d-none">
+    SELECT (COUNT(?cube) AS ?count) WHERE { ?cube a cube:Cube . }
+  </sparql-async>
+  <sparql-async id="cubeCurrent" class="d-none">
+    SELECT (COUNT(?cube) AS ?count) WHERE {
+      ?cube a cube:Cube .
+      FILTER NOT EXISTS { ?cube schema:expires ?e }
+    }
+  </sparql-async>
+  <sparql-async id="cubePublishedCurrent" class="d-none">
+    SELECT (COUNT(?cube) AS ?count) WHERE {
+      ?cube a cube:Cube ;
+            schema:creativeWorkStatus &lt;https://ld.admin.ch/vocabulary/CreativeWorkStatus/Published&gt; .
+      FILTER NOT EXISTS { ?cube schema:expires ?e }
+    }
+  </sparql-async>
+  <sparql-async id="cubePublishers" class="d-none">
+    SELECT (COUNT(DISTINCT ?creator) AS ?count) WHERE {
+      ?cube a cube:Cube ; dct:creator ?creator .
+    }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "cubeTotal"
+        "title" "Cubes (all versions)"
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
+        "icon" "/static/img/resource/Cube.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "cubeCurrent"
+        "title" "Current Versions"
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "cubePublishedCurrent"
+        "title" "Published & Current"
+        "href" "/resource?iri=https%3A%2F%2Fld.admin.ch%2Fvocabulary%2FCreativeWorkStatus%2FPublished") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "cubePublishers"
+        "title" "Publishers"
+        "href" "/resource?iri=http%3A%2F%2Fschema.org%2FOrganization") }}
+  </div>
+
+  <!-- Catalog: one row per cube. Theme labels contain commas, so GROUP_CONCAT
+       uses "; " — the facet script splits on it. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+
+        <!-- Facet bar: filled by script once the table below has loaded. -->
+        <div id="cube-facets" class="card mb-2 d-none">
+          <div class="card-body py-2">
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+              <span class="text-secondary small me-1">Theme:</span>
+              <span id="cube-facet-themes" class="d-flex flex-wrap gap-1"></span>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2">
+              <span class="text-secondary small me-1">Publisher:</span>
+              <span id="cube-facet-publishers" class="d-flex flex-wrap gap-1"></span>
+              <label class="form-check form-switch mb-0 ms-auto">
+                <input id="cube-toggle-superseded" class="form-check-input" type="checkbox">
+                <span class="form-check-label" id="cube-toggle-superseded-label">Include superseded versions</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <sparql-async id="cubeCatalog" class="d-none">
+          SELECT ?cube ?name ?publisher ?themes ?status ?modified ?superseded WHERE {
+            { SELECT ?cube (SAMPLE(?n) AS ?name) (SAMPLE(?creatorName) AS ?publisher)
+                     (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes)
+                     (SAMPLE(?st) AS ?status) (SAMPLE(?mod) AS ?modified)
+                     (IF(COUNT(?exp) > 0, "superseded", "current") AS ?superseded)
+              WHERE {
+                ?cube a cube:Cube .
+                OPTIONAL { ?cube schema:name ?n .
+                           FILTER(lang(?n) = visoto:dispLang || lang(?n) = "") }
+                OPTIONAL { ?cube dct:creator/schema:name ?creatorName .
+                           FILTER(lang(?creatorName) = "en" || lang(?creatorName) = "") }
+                OPTIONAL { ?cube dcat:theme/schema:name ?themeName .
+                           FILTER(lang(?themeName) = visoto:dispLang) }
+                OPTIONAL { ?cube schema:creativeWorkStatus/schema:name ?st .
+                           FILTER(lang(?st) = visoto:dispLang || lang(?st) = "en") }
+                OPTIONAL { ?cube schema:dateModified ?mod }
+                OPTIONAL { ?cube schema:expires ?exp }
+              } GROUP BY ?cube }
+          }
+          ORDER BY DESC(?modified)
+          LIMIT 10000
+        </sparql-async>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "cubeCatalog"
+            "title" "Data Cubes"
+            "icon" "box"
+            "badgeVar" "status")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Facets + superseded toggle for the catalog table. The Tabulator instance is
+    // published in window.visotoTables by the sparqlTable fragment once HTMX has
+    // swapped it in, so poll until it exists and has data.
+    (function() {
+      var state = { includeSuperseded: false, theme: null, publisher: null };
+      var table = null;
+
+      function val(b) { return b ? (b.DisplayText || b.Value || "") : ""; }
+
+      function rowThemes(data) {
+        var t = val(data.themes);
+        return t ? t.split("; ") : [];
+      }
+
+      function applyFilters() {
+        table.setFilter(function(data) {
+          if (!state.includeSuperseded && val(data.superseded) !== "current") return false;
+          if (state.theme && rowThemes(data).indexOf(state.theme) === -1) return false;
+          if (state.publisher && val(data.publisher) !== state.publisher) return false;
+          return true;
+        });
+      }
+
+      // Top-N values among CURRENT rows, so facet counts match the default view.
+      function topCounts(rows, extract, n) {
+        var counts = {};
+        rows.forEach(function(data) {
+          if (val(data.superseded) !== "current") return;
+          extract(data).forEach(function(key) {
+            if (!key) return;
+            counts[key] = (counts[key] || 0) + 1;
+          });
+        });
+        return Object.keys(counts)
+          .map(function(k) { return { key: k, n: counts[k] }; })
+          .sort(function(a, b) { return b.n - a.n; })
+          .slice(0, n);
+      }
+
+      function renderChips(containerId, entries, stateKey) {
+        var container = document.getElementById(containerId);
+        entries.forEach(function(e) {
+          var chip = document.createElement("a");
+          chip.href = "#";
+          chip.className = "badge bg-blue-lt";
+          chip.textContent = e.key + " (" + e.n + ")";
+          chip.addEventListener("click", function(ev) {
+            ev.preventDefault();
+            var active = state[stateKey] === e.key;
+            state[stateKey] = active ? null : e.key;
+            container.querySelectorAll(".badge").forEach(function(b) {
+              b.classList.remove("bg-blue");
+              b.classList.add("bg-blue-lt");
+            });
+            if (!active) {
+              chip.classList.remove("bg-blue-lt");
+              chip.classList.add("bg-blue");
+            }
+            applyFilters();
+          });
+          container.appendChild(chip);
+        });
+      }
+
+      function init() {
+        var rows = table.getData();
+        applyFilters();
+
+        renderChips("cube-facet-themes",
+          topCounts(rows, rowThemes, 8), "theme");
+        renderChips("cube-facet-publishers",
+          topCounts(rows, function(d) { return [val(d.publisher)]; }, 8), "publisher");
+
+        var supersededCount = rows.filter(function(d) {
+          return val(d.superseded) !== "current";
+        }).length;
+        document.getElementById("cube-toggle-superseded-label").textContent =
+          "Include " + supersededCount + " superseded versions";
+        document.getElementById("cube-toggle-superseded")
+          .addEventListener("change", function() {
+            state.includeSuperseded = this.checked;
+            applyFilters();
+          });
+
+        document.getElementById("cube-facets").classList.remove("d-none");
+      }
+
+      var tries = 0;
+      var poll = setInterval(function() {
+        table = window.visotoTables && window.visotoTables["cubeCatalog"];
+        if (table && table.getData().length > 0) {
+          clearInterval(poll);
+          init();
+        } else if (++tries > 300) {
+          clearInterval(poll);
+        }
+      }, 300);
+    })();
+  </script>
+
+  {{ template "literals" . }}
+
+  {{ template "classHierarchy" . }}
+
+  {{ template "relationships" . }}
+
+  {{ template "ontologyShacl" . }}
+
+</div>
+{{ end }}

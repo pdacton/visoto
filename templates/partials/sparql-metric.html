@@ -10,6 +10,7 @@
     - title: card title and link label
     - href: URL for the title link
     - icon: (optional) path to an SVG image to display alongside the title
+    - iri: (optional) resource IRI; substituted for ?? in the query
 -->
 
 {{ define "sparqlMetric" }}
@@ -18,6 +19,8 @@
   {{ $title := .title }}
   {{ $href := .href }}
   {{ $icon := .icon }}
+  {{ $url := printf "/api/metric/%s" $queryId }}
+  {{ with .iri }}{{ $url = printf "%s?iri=%s" $url (urlquery .) }}{{ end }}
 
   <div class="col-sm-6 col-lg-3">
     <div class="card card-sm">
@@ -31,7 +34,7 @@
           <div>
             <div class="subheader"><a href="{{ $href }}">{{ $title }}</a></div>
             <div class="h1 mb-0"
-                 hx-get="/api/metric/{{ $queryId }}"
+                 hx-get="{{ $url }}"
                  hx-trigger="load"
                  hx-swap="innerHTML">
               <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
