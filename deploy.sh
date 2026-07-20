@@ -113,6 +113,13 @@ else
     ssh ${SSH_OPTS} "${SSH_TARGET}" "cd ${REMOTE_DIR} && docker compose up -d --build"
 fi
 
+# Restart Caddy: `up -d` does not recreate it (the Caddyfile is a bind mount and
+# the xcaddy image build is layer-cached), so without this the old Caddyfile
+# stays loaded and the in-memory Souin cache keeps serving pre-deploy responses.
+# A restart reloads the config and clears the cache in one stroke.
+ssh ${SSH_OPTS} "${SSH_TARGET}" "cd ${REMOTE_DIR} && docker compose restart caddy"
+echo "Caddy restarted (fresh Caddyfile + empty cache)"
+
 # Step 6: Verify deployment
 echo -e "${YELLOW}[6/6] Verifying deployment...${NC}"
 sleep 3  # Wait for container to start

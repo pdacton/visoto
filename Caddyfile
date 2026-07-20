@@ -1,6 +1,82 @@
+{
+    order cache before rate_limit
+    # Order cache BEFORE encode so cache is the OUTER wrapper and encode the inner
+    # one. On the response path inner handlers run first, so encode compresses the
+    # body before cache stores it — Souin then caches the already-compressed bytes and
+    # serves them straight from cache instead of re-compressing plaintext on every hit.
+    # Without this, Caddy's default order puts encode outside cache and Souin would
+    # store uncompressed pages. The @cacheable `key { headers Accept-Encoding }` below
+    # keeps each encoding in its own entry so no client gets a mismatched body.
+    order cache before encode
+
+    cache {
+        ttl 5m
+        # Souin's default upstream deadline is shorter than a full-class working-set
+        # search (e.g. "Search all" over ~790k ZefixOrganisation rows takes ~12s, and
+        # a broad term can approach visoto's own 60s SPARQL timeout). Without this,
+        # Souin gave up first and returned a bare-bodied 504 (DEADLINE-EXCEEDED) that
+        # the frontend can't parse as JSON -> "Failed to load data". 65s keeps Souin
+        # waiting just past visoto's 60s timeout so visoto is always the one to time
+        # out, returning a proper JSON error envelope the table handles gracefully.
+        timeout {
+            backend 65s
+        }
+        api {
+            souin {
+            }
+        }
+    }
+}
+
 visoto.hutzli.org {
+    # Souin's purge/admin API (/souin-api/*) is auto-mounted on this site by the
+    # global cache.api block above. It's not meant for public use — restrict it
+    # to internal Docker traffic (visoto's /api/cache/purge, over the
+    # visoto-network bridge) and 403 anything from outside private IP ranges.
+    @souinAdminExternal {
+        path /souin-api/*
+        not remote_ip private_ranges
+    }
+    respond @souinAdminExternal 403
+
+    # Compress responses (zstd preferred, gzip fallback). Ordered inside `cache`
+    # via the global `order cache before encode`, so Souin stores the compressed
+    # body. Caddy's encode skips already-small and already-compressed payloads
+    # (images, woff2, etc.) on its own.
+    encode zstd gzip
+
+    @cacheable {
+        method GET
+        path /api/metric/* /api/async-table/* /api/async-table-data/* /resource
+    }
+    # Cacheable responses are a pure function of the URL: the server resolves the
+    # endpoint from ?endpoint= only on these routes (never the selectedEndpoint
+    # cookie, which is client-managed and only honored on uncached entry pages),
+    # and never emits Set-Cookie — so no cookie handling is needed here.
+    cache @cacheable {
+        ttl 6h
+        # Fold the headers that legitimately vary the response body into the cache
+        # key: Accept-Encoding because Souin stores the compressed bytes (see
+        # `order cache before encode`), and Accept-Language because SPARQL labels
+        # are resolved per language (the origin sends `Vary: Accept-Language`, but
+        # keying explicitly keeps entries separated regardless of Vary handling).
+        key {
+            headers Accept-Encoding Accept-Language
+        }
+    }
+
     rate_limit {
         zone client_ip {
+            # Only meter dynamic requests. Static assets (/static/*, favicon, robots)
+            # are cheap and plentiful — the homepage alone pulls ~36 resource SVG icons
+            # plus CSS/JS, so counting them let a single page load burn most of the
+            # per-minute budget. Two loads in a minute (e.g. switching endpoints, which
+            # does a full location.reload) then tripped the limit and Caddy 429'd the
+            # trailing requests — visibly, the icons silently failed to render. Excluding
+            # /static/* keeps the limiter focused on SPARQL/API abuse.
+            match {
+                not path /static/* /favicon.ico /robots.txt
+            }
             key {remote_host}
             events 100
             window 1m
@@ -8,7 +84,12 @@ visoto.hutzli.org {
     }
 
     reverse_proxy visoto:8060
-    
+
+    @static {
+        path /static/* /favicon.ico /robots.txt
+    }
+    header @static Cache-Control "public, max-age=86400"
+
     header {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
