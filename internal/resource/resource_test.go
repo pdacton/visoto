@@ -69,3 +69,46 @@ func TestIRIExpansionAndShortening(t *testing.T) {
 		})
 	}
 }
+
+func TestNamedGraphsQuery(t *testing.T) {
+	tests := []struct {
+		name     string
+		iri      string
+		expected string
+		ok       bool
+	}{
+		{
+			name:     "Valid IRI produces graph-membership query",
+			iri:      "http://schema.org/Person",
+			expected: "SELECT DISTINCT ?g WHERE { GRAPH ?g { <http://schema.org/Person> ?p ?o } } LIMIT 50",
+			ok:       true,
+		},
+		{
+			name: "Empty IRI is rejected",
+			iri:  "",
+			ok:   false,
+		},
+		{
+			name: "IRI with angle bracket is rejected",
+			iri:  "http://example.org/x>. } SELECT ?s WHERE { ?s ?p ?o",
+			ok:   false,
+		},
+		{
+			name: "IRI with whitespace is rejected",
+			iri:  "http://example.org/a b",
+			ok:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query, ok := namedGraphsQuery(tt.iri)
+			if ok != tt.ok {
+				t.Fatalf("ok mismatch: got %v, want %v", ok, tt.ok)
+			}
+			if ok && query != tt.expected {
+				t.Errorf("Query mismatch:\n  got:  %s\n  want: %s", query, tt.expected)
+			}
+		})
+	}
+}

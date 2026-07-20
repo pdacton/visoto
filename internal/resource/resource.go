@@ -6,12 +6,14 @@
 package resource
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/url"
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
@@ -65,6 +67,47 @@ func New(iri string, prefixes []config.Prefix) (*Resource, error) {
 			QueryResults: make(map[string]sparql.QueryResult),
 		},
 	}, nil
+}
+
+// FetchNamedGraphs populates r.Data.NamedGraphs with the named graphs that
+// contain r.IRI as subject, queried on the request's selected endpoint.
+// Failures are logged and leave the list empty — the page renders without the section.
+func (r *Resource) FetchNamedGraphs(ctx context.Context, preprocessor *parser.Preprocessor, prefixes []config.Prefix) {
+	query, ok := namedGraphsQuery(r.IRI)
+	if !ok {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	result, err := preprocessor.ExecuteQueryWithContext(ctx, query, false, "", "")
+	if err != nil {
+		logger.Get().Warn("named graphs query failed",
+			slog.String("iri", r.IRI),
+			slog.String("error", err.Error()))
+		return
+	}
+
+	for _, binding := range result.Bindings {
+		g, exists := binding["g"]
+		if !exists || g.Value == "" {
+			continue
+		}
+		r.Data.NamedGraphs = append(r.Data.NamedGraphs, parser.NamedGraph{
+			IRI:   g.Value,
+			Short: shortenIRI(g.Value, prefixes),
+		})
+	}
+}
+
+// namedGraphsQuery builds the graph-membership query for an IRI. It returns
+// ok=false when the IRI cannot be safely interpolated into <...>.
+func namedGraphsQuery(iri string) (string, bool) {
+	if iri == "" || strings.ContainsAny(iri, "<>\" \t\n\r") {
+		return "", false
+	}
+	return fmt.Sprintf("SELECT DISTINCT ?g WHERE { GRAPH ?g { <%s> ?p ?o } } LIMIT 50", iri), true
 }
 
 // ResolveTemplate determines the appropriate template for this resource

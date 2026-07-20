@@ -46,6 +46,18 @@
             <i data-lucide="copy" style="width:0.85em;"></i>
           </button>
         </div>
+        {{ if .NamedGraphs }}
+        <div class="dropdown-divider"></div>
+        <div class="px-3 py-1 text-muted small text-uppercase">Named graphs</div>
+        {{ range .NamedGraphs }}
+        <div class="d-flex align-items-center px-3 py-1 gap-2">
+          <code class="text-muted small">{{ .Short }}</code>
+          <button class="btn btn-sm btn-ghost-secondary ms-auto iri-copy-btn" data-copy="{{ .IRI }}" title="Copy graph IRI">
+            <i data-lucide="copy" style="width:0.85em;"></i>
+          </button>
+        </div>
+        {{ end }}
+        {{ end }}
       </div>
       {{ end }}
     </div>
@@ -55,7 +67,8 @@
       if (btn) navigator.clipboard.writeText(btn.dataset.copy);
     });
     </script>
-    <p class="text-uppercase small">{{ block "pageClasses" . }}{{ end }}</p>    <p>{{ block "pageSubtitle" . }}{{ end }}</p>
+    <p class="text-uppercase small">{{ block "pageClasses" . }}{{ end }}</p>
+    <p>{{ block "pageSubtitle" . }}{{ end }}</p>
   </div>
 </div>
 <!-- End Page Header -->
