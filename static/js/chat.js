@@ -178,12 +178,12 @@
     // Get accept language from browser
     const acceptLanguage = navigator.language || 'en';
 
-    // Resolve the active endpoint from cookie + page data
-    const selectedEndpointName = (typeof getSelectedEndpoint === 'function') ? getSelectedEndpoint() : '';
+    // Resolve the active endpoint via the shared slug resolver + page data
+    const selectedSlug = (typeof activeEndpointSlug === 'function') ? activeEndpointSlug() : '';
     const endpoints = resourceData.SparqlEndpoints || [];
     let activeEndpoint = { name: '', url: '' };
-    if (selectedEndpointName) {
-      const match = endpoints.find(ep => ep.Name === selectedEndpointName);
+    if (selectedSlug) {
+      const match = endpoints.find(ep => ep.Slug === selectedSlug);
       if (match) activeEndpoint = { name: match.Name, url: match.URL };
     }
     if (!activeEndpoint.name) {

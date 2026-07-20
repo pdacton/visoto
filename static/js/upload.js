@@ -6,9 +6,9 @@
 
   // --- Helpers ---
 
+  // Shared resolver from endpoint-switcher.js; the endpoint param is a slug.
   function selectedEndpoint() {
-    const sel = document.getElementById('endpoint-selector');
-    return sel ? sel.value : '';
+    return (typeof activeEndpointSlug === 'function') ? activeEndpointSlug() : '';
   }
 
   function timestampPrefix() {

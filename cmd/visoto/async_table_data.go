@@ -66,7 +66,7 @@ func asyncTableDataHandler(c *gin.Context) {
 	}
 
 	preprocessor := prepareQueryInputs(c)
-	endpoint := resolveEndpointURL(c)
+	endpoint := activeEndpointURL(c)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 	defer cancel()
 
@@ -81,6 +81,8 @@ func asyncTableDataHandler(c *gin.Context) {
 	wsQuery := sparql.BuildWorkingSetQuery(declared, classIRI, keyVar, term, searchProp, max)
 	result, err := preprocessor.ExecuteQueryWithContext(ctx, wsQuery, true, acceptLanguage, "")
 	if err != nil {
+		// A transient SPARQL failure must never be cached as if it were real data.
+		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusOK, gin.H{"data": []any{}, "total": 0, "complete": true,
 			"error": err.Error()})
 		return
@@ -111,6 +113,8 @@ func asyncTableDataHandler(c *gin.Context) {
 // the full column list, every row of the working set, and whether that set is the
 // entire in-scope population (complete) or a capped subset (search to load more).
 func writeWorkingSet(c *gin.Context, result sparql.QueryResult, total int, complete bool) {
+	c.Header("Cache-Control", cacheControlPublic)
+	c.Header("Vary", "Accept-Language")
 	c.JSON(http.StatusOK, gin.H{
 		"vars":     result.Vars,
 		"data":     result.Bindings,

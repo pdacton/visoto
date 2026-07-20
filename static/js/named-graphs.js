@@ -1,8 +1,8 @@
 // Named Graphs modal — load, display, and delete named graphs via Graph Store Protocol.
 
+// Shared resolver from endpoint-switcher.js; the endpoint param is a slug.
 function ngSelectedEndpoint() {
-  const sel = document.getElementById('endpoint-selector');
-  return sel ? sel.value : '';
+  return (typeof activeEndpointSlug === 'function') ? activeEndpointSlug() : '';
 }
 
 function ngShow(id) { document.getElementById(id).classList.remove('d-none'); }

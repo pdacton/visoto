@@ -19,6 +19,10 @@
     <!-- search field -->
     <div class="nav-item mx-auto" style="width: 50%; max-width: 800px;">
       <form action="/search" method="GET" id="topbar-search-form">
+        {{ if .SelectedEndpointSlug }}
+        <!-- Make /search URLs explicit and shareable instead of cookie-dependent -->
+        <input type="hidden" name="endpoint" value="{{ .SelectedEndpointSlug }}">
+        {{ end }}
         <div class="input-icon">
           <input
             type="text"
@@ -38,9 +42,11 @@
       <!-- SPARQL Endpoint selector -->
       {{ if .SparqlEndpoints }}
       <div class="nav-item me-2 d-flex align-items-center">
+        <!-- Option values are endpoint slugs — the only endpoint identifier used on
+             the wire (?endpoint= param, selectedEndpoint cookie). -->
         <select class="form-select form-select-sm" id="endpoint-selector" name="endpoint" style="width: auto;" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Select SPARQL endpoint" data-bs-original-title="Select SPARQL endpoint">
           {{ range .SparqlEndpoints }}
-            <option value="{{ .Name }}" data-slug="{{ .Slug }}">{{ .Name }}</option>
+            <option value="{{ .Slug }}"{{ if eq .Slug $.SelectedEndpointSlug }} selected{{ end }}>{{ .Name }}</option>
           {{ end }}
         </select>
       </div>

@@ -143,21 +143,31 @@ func sendToEndpoint(ep *config.SparqlEndpoint, graphURI, contentType string, rdf
 	return nil
 }
 
+// endpointFromSlug resolves an endpoint slug request parameter, falling back to
+// the default endpoint when the slug is absent or unknown. The slug is the only
+// endpoint identifier used on the wire.
+func endpointFromSlug(cfg *config.ApplicationConfig, slug string) *config.SparqlEndpoint {
+	if ep := cfg.GetEndpointBySlug(slug); ep != nil {
+		return ep
+	}
+	return cfg.DefaultEndpoint()
+}
+
 // UploadHandler handles POST /api/upload.
 // Accepts multipart/form-data with:
 //   - file   (mutually exclusive with url) — the RDF file to upload
 //   - url    (mutually exclusive with file) — a remote RDF URL the server will fetch
 //   - graphURI — target named graph URI
-//   - endpoint — name of the SPARQL endpoint (matches visoto.config entry)
+//   - endpoint — slug of the SPARQL endpoint (matches visoto.config entry)
 func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log := logger.Get()
 
-		endpointName := c.PostForm("endpoint")
+		endpointSlug := c.PostForm("endpoint")
 		graphURI := strings.TrimSpace(c.PostForm("graphURI"))
 		remoteURL := strings.TrimSpace(c.PostForm("url"))
 
-		ep := cfg.GetEndpointByName(endpointName)
+		ep := endpointFromSlug(cfg, endpointSlug)
 		if ep == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "no SPARQL endpoint configured"})
 			return
@@ -293,12 +303,11 @@ func sparqlQuery(ep *config.SparqlEndpoint, query string) ([]map[string]struct {
 	return result.Results.Bindings, nil
 }
 
-// NamedGraphsHandler handles GET /api/named-graphs?endpoint=<name>.
+// NamedGraphsHandler handles GET /api/named-graphs?endpoint=<slug>.
 // Runs a SPARQL query for all named graphs with optional rdfs:label and returns the list.
 func NamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		endpointName := c.Query("endpoint")
-		ep := cfg.GetEndpointByName(endpointName)
+		ep := endpointFromSlug(cfg, c.Query("endpoint"))
 		if ep == nil {
 			c.JSON(http.StatusOK, gin.H{"graphs": []NamedGraph{}})
 			return
@@ -335,7 +344,7 @@ func NamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	}
 }
 
-// DeleteNamedGraphHandler handles DELETE /api/named-graphs?graph=<uri>&endpoint=<name>.
+// DeleteNamedGraphHandler handles DELETE /api/named-graphs?graph=<uri>&endpoint=<slug>.
 // Pass graph=default to delete the default graph.
 // Pass any other graph URI to delete that named graph.
 // Uses SPARQL Update (DROP SILENT) for broad endpoint compatibility.
@@ -343,10 +352,9 @@ func DeleteNamedGraphHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log := logger.Get()
 
-		endpointName := c.Query("endpoint")
 		graphURI := strings.TrimSpace(c.Query("graph"))
 
-		ep := cfg.GetEndpointByName(endpointName)
+		ep := endpointFromSlug(cfg, c.Query("endpoint"))
 		if ep == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "no SPARQL endpoint configured"})
 			return
@@ -446,11 +454,10 @@ func ExportNamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log := logger.Get()
 
-		endpointName := c.Query("endpoint")
 		graphIRIs := c.QueryArray("graph")
 		format := c.DefaultQuery("format", "text/turtle")
 
-		ep := cfg.GetEndpointByName(endpointName)
+		ep := endpointFromSlug(cfg, c.Query("endpoint"))
 		if ep == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "no SPARQL endpoint configured"})
 			return

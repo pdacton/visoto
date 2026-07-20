@@ -34,73 +34,110 @@ import (
 var cfg *config.Config
 var mon *monitor.Monitor
 
+// cacheControlPublic is the Cache-Control value for successful, SPARQL-backed
+// responses (metric/table/resource handlers): 6h, cacheable by Caddy's cache
+// module. These routes resolve their endpoint from the URL only (resolveEndpoint
+// with allowCookie=false) and never emit Set-Cookie, so the response is a pure
+// function of the URL and safe for a shared cache — no qualified no-cache
+// directive is needed here, and adding one made Souin revalidate against the
+// origin on every read, defeating the cache.
+const cacheControlPublic = `public, max-age=21600`
+
 // ---- Request helpers ----
 
-// resolveSelectedEndpointName determines the selected endpoint name for this request.
-// An explicit ?endpoint=<slug> query param takes precedence and refreshes the
-// selectedEndpoint cookie to match, so shared links both work immediately and
-// persist across subsequent navigation that drops the query string. Otherwise
-// falls back to the selectedEndpoint cookie. Returns empty string if neither
-// resolves to a configured endpoint.
-func resolveSelectedEndpointName(c *gin.Context) string {
-	if slug := c.Query("endpoint"); slug != "" {
-		if ep := cfg.Application.GetEndpointBySlug(slug); ep != nil {
-			// This helper runs several times per request (endpoint URL, tag, search
-			// provider lookups); only the first call may emit the Set-Cookie header,
-			// or the response carries duplicates.
-			if _, alreadySet := c.Get("selectedEndpointCookieSet"); !alreadySet {
-				c.Set("selectedEndpointCookieSet", true)
-				// Write the Set-Cookie header directly rather than via c.SetCookie, which would
-				// additionally url.QueryEscape the already-escaped value (double-encoding it) and
-				// use '+' for spaces — a format the client-side decodeURIComponent (endpoint-switcher.js)
-				// never converts back. url.PathEscape matches encodeURIComponent's %20 encoding instead.
-				http.SetCookie(c.Writer, &http.Cookie{
-					Name:     "selectedEndpoint",
-					Value:    url.PathEscape(ep.Name),
-					Path:     "/",
-					MaxAge:   31536000,
-					SameSite: http.SameSiteLaxMode,
-				})
+// activeEndpointKey is the gin-context key under which resolveEndpoint stores
+// the request's resolved *config.SparqlEndpoint.
+const activeEndpointKey = "activeEndpoint"
+
+// resolveEndpoint returns a middleware that resolves the active SPARQL endpoint
+// exactly once per request into the context: ?endpoint=<slug> → (optionally) the
+// selectedEndpoint cookie (also a slug) → config default.
+//
+// allowCookie must be false on routes cached by the shared Caddy/Souin cache
+// (/resource and the /api fragment routes): their cache key is URL-only, so the
+// response must be a pure function of the URL — a cookie-dependent response
+// rendered for one user would be served to everyone. Uncached entry pages
+// (/, static pages, /search, /monitoring) honor the cookie as the user's saved
+// preference; from there the frontend propagates the slug via URLs.
+//
+// The cookie is written by the client only (endpoint-switcher.js); the server
+// never sets it. Stale values — a removed endpoint's slug, or a legacy
+// name-valued cookie — simply match no endpoint and fall through to the default.
+func resolveEndpoint(allowCookie bool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ep *config.SparqlEndpoint
+		if slug := c.Query("endpoint"); slug != "" {
+			if ep = cfg.Application.GetEndpointBySlug(slug); ep == nil {
+				logger.Get().Warn("unknown endpoint slug in URL", slog.String("slug", slug))
 			}
-			return ep.Name
 		}
-		logger.Get().Warn("unknown endpoint slug in URL", slog.String("slug", slug))
-	}
-
-	selected, err := c.Cookie("selectedEndpoint")
-	if err != nil || selected == "" {
-		return ""
-	}
-	// Decode the cookie value: browsers percent-encode non-ASCII characters (e.g. "Stadt Zürich" → "Stadt+Z%C3%BCrich")
-	if decoded, err := url.QueryUnescape(selected); err == nil {
-		return decoded
-	}
-	return selected
-}
-
-// resolveEndpointURL returns the SPARQL endpoint URL selected for this request
-// (cookie override, else config default). Used to key per-endpoint caches so the
-// endpoint switcher can't serve stale cross-endpoint data.
-func resolveEndpointURL(c *gin.Context) string {
-	endpoint := cfg.Application.SparqlEndpoint
-	if name := resolveSelectedEndpointName(c); name != "" {
-		if epURL, exists := cfg.Application.GetNamedEndpointsMap()[name]; exists {
-			endpoint = epURL
+		if ep == nil && allowCookie {
+			if slug, err := c.Cookie("selectedEndpoint"); err == nil && slug != "" {
+				ep = cfg.Application.GetEndpointBySlug(slug)
+			}
+		}
+		if ep == nil {
+			ep = cfg.Application.DefaultEndpoint()
+		}
+		if ep != nil {
+			c.Set(activeEndpointKey, ep)
 		}
 	}
-	return endpoint
 }
 
-// prepareQueryInputs creates a preprocessor with user-selected default endpoint
+// activeEndpoint returns the endpoint resolved by the resolveEndpoint middleware,
+// or nil when none is configured (bare sparql_endpoint-only configs) or the
+// route has no resolver attached.
+func activeEndpoint(c *gin.Context) *config.SparqlEndpoint {
+	if v, ok := c.Get(activeEndpointKey); ok {
+		if ep, ok := v.(*config.SparqlEndpoint); ok {
+			return ep
+		}
+	}
+	return nil
+}
+
+// activeEndpointURL returns the resolved endpoint's URL, falling back to the
+// scalar sparql_endpoint config value when no endpoint list is configured.
+func activeEndpointURL(c *gin.Context) string {
+	if ep := activeEndpoint(c); ep != nil {
+		return ep.URL
+	}
+	return cfg.Application.SparqlEndpoint
+}
+
+// stampEndpointData fills the endpoint-related template fields shared by every
+// server-rendered page from the request's resolved endpoint.
+func stampEndpointData(c *gin.Context, data *parser.TemplateData) {
+	data.SparqlEndpoints = cfg.Application.SparqlEndpoints
+	if ep := activeEndpoint(c); ep != nil {
+		data.SelectedEndpointName = ep.Name
+		data.SelectedEndpointSlug = ep.Slug
+		data.EndpointTag = ep.Tag
+	}
+	data.EndpointURL = activeEndpointURL(c)
+}
+
+// endpointTemplateData is stampEndpointData's counterpart for handlers that
+// render with an ad-hoc gin.H instead of parser.TemplateData.
+func endpointTemplateData(c *gin.Context, h gin.H) gin.H {
+	h["SparqlEndpoints"] = cfg.Application.SparqlEndpoints
+	if ep := activeEndpoint(c); ep != nil {
+		h["SelectedEndpointName"] = ep.Name
+		h["SelectedEndpointSlug"] = ep.Slug
+		h["EndpointTag"] = ep.Tag
+	}
+	return h
+}
+
+// prepareQueryInputs creates a preprocessor defaulting to the request's resolved endpoint
 func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 
-	// Determine default endpoint for this request either from cookie or config default
 	namedEndpoints := cfg.Application.GetNamedEndpointsMap()
-	endpoint := resolveEndpointURL(c)
 
 	// Create query inputs for preprocessor
 	return parser.New(sparql.QueryInput{
-		EndpointURL:     endpoint,
+		EndpointURL:     activeEndpointURL(c),
 		Timeout:         cfg.GetTimeout(),
 		Prefixes:        cfg.RDF.ParsedPrefixes,
 		NamedEndpoints:  namedEndpoints,
@@ -176,17 +213,9 @@ func staticPageHandler(c *gin.Context) {
 		return
 	}
 
-	// Add endpoints and resolved tag to template data
-	data.SparqlEndpoints = cfg.Application.SparqlEndpoints
-	selectedName := resolveSelectedEndpointName(c)
-	data.EndpointTag = cfg.Application.ResolveEndpointTag(selectedName)
-	// Expose the resolved endpoint URL so client-side pages (e.g. Graph Explorer)
-	// query the same endpoint the user picked in the header.
-	if ep := cfg.Application.GetEndpointByName(selectedName); ep != nil {
-		data.EndpointURL = ep.URL
-	} else {
-		data.EndpointURL = cfg.Application.SparqlEndpoint
-	}
+	// Add endpoints, active selection, and resolved URL (for client-side views
+	// like Graph Explorer) to template data
+	stampEndpointData(c, &data)
 	data.TemplateName = templateName
 	// Public origin for pages that render absolute URLs (e.g. the MCP URL on /connect.html)
 	data.BaseURL = mcpserver.BaseURLFromRequest(c.Request, cfg.Application.Port)
@@ -231,6 +260,7 @@ func resourcePageHandler(c *gin.Context) {
 	r, err := resource.New(iri, cfg.RDF.ParsedPrefixes)
 	if err != nil {
 		log.Error("invalid resource IRI", slog.String("iri", iri), slog.String("error", err.Error()))
+		c.Header("Cache-Control", "no-store")
 		c.String(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -247,24 +277,22 @@ func resourcePageHandler(c *gin.Context) {
 	// extract SPARQL query from template and retrieve data (use per-request preprocessor)
 	r.Data, err = preprocessor.ProcessTemplateFile(r.TemplatePath, r.IRI, language)
 	if err != nil {
+		c.Header("Cache-Control", "no-store")
 		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
 		return
 	}
 
-	// Add endpoints and resolved tag to template data
-	r.Data.SparqlEndpoints = cfg.Application.SparqlEndpoints
-	selectedName := resolveSelectedEndpointName(c)
-	r.Data.EndpointTag = cfg.Application.ResolveEndpointTag(selectedName)
-	// Expose the resolved endpoint URL so client-side views (Graph, Schema) query
-	// the same endpoint the user picked in the header.
-	if ep := cfg.Application.GetEndpointByName(selectedName); ep != nil {
-		r.Data.EndpointURL = ep.URL
-	} else {
-		r.Data.EndpointURL = cfg.Application.SparqlEndpoint
-	}
+	// Add endpoints, active selection, and resolved URL (for client-side views
+	// like Graph and Schema) to template data
+	stampEndpointData(c, &r.Data)
 	r.Data.ShortIRI = r.ShortIRI
 	r.Data.TemplateName = r.TemplateName
 
+	// List the named graphs containing this resource (shown in the IRI dropdown)
+	r.FetchNamedGraphs(c.Request.Context(), preprocessor, cfg.RDF.ParsedPrefixes)
+
+	c.Header("Cache-Control", cacheControlPublic)
+	c.Header("Vary", "Accept-Language")
 	// native gin template rendering
 	c.HTML(http.StatusOK, r.TemplateName, r.Data)
 }
@@ -275,7 +303,7 @@ func searchHandler(c *gin.Context) {
 
 	// Resolve FTS provider from the active endpoint config; fall back to "stardog"
 	providerName := "stardog"
-	if ep := cfg.Application.GetEndpointByName(resolveSelectedEndpointName(c)); ep != nil && ep.SearchProvider != "" {
+	if ep := activeEndpoint(c); ep != nil && ep.SearchProvider != "" {
 		providerName = ep.SearchProvider
 	}
 	searcher := search.New(preprocessor.SparqlPreprocessor(), providerName)
@@ -285,14 +313,12 @@ func searchHandler(c *gin.Context) {
 
 	// Validate required query parameter
 	if params.Query == "" {
-		c.HTML(http.StatusOK, "pages/search.html", gin.H{
+		c.HTML(http.StatusOK, "pages/search.html", endpointTemplateData(c, gin.H{
 			"ClassFilters":    search.GetClassFilters(),
 			"PropertyFilters": search.GetPropertyFilters(),
 			"SelectedLimit":   search.DefaultLimit,
 			"Error":           "",
-			"SparqlEndpoints": cfg.Application.SparqlEndpoints,
-			"EndpointTag":     cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c)),
-		})
+		}))
 		return
 	}
 
@@ -301,7 +327,7 @@ func searchHandler(c *gin.Context) {
 	result := searcher.Execute(params, acceptLanguage)
 
 	// Render results
-	c.HTML(http.StatusOK, "pages/search.html", gin.H{
+	c.HTML(http.StatusOK, "pages/search.html", endpointTemplateData(c, gin.H{
 		"Query":            result.Query,
 		"ClassFilters":     search.GetClassFilters(),
 		"PropertyFilters":  search.GetPropertyFilters(),
@@ -310,9 +336,7 @@ func searchHandler(c *gin.Context) {
 		"SelectedLimit":    params.Limit,
 		"SearchResults":    result.Results,
 		"Provider":         result.Provider,
-		"SparqlEndpoints":  cfg.Application.SparqlEndpoints,
-		"EndpointTag":      cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c)),
-	})
+	}))
 }
 
 // asyncQueryDirs are the template directories scanned for <sparql-async id=...>
@@ -369,6 +393,12 @@ func metricHandler(c *gin.Context) {
 		return
 	}
 
+	// Optional resource scoping, same substitution as asyncTableHandler: lets
+	// instance templates declare per-resource metrics with the ?? placeholder.
+	if iri := c.Query("iri"); iri != "" {
+		query = strings.ReplaceAll(query, "??", "<"+iri+">")
+	}
+
 	preprocessor := prepareQueryInputs(c)
 	result, err := preprocessor.ExecuteQuery(query, false, acceptLanguage, "")
 
@@ -379,6 +409,14 @@ func metricHandler(c *gin.Context) {
 		}
 	}
 
+	if err != nil {
+		// A transient SPARQL failure must never be cached as if it were a real
+		// (likely wrong) count.
+		c.Header("Cache-Control", "no-store")
+	} else {
+		c.Header("Cache-Control", cacheControlPublic)
+		c.Header("Vary", "Accept-Language")
+	}
 	c.Header("Content-Type", "text/html")
 	c.String(http.StatusOK, count)
 }
@@ -407,6 +445,10 @@ func asyncTableHandler(c *gin.Context) {
 		"iconVar":  c.Query("iconVar"),
 		"badgeVar": c.Query("badgeVar"),
 		"groupBy":  c.Query("groupBy"),
+		// Non-empty string is truthy in the sparqlTable template's {{ if $collapsed }};
+		// absent param yields "" (falsy). The template may still force-collapse an
+		// empty or errored result regardless of this hint.
+		"collapsed": c.Query("collapsed"),
 	}
 
 	// Auto-detect the working-set mode: a class-instance query has a "?key a ??"
@@ -429,7 +471,7 @@ func asyncTableHandler(c *gin.Context) {
 	}
 
 	if keyVar != "" && iri != "" {
-		endpoint := resolveEndpointURL(c)
+		endpoint := activeEndpointURL(c)
 		ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 		searchProp := c.DefaultQuery("searchProp", "http://www.w3.org/2000/01/rdf-schema#label")
 		total := cachedInstanceCount(ctx, preprocessor, id, endpoint, iri, keyVar, "", searchProp, acceptLanguage)
@@ -438,6 +480,13 @@ func asyncTableHandler(c *gin.Context) {
 			params["workingSet"] = true
 			params["iri"] = iri
 			params["keyVar"] = keyVar
+			// The fragment's Tabulator data fetches (/api/async-table-data) must
+			// carry the endpoint slug explicitly so the shared cache keys them per
+			// endpoint. This fragment is itself cached keyed by its own ?endpoint=,
+			// so embedding the slug server-side is self-consistent.
+			if ep := activeEndpoint(c); ep != nil {
+				params["endpointSlug"] = ep.Slug
+			}
 			params["total"] = total
 			params["complete"] = false
 			params["searchProp"] = c.Query("searchProp") // author hint; may be empty
@@ -451,7 +500,8 @@ func asyncTableHandler(c *gin.Context) {
 				Query:    preprocessor.FinalizeQuery(fullQuery, acceptLanguage),
 				Endpoint: endpoint,
 			}
-			renderTableFragment(c, params)
+			// Never executes the class query itself, so always cheap and safe to cache.
+			renderTableFragment(c, params, true)
 			return
 		}
 	}
@@ -463,16 +513,24 @@ func asyncTableHandler(c *gin.Context) {
 		result.Error = err.Error()
 	}
 	params["result"] = result
-	renderTableFragment(c, params)
+	renderTableFragment(c, params, err == nil)
 }
 
 // renderTableFragment renders the sparqlTable partial and writes it as an HTML
-// fragment, or a 500 on render failure.
-func renderTableFragment(c *gin.Context, params map[string]any) {
+// fragment, or a 500 on render failure. cacheable controls whether the caller
+// wants this response cached (false for transient query errors, which must
+// never be served stale for hours).
+func renderTableFragment(c *gin.Context, params map[string]any, cacheable bool) {
 	html, err := templates.RenderSparqlTable(params)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "failed to render table")
 		return
+	}
+	if cacheable {
+		c.Header("Cache-Control", cacheControlPublic)
+		c.Header("Vary", "Accept-Language")
+	} else {
+		c.Header("Cache-Control", "no-store")
 	}
 	c.Header("Content-Type", "text/html")
 	c.String(http.StatusOK, string(html))
@@ -481,10 +539,7 @@ func renderTableFragment(c *gin.Context, params map[string]any) {
 // ---- Monitoring handlers ----
 
 func monitoringPageHandler(c *gin.Context) {
-	c.HTML(http.StatusOK, "pages/monitoring.html", gin.H{
-		"SparqlEndpoints": cfg.Application.SparqlEndpoints,
-		"EndpointTag":     cfg.Application.ResolveEndpointTag(resolveSelectedEndpointName(c)),
-	})
+	c.HTML(http.StatusOK, "pages/monitoring.html", endpointTemplateData(c, gin.H{}))
 }
 
 func monitoringStatusHandler(c *gin.Context) {
@@ -608,12 +663,17 @@ func main() {
 	router.StaticFile("/favicon.ico", "./static/img/favicon.svg")
 	router.StaticFile("/robots.txt", "./static/robots.txt")
 	router.Static("/static", "static")
-	router.GET("/", func(c *gin.Context) {
+	// Endpoint resolution per route class: routes cached by the shared Caddy/Souin
+	// cache must be a pure function of the URL (no cookie); uncached entry pages
+	// honor the selectedEndpoint cookie. See resolveEndpoint.
+	epFromURL := resolveEndpoint(false)
+	epFromURLOrCookie := resolveEndpoint(true)
+	router.GET("/", epFromURLOrCookie, func(c *gin.Context) {
 		c.Params = append(c.Params, gin.Param{Key: "page", Value: "home.html"})
 		staticPageHandler(c)
 	})
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
-	router.GET("/search", searchHandler)
+	router.GET("/search", epFromURLOrCookie, searchHandler)
 	mcpURL := fmt.Sprintf("http://localhost:%d/mcp", cfg.Application.Port)
 	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey, mcpURL))
 	router.POST("/api/upload", upload.UploadHandler(&cfg.Application))
@@ -621,18 +681,19 @@ func main() {
 	router.DELETE("/api/named-graphs", upload.DeleteNamedGraphHandler(&cfg.Application))
 	router.GET("/api/export-graphs", upload.ExportNamedGraphsHandler(&cfg.Application))
 	router.GET("/api/ontologies", upload.OntologiesHandler(&cfg.Application, cfg.Ontologies))
-	router.GET("/monitoring", monitoringPageHandler)
+	router.GET("/monitoring", epFromURLOrCookie, monitoringPageHandler)
 	router.GET("/api/monitoring/status", monitoringStatusHandler)
 	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
 	router.GET("/api/monitoring/data", monitoringDataHandler)
-	router.GET("/api/metric/:id", metricHandler)
-	router.GET("/api/async-table/:id", asyncTableHandler)
-	router.GET("/api/async-table-data/:id", asyncTableDataHandler)
-	router.GET("/resource", resourcePageHandler)
+	router.POST("/api/cache/purge", cachePurgeHandler)
+	router.GET("/api/metric/:id", epFromURL, metricHandler)
+	router.GET("/api/async-table/:id", epFromURL, asyncTableHandler)
+	router.GET("/api/async-table-data/:id", epFromURL, asyncTableDataHandler)
+	router.GET("/resource", epFromURL, resourcePageHandler)
 	router.GET("/resource/*path", legacyResourceRedirectHandler)
 	router.Any("/mcp", gin.WrapH(mcpHandler))
 	router.GET("/health", gin.WrapH(mcpHandler))
-	router.GET("/:page", staticPageHandler)
+	router.GET("/:page", epFromURLOrCookie, staticPageHandler)
 
 	// Start server with configured port
 	// Bind to 0.0.0.0 to allow connections from outside (required for Docker)

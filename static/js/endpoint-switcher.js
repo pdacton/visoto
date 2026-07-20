@@ -1,49 +1,127 @@
-// Endpoint switcher for multi-endpoint SPARQL support
-// Manages endpoint selection using cookies
+// Endpoint switcher — slug-only endpoint handling for multi-endpoint SPARQL support.
+//
+// Invariant (mirrors the server): the ?endpoint=<slug> URL param is the source
+// of truth for the active endpoint. The selectedEndpoint cookie (also a slug)
+// is only a saved preference that uncached entry pages (/, static pages,
+// /search) honor server-side; routes in the shared Caddy/Souin cache
+// (/resource, the /api fragments) are pure functions of the URL and never read
+// it. The frontend's job is therefore to keep the slug in URLs: fragment
+// requests (htmx hook below), in-app resource links (click rewriter +
+// visotoResourceHref), and the address bar (replaceState sync).
+
+function endpointSelectEl() {
+    return document.getElementById('endpoint-selector');
+}
 
 /**
- * Gets the currently selected endpoint name from cookie
- * @returns {string} The selected endpoint name, or empty string if none selected
+ * Validates a slug against the configured endpoints in the topbar select
+ * (case-insensitive, like the server's GetEndpointBySlug) and returns the
+ * canonical slug — so a stale bookmark's dead slug is never propagated into
+ * fragment requests or the cookie.
+ * @param {string} slug - Candidate slug
+ * @returns {string} The canonical configured slug, or '' if unknown
  */
-function getSelectedEndpoint() {
-    const match = document.cookie.match(/selectedEndpoint=([^;]+)/);
+function knownEndpointSlug(slug) {
+    const sel = endpointSelectEl();
+    if (!slug || !sel) return '';
+    const match = Array.prototype.find.call(sel.options,
+        o => o.value.toLowerCase() === slug.toLowerCase());
+    return match ? match.value : '';
+}
+
+/**
+ * Resolves the active endpoint slug: URL param first (server truth for this
+ * page), else the select (server-rendered `selected` on every page), else ''.
+ * @returns {string} The active endpoint slug, or empty string
+ */
+function activeEndpointSlug() {
+    const urlSlug = knownEndpointSlug(new URL(window.location.href).searchParams.get('endpoint'));
+    if (urlSlug) return urlSlug;
+    const sel = endpointSelectEl();
+    return (sel && sel.value) || '';
+}
+
+function getEndpointCookie() {
+    const match = document.cookie.match(/(?:^|;\s*)selectedEndpoint=([^;]+)/);
     return match ? match[1] : '';
 }
 
 /**
- * Sets the selected endpoint name in a cookie
- * @param {string} name - The endpoint name to select, or empty/null to clear
+ * Stores the endpoint slug in the preference cookie (slugs are plain ASCII, so
+ * no encoding is needed), or clears the cookie when passed a falsy value.
+ * The cookie is client-managed only; the server never sets it.
+ * @param {string} slug - The endpoint slug, or empty/null to clear
  */
-function setSelectedEndpoint(name) {
-    if (name) {
-        // Set cookie for 1 year with Lax SameSite policy. encodeURIComponent ensures non-ASCII
-        // endpoint names (e.g. "Stadt Zürich") are safely stored and matched on the server side.
-        document.cookie = `selectedEndpoint=${encodeURIComponent(name)}; path=/; max-age=31536000; SameSite=Lax`;
+function setEndpointCookie(slug) {
+    if (slug) {
+        document.cookie = `selectedEndpoint=${slug}; path=/; max-age=31536000; SameSite=Lax`;
     } else {
-        // Clear cookie
         document.cookie = 'selectedEndpoint=; path=/; max-age=0';
     }
 }
 
 /**
- * Switches to a new endpoint and reloads the page
- * @param {string} name - The endpoint name to switch to
+ * Builds a resource page URL carrying the active endpoint slug. Use this for
+ * all JS-side navigation to /resource (graph views etc.); plain anchors are
+ * covered by the delegated click rewriter below.
+ * @param {string} iri - The resource IRI
+ * @returns {string} /resource?iri=<escaped>&endpoint=<slug>
  */
-function switchEndpoint(name) {
-    setSelectedEndpoint(name);
+function visotoResourceHref(iri) {
+    let href = '/resource?iri=' + encodeURIComponent(iri);
+    const slug = activeEndpointSlug();
+    if (slug) href += '&endpoint=' + encodeURIComponent(slug);
+    return href;
+}
+
+// Fold the active endpoint slug into every cacheable HTMX fragment request
+// (/api/metric/*, /api/async-table/*) so the shared Caddy/Souin cache keys each
+// endpoint's response separately — the server ignores the cookie on these
+// routes. Registered on document so it covers even the first load-triggered
+// hx-get on the page.
+document.addEventListener('htmx:configRequest', function (evt) {
+    const path = evt.detail.path || '';
+    if (!/^\/api\/(metric|async-table)\//.test(path)) return;
+    const slug = activeEndpointSlug();
+    if (slug && evt.detail.parameters.endpoint === undefined) {
+        evt.detail.parameters.endpoint = slug;
+    }
+});
+
+// Rewrite in-app resource links to carry the active endpoint slug at click time
+// (capture phase: the default action — including middle-/ctrl-click — reads the
+// href after this runs). Server-rendered links are bare by design: /resource
+// pages live in a shared URL-keyed cache, so their HTML cannot depend on who is
+// viewing; the endpoint is attached client-side at navigation time instead.
+document.addEventListener('click', function (evt) {
+    const a = evt.target && evt.target.closest && evt.target.closest('a[href^="/resource?"]');
+    if (!a) return;
+    const url = new URL(a.getAttribute('href'), window.location.origin);
+    if (url.searchParams.has('endpoint')) return;
+    const slug = activeEndpointSlug();
+    if (!slug) return;
+    url.searchParams.set('endpoint', slug);
+    a.setAttribute('href', url.pathname + url.search + url.hash);
+}, true);
+
+/**
+ * Switches to a new endpoint and reloads the page
+ * @param {string} slug - The endpoint slug to switch to
+ */
+function switchEndpoint(slug) {
+    setEndpointCookie(slug);
     location.reload();  // Reload to apply new endpoint
 }
 
 /**
- * Keeps the visible URL's ?endpoint= param in sync with the active endpoint's slug,
- * via history.replaceState (no navigation), so the address bar is always an accurate,
- * shareable snapshot even when the active endpoint came from a cookie/default rather
- * than an explicit query param. Removes a stale param if the active endpoint has no slug.
+ * Keeps the visible URL's ?endpoint= param in sync with the select's slug via
+ * history.replaceState (no navigation), so the address bar is always an
+ * accurate, shareable snapshot of what the page is actually showing — this also
+ * self-heals a stale bookmark's unknown slug to the actually-rendered endpoint.
  * @param {HTMLSelectElement} endpointSelect - The endpoint <select> element
  */
 function syncEndpointUrlParam(endpointSelect) {
-    const option = endpointSelect.selectedOptions[0];
-    const slug = option && option.dataset.slug;
+    const slug = endpointSelect.value;
     const url = new URL(window.location.href);
     if (slug) {
         if (url.searchParams.get('endpoint') === slug) return;
@@ -55,27 +133,31 @@ function syncEndpointUrlParam(endpointSelect) {
     history.replaceState(null, '', url);
 }
 
-// Update UI on page load
-document.addEventListener('DOMContentLoaded', function() {
-    const selected = getSelectedEndpoint();
+document.addEventListener('DOMContentLoaded', function () {
+    const endpointSelect = endpointSelectEl();
+    if (!endpointSelect) return;
 
-    // Set the select element's value to match the cookie (decode since cookie is URI-encoded)
-    const endpointSelect = document.getElementById('endpoint-selector');
-    if (endpointSelect && selected) {
-        endpointSelect.value = decodeURIComponent(selected);
+    // The server renders the correct <option selected> on every page, so no
+    // client-side selection fixup is needed — only cookie upkeep: persist the
+    // page's explicit URL slug as the preference (replacing the old server-side
+    // Set-Cookie, which a shared cache must never emit), and drop stale or
+    // legacy (pre-slug, name-valued) cookie values that match no endpoint.
+    const urlSlug = knownEndpointSlug(new URL(window.location.href).searchParams.get('endpoint'));
+    const cookieSlug = getEndpointCookie();
+    if (urlSlug && urlSlug !== cookieSlug) {
+        setEndpointCookie(urlSlug);
+    } else if (cookieSlug && !knownEndpointSlug(cookieSlug)) {
+        setEndpointCookie('');
     }
 
-    // Add change event listener to trigger endpoint switch
-    if (endpointSelect) {
-        endpointSelect.addEventListener('change', function(e) {
-            // Sync the URL to the new selection *before* reloading: otherwise the
-            // reload re-requests the pre-switch ?endpoint= (still in the address bar
-            // from the previous sync), which would take precedence over the
-            // freshly-set cookie server-side and silently revert this switch.
-            syncEndpointUrlParam(e.target);
-            switchEndpoint(e.target.value);
-        });
+    endpointSelect.addEventListener('change', function (e) {
+        // Sync the URL to the new selection *before* reloading: otherwise the
+        // reload re-requests the pre-switch ?endpoint= (still in the address bar
+        // from the previous sync), which would take precedence over the
+        // freshly-set cookie server-side and silently revert this switch.
+        syncEndpointUrlParam(e.target);
+        switchEndpoint(e.target.value);
+    });
 
-        syncEndpointUrlParam(endpointSelect);
-    }
+    syncEndpointUrlParam(endpointSelect);
 });

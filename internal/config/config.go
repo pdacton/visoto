@@ -122,6 +122,12 @@ func Load(configPath string) (*Config, error) {
 	// Parse prefix strings into Prefix structs
 	cfg.RDF.ParsedPrefixes = cfg.RDF.ParsePrefixStrings()
 
+	// The slug is the only endpoint identifier that crosses the wire (URL params,
+	// cookie, API params), so every configured endpoint must carry a usable one.
+	if err := cfg.Application.validateEndpointSlugs(); err != nil {
+		return cfg, fmt.Errorf("invalid endpoint config in %s: %w", configPath, err)
+	}
+
 	// The PORT env var, when set, overrides the port from the config file.
 	// This lets a second instance run on a different port without editing
 	// visoto.config (e.g. PORT=8061 go run ./cmd/visoto/).
@@ -147,22 +153,6 @@ func (c *Config) GetPort() string {
 	return fmt.Sprintf(":%d", c.Application.Port)
 }
 
-// ResolveEndpointTag returns the Tag of the endpoint matching selectedName,
-// falling back to the default endpoint's tag, or empty string if none configured.
-func (a *ApplicationConfig) ResolveEndpointTag(selectedName string) string {
-	for _, ep := range a.SparqlEndpoints {
-		if ep.Name == selectedName {
-			return ep.Tag
-		}
-	}
-	for _, ep := range a.SparqlEndpoints {
-		if ep.Default {
-			return ep.Tag
-		}
-	}
-	return ""
-}
-
 // GetNamedEndpointsMap returns SPARQL endpoints as a map[name]url for quick lookup
 func (a *ApplicationConfig) GetNamedEndpointsMap() map[string]string {
 	m := make(map[string]string)
@@ -172,13 +162,10 @@ func (a *ApplicationConfig) GetNamedEndpointsMap() map[string]string {
 	return m
 }
 
-// GetEndpointByName returns the SparqlEndpoint with the given name, or the default endpoint, or nil.
-func (a *ApplicationConfig) GetEndpointByName(name string) *SparqlEndpoint {
-	for i := range a.SparqlEndpoints {
-		if a.SparqlEndpoints[i].Name == name {
-			return &a.SparqlEndpoints[i]
-		}
-	}
+// DefaultEndpoint returns the endpoint marked default = true, else the first
+// configured endpoint, or nil when no endpoints are configured (bare
+// sparql_endpoint-only configs).
+func (a *ApplicationConfig) DefaultEndpoint() *SparqlEndpoint {
 	for i := range a.SparqlEndpoints {
 		if a.SparqlEndpoints[i].Default {
 			return &a.SparqlEndpoints[i]
@@ -186,6 +173,23 @@ func (a *ApplicationConfig) GetEndpointByName(name string) *SparqlEndpoint {
 	}
 	if len(a.SparqlEndpoints) > 0 {
 		return &a.SparqlEndpoints[0]
+	}
+	return nil
+}
+
+// validateEndpointSlugs requires every configured endpoint to have a non-empty
+// slug, unique case-insensitively (GetEndpointBySlug matches with EqualFold).
+func (a *ApplicationConfig) validateEndpointSlugs() error {
+	seen := make(map[string]string, len(a.SparqlEndpoints))
+	for _, ep := range a.SparqlEndpoints {
+		if ep.Slug == "" {
+			return fmt.Errorf("endpoint %q has no slug; every endpoint needs a unique slug", ep.Name)
+		}
+		key := strings.ToLower(ep.Slug)
+		if other, dup := seen[key]; dup {
+			return fmt.Errorf("endpoints %q and %q share slug %q (case-insensitive)", other, ep.Name, ep.Slug)
+		}
+		seen[key] = ep.Name
 	}
 	return nil
 }
