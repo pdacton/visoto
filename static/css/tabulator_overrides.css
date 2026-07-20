@@ -174,6 +174,37 @@
 }
 
 /* ============================================================
+   PER-COLUMN HEADER FILTERS
+   ============================================================ */
+
+/* Hidden until toggled via the card-header list-filter button, which flips
+   .vs-show-header-filters on the .tabulator element (see sparql-table.html) */
+.tabulator .tabulator-header-filter {
+    display: none;
+}
+
+.tabulator.vs-show-header-filters .tabulator-header-filter {
+    display: block;
+}
+
+/* Match Tabler's small form inputs (dark-mode aware via Tabler variables) */
+.tabulator .tabulator-header-filter input {
+    font-size: 0.875rem;
+    font-weight: var(--tblr-font-weight-normal, 400);
+    text-transform: none;
+    padding: 0.125rem 0.5rem;
+    color: var(--tblr-body-color);
+    background: var(--tblr-bg-forms, var(--tblr-bg-surface));
+    border: 1px solid var(--tblr-border-color);
+    border-radius: var(--tblr-border-radius, 4px);
+}
+
+.tabulator .tabulator-header-filter input:focus {
+    outline: none;
+    border-color: var(--tblr-primary);
+}
+
+/* ============================================================
    COLUMN RESIZE HANDLES
    ============================================================ */
 

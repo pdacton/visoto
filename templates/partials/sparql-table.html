@@ -93,6 +93,9 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               {{ if $hasResults }}
+                <li><h6 class="dropdown-header">Advanced Search</h6></li>
+                <li><a class="dropdown-item" id="toggle-filters-{{ $id }}" href="#"><i data-lucide="list-filter" style="width:1em;height:1em;"></i> <span id="toggle-filters-label-{{ $id }}">Show column filters</span></a></li>
+                <li><hr class="dropdown-divider"></li>
                 <li><h6 class="dropdown-header">Download{{ if $workingSet }} (loaded set){{ end }}</h6></li>
                 <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> CSV</a></li>
                 <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> JSON</a></li>
@@ -214,6 +217,12 @@
         }
         function htmlCellFormatter(cell) { return renderBinding(cell.getValue()); }
         function plainValueAccessor(value) { return value ? (value.DisplayText || value.Value || '') : ''; }
+        // Per-column header filter: cell values are binding objects, so compare
+        // their plain text (same semantics as the global search box).
+        function bindingHeaderFilter(headerValue, rowValue) {
+          return plainValueAccessor(rowValue).toLowerCase()
+            .indexOf(String(headerValue).toLowerCase()) !== -1;
+        }
         function valueSorter(a, b) {
           var valA = a ? (a.DisplayText || a.Value || '') : '';
           var valB = b ? (b.DisplayText || b.Value || '') : '';
@@ -290,7 +299,11 @@
               variableHeight: isLiteral,
               maxInitialWidth: capWidth,
               sorter: valueSorter,
-              accessorDownload: plainValueAccessor
+              accessorDownload: plainValueAccessor,
+              // Filter row is hidden until toggled via the card-header button
+              // (.vs-show-header-filters, see tabulator_overrides.css)
+              headerFilter: "input",
+              headerFilterFunc: bindingHeaderFilter
             };
             // Capped literal cells wrap and are clamped to a few lines (see
             // .vs-cell-wrap in tabulator_overrides.css); the full text is shown
@@ -368,6 +381,10 @@
           table = new Tabulator("#{{ $id }}-table", cfg);
         }
 
+        // Registry so page templates can reach the instance (facet chips, filters).
+        window.visotoTables = window.visotoTables || {};
+        window.visotoTables["{{ $id }}"] = table;
+
         table.on("tableBuilt", function() { if (window.lucide) lucide.createIcons(); });
         table.on("renderComplete", function() { if (window.lucide) lucide.createIcons(); });
 
@@ -388,9 +405,29 @@
           if (table.modules && table.modules.tooltip) table.modules.tooltip.clearPopup();
         });
 
+        // A table built inside a collapsed (display:none) card has no measurable
+        // height, so the virtual renderer paints zero rows. Redraw once when the
+        // card is first expanded so the rows appear. Guarded so a user toggling the
+        // card repeatedly only pays for the first, corrective redraw.
+        (function() {
+          var collapseEl = document.getElementById("collapse-{{ $id }}");
+          if (!collapseEl) return;
+          var didInitialRedraw = false;
+          collapseEl.addEventListener("shown.bs.collapse", function onShown() {
+            if (didInitialRedraw) return;
+            didInitialRedraw = true;
+            table.redraw(true);
+          });
+        })();
+
         // ================= WORKING-SET data loading =================
         var wsBaseUrl = "/api/async-table-data/{{ $id }}?iri={{ urlquery .iri }}&keyVar={{ urlquery $keyVar }}&max={{ urlquery $max }}";
         {{ if $searchProp }}wsBaseUrl += "&searchProp={{ urlquery $searchProp }}";{{ end }}
+        {{/* Server-embedded endpoint slug: these plain fetch()es aren't covered by the
+             htmx:configRequest hook, and this fragment is cached keyed by its own
+             ?endpoint=, so embedding the same slug keeps the data requests
+             cache-keyed per endpoint with no client-side resolution. */}}
+        {{ with .endpointSlug }}wsBaseUrl += "&endpoint={{ urlquery . }}";{{ end }}
         var wsColumnsSet = false;
         var wsSearchTerm = "";           // active backend search ("" = browse)
         var wsComplete = {{ if $complete }}true{{ else }}false{{ end }};
@@ -525,6 +562,27 @@
           searchAllBtn.addEventListener("click", function(e) {
             e.preventDefault();
             loadWorkingSet(currentTerm()); // rebuild the working set from the server
+          });
+        }
+
+        // ================= per-column header filters =================
+        var toggleFiltersBtn = document.getElementById("toggle-filters-{{ $id }}");
+        var toggleFiltersLabel = document.getElementById("toggle-filters-label-{{ $id }}");
+        var filtersShown = false;
+        if (toggleFiltersBtn) {
+          toggleFiltersBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            filtersShown = !filtersShown;
+            document.getElementById("{{ $id }}-table")
+              .classList.toggle("vs-show-header-filters", filtersShown);
+            if (toggleFiltersLabel) {
+              toggleFiltersLabel.textContent = filtersShown ? "Hide column filters" : "Show column filters";
+            }
+            // Clear on hide so rows are never invisibly filtered by hidden inputs
+            if (!filtersShown) table.clearHeaderFilter();
+            // Plain redraw remeasures the header height; redraw(true) would re-run
+            // fitDataStretch layout and discard manual column widths.
+            table.redraw();
           });
         }
 
