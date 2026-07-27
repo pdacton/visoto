@@ -296,15 +296,6 @@
             return predicateValue.includes(pred);
           });
 
-          // Debug: Log predicate matching
-          if (edgeLines.length === 0) {
-            console.log('[Mermaid Debug - ' + diagramId + '] Predicate reversal check:');
-            console.log('  reversePredicates config:', config.reversePredicates);
-            console.log('  First predicate value:', predicateValue);
-            console.log('  First predicate label:', edgeLabel);
-            console.log('  isPredecessor:', isPredecessor);
-          }
-
           if (isPredecessor) {
             // Reverse edge direction with dotted arrow for visual distinction
             edgeLines.push(toId + ' -.->|' + edgeLabel + '| ' + fromId);
@@ -319,16 +310,6 @@
 
         // Build final output: header, class definitions, nodes, styles, edges
         var mermaidSyntax = [header].concat(classDefs, nodeLines, styleLines, edgeLines).join('\n');
-
-        // Debug: Log the final Mermaid syntax
-        console.log('[Mermaid Debug - ' + diagramId + '] Final Mermaid Syntax:');
-        console.log(mermaidSyntax);
-        console.log('[Mermaid Debug - ' + diagramId + '] Components:');
-        console.log('  Header:', header);
-        console.log('  Class Definitions:', classDefs);
-        console.log('  Node Lines:', nodeLines);
-        console.log('  Style Lines:', styleLines);
-        console.log('  Edge Lines:', edgeLines);
 
         return mermaidSyntax;
       }
