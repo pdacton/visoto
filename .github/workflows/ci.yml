@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# A newer push to the same branch cancels the older run — Dependabot tends to
+# force-push its branches, and there is no value in finishing a superseded run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build, vet, test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          # Track the toolchain declared in go.mod rather than pinning a second
+          # version here that would silently drift out of sync.
+          go-version-file: go.mod
+          cache: true
+
+      - name: Check formatting
+        run: |
+          unformatted=$(gofmt -l .)
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files are not gofmt-formatted:"
+            echo "$unformatted"
+            echo
+            echo "Run 'gofmt -w .' locally and commit the result."
+            exit 1
+          fi
+          echo "All files are gofmt-formatted."
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...
+
+      # Templates are parsed at runtime, not compile time, and a parse error
+      # panics during startup (internal/templates/templates.go). `go build`
+      # therefore cannot catch a broken template — only booting the server can.
+      # Reaching /ping proves every layout, partial, page, class and instance
+      # template parsed successfully.
+      - name: Smoke test — server boots and all templates parse
+        run: |
+          cp visoto.config.example visoto.config
+
+          # Build first and run the binary directly. `go run` forks the compiled
+          # program as a child, so killing the `go run` PID leaves the real
+          # server alive and holding the port.
+          go build -o /tmp/visoto-smoke ./cmd/visoto/
+          /tmp/visoto-smoke > server.log 2>&1 &
+          server_pid=$!
+
+          # Poll rather than sleeping a fixed interval: startup is normally well
+          # under a second, but a cold module cache can make the first run slow.
+          for i in $(seq 1 30); do
+            if curl -sf --max-time 2 http://localhost:8060/ping | grep -q pong; then
+              echo "Server responded on attempt $i."
+              kill "$server_pid" 2>/dev/null || true
+              exit 0
+            fi
+            # If the process already died, stop waiting and show why.
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              echo "::error::Server exited during startup."
+              cat server.log
+              exit 1
+            fi
+            sleep 1
+          done
+
+          echo "::error::Server did not answer /ping within 30s."
+          cat server.log
+          kill "$server_pid" 2>/dev/null || true
+          exit 1
+
+      - name: Upload server log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-log
+          path: server.log
+          if-no-files-found: ignore
