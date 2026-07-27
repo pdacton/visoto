@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"strings"
 	"time"
 
 	"hutzli.org/visoto/internal/sparql"
@@ -72,9 +71,19 @@ func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLa
 		queries = append(queries, extra...)
 	}
 
-	// Replace the entity placeholder `??` with the provided IRI in each query
-	for i := range queries {
-		queries[i].Query = strings.ReplaceAll(queries[i].Query, "??", fmt.Sprintf("<%s>", iri))
+	// Replace the entity placeholder `??` with the provided IRI in each query.
+	// The IRI comes from the request, so it is validated first: one that could
+	// close the <...> term would inject graph patterns into every query on the page.
+	// An empty iri means "no substitution" (plain pages call it that way), so the
+	// placeholder is left untouched rather than validated.
+	if iri != "" {
+		for i := range queries {
+			scoped, err := sparql.SubstituteEntity(queries[i].Query, iri)
+			if err != nil {
+				return TemplateData{}, fmt.Errorf("resource IRI: %w", err)
+			}
+			queries[i].Query = scoped
+		}
 	}
 
 	// Execute queries in parallel with language preference

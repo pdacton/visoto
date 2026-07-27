@@ -25,7 +25,7 @@ func extractElements(templateContent string) ([]ExtractedElement, error) {
 		if n.Type == html.ElementNode {
 			// Check if this is a SPARQL custom element
 			switch n.Data {
-			case "sparql-query", "sparql-table", "sparql-tree", "sparql-async":
+			case "sparql-query", "sparql-table", "sparql-tree", "sparql-async", "sparql-facet":
 				elem, err := parseElement(n)
 				if err == nil {
 					elements = append(elements, elem)
@@ -61,8 +61,9 @@ func parseElement(n *html.Node) (ExtractedElement, error) {
 		}
 	}
 
-	// Validate required ID
-	if elem.ID == "" {
+	// Validate required ID. <sparql-facet> is the exception: it carries no id and
+	// is identified by its "for" (base query id) + "var" attributes instead.
+	if elem.ID == "" && elem.TagName != "sparql-facet" {
 		return elem, fmt.Errorf("missing required id attribute")
 	}
 
@@ -153,6 +154,24 @@ func ExtractAsyncElements(content string) ([]ExtractedElement, error) {
 	var out []ExtractedElement
 	for _, el := range all {
 		if el.TagName == "sparql-async" {
+			out = append(out, el)
+		}
+	}
+	return out, nil
+}
+
+// ExtractFacetElements returns all <sparql-facet> elements in a template. Each
+// declares one facet of a base <sparql-async> query, identified by its "for"
+// attribute; the facet's configuration lives in its other attributes (var, path,
+// type, control, label).
+func ExtractFacetElements(content string) ([]ExtractedElement, error) {
+	all, err := extractElements(content)
+	if err != nil {
+		return nil, err
+	}
+	var out []ExtractedElement
+	for _, el := range all {
+		if el.TagName == "sparql-facet" {
 			out = append(out, el)
 		}
 	}

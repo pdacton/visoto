@@ -35,6 +35,9 @@
   {{ $collapsed := .collapsed }}
   {{ $iconVar := .iconVar }}
   {{ $badgeVar := .badgeVar }}
+  {{/* facetFor (set for faceted tables) = base query id; header-attached facet
+       controls are read from the page's <sparql-facet for="<facetFor>"> elements. */}}
+  {{ $facetFor := or .facetFor "" }}
   {{ $groupBy := or .groupBy "" }}
   {{/* Working-set mode: the frontend fetches a bounded set once from
        /api/async-table-data/:id, then pages/sorts/searches it locally. Rows are
@@ -127,11 +130,26 @@
           </div>
         {{ else }}
           {{ if $workingSet }}
-          <!-- Completeness banner: hidden until the first data response reports the
-               loaded/total counts; only stays visible when the set is incomplete. -->
-          <div id="ws-banner-{{ $id }}" class="alert alert-info d-none rounded-0 border-start-0 border-end-0 border-top-0 mb-0 py-2 px-3 d-flex align-items-center gap-2" role="status">
-            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
+          <!-- Working-set status bar: hidden until the first data response reports the
+               loaded/total counts; stays visible when the set is incomplete or a
+               backend fetch is in flight. Communicates local-preview vs. backend
+               (full-class) state so the two-tier model is transparent to the user.
+               The indeterminate strip at the bottom edge shows while a backend
+               request is running; the leading icon swaps info ⇄ activity. -->
+          <div id="ws-banner-{{ $id }}" class="vs-ws-status alert alert-info d-none rounded-0 border-start-0 border-end-0 border-top-0 mb-0 py-2 px-3 d-flex align-items-center gap-2" role="status" aria-live="polite">
+            <span id="ws-banner-icon-{{ $id }}" class="vs-ws-status-icon d-inline-flex">
+              <i data-lucide="info" style="width: 1em; height: 1em;"></i>
+            </span>
             <span id="ws-banner-text-{{ $id }}"></span>
+            <!-- Reset chip: clears the search box + all funnel facets + column
+                 text-filters and returns to the clean browse working set. Shown only
+                 while something is actually filtering (toggled in renderStatus). -->
+            <a id="ws-reset-{{ $id }}" class="btn btn-sm btn-link text-reset text-decoration-none ms-auto d-none p-0" style="cursor:pointer; white-space:nowrap;" role="button" title="Clear the search and all filters">
+              <i data-lucide="x" style="width:1em;height:1em;"></i> Clear all
+            </a>
+            <!-- Indeterminate activity strip, seamed to the bottom border of the
+                 bar. Toggled via .vs-ws-busy on the status bar (see renderStatus). -->
+            <div class="vs-ws-progress" aria-hidden="true"><span class="vs-ws-progress-bar"></span></div>
           </div>
           {{ end }}
           <!-- Empty div for Tabulator to render into -->
@@ -199,6 +217,39 @@
       };
       window.sparqlTableOnReady(function() {
         var WORKING_SET = {{ if $workingSet }}true{{ else }}false{{ end }};
+
+        // ---- header-attached facets (faceted tables only) ----
+        // FACET_FOR is the base query id; the facet specs live in the page's
+        // <sparql-facet for="<FACET_FOR>"> elements, read via the shared toolkit.
+        var FACET_FOR = "{{ $facetFor }}";
+        var facetSpecs = (FACET_FOR && window.VisotoFacets)
+          ? window.VisotoFacets.readSpecs(FACET_FOR) : [];
+        // Map facet var → spec, for O(1) lookup while building columns.
+        var facetByVar = {};
+        facetSpecs.forEach(function (s) { facetByVar[s.name] = s; });
+
+        // Reload-aware fetch init for the cacheable data routes below. A hard
+        // reload only bypasses the HTTP cache for browser-initiated requests, so
+        // JS fetches would otherwise keep serving data cached for up to 6h (see
+        // the long note in static/js/faceted-table.js). VisotoFacets owns the
+        // shared implementation; plain (non-faceted) tables don't load that file,
+        // hence the inline fallback.
+        var dataFetchOptions = (window.VisotoFacets && window.VisotoFacets.fetchOptions)
+          ? window.VisotoFacets.fetchOptions
+          : (function () {
+              var isReload = false;
+              try {
+                var nav = performance.getEntriesByType('navigation')[0];
+                isReload = nav && nav.type
+                  ? nav.type === 'reload'
+                  : !!(performance.navigation && performance.navigation.type === 1);
+              } catch (e) { isReload = false; }
+              return function (extra) {
+                var init = extra || {};
+                if (isReload) init.cache = 'reload';
+                return init;
+              };
+            })();
 
         // ---- shared cell rendering / sorting ----
         function escapeHtml(text) {
@@ -282,6 +333,14 @@
         // detection, which drives variableHeight).
         function buildColumns(vars, sampleRow) {
           sampleRow = sampleRow || {};
+          // Warn (dev aid) about declared facets whose var isn't a column: a header-
+          // attached facet has nowhere to live, so it is silently skipped otherwise.
+          facetSpecs.forEach(function (s) {
+            if ((vars || []).indexOf(s.name) === -1) {
+              console.warn('facet "' + s.name + '" has no matching column — add ?' +
+                s.name + ' to the base query to attach its header control.');
+            }
+          });
           // Heuristic cap so one long literal can't push other columns out of view
           // (fitDataStretch otherwise sizes columns to full content width). Window
           // width, not container width: always measurable, even in hidden containers.
@@ -292,6 +351,7 @@
             var isLiteral = binding && binding.Type === 'literal';
             var isBadge = badgeVar && varName === badgeVar;
             var isIcon = iconVar && varName === iconVar;
+            var facetSpec = facetByVar[varName];
             var col = {
               title: varName,
               field: varName,
@@ -305,6 +365,21 @@
               headerFilter: "input",
               headerFilterFunc: bindingHeaderFilter
             };
+            // Facetable column: render a funnel dropdown in its header (portal
+            // mechanics live in VisotoFacets.headerFormatter). The facet control
+            // filters locally (instant) and, when the set is incomplete, fetches
+            // the full-class truth from the backend (see scheduleApplyFacets).
+            if (facetSpec) {
+              col.titleFormatter = window.VisotoFacets.headerFormatter(facetSpec, {
+                tableId: "{{ $id }}",
+                facetFor: FACET_FOR,
+                iri: "{{ .iri }}",
+                onChange: scheduleApplyFacets
+              });
+              // headerSort stays enabled (default): a title click sorts, a funnel
+              // click filters. The funnel handler stopPropagation()s, so clicking
+              // it never also triggers a sort.
+            }
             // Capped literal cells wrap and are clamped to a few lines (see
             // .vs-cell-wrap in tabulator_overrides.css); the full text is shown
             // in a hover tooltip, but only when the clamp actually hides content.
@@ -397,6 +472,10 @@
         }
         table.on("renderComplete", markClippedCells);
         table.on("columnResized", markClippedCells);
+        // Keep the status bar + "Clear all" chip in sync with per-column header-
+        // filters (they don't route through applyLocalFilter). renderStatus is a
+        // hoisted function declaration, so it exists by the time this event fires.
+        table.on("dataFiltered", function() { renderStatus(); });
 
         // Tabulator 6.3.1 keeps a shown tooltip open after the mouse leaves the
         // cell (its mouseoutCheck only cancels pending tooltips); hide it via the
@@ -430,29 +509,85 @@
         {{ with .endpointSlug }}wsBaseUrl += "&endpoint={{ urlquery . }}";{{ end }}
         var wsColumnsSet = false;
         var wsSearchTerm = "";           // active backend search ("" = browse)
+        var wsFaceted = false;           // whether the loaded set came from a backend facet query
+        var wsLastFacetURL = "";         // URL of the currently-loaded faceted result; dedupes
+                                         // identical re-applies (e.g. a text facet re-firing
+                                         // its change event on blur when nothing changed)
+        // wsComplete: whether the CURRENTLY loaded set is the whole in-scope population
+        // (drives the banner). It is transiently true for a complete *faceted* result,
+        // so it must NOT gate whether a NEW facet needs the backend — see wsBrowseComplete.
         var wsComplete = {{ if $complete }}true{{ else }}false{{ end }};
+        // wsBrowseComplete: whether the UNFILTERED browse working set holds the entire
+        // class. Only then can local filtering answer any facet authoritatively without
+        // a backend fetch. Set exclusively from a browse (non-faceted) load; a complete
+        // faceted result must never flip it (that set is a filtered subset, not the class).
+        var wsBrowseComplete = {{ if $complete }}true{{ else }}false{{ end }};
         var wsTotal = {{ if $total }}{{ $total }}{{ else }}0{{ end }};
+        var wsLoaded = 0;                // rows in the currently loaded set (banner counts)
+        var wsBusyMsg = "";              // non-empty while a backend request is in flight
+        var wsErrorMsg = "";             // sticky failure message until the next load starts
 
         var bannerEl = document.getElementById("ws-banner-{{ $id }}");
         var bannerTextEl = document.getElementById("ws-banner-text-{{ $id }}");
+        var bannerIconEl = document.getElementById("ws-banner-icon-{{ $id }}");
+        var resetChipEl = document.getElementById("ws-reset-{{ $id }}");
         var searchAllBtn = document.getElementById("search-all-{{ $id }}");
         var searchAllLabel = document.getElementById("search-all-label-{{ $id }}");
         var groupBySelect = document.getElementById("groupby-{{ $id }}");
 
         function fmtNum(n) { return (n != null) ? Number(n).toLocaleString() : "?"; }
 
-        function updateBanner(loaded) {
+        // ================= status bar (single writer) =================
+        // renderStatus is the ONE writer of the working-set status bar — visibility,
+        // text, busy strip (info ⇄ loader glyph), and the "Clear all" chip. Every
+        // path that changes what the bar should say mutates the ws* state vars and
+        // calls this; nothing else touches the banner DOM. That closes the stale-
+        // message class of bug where an in-flight text written by one path
+        // ("Searching…") survived a hide/re-show by another.
+        //
+        // Message precedence: in-flight (wsBusyMsg) > failure (wsErrorMsg) >
+        // resolved state derived from wsFaceted / wsSearchTerm / wsComplete /
+        // wsLoaded / wsTotal. A complete unfiltered browse hides the bar entirely —
+        // unless something is filtering locally, in which case the bar stays
+        // visible as the home of the "Clear all" chip.
+        function renderStatus() {
           if (!bannerEl) return;
-          if (wsComplete) { bannerEl.classList.add("d-none"); return; }
-          bannerEl.classList.remove("d-none");
-          if (wsSearchTerm) {
-            bannerTextEl.textContent = "Showing the first " + fmtNum(loaded) +
-              " matches for “" + wsSearchTerm + "” — refine your search to narrow further.";
+          var busy = wsBusyMsg !== "";
+          var active = anyFilterActive();
+          var text, visible = true;
+          if (busy) {
+            text = wsBusyMsg;
+          } else if (wsErrorMsg) {
+            text = wsErrorMsg;
+          } else if (wsFaceted) {
+            // Backend faceted result: a facet is necessarily active, so the bar
+            // stays visible (chip home) and reports the truthful full-class count.
+            text = wsComplete
+              ? ("Showing all " + fmtNum(wsLoaded) + " full-class matches.")
+              : ("Showing the first " + fmtNum(wsLoaded) +
+                 " full-class matches — narrow the facets to see them all.");
+          } else if (wsSearchTerm) {
+            text = "Showing the first " + fmtNum(wsLoaded) +
+              " full-class matches for “" + wsSearchTerm + "” — refine your search to narrow further.";
+          } else if (!wsComplete) {
+            text = "Showing " + fmtNum(wsLoaded) + " of " + fmtNum(wsTotal) +
+              " — filter a column or use “Search all” to reach the full class.";
+          } else if (active) {
+            text = "Filtered."; // complete set, locally narrowed — bar hosts the chip
           } else {
-            bannerTextEl.textContent = "Showing " + fmtNum(loaded) + " of " + fmtNum(wsTotal) +
-              " — use “Search all” to search the full class.";
+            text = "";
+            visible = false;
           }
-          if (window.lucide) lucide.createIcons({ nodes: [bannerEl] });
+          bannerEl.classList.toggle("d-none", !visible);
+          bannerEl.classList.toggle("vs-ws-busy", busy);
+          if (bannerTextEl) bannerTextEl.textContent = text;
+          if (bannerIconEl) {
+            bannerIconEl.innerHTML = busy
+              ? '<i data-lucide="loader-circle" style="width: 1em; height: 1em;"></i>'
+              : '<i data-lucide="info" style="width: 1em; height: 1em;"></i>';
+          }
+          if (resetChipEl) resetChipEl.classList.toggle("d-none", !active);
+          if (visible && window.lucide) lucide.createIcons({ nodes: [bannerEl] });
         }
 
         function updateSearchAllLabel() {
@@ -466,11 +601,11 @@
         function loadWorkingSet(term) {
           var url = wsBaseUrl;
           if (term) url += "&search=" + encodeURIComponent(term);
-          if (bannerEl) {
-            bannerEl.classList.remove("d-none");
-            bannerTextEl.textContent = term ? ("Searching for “" + term + "”…") : "Loading…";
-          }
-          return fetch(url, { headers: { "Accept": "application/json" } })
+          // Backend request in flight → activity indicator with an in-flight message.
+          wsBusyMsg = term ? ("Searching all instances for “" + term + "”…") : "Loading…";
+          wsErrorMsg = "";
+          renderStatus();
+          return fetch(url, dataFetchOptions({ headers: { "Accept": "application/json" } }))
             .then(function(r) { return r.json(); })
             .then(function(resp) {
               if (resp.error) { console.warn("working-set error:", resp.error); }
@@ -483,10 +618,20 @@
               }
               if (typeof resp.total === "number") wsTotal = resp.total;
               wsComplete = !!resp.complete;
+              // Only an UNFILTERED browse (no search term) tells us whether the whole
+              // class fits locally. A complete *search* result covers only its matches,
+              // so it must not license skipping the backend for other facet terms.
+              if (!term) wsBrowseComplete = !!resp.complete;
               wsSearchTerm = term || "";
+              wsFaceted = false;            // this is a plain browse/search set, not faceted
+              wsLastFacetURL = "";          // left faceted mode; a later facet must re-fetch
+              wsLoaded = rows.length;
+              wsBusyMsg = "";
               table.setData(rows);          // local pagination/sort/search from here
               table.clearFilter();
-              updateBanner(rows.length);
+              // Re-apply any active header-facet + search local filter over the new rows.
+              if (typeof applyLocalFilter === "function") applyLocalFilter();
+              renderStatus();
               updateSearchAllLabel();
               // The escalation button only makes sense while the set is incomplete.
               if (searchAllBtn) {
@@ -497,7 +642,9 @@
             })
             .catch(function(e) {
               console.warn("working-set fetch failed:", e);
-              if (bannerTextEl) bannerTextEl.textContent = "Failed to load data.";
+              wsBusyMsg = "";
+              wsErrorMsg = "Failed to load data.";
+              renderStatus();
             });
         }
 
@@ -516,11 +663,202 @@
           loadWorkingSet("");
         }
 
-        // ================= search (local filter + optional backend rebuild) =================
+        // ================= unified local filter (search box + header facets) =================
+        // One Tabulator function-filter combines the global search term AND every active
+        // header facet. setFilter(fn) REPLACES all function filters, so the two must be
+        // ANDed into a single predicate rather than set independently ("compose, don't
+        // compete"). Runs instantly over the loaded rows for both inline and working-set
+        // data; for a complete working set it is the final answer.
         function currentTerm() {
           var el = document.getElementById("search-{{ $id }}");
           return el ? el.value.trim() : "";
         }
+
+        // Snapshot the active facet selections (skipping empty ones).
+        // Live facet-control nodes for THIS table. Two reasons to query the whole
+        // document by a table-scoped tag rather than caching nodes or scoping to the
+        // table element: (1) Tabulator re-renders header DOM (virtual header), so a
+        // cached node detaches from what the user clicks; (2) an open facet menu is
+        // portaled to <body> (to escape the header's overflow:hidden clip), so it lives
+        // outside the table subtree while open.
+        function liveFacetControls() {
+          return Array.prototype.slice.call(
+            document.querySelectorAll('.vs-facet[data-facet-table="{{ $id }}"]'));
+        }
+
+        function activeFacetSelections() {
+          if (!window.VisotoFacets) return [];
+          return liveFacetControls()
+            .map(window.VisotoFacets.readSelection)
+            .filter(window.VisotoFacets.isActive);
+        }
+
+        function applyLocalFilter() {
+          // Keep the status bar + reset chip in sync on every search/facet change
+          // (both the early-return and the filter-set paths reach here).
+          renderStatus();
+          var term = currentTerm().toLowerCase();
+          var facets = activeFacetSelections();
+          if (!term && !facets.length) { table.clearFilter(); return; }
+          table.setFilter(function (data) {
+            // Global search: any cell contains the term.
+            if (term) {
+              var hit = false;
+              for (var key in data) {
+                var b = data[key];
+                if (b && String(b.DisplayText || b.Value || '').toLowerCase().indexOf(term) !== -1) { hit = true; break; }
+              }
+              if (!hit) return false;
+            }
+            // Header facets: every active facet must match (AND across facets).
+            for (var i = 0; i < facets.length; i++) {
+              var sel = facets[i];
+              if (!window.VisotoFacets.matchesLocally(sel, data[sel.name])) return false;
+            }
+            return true;
+          });
+        }
+
+        // ================= reset ("Clear all") =================
+        // Whether anything is currently narrowing the table: the global search box,
+        // any funnel facet, or any per-column header-filter. Drives the reset chip.
+        function anyColumnHeaderFilter() {
+          // renderStatus runs as early as the first load start, before Tabulator
+          // finishes initializing — getHeaderFilters() would log a "Table Not
+          // Initialized" warning then (it doesn't throw), so gate on the flag.
+          if (!table.initialized) return false;
+          try { return (table.getHeaderFilters() || []).length > 0; } catch (e) { return false; }
+        }
+        function anyFilterActive() {
+          return !!currentTerm() || activeFacetSelections().length > 0 || anyColumnHeaderFilter();
+        }
+
+        // Clear the search box + every funnel facet + all column header-filters, then
+        // return to the clean browse working set. Sort and group-by are left as-is
+        // (view preferences, not search). One combined apply → at most one backend
+        // load, rather than one per cleared control.
+        function resetAllFilters() {
+          // Whether the loaded rows currently come from the server (a facet result or a
+          // full-class search) — decided BEFORE we clear the state below.
+          var loadedFromServer = wsFaceted || !!wsSearchTerm;
+          var searchEl = document.getElementById("search-{{ $id }}");
+          if (searchEl) searchEl.value = "";
+          if (window.VisotoFacets) {
+            liveFacetControls().forEach(window.VisotoFacets.clearControl);
+          }
+          try { table.clearHeaderFilter(); } catch (e) {}
+          wsSearchTerm = "";
+          wsFaceted = false;
+          wsLastFacetURL = "";
+          if (searchAllBtn) searchAllBtn.classList.add("d-none");
+          // If the on-screen rows are a server-fetched subset, reload the unfiltered
+          // browse set; otherwise the whole class is already loaded locally, so just
+          // drop the local filter (applyLocalFilter re-renders the status bar).
+          if (WORKING_SET && loadedFromServer) {
+            loadWorkingSet("");
+          } else {
+            applyLocalFilter();          // clears the Tabulator filter (nothing active now)
+          }
+        }
+        if (resetChipEl) {
+          resetChipEl.addEventListener("click", function (e) {
+            e.preventDefault();
+            resetAllFilters();
+          });
+        }
+
+        // ================= two-tier facet engine (local preview + backend authority) ====
+        // Presentation params passed through to the backend faceted query so its result
+        // columns/labels match the browsed table.
+        var facetPassthrough = {
+          {{ with .title }}title: {{ toJSONRaw . }},{{ end }}
+          {{ with .icon }}icon: {{ toJSONRaw . }},{{ end }}
+          {{ with .iconVar }}iconVar: {{ toJSONRaw . }},{{ end }}
+          {{ with .badgeVar }}badgeVar: {{ toJSONRaw . }},{{ end }}
+          {{ with .groupBy }}groupBy: {{ toJSONRaw . }},{{ end }}
+          {{ with $max }}max: "{{ $max }}"{{ end }}
+        };
+        var facetDebounce;
+        // Debounced entry point every facet control calls on change.
+        function scheduleApplyFacets() {
+          // 1) Instant local preview over the loaded rows — always.
+          applyLocalFilter();
+          // 2) Backend authority — only when the browse working set is an incomplete
+          //    sample, so local filtering can't see the full class. Gate on
+          //    wsBrowseComplete (NOT wsComplete): a complete *faceted* result sets
+          //    wsComplete=true, but the loaded rows are still just that facet's matches,
+          //    so a different facet term must re-query the backend. Debounced to bound
+          //    requests.
+          if (!WORKING_SET || wsBrowseComplete) return;
+          // Immediately signal the preview→backend hand-off: the rows on screen are a
+          // local preview, and the authoritative full-class result is being fetched.
+          // Only when something is actually constrained (an empty selection just
+          // returns to the browse set, no fetch). Busy on now; loadFacetedSet keeps
+          // it on through the debounce+fetch and clears it when the result lands.
+          if (activeFacetSelections().length) {
+            wsBusyMsg = "Previewing loaded rows — fetching full-class results…";
+            wsErrorMsg = "";
+            renderStatus();
+          }
+          clearTimeout(facetDebounce);
+          facetDebounce = setTimeout(loadFacetedSet, 400);
+        }
+
+        // Fetch the true full-class matches for the active facets and load them under the
+        // one Tabulator instance (setData), reusing the completeness banner.
+        function loadFacetedSet() {
+          if (!window.VisotoFacets) return;
+          var active = activeFacetSelections();
+          if (!active.length) {
+            // Nothing constrains anymore → back to the plain browse working set.
+            if (wsSearchTerm || wsFaceted) { wsFaceted = false; wsLastFacetURL = ""; loadWorkingSet(""); }
+            else { wsBusyMsg = ""; renderStatus(); } // clear any lingering activity indicator
+            return;
+          }
+          var url = window.VisotoFacets.buildFacetURL(FACET_FOR, "{{ .iri }}", liveFacetControls(), facetPassthrough);
+          // Dedupe: if the active selections produce the exact same query we already
+          // requested (in flight OR loaded), don't re-fetch. A text facet re-fires its
+          // change event on blur (e.g. clicking above the table) with an unchanged
+          // value; without this that would run an identical backend search again.
+          // Compare against wsLastFacetURL, which is set BEFORE the fetch (not on
+          // resolve) so a re-fire while the first request is still in flight is caught.
+          if (url === wsLastFacetURL) { wsBusyMsg = ""; renderStatus(); return; }
+          wsFaceted = true;
+          wsLastFacetURL = url;       // mark this query as requested (dedupes re-fires)
+          // Backend request in flight → activity indicator on (scheduleApplyFacets
+          // may already have shown it; this keeps it on across the debounce).
+          wsBusyMsg = "Searching all " + fmtNum(wsTotal) + " on the server…";
+          wsErrorMsg = "";
+          renderStatus();
+          fetch(url, dataFetchOptions({ headers: { "Accept": "application/json" } }))
+            .then(function (r) { return r.json(); })
+            .then(function (resp) {
+              if (resp.error) { console.warn("faceted fetch error:", resp.error); }
+              var vars = resp.vars || [];
+              var rows = toTableData(vars, resp.data || []);
+              wsComplete = !!resp.complete;
+              wsSearchTerm = "";
+              wsLoaded = rows.length;
+              wsBusyMsg = "";
+              table.setData(rows).then(function () {
+                // Re-apply the local search term over the backend result (facets are
+                // already reflected server-side; the search box is client-only).
+                applyLocalFilter();
+              });
+              // Resolved → renderStatus derives the wsFaceted banner text (truthful
+              // full-class match count, complete or capped).
+              renderStatus();
+            })
+            .catch(function (e) {
+              console.warn("faceted fetch failed:", e);
+              wsLastFacetURL = ""; // allow the same facets to be retried after a failure
+              wsBusyMsg = "";
+              wsErrorMsg = "Failed to load matches.";
+              renderStatus();
+            });
+        }
+
+        // ================= search (local filter + optional backend rebuild) =================
 
         var searchInput = document.getElementById("search-{{ $id }}");
         if (searchInput) {
@@ -528,21 +866,10 @@
           searchInput.addEventListener("input", function(e) {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(function() {
-              var val = e.target.value.toLowerCase();
-              // Instant local filter over the currently loaded rows (works the same
-              // for inline and working-set data).
-              if (!val) { table.clearFilter(); } else {
-                table.setFilter(function(data) {
-                  for (var key in data) {
-                    var b = data[key];
-                    if (b) {
-                      var text = b.DisplayText || b.Value || '';
-                      if (String(text).toLowerCase().indexOf(val) !== -1) return true;
-                    }
-                  }
-                  return false;
-                });
-              }
+              // Instant local filter over the currently loaded rows — combines the
+              // search term with any active header facets into one predicate (works
+              // the same for inline and working-set data).
+              applyLocalFilter();
               // In working-set mode, reveal the backend-rebuild button whenever the
               // set is incomplete and there's a term (local filtering can only see
               // the loaded subset). When the term is cleared, drop back to browse.

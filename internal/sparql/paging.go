@@ -57,24 +57,39 @@ func MembershipTriplePattern(keyVar string) *regexp.Regexp {
 // class, optionally restricted to those whose name property CONTAINS the search
 // term. Shared by the working-set query (wrapped with LIMIT) and the count
 // query (wrapped with COUNT), so both scope to the same instance set.
-func MembershipBody(classIRI, keyVar, term, searchProp string) string {
-	body := fmt.Sprintf("?%s a <%s>", keyVar, classIRI)
+//
+// classIRI, keyVar and searchProp all originate from request params, so all are
+// validated here rather than at each caller: this is the one chokepoint both the
+// count and working-set paths funnel through.
+func MembershipBody(classIRI, keyVar, term, searchProp string) (string, error) {
+	if err := ValidateVarName(keyVar); err != nil {
+		return "", err
+	}
+	classTerm, err := IRITerm(classIRI)
+	if err != nil {
+		return "", fmt.Errorf("class IRI: %w", err)
+	}
+	body := fmt.Sprintf("?%s a %s", keyVar, classTerm)
 	if term == "" {
-		return body
+		return body, nil
 	}
 	lit := StringLiteral(strings.ToLower(term))
 	if searchProp != "" {
+		propTerm, err := IRITerm(searchProp)
+		if err != nil {
+			return "", fmt.Errorf("search property: %w", err)
+		}
 		// Match the pinned name property when the class has one, OR the key IRI
 		// string (many datasets — e.g. Plazi TaxonName — carry the name only in
 		// the IRI). Left-joined so instances without the name property still match
 		// on their IRI. Measured ~2-6s on ~918k instances.
 		return fmt.Sprintf(
-			"%s . OPTIONAL { ?%s <%s> ?__match . } FILTER(CONTAINS(LCASE(STR(?__match)), %s) || CONTAINS(LCASE(STR(?%s)), %s))",
-			body, keyVar, searchProp, lit, keyVar, lit,
-		)
+			"%s . OPTIONAL { ?%s %s ?__match . } FILTER(CONTAINS(LCASE(STR(?__match)), %s) || CONTAINS(LCASE(STR(?%s)), %s))",
+			body, keyVar, propTerm, lit, keyVar, lit,
+		), nil
 	}
 	// No name property configured: match the key IRI string alone.
-	return fmt.Sprintf("%s . FILTER(CONTAINS(LCASE(STR(?%s)), %s))", body, keyVar, lit)
+	return fmt.Sprintf("%s . FILTER(CONTAINS(LCASE(STR(?%s)), %s))", body, keyVar, lit), nil
 }
 
 // StringLiteral renders a Go string as a safely quoted SPARQL string literal.
@@ -98,23 +113,31 @@ func StringLiteral(s string) string {
 //
 // Unlike the former remote pager there is never a deep OFFSET (the frontend pages
 // the working set locally), so query cost stays flat across the whole session.
-func BuildWorkingSetQuery(declared, classIRI, keyVar, term, searchProp string, max int) string {
-	declared = strings.ReplaceAll(declared, "??", "<"+classIRI+">")
+//
+// classIRI is request input, so it is validated before substitution: an IRI that
+// could close the <...> term early would let a caller inject arbitrary graph
+// patterns into the declared query.
+func BuildWorkingSetQuery(declared, classIRI, keyVar, term, searchProp string, max int) (string, error) {
+	declared, err := SubstituteEntity(declared, classIRI)
+	if err != nil {
+		return "", err
+	}
 	q := StripTrailingLimitOffset(declared)
 
-	inner := fmt.Sprintf(
-		"{ SELECT ?%s WHERE { %s } LIMIT %d }",
-		keyVar, MembershipBody(classIRI, keyVar, term, searchProp), max,
-	)
+	body, err := MembershipBody(classIRI, keyVar, term, searchProp)
+	if err != nil {
+		return "", err
+	}
+	inner := fmt.Sprintf("{ SELECT ?%s WHERE { %s } LIMIT %d }", keyVar, body, max)
 
 	re := MembershipTriplePattern(keyVar)
 	if re.MatchString(q) {
-		return re.ReplaceAllString(q, inner)
+		return re.ReplaceAllString(q, inner), nil
 	}
 	// Fallback: declared query didn't contain a recognizable membership triple.
 	// Wrap it, still applying the cap on the key var. The logged
 	// shape stays visible via the "Execute on endpoint" button.
-	return fmt.Sprintf("SELECT * WHERE { %s\n%s }", inner, q)
+	return fmt.Sprintf("SELECT * WHERE { %s\n%s }", inner, q), nil
 }
 
 var trailingLimitOffsetRe = regexp.MustCompile(`(?is)\s+(LIMIT|OFFSET)\s+\d+(\s+(LIMIT|OFFSET)\s+\d+)?\s*$`)

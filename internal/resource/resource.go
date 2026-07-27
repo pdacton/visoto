@@ -49,9 +49,15 @@ func New(iri string, prefixes []config.Prefix) (*Resource, error) {
 		shortIRI = shortenIRI(iri, prefixes)
 	}
 
-	// Validate the full IRI
+	// Validate the full IRI. url.ParseRequestURI alone is too permissive for a
+	// value that gets substituted into SPARQL as <iri>: it accepts '>' and other
+	// characters that would close the term early and inject graph patterns. The
+	// SPARQL IRIREF rules are the real constraint, so check those too.
 	if _, err := url.ParseRequestURI(fullIRI); err != nil {
 		return nil, fmt.Errorf("incorrect resource iri: %v", fullIRI)
+	}
+	if err := sparql.ValidateIRI(fullIRI); err != nil {
+		return nil, fmt.Errorf("incorrect resource iri: %w", err)
 	}
 
 	log := logger.Get()

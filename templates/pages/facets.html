@@ -1,0 +1,60 @@
+{{ define "pageTitle" }}Faceted Search Demo{{ end }}
+{{ define "pageSubtitle" }}Backend-faceted browsing of the Swiss commercial register (Zefix) on LINDAS.{{ end }}
+{{ define "pageIcon" }}<i data-lucide="sliders-horizontal" style="width:48px;height:48px;"></i>{{ end }}
+
+{{ define "pageContent" }}
+
+<p>
+  A demonstration of the <code>sparqlAsyncTable</code> partial in faceted mode over
+  <strong>ZefixOrganisation</strong> (~790k registered Swiss companies). Each facetable column
+  carries a <strong>filter control in its header</strong> (the funnel icon), driven by the
+  <code>&lt;sparql-facet&gt;</code> declarations on this page. A selection filters the
+  <strong>loaded rows instantly</strong> in the browser; because this class is too large to
+  hold entirely, the app then quietly fetches the <strong>true full-class matches</strong> from
+  the backend and swaps them in — you get an immediate preview and an authoritative result
+  without ever confronting the size.
+</p>
+<ul>
+  <li><strong>Legal form</strong> — a multi-select enum facet over <code>schema:additionalType</code> (values enumerated from the store, e.g. GmbH, AG, sole proprietorship); pick one or more, or <em>(no value)</em> for companies with no recorded legal form.</li>
+  <li><strong>Name contains</strong> — a free-text facet over <code>schema:name</code>, with a <em>(no value)</em> option for companies with no recorded name.</li>
+  <li><strong>Postal code</strong> — a numeric range over the property path <code>schema:address/schema:postalCode</code> (stored as strings, coerced for comparison), also with a <em>(no value)</em> option.</li>
+</ul>
+<p class="text-secondary">
+  Because the class is large, the initial (unfiltered) view is capped for responsiveness —
+  open a column's filter to narrow it.
+</p>
+
+<!-- Base class-instance query. ?? is the class IRI, substituted per request.
+     Every facet var below MUST be SELECTed as a column here — a header-attached
+     facet hangs off the column it filters, so ?legalForm is fetched even though a
+     path (schema:additionalType) produces its value. -->
+<sparql-async id="zefixFacets" class="d-none">
+  SELECT ?org ?name ?legalForm ?postalCode WHERE {
+    ?org a ?? .
+    OPTIONAL { ?org schema:name ?name }
+    OPTIONAL { ?org schema:additionalType ?legalForm }
+    OPTIONAL { ?org schema:address/schema:postalCode ?postalCode }
+  }
+</sparql-async>
+
+<!-- Facet declarations for the base query above. Always close the custom element. -->
+<sparql-facet for="zefixFacets" var="legalForm" path="schema:additionalType" type="iri"
+              control="select" label="Legal form" class="d-none"></sparql-facet>
+<sparql-facet for="zefixFacets" var="name" path="schema:name" type="string"
+              control="text" label="Name contains" class="d-none"></sparql-facet>
+<sparql-facet for="zefixFacets" var="postalCode" path="schema:address/schema:postalCode" type="number"
+              control="range" label="Postal code" class="d-none"></sparql-facet>
+
+{{/* facetFor = this table's own queryId: that's what turns an async table into a
+     faceted one (it wires the <sparql-facet> declarations above to the column
+     headers). See templates/partials/sparql-async-table.html for the details. */}}
+{{ template "sparqlAsyncTable" (dict
+      "queryId" "zefixFacets"
+      "facetFor" "zefixFacets"
+      "iri" "https://schema.ld.admin.ch/ZefixOrganisation"
+      "title" "Organisations"
+      "icon" "building"
+      "iconVar" "org"
+      "max" 10000) }}
+
+{{ end }}

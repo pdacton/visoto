@@ -58,9 +58,9 @@ func TestMembershipTriplePattern(t *testing.T) {
 		}
 	}
 	nonMatches := []string{
-		"?org a ?class .",                    // class is a variable, not a literal IRI
-		"?other a <https://x/C> .",           // different key variable
-		"?organization a <https://x/C> .",    // longer var name must not match ?org
+		"?org a ?class .",                 // class is a variable, not a literal IRI
+		"?other a <https://x/C> .",        // different key variable
+		"?organization a <https://x/C> .", // longer var name must not match ?org
 	}
 	for _, m := range nonMatches {
 		if re.MatchString(m) {
@@ -73,13 +73,19 @@ func TestMembershipBody(t *testing.T) {
 	class := "https://schema.ld.admin.ch/ZefixOrganisation"
 
 	// Browse mode: bare membership triple, no filter.
-	browse := MembershipBody(class, "org", "", "http://schema.org/name")
+	browse, err := MembershipBody(class, "org", "", "http://schema.org/name")
+	if err != nil {
+		t.Fatalf("MembershipBody: %v", err)
+	}
 	if want := "?org a <" + class + ">"; browse != want {
 		t.Errorf("browse body = %q, want %q", browse, want)
 	}
 
 	// Search with name property: matches the property OR the key IRI, lowercased.
-	search := MembershipBody(class, "org", "Migros", "http://schema.org/name")
+	search, err := MembershipBody(class, "org", "Migros", "http://schema.org/name")
+	if err != nil {
+		t.Fatalf("MembershipBody: %v", err)
+	}
 	for _, sub := range []string{
 		"OPTIONAL { ?org <http://schema.org/name> ?__match . }",
 		`CONTAINS(LCASE(STR(?__match)), "migros")`,
@@ -91,7 +97,10 @@ func TestMembershipBody(t *testing.T) {
 	}
 
 	// Search with no name property: match the key IRI string alone (no OPTIONAL).
-	iriOnly := MembershipBody(class, "org", "abc", "")
+	iriOnly, err := MembershipBody(class, "org", "abc", "")
+	if err != nil {
+		t.Fatalf("MembershipBody: %v", err)
+	}
 	if strings.Contains(iriOnly, "OPTIONAL") {
 		t.Errorf("iri-only search should not emit OPTIONAL: %s", iriOnly)
 	}
@@ -126,7 +135,10 @@ func TestBuildWorkingSetQuery_FastPath(t *testing.T) {
 	class := "https://schema.ld.admin.ch/ZefixOrganisation"
 	declared := "SELECT ?org ?name WHERE { ?org a ?? . OPTIONAL { ?org <http://schema.org/name> ?name } } LIMIT 20000"
 
-	got := BuildWorkingSetQuery(declared, class, "org", "", "http://schema.org/name", 20000)
+	got, err := BuildWorkingSetQuery(declared, class, "org", "", "http://schema.org/name", 20000)
+	if err != nil {
+		t.Fatalf("BuildWorkingSetQuery: %v", err)
+	}
 
 	// ?? substituted.
 	if strings.Contains(got, "??") {
@@ -159,7 +171,10 @@ func TestBuildWorkingSetQuery_Fallback(t *testing.T) {
 	// whole query must be wrapped with the deterministic cap on the key var.
 	declared := "SELECT ?inst WHERE { BIND(?? AS ?class) ?inst a ?class }"
 
-	got := BuildWorkingSetQuery(declared, class, "inst", "", "", 500)
+	got, err := BuildWorkingSetQuery(declared, class, "inst", "", "", 500)
+	if err != nil {
+		t.Fatalf("BuildWorkingSetQuery: %v", err)
+	}
 
 	if !strings.Contains(got, "SELECT * WHERE") {
 		t.Errorf("expected wrapping fallback, got: %s", got)
@@ -179,7 +194,10 @@ func TestBuildWorkingSetQuery_SearchInjected(t *testing.T) {
 	class := "https://x/C"
 	declared := "SELECT ?org WHERE { ?org a ?? }"
 
-	got := BuildWorkingSetQuery(declared, class, "org", "Migros", "http://schema.org/name", 100)
+	got, err := BuildWorkingSetQuery(declared, class, "org", "Migros", "http://schema.org/name", 100)
+	if err != nil {
+		t.Fatalf("BuildWorkingSetQuery: %v", err)
+	}
 	if !strings.Contains(got, `CONTAINS(LCASE(STR(?org)), "migros")`) {
 		t.Errorf("search filter not injected into working-set query: %s", got)
 	}

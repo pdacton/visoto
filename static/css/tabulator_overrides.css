@@ -382,3 +382,67 @@
     width: 2rem;
     padding: 0.25rem;
 }
+
+/* ============================================================
+   WORKING-SET STATUS BAR (local-preview ⇄ backend transparency)
+   ============================================================ */
+
+/* The status bar sits directly below the card header and above the table.
+   position:relative anchors the indeterminate strip to its bottom edge. */
+.vs-ws-status {
+    position: relative;
+}
+
+/* The activity icon (a spinner) rotates only while a backend fetch runs; the
+   idle state shows a static info glyph and does not animate. */
+.vs-ws-status.vs-ws-busy .vs-ws-status-icon {
+    animation: vs-ws-spin 0.8s linear infinite;
+}
+
+@keyframes vs-ws-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Indeterminate progress strip, seamed to the bottom border of the status bar.
+   Hidden (zero height) unless the bar carries .vs-ws-busy. Uses the same
+   --tblr-primary blue as the active-sort indicators for a consistent
+   "working / active" signal; dark-mode-aware via the Tabler variable. */
+.vs-ws-progress {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 0;
+    overflow: hidden;
+    background-color: color-mix(in srgb, var(--tblr-primary) 18%, transparent);
+    transition: height 0.15s ease-in-out;
+}
+
+.vs-ws-status.vs-ws-busy .vs-ws-progress {
+    height: 3px;
+}
+
+.vs-ws-progress-bar {
+    display: block;
+    height: 100%;
+    width: 40%;
+    background-color: var(--tblr-primary);
+    border-radius: 2px;
+    animation: vs-ws-indeterminate 1.1s ease-in-out infinite;
+}
+
+/* Slide a partial bar left→right to convey ongoing, bounded-unknown work. */
+@keyframes vs-ws-indeterminate {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(350%); }
+}
+
+/* Respect reduced-motion: drop the spin/slide, keep the strip visible as a
+   static activity indicator so the busy state is still communicated. */
+@media (prefers-reduced-motion: reduce) {
+    .vs-ws-status.vs-ws-busy .vs-ws-status-icon,
+    .vs-ws-progress-bar {
+        animation: none;
+    }
+    .vs-ws-progress-bar { width: 100%; }
+}

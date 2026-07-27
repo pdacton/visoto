@@ -78,7 +78,15 @@ func asyncTableDataHandler(c *gin.Context) {
 	// key IRI CONTAINS the term. Building search into the instance query (rather
 	// than the separate search subsystem, which returns subject/matchedText rows)
 	// keeps the result columns identical to the browsed table.
-	wsQuery := sparql.BuildWorkingSetQuery(declared, classIRI, keyVar, term, searchProp, max)
+	wsQuery, err := sparql.BuildWorkingSetQuery(declared, classIRI, keyVar, term, searchProp, max)
+	if err != nil {
+		// Malformed iri/keyVar/searchProp — reject rather than sending a query
+		// built from unvalidated input. Never cached.
+		c.Header("Cache-Control", "no-store")
+		c.JSON(http.StatusBadRequest, gin.H{"data": []any{}, "total": 0, "complete": true,
+			"error": err.Error()})
+		return
+	}
 	result, err := preprocessor.ExecuteQueryWithContext(ctx, wsQuery, true, acceptLanguage, "")
 	if err != nil {
 		// A transient SPARQL failure must never be cached as if it were real data.
@@ -131,6 +139,8 @@ type countEntry struct {
 	expires time.Time
 }
 
+func (e countEntry) expiredAt(now time.Time) bool { return now.After(e.expires) }
+
 var (
 	countCacheMu sync.Mutex
 	countCache   = map[string]countEntry{}
@@ -152,8 +162,13 @@ func cachedInstanceCount(ctx context.Context, preprocessor *parser.Preprocessor,
 	}
 	countCacheMu.Unlock()
 
-	countQuery := fmt.Sprintf("SELECT (COUNT(*) AS ?count) WHERE { %s }",
-		sparql.MembershipBody(classIRI, keyVar, term, searchProp))
+	body, err := sparql.MembershipBody(classIRI, keyVar, term, searchProp)
+	if err != nil {
+		// Invalid class IRI / key var / search property: treat as "no count" (the
+		// caller falls back to inline-local) rather than querying with bad input.
+		return 0
+	}
+	countQuery := fmt.Sprintf("SELECT (COUNT(*) AS ?count) WHERE { %s }", body)
 	result, err := preprocessor.ExecuteQueryWithContext(ctx, countQuery, false, acceptLanguage, "")
 	if err != nil {
 		return 0 // don't cache errors; caller falls back to inline-local
@@ -166,9 +181,12 @@ func cachedInstanceCount(ctx context.Context, preprocessor *parser.Preprocessor,
 	}
 
 	// Cache all successful counts, including zero — an empty class must not
-	// re-issue the COUNT on every load.
+	// re-issue the COUNT on every load. Bounded: the key embeds request input
+	// (class IRI, search term), so it is swept and capped rather than grown.
 	countCacheMu.Lock()
-	countCache[key] = countEntry{value: total, expires: time.Now().Add(countCacheTTL)}
+	if sweepExpired(countCache) {
+		countCache[key] = countEntry{value: total, expires: time.Now().Add(countCacheTTL)}
+	}
 	countCacheMu.Unlock()
 	return total
 }

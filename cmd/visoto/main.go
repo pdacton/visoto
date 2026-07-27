@@ -353,29 +353,12 @@ var asyncQueryDirs = []string{
 
 // findAsyncQuery locates the query text of a <sparql-async id=id> element across
 // all async template directories. Shared by metricHandler and asyncTableHandler.
+// The underlying scan is memoized and invalidated on template file changes (see
+// scanTemplateElements), since this runs on every async request.
 func findAsyncQuery(id string) (string, bool) {
-	for _, dir := range asyncQueryDirs {
-		files, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, f := range files {
-			if f.IsDir() || !strings.HasSuffix(f.Name(), ".html") {
-				continue
-			}
-			content, err := os.ReadFile(dir + "/" + f.Name())
-			if err != nil {
-				continue
-			}
-			elements, err := parser.ExtractAsyncElements(string(content))
-			if err != nil {
-				continue
-			}
-			for _, el := range elements {
-				if el.ID == id {
-					return el.Content, true
-				}
-			}
+	for _, el := range scanTemplateElements(parser.ExtractAsyncElements, "async") {
+		if el.ID == id {
+			return el.Content, true
 		}
 	}
 	return "", false
@@ -395,8 +378,15 @@ func metricHandler(c *gin.Context) {
 
 	// Optional resource scoping, same substitution as asyncTableHandler: lets
 	// instance templates declare per-resource metrics with the ?? placeholder.
+	// The IRI is request input, so it is validated before substitution.
 	if iri := c.Query("iri"); iri != "" {
-		query = strings.ReplaceAll(query, "??", "<"+iri+">")
+		scoped, err := sparql.SubstituteEntity(query, iri)
+		if err != nil {
+			c.Header("Cache-Control", "no-store")
+			c.String(http.StatusBadRequest, "0")
+			return
+		}
+		query = scoped
 	}
 
 	preprocessor := prepareQueryInputs(c)
@@ -445,6 +435,10 @@ func asyncTableHandler(c *gin.Context) {
 		"iconVar":  c.Query("iconVar"),
 		"badgeVar": c.Query("badgeVar"),
 		"groupBy":  c.Query("groupBy"),
+		// facetFor (set for faceted tables) = the base query id; the rendered
+		// sparqlTable fragment uses it to wire header-attached facet controls from
+		// the page's <sparql-facet> elements. Empty for ordinary async tables.
+		"facetFor": c.Query("facetFor"),
 		// Non-empty string is truthy in the sparqlTable template's {{ if $collapsed }};
 		// absent param yields "" (falsy). The template may still force-collapse an
 		// empty or errored result regardless of this hint.
@@ -464,10 +458,17 @@ func asyncTableHandler(c *gin.Context) {
 	// Substitute the entity placeholder once, up front, so both the inline path
 	// (which executes it) and the working-set shell (which embeds it for the
 	// "Execute on endpoint" button) use the same full query. Queries without ??
-	// are unaffected.
+	// are unaffected. The IRI is request input, so it is validated first — an
+	// unvalidated one could close the <...> term and inject graph patterns.
 	fullQuery := query
 	if iri != "" {
-		fullQuery = strings.ReplaceAll(query, "??", "<"+iri+">")
+		scoped, err := sparql.SubstituteEntity(query, iri)
+		if err != nil {
+			c.Header("Cache-Control", "no-store")
+			c.String(http.StatusBadRequest, "invalid iri")
+			return
+		}
+		fullQuery = scoped
 	}
 
 	if keyVar != "" && iri != "" {
@@ -689,6 +690,8 @@ func main() {
 	router.GET("/api/metric/:id", epFromURL, metricHandler)
 	router.GET("/api/async-table/:id", epFromURL, asyncTableHandler)
 	router.GET("/api/async-table-data/:id", epFromURL, asyncTableDataHandler)
+	router.GET("/api/faceted-table/:id", epFromURL, facetedTableHandler)
+	router.GET("/api/facet-values/:id/:var", epFromURL, facetValuesHandler)
 	router.GET("/resource", epFromURL, resourcePageHandler)
 	router.GET("/resource/*path", legacyResourceRedirectHandler)
 	router.Any("/mcp", gin.WrapH(mcpHandler))

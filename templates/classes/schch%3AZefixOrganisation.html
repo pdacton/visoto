@@ -20,20 +20,42 @@
   <!-- instances of this class -->
   <div class="mb-3">
     <sparql-async id="zefixOrganisationInstances" class="d-none">
-      SELECT ?organization ?companyUID ?additionalType ?addressLocality ?description WHERE {
+      SELECT ?organization ?companyUID ?rechtsform ?addressLocality ?description WHERE {
         ?organization a ?? .
         OPTIONAL {
           ?organization schema:identifier ?idNode .
           ?idNode schema:name "CompanyUID" ; schema:value ?companyUID .
         }
-        OPTIONAL { ?organization schema:additionalType ?additionalType . }
+        OPTIONAL { ?organization schema:additionalType ?rechtsform . }
         OPTIONAL { ?organization schema:address/schema:addressLocality ?addressLocality . }
         OPTIONAL { ?organization schema:description ?description .
           FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
       }
     </sparql-async>
+
+    <!-- Facets for the instances table above. Each var is already SELECTed as a
+         column, which is what a header-attached facet needs. addressLocality is
+         free text rather than a dropdown on purpose: the class has ~5300 distinct
+         localities, well past the 200-value enumeration cap, so a select would
+         silently show a truncated list. -->
+    <!-- Name search on the key column. type="string" (not "iri") even though
+         ?organization is IRI-typed: we match the company NAME, which is what the
+         cell displays, and the local preview compares display text for string
+         facets but the raw IRI for iri ones. Path is schema:name — Zefix orgs
+         carry no rdfs:label at all, so that path would match zero rows. -->
+    <sparql-facet for="zefixOrganisationInstances" var="organization"
+                  path="schema:name" type="string"
+                  control="text" label="Name" class="d-none"></sparql-facet>
+    <sparql-facet for="zefixOrganisationInstances" var="rechtsform"
+                  path="schema:additionalType" type="iri"
+                  control="select" label="Legal form" class="d-none"></sparql-facet>
+    <sparql-facet for="zefixOrganisationInstances" var="addressLocality"
+                  path="schema:address/schema:addressLocality" type="string"
+                  control="text" label="Locality" class="d-none"></sparql-facet>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "zefixOrganisationInstances"
+        "facetFor" "zefixOrganisationInstances"
         "iri" .ResourceIRI
         "title" "Instances of this Class"
         "icon" "circle-dot"

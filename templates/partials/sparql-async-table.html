@@ -33,12 +33,57 @@
     - searchProp: (optional) name property IRI used by the working-set "Search all"
                 rebuild on large classes (e.g. "http://schema.org/name").
     - max:      (optional) working-set row cap for large classes (default 20000).
+    - facetFor: (optional) enables FACETED search on this table — see below.
 
   Working-set vs inline is AUTO-DETECTED by the async-table handler: a class-
   instance query (one with a "?key a ??" membership triple) whose class exceeds
   the working-set threshold is rendered as a working-set table (bounded fetch,
   all-local interactions, "Search all" rebuild); everything else renders inline.
   Authors no longer choose the mode or supply the key/pagination variable.
+
+  ============================ FACETED SEARCH ============================
+
+  Set facetFor to this table's own queryId to hang a filter control off the
+  header of each facetable column. It renders the SAME working-set table (one
+  Tabulator instance, bounded fetch, all-local interactions) and additionally
+  wires those controls. Each facet filters the loaded working set INSTANTLY
+  (client-side) and — when the set is incomplete — fetches the true full-class
+  matches from the backend (/api/faceted-table, JSON), which replace the local
+  preview when they arrive. Small/complete classes never hit the backend: the
+  same code path collapses to pure-local filtering.
+
+  Facets are declared with sibling <sparql-facet for="..."> custom elements
+  (hidden, like <sparql-async>). static/js/faceted-table.js reads those specs and
+  builds the header controls; enum option lists lazy-load from /api/facet-values
+  on first open.
+
+  IMPORTANT — facet var MUST be a column. A header-attached facet hangs off the
+  column it filters, so every <sparql-facet var="X"> requires ?X to be SELECTed as
+  a column in the base <sparql-async> query. A property `path` is still allowed —
+  it PRODUCES the column value, e.g. OPTIONAL { ?key <path> ?X }. A facet whose var
+  is not a column has no header to attach to and is skipped (dev-console warning).
+
+  NOTE: <sparql-facet> is a custom (non-void) element — always give it an explicit
+  closing </sparql-facet>, or the browser will nest everything after it inside it.
+
+  NOTE: the base query id (and hence for="...") is a GLOBAL namespace. The backend
+  matches <sparql-facet for="X"> across ALL async template directories, not just the
+  page being rendered, so two pages that reuse one base query id would silently
+  merge each other's facets. Keep <sparql-async> ids unique across templates.
+
+  Faceted usage:
+    <sparql-async id="taxa" class="d-none">
+      SELECT ?taxon ?name ?rank WHERE {
+        ?taxon a ?? .
+        OPTIONAL { ?taxon schema:name ?name }
+        OPTIONAL { ?taxon dwc:taxonRank ?rank }
+      }
+    </sparql-async>
+    <sparql-facet for="taxa" var="rank" path="dwc:taxonRank" type="iri"
+                  control="select" label="Rank" class="d-none"></sparql-facet>
+    {{ template "sparqlAsyncTable" (dict
+          "queryId" "taxa" "facetFor" "taxa"
+          "iri" .ResourceIRI "title" "Taxa" "icon" "search") }}
 -->
 
 {{ define "sparqlAsyncTable" }}
@@ -60,6 +105,9 @@
        rebuild; max caps the working-set size. */}}
   {{ with .searchProp }}{{ $url = printf "%s&searchProp=%s" $url (urlquery .) }}{{ end }}
   {{ with .max }}{{ $url = printf "%s&max=%s" $url (urlquery (printf "%v" .)) }}{{ end }}
+  {{/* Faceted tables set facetFor = base query id: the rendered fragment wires
+       header-attached facet controls read from the page's <sparql-facet> elements. */}}
+  {{ with .facetFor }}{{ $url = printf "%s&facetFor=%s" $url (urlquery .) }}{{ end }}
 
   <div hx-get="{{ $url }}"
        hx-trigger="{{ $trigger }}"
