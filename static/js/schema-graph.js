@@ -21,11 +21,6 @@
 (function () {
   'use strict';
 
-  // The partial emits one <script src> per use. Duplicate tags with the same src
-  // are fetched once but executed once per tag, so guard against re-running.
-  if (window.__visotoSchemaGraphLoaded) return;
-  window.__visotoSchemaGraphLoaded = true;
-
   function initSchemaGraph(root) {
     var ID = root.getAttribute('data-schema-graph-id');
     if (!ID) return;
@@ -563,6 +558,10 @@
     }
   }
 
+  // Re-entrant on purpose: a duplicate <script src> tag, or this file being
+  // re-executed inside an HTMX-swapped fragment, must still pick up elements
+  // that were not in the DOM the first time. There is deliberately no
+  // module-level "already loaded" latch — only the per-element guard below.
   // Initialize every instance on the page. Guarded per element so a second boot
   // (duplicate script tag, or a fragment swapped in later) cannot double-init.
   function boot() {
