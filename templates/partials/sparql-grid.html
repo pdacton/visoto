@@ -25,8 +25,13 @@
   {{ $hasError := $result.Error }}
   {{ $collapsed := or $collapsed (not $hasResults) $hasError }}
 
-  <!-- card to enclose the datagrid -->
-  <div class="card" {{ if or $hasError (not $hasResults) }}style="background-color: var(--tblr-bg-surface-secondary);"{{ end }}>
+  <!-- card to enclose the datagrid. The data-sparql-grid marker is what
+       static/js/sparql-grid.js looks for; the id and download filename it
+       needs travel as attributes. -->
+  <div class="card" {{ if or $hasError (not $hasResults) }}style="background-color: var(--tblr-bg-surface-secondary);"{{ end }}
+       data-sparql-grid
+       data-sparql-grid-id="{{ $id }}"
+       data-sparql-grid-filename="{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}">
 
     <!-- card header with title -->
     <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -87,79 +92,15 @@
 
   </div>
 
-  <!-- Always-emitted: SPARQL endpoint handler -->
-  {{ if $id }}
-    <script>
-      /* eslint-disable */
-      document.addEventListener('DOMContentLoaded', function() {
-        var sparqlEndpointBtn = document.querySelector(".sparql-endpoint-{{ $id }}");
-        if (sparqlEndpointBtn) {
-          sparqlEndpointBtn.addEventListener("click", function(e) {
-            e.preventDefault();
-            var query = JSON.parse({{ toJSONRaw $result.Query }});
-            var endpoint = JSON.parse({{ toJSONRaw $result.Endpoint }});
-            var url = "https://yasgui.triply.cc/#query=" + encodeURIComponent(query) + "&endpoint=" + encodeURIComponent(endpoint);
-            window.open(url, "_blank");
-          });
-        }
-      });
-    </script>
-  {{ end }}
+  <!-- Query and endpoint for the "Execute on endpoint" action. Written with
+       toJSON (not toJSONRaw) because a <template> re-encodes entities when read
+       back via innerHTML, and toJSON escapes the angle brackets of SPARQL IRIs
+       to backslash-u sequences so the round-trip is lossless. -->
+  <template id="{{ $id }}-query">{{ toJSON $result.Query }}</template>
+  <template id="{{ $id }}-endpoint">{{ toJSON $result.Endpoint }}</template>
 
-  <!-- Download handlers (only when results exist) -->
-  {{ if and $id $hasResults }}
-    <script>
-      /* eslint-disable */
-      document.addEventListener('DOMContentLoaded', function() {
-        var bindingsEl = document.getElementById("{{ $id }}-bindings");
-        if (!bindingsEl) return;
-        var bindings = JSON.parse(bindingsEl.innerHTML.trim());
-        var filename = "{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}";
-
-        // Extract property/value pairs as plain text rows
-        function getRows() {
-          return bindings.map(function(b) {
-            return {
-              property: (b.property && (b.property.DisplayText || b.property.Value)) || '',
-              value:    (b.value    && (b.value.DisplayText    || b.value.Value))    || ''
-            };
-          });
-        }
-
-        // CSV download
-        var csvBtn = document.querySelector(".download-csv-{{ $id }}");
-        if (csvBtn) {
-          csvBtn.addEventListener("click", function(e) {
-            e.preventDefault();
-            var rows = getRows();
-            var lines = ["\uFEFFproperty,value"];
-            rows.forEach(function(r) {
-              function q(s) { return '"' + String(s).replace(/"/g, '""') + '"'; }
-              lines.push(q(r.property) + "," + q(r.value));
-            });
-            var blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
-            var a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = filename + ".csv";
-            a.click();
-          });
-        }
-
-        // JSON download
-        var jsonBtn = document.querySelector(".download-json-{{ $id }}");
-        if (jsonBtn) {
-          jsonBtn.addEventListener("click", function(e) {
-            e.preventDefault();
-            var rows = getRows();
-            var blob = new Blob([JSON.stringify(rows, null, 2)], { type: "application/json" });
-            var a = document.createElement("a");
-            a.href = URL.createObjectURL(blob);
-            a.download = filename + ".json";
-            a.click();
-          });
-        }
-      });
-    </script>
-  {{ end }}
+  <!-- Behaviour lives in static/js/sparql-grid.js; this partial emits only
+       markup, data islands and the data-sparql-grid marker it reads. -->
+  {{ if $id }}<script src="/static/js/sparql-grid.js" defer></script>{{ end }}
 
 {{ end }}
