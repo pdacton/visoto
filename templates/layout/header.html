@@ -61,12 +61,7 @@
       </div>
       {{ end }}
     </div>
-    <script>
-    document.addEventListener('click', e => {
-      const btn = e.target.closest('.iri-copy-btn');
-      if (btn) navigator.clipboard.writeText(btn.dataset.copy);
-    });
-    </script>
+    <!-- The .iri-copy-btn click handler lives in static/js/page-init.js -->
     <p class="text-uppercase small">{{ block "pageClasses" . }}{{ end }}</p>
     <p>{{ block "pageSubtitle" . }}{{ end }}</p>
   </div>

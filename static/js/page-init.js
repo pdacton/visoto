@@ -40,4 +40,12 @@
   if (window.lucide) {
     lucide.createIcons();
   }
+
+  // --- "Copy IRI" buttons (was inline in layout/header.html) ---------------
+  // Delegated from the document, so it covers buttons that arrive later in
+  // HTMX-swapped fragments as well as those present at load.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('.iri-copy-btn');
+    if (btn) navigator.clipboard.writeText(btn.dataset.copy);
+  });
 })();
