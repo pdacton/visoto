@@ -74,6 +74,16 @@ The full-IRI form is correct by construction and unit-tested
 (`TestRangeClauseDeclaresNoPrefix`), but has only been *executed* against LINDAS.
 Worth confirming against QLever/Virtuoso/Fuseki when one is available.
 
+`PREFIX xsd:` has since been added to `visoto.config`, so hand-written template
+queries can use the `xsd:` CURIE directly and the preprocessor will declare it.
+That is belt-and-braces for range facets — the builder still emits full IRIs and
+does not depend on the config entry — but it removes the trap for anyone writing
+`xsd:` in a `<sparql-async>` query by hand.
+
+Note that bare `<http://...>` IRIs inside a `<sparql-async>` element are eaten by
+the HTML parser (they look like tags), leaving a malformed query. Template queries
+must use CURIEs for IRIs; this is why the prefix list matters.
+
 ## 6. Local preview vs. multi-valued facet properties
 
 `matchesLocally` (`static/js/faceted-table.js`) compares a single binding per row,
