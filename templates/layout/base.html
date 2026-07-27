@@ -2,7 +2,10 @@
 <html lang="en">
 
   <head>
-    <!-- Set theme immediately to prevent flash -->
+    <!-- Set theme immediately to prevent flash.
+         Deliberately kept inline, unlike the other scripts in this layout: it
+         must run before the first paint, and an external file would add a
+         network round trip during which the wrong theme would be visible. -->
     <script>
       (function() {
         var savedTheme = localStorage.getItem('bs-theme') || 'auto';
@@ -122,95 +125,11 @@
 
     <script src="https://unpkg.com/@tabler/core@1.4.0/dist/js/tabler.js" integrity="sha384-+L11I0K/7niuERIzrVf6fiTapgkBs8Nl5jnFIvMxDbjizGkKfqBOxjC3HkTMVAq5" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
-    <script>
-      // Initialize Bootstrap tooltips - required for Bootstrap 5
-      // Tooltips must be explicitly initialized as they are opt-in for performance reasons
-      // See: https://getbootstrap.com/docs/5.0/components/tooltips/#example-enable-tooltips-everywhere
-      // Note: Tabler exposes Bootstrap under tabler.bootstrap
-      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
-      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new tabler.bootstrap.Tooltip(tooltipTriggerEl)
-      })
-    </script>
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.3.1/dist/js/tabulator.min.js" integrity="sha384-SKSq3cuuVWdfrjtLz9wNlqE0bMc903yMS5zGnFtwvfddplgxa1hywtiLyw1CbSHO" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/wunderbaum@0.14.1/dist/wunderbaum.umd.min.js" integrity="sha384-PXnlsX9aLAfpCyM4xQFMMm2hDxkXhCG4ec5Fqk2wf2eDGCph7+rc5y9cp21ykCw2" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js" integrity="sha384-RH2xi4eIQ/gjtbs9fUXM68sLSi99C7ZWBRX1vDrVv6GQXRibxXLbwO2NGZB74MbU" crossorigin="anonymous"></script>
-    <script>
-      hljs.highlightAll();
-      document.querySelectorAll('code.language-json .hljs-attr').forEach(function(el) {
-        var text = el.textContent.replace(/"/g, '');
-        if (text === 'Vars' || text === 'Bindings') {
-          el.style.backgroundColor = 'yellow';
-        }
-      });
-    </script>
-    <script type="module">
-      // Import Mermaid and ELK layout as ES modules
-      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
-      import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0/dist/mermaid-layout-elk.esm.min.mjs';
-
-      // Register ELK layout loaders
-      mermaid.registerLayoutLoaders(elkLayouts);
-
-      // Make mermaid available globally for other scripts
-      window.mermaid = mermaid;
-
-      // Initialize Mermaid with dark mode support and ELK as default renderer
-      (function() {
-        var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-        mermaid.initialize({
-          startOnLoad: false,
-          theme: isDark ? 'dark' : 'default',
-          securityLevel: 'loose',
-          flowchart: {
-            defaultRenderer: 'elk',
-            curve: 'linear',
-            htmlLabels: true
-          },
-          elk: {
-            mergeEdges: false,
-            nodePlacementStrategy: 'LINEAR_SEGMENTS'
-          }
-        });
-
-        // Re-initialize on theme change and re-render existing diagrams
-        var observer = new MutationObserver(function() {
-          var isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
-
-          // Update Mermaid configuration with new theme
-          mermaid.initialize({
-            startOnLoad: false,
-            theme: isDark ? 'dark' : 'default',
-            securityLevel: 'loose',
-            flowchart: {
-              defaultRenderer: 'elk',
-              curve: 'linear',
-              htmlLabels: true,
-            },
-            elk: {
-              mergeEdges: false,
-              nodePlacementStrategy: 'LINEAR_SEGMENTS'
-            }
-          });
-
-          // Re-render all registered Mermaid diagrams with new theme
-          if (window.mermaidDiagramRenderers) {
-            Object.values(window.mermaidDiagramRenderers).forEach(function(renderer) {
-              try {
-                renderer.render();
-              } catch (err) {
-                console.error('Error re-rendering Mermaid diagram:', renderer.id, err);
-              }
-            });
-          }
-        });
-        observer.observe(document.documentElement, {
-          attributes: true,
-          attributeFilter: ['data-bs-theme']
-        });
-      })();
-    </script>
+    <script type="module" src="/static/js/mermaid-init.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js" integrity="sha384-yc/c2Lk1s2V2ir1rxvjo8YyVD9PlOlYTqpNr3Wm1WIuAA30GlDYNx6U5104OiavY" crossorigin="anonymous"></script>
     <script src="/static/js/darkmode.js"></script>
     <script src="/static/js/sidebar.js"></script>
@@ -240,9 +159,8 @@
 
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
-    <script>
-      lucide.createIcons();
-    </script>
+    <!-- Tooltip, highlight.js and Lucide initialisation (was three inline blocks) -->
+    <script src="/static/js/page-init.js"></script>
 
     <!-- Resource Table/Graph view toggle (only present on resource pages) -->
     {{ if .ResourceIRI }}
