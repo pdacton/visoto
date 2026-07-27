@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	geminiEndpoint      = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent"
-	geminiTimeout       = 30 * time.Second
-	mcpCallTimeout      = 60 * time.Second
+	geminiEndpoint       = "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent"
+	geminiTimeout        = 30 * time.Second
+	mcpCallTimeout       = 60 * time.Second
 	maxAgenticIterations = 5
 )
 

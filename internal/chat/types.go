@@ -31,8 +31,8 @@ type ChatResponse struct {
 // --- Gemini API types ---
 
 type geminiRequest struct {
-	Contents   []geminiContent  `json:"contents"`
-	Tools      []geminiTool     `json:"tools,omitempty"`
+	Contents   []geminiContent   `json:"contents"`
+	Tools      []geminiTool      `json:"tools,omitempty"`
 	ToolConfig *geminiToolConfig `json:"toolConfig,omitempty"`
 }
 
@@ -47,8 +47,8 @@ type geminiFunctionCallingConfig struct {
 }
 
 type geminiContent struct {
-	Role  string        `json:"role"` // "user" or "model"
-	Parts []geminiPart  `json:"parts"`
+	Role  string       `json:"role"` // "user" or "model"
+	Parts []geminiPart `json:"parts"`
 }
 
 type geminiPart struct {

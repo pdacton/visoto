@@ -173,11 +173,11 @@ func (tc *toolContext) handleCheckEndpoint(_ context.Context, request goMcp.Call
 	hints := buildHints(result, tc.cfg.Application.SparqlEndpoints, tc.cfg.RDF.ParsedPrefixes)
 
 	data, err := json.MarshalIndent(map[string]any{
-		"endpoint":    result.Endpoint,
-		"status":      status,
-		"latency_ms":  latency.Milliseconds(),
-		"error":       result.Error,
-		"hints":       hints,
+		"endpoint":   result.Endpoint,
+		"status":     status,
+		"latency_ms": latency.Milliseconds(),
+		"error":      result.Error,
+		"hints":      hints,
 	}, "", "  ")
 	if err != nil {
 		return goMcp.NewToolResultErrorf("marshal error: %v", err), nil

@@ -41,11 +41,11 @@ type MCPConfig struct {
 
 // ApplicationConfig holds application-level settings
 type ApplicationConfig struct {
-	Port            int               `toml:"port"`
-	SparqlEndpoint  string            `toml:"sparqlEndpoint"`   // Default SPARQL endpoint
-	SparqlEndpoints []SparqlEndpoint  `toml:"sparqlEndpoints"`  // Named endpoints for menu
-	Timeout         int               `toml:"timeout"`          // timeout in seconds
-	GeminiAPIKey    string            `toml:"gemini_api_key"`   // API key for Google Gemini
+	Port            int              `toml:"port"`
+	SparqlEndpoint  string           `toml:"sparqlEndpoint"`  // Default SPARQL endpoint
+	SparqlEndpoints []SparqlEndpoint `toml:"sparqlEndpoints"` // Named endpoints for menu
+	Timeout         int              `toml:"timeout"`         // timeout in seconds
+	GeminiAPIKey    string           `toml:"gemini_api_key"`  // API key for Google Gemini
 
 	// AllowPrivateUploadURLs permits the URL-mode upload (/api/upload) to fetch
 	// private, loopback, and link-local addresses. Off by default to prevent
@@ -55,12 +55,12 @@ type ApplicationConfig struct {
 
 // SparqlEndpoint represents a named SPARQL endpoint configuration
 type SparqlEndpoint struct {
-	Name     string `toml:"name"`     // Display name (e.g., "LINDAS", "Wikidata")
-	URL      string `toml:"url"`      // Full endpoint URL
-	Default  bool   `toml:"default"`  // Optional: mark as default
-	Monitor  bool   `toml:"monitor"`  // Enable health monitoring for this endpoint
-	Tag      string `toml:"tag"`      // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
-	Slug     string `toml:"slug"`     // Unique URL-safe identifier for the ?endpoint= query param (shareable links)
+	Name           string `toml:"name"`            // Display name (e.g., "LINDAS", "Wikidata")
+	URL            string `toml:"url"`             // Full endpoint URL
+	Default        bool   `toml:"default"`         // Optional: mark as default
+	Monitor        bool   `toml:"monitor"`         // Enable health monitoring for this endpoint
+	Tag            string `toml:"tag"`             // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
+	Slug           string `toml:"slug"`            // Unique URL-safe identifier for the ?endpoint= query param (shareable links)
 	Username       string `toml:"username"`        // Optional basic auth username for write operations
 	Password       string `toml:"password"`        // Optional basic auth password for write operations
 	AccessToken    string `toml:"access_token"`    // Optional Bearer token for write operations (takes precedence over username/password)
@@ -70,7 +70,7 @@ type SparqlEndpoint struct {
 
 // RDFConfig holds RDF-related settings
 type RDFConfig struct {
-	Prefixes        []string          `toml:"prefixes"`
+	Prefixes        []string `toml:"prefixes"`
 	ParsedPrefixes  []Prefix
 	TypePriority    []string          `toml:"type_priority"`    // Priority order for RDF types in template resolution
 	MagicProperties map[string]string `toml:"magic_properties"` // visoto:<key> tokens expanded to property paths in queries

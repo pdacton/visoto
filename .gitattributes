@@ -1,0 +1,17 @@
+# Line-ending policy.
+#
+# Part of this tree was originally written from a Windows editor and landed with
+# CRLF endings, while newer files use LF. The mix is invisible day to day but
+# makes `gofmt -l` flag whole files as unformatted (it rewrites every line), so
+# CI cannot check formatting until the tree is consistent.
+#
+# Normalize every text file to LF, both in the repository and in working trees.
+* text=auto eol=lf
+
+# Shell scripts and Dockerfiles are executed by Linux tooling — LF is required,
+# not merely preferred.
+*.sh   text eol=lf
+Dockerfile text eol=lf
+
+# Binary assets: never inspected for line endings, never converted.
+*.png binary

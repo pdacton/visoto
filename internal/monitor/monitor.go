@@ -36,7 +36,7 @@ type Metric struct {
 	Endpoint   string    `json:"endpoint"`
 	MeasuredAt time.Time `json:"measured_at"`
 	DurationMs int64     `json:"duration_ms"` // -1 on error
-	Status     string    `json:"status"`       // "ok" or error message
+	Status     string    `json:"status"`      // "ok" or error message
 }
 
 // EndpointStatus holds the most recent metric for one endpoint.

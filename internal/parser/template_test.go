@@ -97,10 +97,10 @@ func TestExtractQueriesDOM(t *testing.T) {
 			want:     []sparql.ExtractedQuery{},
 		},
 		{
-			name:    "empty query content",
+			name:     "empty query content",
 			template: `<sparql-query id="test"></sparql-query>`,
-			wantErr: true,
-			errMsg:  "empty query content for ID: test",
+			wantErr:  true,
+			errMsg:   "empty query content for ID: test",
 		},
 		{
 			name: "duplicate query ID",
@@ -116,9 +116,9 @@ func TestExtractQueriesDOM(t *testing.T) {
 			errMsg:  "duplicate query ID: duplicate",
 		},
 		{
-			name:    "no queries in template",
+			name:     "no queries in template",
 			template: `<html><body>No SPARQL queries here</body></html>`,
-			want:    []sparql.ExtractedQuery{},
+			want:     []sparql.ExtractedQuery{},
 		},
 		{
 			name: "query with extra whitespace",
