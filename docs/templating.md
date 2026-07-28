@@ -64,7 +64,7 @@ Inside `pageContent`, you compose the page from components (which carry their ow
 
 **Components** (`literals`, `relationships`, `classHierarchy`, `ontologyShacl`, `pageHeader`) — pass `.` (full context), they issue their own SPARQL queries internally.
 
-**Partials** (`sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMermaidFlow`, `sparqlSimpleGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
+**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlGrid`, `sparqlTree`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
 
 ---
 
@@ -282,9 +282,84 @@ Hierarchical tree display powered by Wunderbaum. The SPARQL result **must** have
 
 Mermaid flowchart. Accepts `direction` (`"LR"` or `"TD"`).
 
-### `sparqlSimpleGraph`
+### `sparqlAsyncTable`
 
-Lightweight SVG graph visualization. Result must have `?source`, `?target`, and `?label` columns.
+A `sparqlTable` that is fetched **after** the page renders, so a slow or large query
+never blocks first paint. Renders a skeleton placeholder that HTMX swaps with a full
+table fragment from `/api/async-table/:queryId`.
+
+Unlike the other partials, the query is not passed in as a result — it is declared
+separately in a `<sparql-async id="...">` element on the same page, and executed only
+when the placeholder is triggered.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `queryId` | `string` | required | Must match the `id` of a `<sparql-async>` element. |
+| `iri` | `string` | — | Resource IRI, substituted for `??` in the query. |
+| `title` / `icon` | `string` | — | Card heading and Lucide icon. |
+| `iconVar` / `badgeVar` | `string` | — | As in `sparqlTable`. |
+| `groupBy` | `string` | — | SPARQL variable the table is initially grouped by. |
+| `collapsed` | `bool` | `false` | Start the loaded card collapsed. |
+| `trigger` | `string` | `"load"` | HTMX trigger. Pass a custom event (e.g. `"showData"`) to defer until the view is first revealed. |
+| `searchProp` | `string` | — | Name property IRI used by the working-set "Search all" rebuild. |
+| `max` | `int` | `20000` | Working-set row cap for large classes. |
+| `facetFor` | `string` | — | Set to this table's own `queryId` to enable faceted search. |
+
+```html
+<sparql-async id="myTable" class="d-none">
+  SELECT ?s ?p WHERE { ?s a ?? ; ?p ?o }
+</sparql-async>
+
+{{ template "sparqlAsyncTable" (dict
+  "queryId" "myTable"
+  "iri"     .ResourceIRI
+  "title"   "Instances"
+  "icon"    "database"
+) }}
+```
+
+**Working-set mode is auto-detected.** A class-instance query whose class exceeds the
+size threshold is rendered as a bounded fetch with all-local interaction and a "Search
+all" server rebuild; everything else renders inline. Authors do not choose the mode.
+
+**Faceted search.** Setting `facetFor` to the table's own `queryId` hangs a filter
+control off each facetable column header, declared with sibling
+`<sparql-facet for="..." var="...">` elements. Every faceted `var` must also be
+SELECTed as a column — a facet with no matching column has no header to attach to and
+is skipped with a console warning. `<sparql-facet>` is a non-void custom element, so
+it always needs an explicit closing tag.
+
+### `sparqlGraph`
+
+Embeds an interactive RDF graph (Graph Explorer, an Ontodia fork) that draws and lays
+out a set of IRIs at initialization.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `id` | `string` | `"sparql-graph"` | DOM id suffix; allows multiple graphs on one page. |
+| `iris` | `[]string` | — | IRIs to draw at initialization. |
+| `iri` | `string` | — | Convenience alias for a single starting IRI, appended to `iris`. |
+| `endpointUrl` | `string` | fallback | SPARQL endpoint URL — pass `.EndpointURL`. |
+| `height` | `string` | `"calc(100vh - 200px)"` | CSS height of the container. |
+| `lazy` | `bool` | `false` | Defer initialization until a `graph:init` event fires on the `-root` element. |
+
+The partial self-loads the Graph Explorer CDN bundle, guarded so it loads only once
+per page. The `?iri=` URL parameter is honored as an additional starting IRI.
+
+### `schemaGraph`
+
+Reconstructs an informal schema from the data actually present around a resource and
+renders it as a UML-style class diagram — class boxes with datatype-attribute rows,
+object properties as labeled edges.
+
+Takes the same `id` / `iri` / `endpointUrl` / `height` / `lazy` / `title` / `icon`
+parameters as `sparqlGraph`. The mode is auto-detected client-side: for a class it
+derives the schema from a sample of up to 50 instances; for an instance it derives it
+from that one resource, anchored on a detected class.
+
+```html
+{{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+```
 
 ### `sparqlMetric`
 

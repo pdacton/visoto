@@ -4,14 +4,14 @@ This guide walks you through running Visoto locally for the first time.
 
 ## Prerequisites
 
-- **Go 1.21 or later** — [download from go.dev](https://go.dev/dl/)
+- **Go 1.25 or later** — [download from go.dev](https://go.dev/dl/)
 - **A SPARQL endpoint** — the public [LINDAS endpoint](https://ld.admin.ch/query/) works out of the box with no account
 - **Optional: Google Gemini API key** — only required for the AI chat feature; get one at [aistudio.google.com](https://aistudio.google.com/app/apikey)
 
 ## 1. Clone and Install Dependencies
 
 ```sh
-git clone https://github.com/your-org/visoto.git
+git clone https://github.com/pdacton/visoto.git
 cd visoto
 go mod download
 ```
@@ -101,7 +101,14 @@ curl "https://ld.admin.ch/query/?query=SELECT+1"
 ```
 
 **Port already in use**
-Change `application.port` in `visoto.config` and restart.
+Set the `PORT` environment variable to override the configured port without editing
+the config — useful for running a second instance alongside the first:
+```sh
+PORT=8061 go run ./cmd/visoto/
+```
+If the server still binds the old port, the config file failed to parse: `PORT` is
+applied at the end of config loading and is skipped when parsing errors out. Look for
+`config loaded successfully` in the startup log.
 
 **Gemini chat not working**
 The AI chat feature requires a valid `gemini_api_key` in the config. The rest of the app works without it.

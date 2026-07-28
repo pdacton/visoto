@@ -142,6 +142,14 @@ type_priority = [
   "http://schema.org/DefinedTerm"
 ]
 
+# Magic properties: a visoto:<key> token in a template query expands to the property
+# path below, wrapped in parentheses, with any prefixes it uses declared automatically.
+# This spares every template from repeating the same vocabulary alternation.
+# Several shipped templates use visoto:description — keep this key defined.
+# The key "dispLang" is reserved and cannot be used here.
+[rdf.magic_properties]
+description = "rdfs:comment|schema:description|dct:description|dc:description"
+
 # Well-known ontologies available for one-click loading in the Upload modal.
 # Each entry requires: name (display label), url (fetch source), graph (target named graph URI).
 [[ontologies]]

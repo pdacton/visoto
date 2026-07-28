@@ -62,6 +62,9 @@ For non-resource pages (search, monitoring, home), the lifecycle is simpler: the
 | `internal/sparql` | SPARQL query execution over HTTP; defines `QueryResult` and `Binding` types |
 | `internal/templates` | Go template loading, layout+component composition at startup, custom template func map |
 | `internal/search` | Full-text search handler (issues SPARQL queries to the endpoint) |
+| `internal/facet` | Builds `FILTER EXISTS` clauses and value/count queries for faceted search |
+| `internal/upload` | RDF upload (file or URL) and named-graph listing/deletion |
+| `internal/export` | Named-graph export, with per-store strategies (GraphDB, Graph Store Protocol, `CONSTRUCT`) |
 | `internal/monitor` | SPARQL endpoint health polling, response-time time-series storage in `./data/` |
 | `internal/chat` | Google Gemini AI chat handler |
 | `internal/mcp` | Model Context Protocol server (embedded at `/mcp` on the main port) |
@@ -83,11 +86,22 @@ Persistence happens at two levels:
 
 **Browser-side:** Several UI preferences are stored locally in the browser so they survive page navigation and reloads.
 
-*Cookie (also read server-side):*
+*Cookie (read server-side on entry pages only):*
 
 | Key | Description |
 |---|---|
-| `selectedEndpoint` | Name of the currently selected SPARQL endpoint. Read by the server on every request to set `.EndpointTag` in templates. |
+| `selectedEndpoint` | The **slug** of the currently selected SPARQL endpoint. Set by the client when the user switches endpoints; never written by the server. |
+
+The cookie is deliberately **not** consulted on every request. Routes whose responses
+are shared by the HTTP cache — `/resource` and all `/api/*` fragments — resolve their
+endpoint purely from the `?endpoint=<slug>` URL parameter, so a cached response is a
+pure function of its URL. Reading a per-user cookie on those routes would let one
+user's endpoint choice be cached and served to another. Only uncached entry pages
+(`/`, `/search`, the static `/<page>.html` routes) fall back to the cookie when the
+URL carries no slug.
+
+Both behaviours come from the same `resolveEndpoint(useCookie bool)` middleware in
+`cmd/visoto/main.go`, applied as `epFromURL` or `epFromURLOrCookie` per route.
 
 *`localStorage` (client-side only):*
 
@@ -107,7 +121,14 @@ Persistence happens at two levels:
 
 Visoto has no built-in authentication. It is designed to be placed behind a reverse proxy (Caddy in production) that handles TLS termination. Rate limiting is applied at the Caddy layer.
 
-If a SPARQL endpoint requires credentials, embed them in the endpoint URL (e.g., `https://user:pass@endpoint/query`) or handle authentication at the proxy layer.
+If a SPARQL endpoint requires credentials for write operations (upload, graph
+deletion), configure them per endpoint with `access_token`, or `username` /
+`password` — see [Named Endpoints](configuration.md#named-endpoints). Read-only
+queries are issued unauthenticated.
+
+The URL mode of `/api/upload` refuses to fetch from loopback, private and link-local
+addresses as an SSRF guard. Override with `allow_private_upload_urls` in local test
+environments only.
 
 ## Configuration Flow
 

@@ -17,7 +17,10 @@ cp visoto.config.example visoto.config
 # ... one block per named endpoint (repeatable)
 
 [rdf]
-# ... RDF prefix declarations and type priority
+# ... RDF prefix declarations, type priority, magic properties
+
+[[ontologies]]
+# ... one block per importable ontology (repeatable)
 
 [mcp]
 # ... MCP server settings (currently unused)
@@ -36,6 +39,7 @@ cp visoto.config.example visoto.config
 | `sparqlEndpoint` | string | — | Fallback SPARQL endpoint URL. Used when no named endpoints are configured or when the selected named endpoint cannot be resolved. |
 | `timeout` | integer | `30` | Per-query timeout in seconds for all SPARQL requests. |
 | `gemini_api_key` | string | — | Google Gemini API key. Required only for the AI chat feature at `/api/chat`. The rest of the app works without it. Get a key at [aistudio.google.com](https://aistudio.google.com/app/apikey). |
+| `allow_private_upload_urls` | boolean | `false` | Allows the URL mode of `/api/upload` to fetch from loopback, private and link-local hosts. Off by default as an SSRF guard — enable only in a local test environment where you need to upload from e.g. `http://localhost`. |
 
 ---
 
@@ -47,9 +51,27 @@ Each `[[application.sparqlEndpoints]]` block defines one entry in the endpoint-s
 |---|---|---|---|
 | `name` | string | required | Display name shown in the sidebar menu (e.g., `"LINDAS prod"`). |
 | `url` | string | required | Full SPARQL endpoint URL. |
+| `slug` | string | required | Unique, URL-safe identifier for this endpoint. See [Slugs](#slugs) below — startup fails if slugs are missing or duplicated. |
 | `default` | boolean | `false` | Marks this endpoint as pre-selected when the app starts. At most one endpoint should have `default = true`. Also used as the fallback when resolving `.EndpointTag` in templates. |
 | `monitor` | boolean | `false` | Enables health monitoring for this endpoint. Monitored endpoints appear on the `/monitoring` dashboard with response-time history stored in `./data/`. |
 | `tag` | string | `""` | A logical group label (e.g., `"lindas"`, `"stadtzuerich"`). The tag of the currently selected endpoint is exposed to templates as `.EndpointTag`, allowing templates to conditionally show endpoint-specific content. |
+| `search_provider` | string | `"stardog"` | Full-text search backend for this endpoint: `"stardog"`, `"graphdb"`, `"fuseki"` or `"sparql-query"`. Different triple stores expose FTS through different vendor predicates. |
+| `export_provider` | string | auto | Overrides how named-graph export is performed: `"graphdb"`, `"gsp"` (Graph Store Protocol) or `"construct"`. Autodetected when omitted. |
+| `access_token` | string | — | Bearer token for write operations (upload, graph deletion). Takes precedence over `username`/`password`. |
+| `username` / `password` | string | — | Basic-auth credentials for write operations, used only when `access_token` is absent. |
+
+### Slugs {#slugs}
+
+The `slug` is the **only** endpoint identifier that travels over the wire. It appears
+in shareable links as `?endpoint=<slug>`, in the `selectedEndpoint` cookie, and in
+`/api/*` request parameters. Endpoint URLs and display names are never exposed as
+identifiers.
+
+Slugs must be unique (compared case-insensitively); `config.Load()` returns an error at startup
+if any endpoint is missing a slug or two endpoints share one. A config parse error
+also skips the `PORT` override (see [Environment Variables](#environment-variables)),
+so check for `config loaded successfully` in the startup log if the server binds an
+unexpected port.
 
 ### Example: minimal endpoint
 
@@ -57,6 +79,7 @@ Each `[[application.sparqlEndpoints]]` block defines one entry in the endpoint-s
 [[application.sparqlEndpoints]]
 name = "My endpoint"
 url = "https://example.org/sparql"
+slug = "my-endpoint"
 default = true
 monitor = false
 tag = "myendpoint"
@@ -68,6 +91,7 @@ tag = "myendpoint"
 [[application.sparqlEndpoints]]
 name = "Prod"
 url = "https://example.org/sparql"
+slug = "prod"
 default = true
 monitor = true
 tag = "myendpoint"
@@ -75,6 +99,7 @@ tag = "myendpoint"
 [[application.sparqlEndpoints]]
 name = "Staging"
 url = "https://staging.example.org/sparql"
+slug = "staging"
 monitor = true
 tag = "myendpoint"
 ```
@@ -99,6 +124,7 @@ See [docs/templating.md](templating.md) for the full template data model.
 |---|---|---|---|
 | `prefixes` | list of strings | — | RDF prefix declarations. Prepended to every SPARQL query and used to compute shortened IRIs in the UI. |
 | `type_priority` | list of strings | — | Full IRIs of RDF types. When a resource has multiple `rdf:type` values, template resolution tries types in this order. |
+| `magic_properties` | table of strings | — | Maps a `visoto:<key>` token to a property path, expanded in template queries. See [Magic properties](#magic-properties) below. |
 
 ### Prefix format
 
@@ -131,6 +157,49 @@ In this example, if a resource is both a `ZefixOrganisation` and an `Organizatio
 
 See [Template Resolution](templating.md#template-resolution) for the full lookup algorithm.
 
+### Magic properties {#magic-properties}
+
+Different vocabularies express the same idea with different predicates. Rather than
+repeating a long alternation in every template query, map a name once:
+
+```toml
+[rdf.magic_properties]
+description = "rdfs:comment|schema:description|dct:description|dc:description"
+```
+
+Template queries can then write `visoto:description`, which is expanded to the
+configured path wrapped in parentheses before the query is sent. Any prefixes used in
+the path are declared automatically.
+
+```sparql
+SELECT ?description WHERE { ?? visoto:description ?description }
+```
+
+The key `dispLang` is reserved and cannot be used as a magic property name.
+
+---
+
+## `[[ontologies]]`
+
+Each block defines a well-known ontology offered for one-click import in the Upload
+dialog. Fetching one loads it into the given named graph on the active endpoint.
+
+| Field | Type | Description |
+|---|---|---|
+| `name` | string | Short display label (e.g. `"SKOS"`). |
+| `url` | string | Canonical ontology URL to fetch. |
+| `graph` | string | Target named graph URI to load it into. |
+
+```toml
+[[ontologies]]
+name  = "SKOS"
+url   = "http://www.w3.org/2004/02/skos/core#"
+graph = "urn:ontology:w3/skos"
+```
+
+Writing to a graph requires the active endpoint to have `access_token` or
+`username`/`password` configured.
+
 ---
 
 ## `[mcp]`
@@ -151,15 +220,21 @@ See [Template Resolution](templating.md#template-resolution) for the full lookup
 
 ---
 
-## Environment Variables
+## Environment Variables {#environment-variables}
 
-Only one environment variable is recognized at runtime:
+Two environment variables are recognized at runtime:
 
 | Variable | Values | Description |
 |---|---|---|
+| `PORT` | `1`–`65535` | Overrides `application.port`. Lets a second instance run on a different port without editing the config. An out-of-range or non-numeric value is a startup error. |
 | `GIN_MODE` | `debug`, `release`, `test` | Controls Gin framework verbosity. Set to `release` in production to suppress per-request debug output. The Docker Compose file sets this automatically. |
 
 Example:
 ```sh
-GIN_MODE=release go run ./cmd/visoto/
+PORT=8061 GIN_MODE=release go run ./cmd/visoto/
 ```
+
+> **Note:** the `PORT` override is applied at the *end* of `config.Load()`. If the
+> config file fails to parse, `Load` returns before reaching it and the server falls
+> back to the code default port — silently ignoring `PORT`. If a `PORT=…` run binds
+> an unexpected port, look for `config loaded successfully` in the startup log.
