@@ -60,8 +60,16 @@
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
           ?s schema:address ?address .
-          ?address ?property ?value .
-          FILTER (isLiteral(?value))
+          {
+            ?address ?property ?value .
+            FILTER (isLiteral(?value))
+          } UNION {
+            # municipality hangs off the organisation, not the address node.
+            # Bind the IRI itself (not its name) so the grid renders it as a
+            # link; label resolution turns it into the municipality name.
+            ?s schch:municipality ?value .
+            BIND (schch:municipality AS ?property)
+          }
         } LIMIT 100
       </sparql-query>
       {{ template "sparqlGrid" (dict

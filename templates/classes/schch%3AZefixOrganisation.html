@@ -20,23 +20,23 @@
   <!-- instances of this class -->
   <div class="mb-3">
     <sparql-async id="zefixOrganisationInstances" class="d-none">
-      SELECT ?organization ?companyUID ?rechtsform ?addressLocality ?description WHERE {
+      SELECT ?organization ?companyUID ?rechtsform ?municipality ?description WHERE {
         ?organization a ?? .
         OPTIONAL {
           ?organization schema:identifier ?idNode .
           ?idNode schema:name "CompanyUID" ; schema:value ?companyUID .
         }
         OPTIONAL { ?organization schema:additionalType ?rechtsform . }
-        OPTIONAL { ?organization schema:address/schema:addressLocality ?addressLocality . }
+        OPTIONAL { ?organization schch:municipality ?municipality . }
         OPTIONAL { ?organization schema:description ?description .
           FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
       }
     </sparql-async>
 
     <!-- Facets for the instances table above. Each var is already SELECTed as a
-         column, which is what a header-attached facet needs. addressLocality is
-         free text rather than a dropdown on purpose: the class has ~5300 distinct
-         localities, well past the 200-value enumeration cap, so a select would
+         column, which is what a header-attached facet needs. municipality is
+         free text rather than a dropdown on purpose: the class has ~2100 distinct
+         municipalities, well past the 200-value enumeration cap, so a select would
          silently show a truncated list. -->
     <!-- Name search on the key column. type="string" (not "iri") even though
          ?organization is IRI-typed: we match the company NAME, which is what the
@@ -49,9 +49,13 @@
     <sparql-facet for="zefixOrganisationInstances" var="rechtsform"
                   path="schema:additionalType" type="iri"
                   control="select" label="Legal form" class="d-none"></sparql-facet>
-    <sparql-facet for="zefixOrganisationInstances" var="addressLocality"
-                  path="schema:address/schema:addressLocality" type="string"
-                  control="text" label="Locality" class="d-none"></sparql-facet>
+    <!-- type="string" with a path ending in schema:name, even though the
+         ?municipality column is IRI-typed: a text facet matches with CONTAINS
+         over the variable, which on an IRI would test the raw
+         .../municipality/6136 string and never match a typed-in name. -->
+    <sparql-facet for="zefixOrganisationInstances" var="municipality"
+                  path="schch:municipality/schema:name" type="string"
+                  control="text" label="Municipality" class="d-none"></sparql-facet>
 
     {{ template "sparqlAsyncTable" (dict
         "queryId" "zefixOrganisationInstances"

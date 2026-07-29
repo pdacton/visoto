@@ -1,0 +1,648 @@
+{{ define "metaTitle" }}Politics &amp; Government{{ end }}
+{{ define "pageTitle" }}Politics &amp; Government{{ end }}
+{{ define "pageSubtitle" }}How Switzerland is governed, and how its citizens decide.{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Government.svg" alt="Politics &amp; Government" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Government.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>About this theme</h2>
+
+<p>
+  Seventeen LINDAS graphs cover Swiss politics, all published by the
+  <strong>Federal Chancellery</strong>. That is more graphs than any other theme, and the number is
+  misleading until you see the pattern: they come in two families. The
+  <strong>political-rights graphs</strong> are <em>cubes of outcomes</em> &mdash; every popular vote,
+  initiative and referendum, counted and broken down by canton. The
+  <strong>registers</strong> are <em>directories of people and bodies</em> &mdash; who sits in
+  parliament, who governs, which office reports to which department.
+</p>
+
+<p>
+  One quirk is worth knowing before you start clicking. Each of the four political-rights subjects is
+  published as a <em>triplet</em>: a main cube with the records themselves, a
+  <code>-stat</code> cube listing the possible statuses, and a <em>key figures</em> cube with
+  aggregates. If a graph name ends in <code>-stat</code>, it is reference data, not the thing itself.
+</p>
+
+<!-- Metric strip: one bounded query per headline figure. Counts drift as the Chancellery
+     reloads its exports, so nothing here is written into the prose. -->
+<sparql-async id="politicsProposalCount" class="d-none">
+  SELECT (COUNT(DISTINCT ?t) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/popular-vote&gt; {
+      ?obs &lt;https://politics.ld.admin.ch/political-rights/popular-vote/abstimmungstitel&gt; ?t .
+    }
+  }
+</sparql-async>
+<sparql-async id="politicsVotingDays" class="d-none">
+  SELECT (COUNT(DISTINCT ?d) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/popular-vote&gt; {
+      ?obs &lt;https://politics.ld.admin.ch/political-rights/popular-vote/date&gt; ?d .
+    }
+  }
+</sparql-async>
+<sparql-async id="politicsParliamentarians" class="d-none">
+  SELECT (COUNT(DISTINCT ?p) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
+      ?p a schema:Person .
+    }
+  }
+</sparql-async>
+<sparql-async id="politicsLobbyOrgs" class="d-none">
+  SELECT (COUNT(DISTINCT ?o) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
+      ?o a schema:LobbyOrganization .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "politicsProposalCount"
+      "title" "Vote Proposals"
+      "href" "/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-vote%2F1"
+      "icon" "/static/img/resource/Cube.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "politicsVotingDays"
+      "title" "Polling Days"
+      "href" "/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-vote%2Fvoting_dates%2F1"
+      "icon" "/static/img/resource/Frequency.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "politicsParliamentarians"
+      "title" "Parliamentarians"
+      "href" "/resource?iri=http%3A%2F%2Fschema.org%2FPerson"
+      "icon" "/static/img/resource/Person.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "politicsLobbyOrgs"
+      "title" "Lobby Organizations"
+      "href" "/resource?iri=http%3A%2F%2Fschema.org%2FLobbyOrganization"
+      "icon" "/static/img/resource/LobbyOrganization.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Direct democracy                                               -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">Direct democracy: how a vote happens</h2>
+
+<p>
+  Swiss citizens do not only elect a parliament; they vote on the laws themselves, several times a
+  year. Two instruments put a question to the people, and telling them apart is the single most
+  useful thing to understand about this data &mdash; they run in opposite directions.
+</p>
+
+<div class="row row-cards mb-4">
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="pen-line" class="me-2"></i>Popular initiative
+        </h3>
+        <p class="text-secondary mb-0">
+          Citizens <em>propose</em>. Gather 100,000 signatures and you can demand a change to the
+          federal constitution, whether or not parliament wants one. Recorded since 1891 in the
+          <a href="/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-initiative%2F1">popular initiatives</a>
+          cube, which tracks each one through signature collection, withdrawal or ballot.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card h-100">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="hand" class="me-2"></i>Referendum
+        </h3>
+        <p class="text-secondary mb-0">
+          Citizens <em>object</em>. Parliament has passed a law; 50,000 signatures force it to a
+          public vote before it can take effect. The
+          <a href="/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Freferendum%2F1">referendum</a>
+          cube covers these along with emergency legislation, which follows its own accelerated
+          rules.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p>
+  Both routes end at the same place: a <strong>popular vote</strong>. That cube is the centrepiece of
+  this theme &mdash; and the richest political dataset in LINDAS. It records not one row per vote but
+  <em>one row per proposal per canton</em>, which is why a few hundred proposals become nearly twenty
+  thousand observations. Each row carries yes and no counts <em>and</em> percentages, turnout,
+  eligible voters, blank and invalid ballots, and the cantonal vote (<em>Standesstimme</em>) that
+  constitutional amendments must also win.
+</p>
+
+<sparql-async id="politicsRecentVotes" class="d-none">
+  SELECT ?date ?title ?yesPercent ?turnout WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/popular-vote&gt; {
+      ?obs &lt;https://politics.ld.admin.ch/political-rights/popular-vote/region&gt; &lt;https://ld.admin.ch/country/CHE&gt; ;
+           &lt;https://politics.ld.admin.ch/political-rights/popular-vote/date&gt; ?date ;
+           &lt;https://politics.ld.admin.ch/political-rights/popular-vote/abstimmungstitel&gt; ?titleIri ;
+           &lt;https://politics.ld.admin.ch/political-rights/popular-vote/jaAnteil&gt; ?yesPercent ;
+           &lt;https://politics.ld.admin.ch/political-rights/popular-vote/stimmbeteiligung&gt; ?turnout .
+      FILTER (STR(?yesPercent) != "")
+      # Titles exist in de/en/fr/it/rm, but the English variant is missing or blank for
+      # the most recent votes. Prefer the visitor's language, then English, then German,
+      # so every proposal keeps exactly one row whatever the browser asks for.
+      OPTIONAL { ?titleIri schema:name ?titlePreferred . FILTER (lang(?titlePreferred) = visoto:dispLang && STR(?titlePreferred) != "") }
+      OPTIONAL { ?titleIri schema:name ?titleEnglish   . FILTER (lang(?titleEnglish)   = "en"              && STR(?titleEnglish)   != "") }
+      OPTIONAL { ?titleIri schema:name ?titleGerman    . FILTER (lang(?titleGerman)    = "de"              && STR(?titleGerman)    != "") }
+      BIND (COALESCE(?titlePreferred, ?titleEnglish, ?titleGerman) AS ?title)
+      FILTER (BOUND(?title))
+    }
+  } ORDER BY DESC(?date) LIMIT 60
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "politicsRecentVotes"
+      "title" "Recent federal votes (national result)"
+      "icon" "vote") }}
+</div>
+
+<p class="text-secondary">
+  Cantonal rows are omitted above to keep one line per proposal &mdash; open any
+  <a href="/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-vote%2F1">popular vote</a>
+  observation to see all 26 breakdowns. The polling-days cube also lists <em>future</em> dates, so
+  the most recent entries may be scheduled votes with no result yet.
+</p>
+
+<h3 class="mt-4">Petitions</h3>
+
+<p>
+  The quietest instrument, and the only one open to everyone &mdash; no signature threshold, no
+  citizenship requirement, no minimum age. Anyone may petition the federal authorities, who are
+  obliged to take note but not to act.
+</p>
+
+<sparql-async id="politicsPetitions" class="d-none">
+  SELECT ?date ?title ?author WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/petition&gt; {
+      &lt;https://politics.ld.admin.ch/political-rights/petition/1&gt; cube:observationSet/cube:observation ?petition .
+      ?petition &lt;https://politics.ld.admin.ch/political-rights/petition/datum&gt; ?date ;
+                &lt;https://politics.ld.admin.ch/political-rights/petition/titel&gt; ?titleIri ;
+                &lt;https://politics.ld.admin.ch/political-rights/petition/urheberschaft&gt; ?author .
+      # Only a minority of petitions carry an English title, so German is the last resort.
+      OPTIONAL { ?titleIri schema:name ?titlePreferred . FILTER (lang(?titlePreferred) = visoto:dispLang && STR(?titlePreferred) != "") }
+      OPTIONAL { ?titleIri schema:name ?titleEnglish   . FILTER (lang(?titleEnglish)   = "en"              && STR(?titleEnglish)   != "") }
+      OPTIONAL { ?titleIri schema:name ?titleGerman    . FILTER (lang(?titleGerman)    = "de"              && STR(?titleGerman)    != "") }
+      BIND (COALESCE(?titlePreferred, ?titleEnglish, ?titleGerman) AS ?title)
+      FILTER (BOUND(?title))
+    }
+  } ORDER BY DESC(?date)
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "politicsPetitions"
+      "title" "Petitions to the Federal Council"
+      "icon" "scroll-text"
+      "collapsed" true) }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Elections                                                      -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">Elections: filling the National Council</h2>
+
+<p>
+  Every four years Switzerland elects the 200 members of the National Council. LINDAS holds the
+  results as five cube families per election year, and together they describe the whole proportional
+  machinery: who stood, on which list, how many votes each list drew, and how seats were finally
+  allocated &mdash; including the distribution <em>within</em> joined lists
+  (<em>listes apparentées</em>), a Swiss speciality where small parties pool votes to clear the
+  threshold together.
+</p>
+
+<sparql-async id="politicsElectionCandidates2023" class="d-none">
+  SELECT (COUNT(?o) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/national-council-election&gt; {
+      &lt;https://politics.ld.admin.ch/national-council-election/candidates/2023&gt; cube:observationSet/cube:observation ?o .
+    }
+  }
+</sparql-async>
+<sparql-async id="politicsElectionCandidates2019" class="d-none">
+  SELECT (COUNT(?o) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/national-council-election&gt; {
+      &lt;https://politics.ld.admin.ch/national-council-election/candidates/2019&gt; cube:observationSet/cube:observation ?o .
+    }
+  }
+</sparql-async>
+<sparql-async id="politicsElectionLists2023" class="d-none">
+  SELECT (COUNT(?o) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/national-council-election&gt; {
+      &lt;https://politics.ld.admin.ch/national-council-election/list-results/2023&gt; cube:observationSet/cube:observation ?o .
+    }
+  }
+</sparql-async>
+<sparql-async id="politicsElectionSeats2023" class="d-none">
+  SELECT (COUNT(?o) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/national-council-election&gt; {
+      &lt;https://politics.ld.admin.ch/national-council-election/seats-per-list/2023&gt; cube:observationSet/cube:observation ?o .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards">
+  {{ template "politicsCubeCard" (dict
+      "metricId" "politicsElectionCandidates2023"
+      "iri" "https://politics.ld.admin.ch/national-council-election/candidates/2023"
+      "icon" "user-round"
+      "label" "Candidates 2023"
+      "unit" "candidates"
+      "desc" "Everyone who stood, with their list, canton and result.") }}
+  {{ template "politicsCubeCard" (dict
+      "metricId" "politicsElectionCandidates2019"
+      "iri" "https://politics.ld.admin.ch/national-council-election/candidates/2019"
+      "icon" "user-round"
+      "label" "Candidates 2019"
+      "unit" "candidates"
+      "desc" "The previous election, structured identically — the two are directly comparable.") }}
+  {{ template "politicsCubeCard" (dict
+      "metricId" "politicsElectionLists2023"
+      "iri" "https://politics.ld.admin.ch/national-council-election/list-results/2023"
+      "icon" "list"
+      "label" "Lists 2023"
+      "unit" "lists"
+      "desc" "Party lists per canton and the votes each one received.") }}
+  {{ template "politicsCubeCard" (dict
+      "metricId" "politicsElectionSeats2023"
+      "iri" "https://politics.ld.admin.ch/national-council-election/seats-per-list/2023"
+      "icon" "armchair"
+      "label" "Seat allocation 2023"
+      "unit" "rows"
+      "desc" "How the 200 seats were distributed across lists and list groups.") }}
+</div>
+
+<p class="text-secondary mt-3">
+  Cubes for <strong>2027</strong> are already registered but hold no results yet &mdash; the
+  candidate and list cubes are empty, and the cantonal statistics contain only the pre-seeded row
+  skeleton. Real data exists for 2019 and 2023.
+</p>
+
+<!-- ============================================================= -->
+<!-- People and institutions                                        -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">Who governs: people and institutions</h2>
+
+<p>
+  Where the cubes above count votes, this family of graphs names people. <strong>Curia Vista</strong>
+  is the parliamentary register: every member of the Federal Assembly, living and dead, with their
+  party, their parliamentary group, the committees they sat on and the exact dates of each mandate.
+  Because memberships are modelled as dated <a href="/resource?iri=http%3A%2F%2Fschema.org%2FRole">roles</a>
+  rather than plain links, you can reconstruct the composition of parliament on any given day.
+</p>
+
+<sparql-async id="politicsGroups" class="d-none">
+  SELECT ?group ?name (COUNT(DISTINCT ?person) AS ?members) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
+      ?group a schema:ParliamentaryGroup .
+      ?role schema:memberOf ?group ; schema:member ?person .
+      # Group names exist in de/en/fr/it/rm — one row per group in the visitor's language.
+      OPTIONAL { ?group schema:name ?namePreferred . FILTER (lang(?namePreferred) = visoto:dispLang && STR(?namePreferred) != "") }
+      OPTIONAL { ?group schema:name ?nameEnglish   . FILTER (lang(?nameEnglish)   = "en"              && STR(?nameEnglish)   != "") }
+      OPTIONAL { ?group schema:name ?nameGerman    . FILTER (lang(?nameGerman)    = "de"              && STR(?nameGerman)    != "") }
+      BIND (COALESCE(?namePreferred, ?nameEnglish, ?nameGerman) AS ?name)
+    }
+  } GROUP BY ?group ?name ORDER BY DESC(?members)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "politicsGroups"
+      "title" "Parliamentary groups (Fraktionen)"
+      "icon" "users"
+      "iconVar" "group") }}
+</div>
+
+<p class="text-secondary">
+  Names of groups, parties and vote proposals are published in all four national languages plus
+  Romansh, so the tables on this page follow your browser's language preference and fall back to
+  English, then German, where a translation is missing. People's names carry no language tag and are
+  shown as recorded.
+</p>
+
+<h3 class="mt-4">Interest ties and lobbying</h3>
+
+<p>
+  Members of parliament must declare their outside mandates, and the declarations are published here
+  as links between a person and a
+  <a href="/resource?iri=http%3A%2F%2Fschema.org%2FLobbyOrganization">lobby organization</a>. The
+  useful detail is that each tie is flagged <strong>paid or unpaid</strong>, which makes the register
+  searchable in a way the printed version never was.
+</p>
+
+<sparql-async id="politicsPaidMandates" class="d-none">
+  SELECT ?person (SAMPLE(?n) AS ?name) (COUNT(DISTINCT ?org) AS ?paidMandates) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
+      ?role schema:memberOf ?org ; schema:member ?person ; schema:hasSalary true .
+      ?org a schema:LobbyOrganization .
+      ?person schema:name ?n .
+    }
+  } GROUP BY ?person ORDER BY DESC(?paidMandates) LIMIT 40
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "politicsPaidMandates"
+      "title" "Most paid interest ties, by parliamentarian"
+      "icon" "banknote"
+      "iconVar" "person") }}
+</div>
+
+<h3 class="mt-4">Government and administration</h3>
+
+<p>
+  Three further registers describe the executive side. The
+  <strong>Federal Council</strong> graph covers the seven-member government since 1848 &mdash;
+  councillors, chancellors, which department each held, who was president in which year, and a
+  curiosity found in few national datasets: the people who were <em>elected and declined</em>. The
+  <strong>Staatskalender</strong> is the government directory, listing offices with their postal
+  addresses and staff. <strong>Extra-parliamentary commissions</strong> covers the expert bodies that
+  advise the administration from outside it.
+</p>
+
+<sparql-async id="politicsPresidents" class="d-none">
+  SELECT ?year ?president ?vicePresident WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/federal-council&gt; {
+      &lt;https://politics.ld.admin.ch/fc/cube-president&gt; cube:observationSet/cube:observation ?obs .
+      ?obs schema:temporalCoverage ?year ;
+           &lt;https://politics.ld.admin.ch/fc/vocabulary/president&gt; ?presidentIri .
+      ?presidentIri schema:name ?president .
+      OPTIONAL {
+        ?obs &lt;https://politics.ld.admin.ch/fc/vocabulary/vicePresident&gt; ?viceIri .
+        ?viceIri schema:name ?vicePresident .
+      }
+    }
+  } ORDER BY DESC(?year)
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "politicsPresidents"
+      "title" "Federal Presidents by year"
+      "icon" "crown"
+      "collapsed" true) }}
+</div>
+
+<sparql-async id="politicsCommissions" class="d-none">
+  SELECT ?commission (SAMPLE(?n) AS ?name) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/extra-parliamentary-commission&gt; {
+      ?commission a schema:GovernmentOrganization .
+      OPTIONAL { ?commission schema:name ?n }
+    }
+  } GROUP BY ?commission
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "politicsCommissions"
+      "title" "Extra-parliamentary commissions"
+      "icon" "landmark"
+      "iconVar" "commission"
+      "collapsed" true) }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Parliamentary business                                         -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">Parliamentary business</h2>
+
+<p>
+  One graph in this theme is modelled quite differently from the rest. <strong>Procedural
+  requests</strong> &mdash; motions, postulates and interpellations through which members of
+  parliament formally ask the government to act &mdash; use the
+  <a href="https://ch.paf.link" target="_blank" rel="noopener">PAF ontology</a>, an
+  activity-and-entity model borrowed from provenance vocabularies rather than the cube or schema.org
+  shapes used everywhere else. Each request is an entity; each step in its handling is an activity
+  with its own status text from the administration.
+</p>
+
+<sparql-async id="politicsProceduralRequests" class="d-none">
+  SELECT ?request ?information WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/procedural-request&gt; {
+      ?request a &lt;https://ch.paf.link/ProceduralRequestInformationEntity&gt; ;
+               &lt;https://ch.paf.link/proceduralRequestInformation&gt; ?information .
+    }
+  } LIMIT 500
+</sparql-async>
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "politicsProceduralRequests"
+      "title" "Procedural requests — status reports"
+      "icon" "file-text"
+      "collapsed" true) }}
+</div>
+
+<p class="text-secondary">
+  The status texts are German only, and a single request usually carries several as it moves through
+  the process.
+</p>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">The datasets</h2>
+
+<p>
+  Seventeen graphs, grouped by what they are for. All are published by the Federal Chancellery and
+  carry the <code>https://lindas.admin.ch/fch/</code> prefix.
+</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Group</div>
+        <div class="datagrid-content"><strong>Direct democracy</strong></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">Federal Chancellery (FCh)</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graphs</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-vote">popular-vote</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-vote-stat">popular-vote-stat</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-initiative">popular-initiative</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-initiative-stat">popular-initiative-stat</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Freferendum">referendum</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Freferendum-stat">referendum-stat</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpetition">petition</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~1.9 million triples &mdash; popular-vote alone is ~1.0 million</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Coverage</div>
+        <div class="datagrid-content">
+          Popular votes from 1848; initiatives from 1891; future polling dates included
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Landing page</div>
+        <div class="datagrid-content">
+          <a href="https://www.bk.admin.ch" target="_blank" rel="noopener">bk.admin.ch</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Group</div>
+        <div class="datagrid-content"><strong>Elections</strong></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">Federal Chancellery (FCh)</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fnational-council-election">national-council-election</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~292,000 triples &mdash; 18 cubes, 5 subjects &times; 3 years</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">
+          Candidates, lists, seats per list, seats within joined lists, cantonal statistics
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Coverage</div>
+        <div class="datagrid-content">2019 and 2023 populated; 2027 registered but empty</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Group</div>
+        <div class="datagrid-content"><strong>People &amp; institutions</strong></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">Federal Chancellery (FCh)</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graphs</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fcuria">curia</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Ffederal-council">federal-council</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fstaatskalender">staatskalender</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Forganization">organization</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fextra-parliamentary-commission">extra-parliamentary-commission</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpolitical-party-register">political-party-register</a>,
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Frvov">rvov</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~1.6 million triples &mdash; organization is the largest at ~975,000</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">
+          Parliamentarians, parties, groups, committees, lobby ties, government members, offices and
+          commissions &mdash; modelled as dated <code>schema:Role</code> memberships
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Caveat</div>
+        <div class="datagrid-content">
+          The party register holds only a few dozen rows and is updated solely at a party's request
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">Group</div>
+        <div class="datagrid-content"><strong>Parliamentary business</strong></div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Publisher</div>
+        <div class="datagrid-content">Federal Chancellery (FCh)</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-content">
+          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fprocedural-request">procedural-request</a>
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Size</div>
+        <div class="datagrid-content">~42,000 triples</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Contents</div>
+        <div class="datagrid-content">
+          Motions, postulates and interpellations with their handling status
+        </div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">Vocabulary</div>
+        <div class="datagrid-content">
+          PAF &mdash; <code>https://ch.paf.link/</code>, the only non-cube model in this theme
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-secondary">
+  A seventeenth graph,
+  <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Ftermdat">termdat</a>, holds the
+  Federal Administration's terminology database. It is administrative rather than political and is
+  left out of the groups above.
+</p>
+
+{{ end }}
+
+
+{{/*
+  Card for one election cube: label, description and a live observation count.
+  The count comes from a matching <sparql-async id="<metricId>"> declared on the page —
+  the metric handler resolves those by literal id, so each card needs its own query block
+  and they cannot be generated from a loop.
+*/}}
+{{ define "politicsCubeCard" }}
+  <div class="col-sm-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri={{ urlquery .iri }}">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-center mb-2">
+          <i data-lucide="{{ .icon }}" class="me-3"></i>
+          <h3 class="card-title m-0">{{ .label }}</h3>
+        </div>
+        <div class="text-secondary mt-auto">{{ .desc }}</div>
+        <div class="mt-2">
+          <span class="h2 m-0"
+                hx-get="/api/metric/{{ .metricId }}"
+                hx-trigger="load"
+                hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="text-secondary">{{ .unit }}</span>
+        </div>
+      </div>
+    </a>
+  </div>
+{{ end }}
