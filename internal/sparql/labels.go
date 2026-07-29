@@ -237,6 +237,10 @@ SELECT ?iri ?label WHERE {
       }
 
       ?iri ?prop ?val .
+      # Some sources publish a labelling triple with an empty literal (LINDAS ships blank
+      # English schema:name values on popular-vote titles). Without this guard MIN() below
+      # actively prefers them, since "" sorts ahead of any real text at the same priority.
+      FILTER (STR(?val) != "")
       BIND(lang(?val) AS ?lang)
 
 	  # B. Define Language Priority (1-9)

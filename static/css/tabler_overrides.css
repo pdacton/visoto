@@ -263,3 +263,32 @@ body.resizing {
 .iri-dropdown { display: none; top: 100%; left: 0; width: max-content; }
 .iri-title-wrapper:hover .iri-dropdown,
 .iri-title-wrapper:focus-within .iri-dropdown { display: block; }
+
+/* --- Metric card "⋮" actions menu (templates/partials/sparql-metric.html) ---
+   sparqlTable shows its "⋮" permanently, but a page carries dozens of metric
+   cards, so these are revealed on hover/focus instead. Opacity rather than
+   display keeps the button's box reserved, so the count never reflows. */
+.vs-metric-actions {
+    opacity: 0;
+    transition: opacity .15s ease-in-out;
+    /* Above the card body's own content, so the trigger stays clickable where it
+       overlaps the value. */
+    z-index: 1;
+}
+.card:hover .vs-metric-actions,
+.card:focus-within .vs-metric-actions,
+.vs-metric-actions:focus-within { opacity: 1; }
+/* Keep it visible while its menu is open — the pointer leaves the card to reach
+   the menu, which would otherwise fade the trigger out from under it. */
+.vs-metric-actions:has(.dropdown-menu.show),
+.vs-metric-actions:has([aria-expanded="true"]) { opacity: 1; }
+
+/* Match sparqlTable's action size. Its "⋮" lives in a .card-header, where
+   Tabler's own header rules shrink the icon; on this card's bare .card-body
+   there is no such rule, so Lucide's 24x24 default would otherwise apply. */
+.vs-metric-actions .btn-action { padding: .25rem; color: var(--tblr-secondary); }
+.vs-metric-actions .btn-action svg { width: 1rem; height: 1rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  .vs-metric-actions { transition: none; }
+}

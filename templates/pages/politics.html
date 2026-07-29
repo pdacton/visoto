@@ -9,20 +9,19 @@
 <h2>About this theme</h2>
 
 <p>
-  Seventeen LINDAS graphs cover Swiss politics, all published by the
-  <strong>Federal Chancellery</strong>. That is more graphs than any other theme, and the number is
-  misleading until you see the pattern: they come in two families. The
-  <strong>political-rights graphs</strong> are <em>cubes of outcomes</em> &mdash; every popular vote,
-  initiative and referendum, counted and broken down by canton. The
-  <strong>registers</strong> are <em>directories of people and bodies</em> &mdash; who sits in
-  parliament, who governs, which office reports to which department.
+  This theme brings together everything the <strong>Federal Chancellery</strong> publishes about Swiss
+  politics, and it covers two very different kinds of material. The first is
+  <strong>what citizens decided</strong>: every popular vote, popular initiative and referendum since
+  1848 &mdash; the question that was put, the day it was held, whether it passed, and how each canton
+  voted. The second is <strong>who does the governing</strong>: the members of parliament and their
+  parties, the federal government and its departments, the offices beneath them, and the lobbyists
+  with access to the parliament building.
 </p>
 
 <p>
-  One quirk is worth knowing before you start clicking. Each of the four political-rights subjects is
-  published as a <em>triplet</em>: a main cube with the records themselves, a
-  <code>-stat</code> cube listing the possible statuses, and a <em>key figures</em> cube with
-  aggregates. If a graph name ends in <code>-stat</code>, it is reference data, not the thing itself.
+  Together they answer the two questions people usually arrive with &mdash; <em>what has Switzerland
+  voted on, and how did it turn out?</em> and <em>who holds which office today?</em> The sections
+  below walk through both, starting with how a vote comes about.
 </p>
 
 <!-- Metric strip: one bounded query per headline figure. Counts drift as the Chancellery
@@ -93,35 +92,32 @@
 
 <div class="row row-cards mb-4">
   <div class="col-md-6">
-    <div class="card h-100">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-initiative%2F1">
       <div class="card-body">
         <h3 class="card-title d-flex align-items-center">
           <i data-lucide="pen-line" class="me-2"></i>Popular initiative
         </h3>
         <p class="text-secondary mb-0">
           Citizens <em>propose</em>. Gather 100,000 signatures and you can demand a change to the
-          federal constitution, whether or not parliament wants one. Recorded since 1891 in the
-          <a href="/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-initiative%2F1">popular initiatives</a>
-          cube, which tracks each one through signature collection, withdrawal or ballot.
+          federal constitution, whether or not parliament wants one. Recorded since 1891, and tracked
+          from signature collection through withdrawal or ballot.
         </p>
       </div>
-    </div>
+    </a>
   </div>
   <div class="col-md-6">
-    <div class="card h-100">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Freferendum%2F1">
       <div class="card-body">
         <h3 class="card-title d-flex align-items-center">
           <i data-lucide="hand" class="me-2"></i>Referendum
         </h3>
         <p class="text-secondary mb-0">
           Citizens <em>object</em>. Parliament has passed a law; 50,000 signatures force it to a
-          public vote before it can take effect. The
-          <a href="/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Freferendum%2F1">referendum</a>
-          cube covers these along with emergency legislation, which follows its own accelerated
-          rules.
+          public vote before it can take effect. Emergency legislation is covered here too, and
+          follows its own accelerated rules.
         </p>
       </div>
-    </div>
+    </a>
   </div>
 </div>
 
@@ -135,22 +131,16 @@
 </p>
 
 <sparql-async id="politicsRecentVotes" class="d-none">
-  SELECT ?date ?title ?yesPercent ?turnout WHERE {
+  # ?title and ?observation stay IRIs on purpose: the backend resolves each to a label in the
+  # visitor's language, and the table renders resolved IRIs as links to their resource page.
+  SELECT ?date ?title ?yesPercent ?turnout ?observation WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/popular-vote&gt; {
-      ?obs &lt;https://politics.ld.admin.ch/political-rights/popular-vote/region&gt; &lt;https://ld.admin.ch/country/CHE&gt; ;
-           &lt;https://politics.ld.admin.ch/political-rights/popular-vote/date&gt; ?date ;
-           &lt;https://politics.ld.admin.ch/political-rights/popular-vote/abstimmungstitel&gt; ?titleIri ;
-           &lt;https://politics.ld.admin.ch/political-rights/popular-vote/jaAnteil&gt; ?yesPercent ;
-           &lt;https://politics.ld.admin.ch/political-rights/popular-vote/stimmbeteiligung&gt; ?turnout .
+      ?observation &lt;https://politics.ld.admin.ch/political-rights/popular-vote/region&gt; &lt;https://ld.admin.ch/country/CHE&gt; ;
+                   &lt;https://politics.ld.admin.ch/political-rights/popular-vote/date&gt; ?date ;
+                   &lt;https://politics.ld.admin.ch/political-rights/popular-vote/abstimmungstitel&gt; ?title ;
+                   &lt;https://politics.ld.admin.ch/political-rights/popular-vote/jaAnteil&gt; ?yesPercent ;
+                   &lt;https://politics.ld.admin.ch/political-rights/popular-vote/stimmbeteiligung&gt; ?turnout .
       FILTER (STR(?yesPercent) != "")
-      # Titles exist in de/en/fr/it/rm, but the English variant is missing or blank for
-      # the most recent votes. Prefer the visitor's language, then English, then German,
-      # so every proposal keeps exactly one row whatever the browser asks for.
-      OPTIONAL { ?titleIri schema:name ?titlePreferred . FILTER (lang(?titlePreferred) = visoto:dispLang && STR(?titlePreferred) != "") }
-      OPTIONAL { ?titleIri schema:name ?titleEnglish   . FILTER (lang(?titleEnglish)   = "en"              && STR(?titleEnglish)   != "") }
-      OPTIONAL { ?titleIri schema:name ?titleGerman    . FILTER (lang(?titleGerman)    = "de"              && STR(?titleGerman)    != "") }
-      BIND (COALESCE(?titlePreferred, ?titleEnglish, ?titleGerman) AS ?title)
-      FILTER (BOUND(?title))
     }
   } ORDER BY DESC(?date) LIMIT 60
 </sparql-async>
@@ -177,18 +167,14 @@
 </p>
 
 <sparql-async id="politicsPetitions" class="d-none">
-  SELECT ?date ?title ?author WHERE {
+  # ?title and ?observation stay IRIs on purpose: the backend resolves each to a label in the
+  # visitor's language, and the table renders resolved IRIs as links to their resource page.
+  SELECT ?date ?title ?author ?observation WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/petition&gt; {
-      &lt;https://politics.ld.admin.ch/political-rights/petition/1&gt; cube:observationSet/cube:observation ?petition .
-      ?petition &lt;https://politics.ld.admin.ch/political-rights/petition/datum&gt; ?date ;
-                &lt;https://politics.ld.admin.ch/political-rights/petition/titel&gt; ?titleIri ;
-                &lt;https://politics.ld.admin.ch/political-rights/petition/urheberschaft&gt; ?author .
-      # Only a minority of petitions carry an English title, so German is the last resort.
-      OPTIONAL { ?titleIri schema:name ?titlePreferred . FILTER (lang(?titlePreferred) = visoto:dispLang && STR(?titlePreferred) != "") }
-      OPTIONAL { ?titleIri schema:name ?titleEnglish   . FILTER (lang(?titleEnglish)   = "en"              && STR(?titleEnglish)   != "") }
-      OPTIONAL { ?titleIri schema:name ?titleGerman    . FILTER (lang(?titleGerman)    = "de"              && STR(?titleGerman)    != "") }
-      BIND (COALESCE(?titlePreferred, ?titleEnglish, ?titleGerman) AS ?title)
-      FILTER (BOUND(?title))
+      &lt;https://politics.ld.admin.ch/political-rights/petition/1&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;https://politics.ld.admin.ch/political-rights/petition/datum&gt; ?date ;
+                   &lt;https://politics.ld.admin.ch/political-rights/petition/titel&gt; ?title ;
+                   &lt;https://politics.ld.admin.ch/political-rights/petition/urheberschaft&gt; ?author .
     }
   } ORDER BY DESC(?date)
 </sparql-async>
@@ -296,24 +282,50 @@
 </p>
 
 <sparql-async id="politicsGroups" class="d-none">
-  SELECT ?group ?name (COUNT(DISTINCT ?person) AS ?members) WHERE {
-    GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
-      ?group a schema:ParliamentaryGroup .
-      ?role schema:memberOf ?group ; schema:member ?person .
-      # Group names exist in de/en/fr/it/rm — one row per group in the visitor's language.
-      OPTIONAL { ?group schema:name ?namePreferred . FILTER (lang(?namePreferred) = visoto:dispLang && STR(?namePreferred) != "") }
-      OPTIONAL { ?group schema:name ?nameEnglish   . FILTER (lang(?nameEnglish)   = "en"              && STR(?nameEnglish)   != "") }
-      OPTIONAL { ?group schema:name ?nameGerman    . FILTER (lang(?nameGerman)    = "de"              && STR(?nameGerman)    != "") }
-      BIND (COALESCE(?namePreferred, ?nameEnglish, ?nameGerman) AS ?name)
+  # ?parliamentaryGroup stays an IRI on purpose: the backend resolves it to a label in the
+  # visitor's language, and the table renders resolved IRIs as links to their resource page.
+  # The chamber split comes from each member's *council* role, not the group role, which
+  # carries no council reference. A member of both chambers would count in each column.
+  SELECT ?parliamentaryGroup ?abbreviation ?founded ?nationalCouncil ?councilOfStates ?members ?seatShare WHERE {
+    {
+      SELECT ?parliamentaryGroup
+             # alternateName and validFrom repeat per language, so SAMPLE keeps one row per group
+             (SAMPLE(?abbr) AS ?abbreviation)
+             (SAMPLE(?validFrom) AS ?validFromSample)
+             (COUNT(DISTINCT ?person) AS ?members)
+             (COUNT(DISTINCT ?personNational) AS ?nationalCouncil)
+             (COUNT(DISTINCT ?personStates) AS ?councilOfStates)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
+          ?parliamentaryGroup a schema:ParliamentaryGroup .
+          ?role schema:memberOf ?parliamentaryGroup ; schema:member ?person .
+          OPTIONAL { ?parliamentaryGroup schema:alternateName ?abbr }
+          OPTIONAL { ?parliamentaryGroup schema:validFrom ?validFrom }
+          OPTIONAL {
+            ?councilRoleN schema:member ?person ; schema:memberOf &lt;https://politics.ld.admin.ch/council/N&gt; .
+            BIND (?person AS ?personNational)
+          }
+          OPTIONAL {
+            ?councilRoleS schema:member ?person ; schema:memberOf &lt;https://politics.ld.admin.ch/council/S&gt; .
+            BIND (?person AS ?personStates)
+          }
+        }
+      } GROUP BY ?parliamentaryGroup
     }
-  } GROUP BY ?group ?name ORDER BY DESC(?members)
+    # validFrom is a real xsd:dateTime ("1972-01-01T00:00:00"), so YEAR() gives just the year.
+    # Note SUBSTR(?validFromSample, ...) would NOT work here: passing a dateTime to a string
+    # function is a type error, and the endpoint silently returns an unbound column for it.
+    BIND (YEAR(?validFromSample) AS ?founded)
+    # 246 = 200 National Council + 46 Council of States seats
+    BIND (ROUND(?members * 1000 / 246) / 10 AS ?seatShare)
+  } ORDER BY DESC(?members)
 </sparql-async>
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsGroups"
       "title" "Parliamentary groups (Fraktionen)"
       "icon" "users"
-      "iconVar" "group") }}
+      "iconVar" "parliamentaryGroup") }}
 </div>
 
 <p class="text-secondary">
@@ -329,23 +341,52 @@
   Members of parliament must declare their outside mandates, and the declarations are published here
   as links between a person and a
   <a href="/resource?iri=http%3A%2F%2Fschema.org%2FLobbyOrganization">lobby organization</a>. The
-  useful detail is that each tie is flagged <strong>paid or unpaid</strong>, which makes the register
-  searchable in a way the printed version never was.
+  useful detail is that each tie is flagged <strong>paid or unpaid</strong>, and records the
+  <em>function</em> held &mdash; so the table below separates the seats a parliamentarian merely
+  occupies from the ones they <strong>chair</strong>. The two can diverge sharply: of the twelve
+  people with the most paid ties, some chair almost all of them and others chair one.
 </p>
 
 <sparql-async id="politicsPaidMandates" class="d-none">
-  SELECT ?person (SAMPLE(?n) AS ?name) (COUNT(DISTINCT ?org) AS ?paidMandates) WHERE {
-    GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
-      ?role schema:memberOf ?org ; schema:member ?person ; schema:hasSalary true .
-      ?org a schema:LobbyOrganization .
-      ?person schema:name ?n .
+  # ?person stays an IRI on purpose: the backend resolves it to the person's name and the
+  # table renders it as a link, so no separate name column is needed.
+  SELECT ?person ?party ?bornIn ?presidencies ?paidMandates ?unpaidMandates WHERE {
+    {
+      SELECT ?person
+             (SAMPLE(?partyOrg) AS ?party)
+             (SAMPLE(?birthDate) AS ?birthDateSample)
+             # function/type/1 is "Präsident(in)" — a chair seat rather than plain membership,
+             # which separates sitting on many boards from running them.
+             (COUNT(DISTINCT ?presidencyOrg) AS ?presidencies)
+             (COUNT(DISTINCT ?paidOrg) AS ?paidMandates)
+             (COUNT(DISTINCT ?unpaidOrg) AS ?unpaidMandates)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
+          ?paidRole schema:memberOf ?paidOrg ; schema:member ?person ; schema:hasSalary true .
+          ?paidOrg a schema:LobbyOrganization .
+          OPTIONAL { ?person schema:birthDate ?birthDate }
+          OPTIONAL {
+            ?presidencyRole schema:member ?person ; schema:memberOf ?presidencyOrg ; schema:hasSalary true ;
+                            schema:additionalType &lt;https://politics.ld.admin.ch/function/type/1&gt; .
+            ?presidencyOrg a schema:LobbyOrganization .
+          }
+          OPTIONAL {
+            ?unpaidRole schema:member ?person ; schema:memberOf ?unpaidOrg ; schema:hasSalary false .
+            ?unpaidOrg a schema:LobbyOrganization .
+          }
+          OPTIONAL { ?partyRole schema:member ?person ; schema:memberOf ?partyOrg . ?partyOrg a schema:PoliticalParty }
+        }
+      } GROUP BY ?person
     }
-  } GROUP BY ?person ORDER BY DESC(?paidMandates) LIMIT 40
+    # birthDate is an xsd:dateTime, so YEAR() gives the year on its own (see the groups
+    # query above: a string function like SUBSTR would silently return an unbound column).
+    BIND (YEAR(?birthDateSample) AS ?bornIn)
+  } ORDER BY DESC(?paidMandates)
 </sparql-async>
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsPaidMandates"
-      "title" "Most paid interest ties, by parliamentarian"
+      "title" "Paid interest ties, by parliamentarian"
       "icon" "banknote"
       "iconVar" "person") }}
 </div>
@@ -363,15 +404,19 @@
 </p>
 
 <sparql-async id="politicsPresidents" class="d-none">
-  SELECT ?year ?president ?vicePresident WHERE {
+  # ?president, ?vicePresident, ?party and ?canton stay IRIs on purpose: the backend resolves
+  # each to a label and the table renders them as links to their resource page.
+  SELECT ?year ?president ?party ?canton ?vicePresident WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/federal-council&gt; {
       &lt;https://politics.ld.admin.ch/fc/cube-president&gt; cube:observationSet/cube:observation ?obs .
       ?obs schema:temporalCoverage ?year ;
-           &lt;https://politics.ld.admin.ch/fc/vocabulary/president&gt; ?presidentIri .
-      ?presidentIri schema:name ?president .
+           &lt;https://politics.ld.admin.ch/fc/vocabulary/president&gt; ?president .
+      OPTIONAL { ?president schema:memberOf ?party }
+      OPTIONAL { ?president schema:addressRegion ?canton }
       OPTIONAL {
-        ?obs &lt;https://politics.ld.admin.ch/fc/vocabulary/vicePresident&gt; ?viceIri .
-        ?viceIri schema:name ?vicePresident .
+        # Years with no deputy record the dimension as cube:Undefined rather than omitting it.
+        ?obs &lt;https://politics.ld.admin.ch/fc/vocabulary/vicePresident&gt; ?vicePresident .
+        FILTER (?vicePresident != cube:Undefined)
       }
     }
   } ORDER BY DESC(?year)
@@ -380,17 +425,51 @@
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsPresidents"
       "title" "Federal Presidents by year"
-      "icon" "crown"
+      "icon" "users-round"
       "collapsed" true) }}
 </div>
 
 <sparql-async id="politicsCommissions" class="d-none">
-  SELECT ?commission (SAMPLE(?n) AS ?name) WHERE {
-    GRAPH &lt;https://lindas.admin.ch/fch/extra-parliamentary-commission&gt; {
-      ?commission a schema:GovernmentOrganization .
-      OPTIONAL { ?commission schema:name ?n }
+  # The 538 schema:GovernmentOrganization resources here are secretariats and data-protection
+  # contact points, not the commissions themselves — the commissions are the 143 observations
+  # of the apg/committee cube. All IRIs stay unresolved so the backend labels and links them.
+  SELECT ?commission ?committeeType ?abbreviation ?department ?members ?secretariat WHERE {
+    {
+      SELECT ?commission
+             (SAMPLE(?type) AS ?committeeType)
+             (SAMPLE(?dept) AS ?department)
+             (SAMPLE(?sec) AS ?secretariat)
+             (COUNT(DISTINCT ?person) AS ?members)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fch/extra-parliamentary-commission&gt; {
+          &lt;https://politics.ld.admin.ch/fch/apg/committee/1&gt; cube:observationSet/cube:observation ?obs .
+          ?obs &lt;https://politics.ld.admin.ch/fch/apg/committee/hasCommittee&gt; ?commission ;
+               &lt;https://politics.ld.admin.ch/fch/apg/committee/hasCommitteeType&gt; ?type ;
+               &lt;https://politics.ld.admin.ch/fch/apg/committee/hasDepartment&gt; ?dept .
+          OPTIONAL { ?obs &lt;https://politics.ld.admin.ch/fch/apg/committee/hasSecretariat&gt; ?sec }
+          # Membership lives in a separate cube, under the membership/ namespace — note this is
+          # a different hasCommittee predicate from the committee/ one used above.
+          OPTIONAL {
+            ?m &lt;https://politics.ld.admin.ch/fch/apg/membership/hasCommittee&gt; ?commission ;
+               &lt;https://politics.ld.admin.ch/fch/apg/membership/hasPerson&gt; ?person .
+          }
+        }
+      } GROUP BY ?commission
     }
-  } GROUP BY ?commission
+    # The department abbreviation (EDI, WBF, …) as a literal beside the linked full name.
+    # Unlike the untagged abbreviations elsewhere in LINDAS these ARE language-tagged, so the
+    # visitor's language picks the right one; German is the fallback. Departments live outside
+    # the commission graph, hence no GRAPH clause here.
+    OPTIONAL {
+      ?department schema:alternateName ?abbreviationPreferred .
+      FILTER (lang(?abbreviationPreferred) = visoto:dispLang)
+    }
+    OPTIONAL {
+      ?department schema:alternateName ?abbreviationGerman .
+      FILTER (lang(?abbreviationGerman) = "de")
+    }
+    BIND (COALESCE(?abbreviationPreferred, ?abbreviationGerman) AS ?abbreviation)
+  } ORDER BY DESC(?members)
 </sparql-async>
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
@@ -418,12 +497,27 @@
 </p>
 
 <sparql-async id="politicsProceduralRequests" class="d-none">
-  SELECT ?request ?information WHERE {
+  # Each status text is published in de/fr/it, so without a language filter every request
+  # appeared three times. ?request and ?office stay IRIs so the backend labels and links them;
+  # the request IRI ends in /entity, so the affair number is pulled out as a separate literal.
+  SELECT ?affair ?title ?type ?office ?status ?request WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/procedural-request&gt; {
-      ?request a &lt;https://ch.paf.link/ProceduralRequestInformationEntity&gt; ;
-               &lt;https://ch.paf.link/proceduralRequestInformation&gt; ?information .
+      ?informationEntity a &lt;https://ch.paf.link/ProceduralRequestInformationEntity&gt; ;
+                         &lt;https://ch.paf.link/proceduralRequestInformation&gt; ?status .
+      FILTER (lang(?status) = visoto:dispLang)
+      # The activity ties the status text to the request it belongs to.
+      ?activity &lt;http://www.w3.org/ns/prov#used&gt; ?informationEntity ;
+                &lt;http://www.w3.org/ns/prov#used&gt; ?request .
+      ?request a &lt;https://ch.paf.link/ProceduralRequestEntity&gt; ;
+               &lt;https://ch.paf.link/proceduralRequestType&gt; ?type ;
+               &lt;https://ch.paf.link/proceduralRequestTitle&gt; ?title .
+      FILTER (lang(?title) = visoto:dispLang)
+      # The responsible federal office — note this is the office answering the request,
+      # not the parliamentarian who filed it (the submitter is not in this graph).
+      OPTIONAL { ?activity &lt;http://www.w3.org/ns/prov#qualifiedAssociation&gt;/&lt;http://www.w3.org/ns/prov#agent&gt; ?office }
+      BIND (REPLACE(STR(?request), "^.*/parliamentary-affair/([^/]+)/entity$", "$1") AS ?affair)
     }
-  } LIMIT 500
+  } ORDER BY ?affair
 </sparql-async>
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
@@ -434,8 +528,9 @@
 </div>
 
 <p class="text-secondary">
-  The status texts are German only, and a single request usually carries several as it moves through
-  the process.
+  Status texts are published in German, French and Italian, and follow your browser's language here.
+  A single request usually carries several as it moves through the process, so the same title can
+  appear more than once &mdash; each row is one report on that request, not one request.
 </p>
 
 <!-- ============================================================= -->

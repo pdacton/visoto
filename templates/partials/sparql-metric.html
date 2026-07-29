@@ -11,6 +11,27 @@
     - href: URL for the title link
     - icon: (optional) path to an SVG image to display alongside the title
     - iri: (optional) resource IRI; substituted for ?? in the query
+
+  Two defines live here, mirroring how sparqlTable serves both an inline page
+  render and an HTMX fragment render from a single partial:
+
+    - sparqlMetric      the card itself, rendered inline on a page. Holds the
+                        "⋮" menu, which is revealed on hover/focus (see
+                        .vs-metric-actions in tabler_overrides.css) rather than
+                        always shown like sparqlTable's — a page carries dozens
+                        of these cards, so a permanent glyph on each is noise.
+    - sparqlMetricValue the HTMX response body, rendered server-side by
+                        metricHandler via templates.RenderSparqlMetricValue.
+                        Carries the count AND the config island backing the
+                        "Execute on endpoint" action.
+
+  Why the island rather than reading the query off the page: the sibling
+  <sparql-async> element IS present in the DOM (hidden with .d-none), but it holds
+  the query as authored — no PREFIX declarations, magic properties like
+  visoto:dispLang unexpanded, and ?? not yet substituted with the resource IRI.
+  YASGUI would reject most of those. The handler resolves the query by id and
+  finalizes it anyway in order to run the count, so the finalized text rides back
+  with the count instead of needing a separate lookup or fetch.
 -->
 
 {{ define "sparqlMetric" }}
@@ -23,8 +44,28 @@
   {{ with .iri }}{{ $url = printf "%s?iri=%s" $url (urlquery .) }}{{ end }}
 
   <div class="col-sm-6 col-lg-3">
-    <div class="card card-sm">
-      <div class="card-body">
+    <!-- The data-sparql-metric marker is what static/js/sparql-metric.js looks
+         for; it names the id whose config island the menu action reads. The
+         marker sits on the card because the action must work regardless of what
+         the count response turned out to be. -->
+    <div class="card card-sm" data-sparql-metric data-sparql-metric-id="{{ $queryId }}">
+      <div class="card-body position-relative">
+        <!-- "⋮" menu, matching sparqlTable's dropdown (same btn-action trigger,
+             same dropdown-menu-end, same SPARQL query section). Absolutely
+             positioned because this card has no card-header to host it. -->
+        <div class="dropdown vs-metric-actions position-absolute top-0 end-0 mt-2 me-2">
+          <a class="btn-action" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions for {{ $title }}">
+            <i data-lucide="ellipsis-vertical" style="width:1rem;height:1rem;"></i>
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            <li><h6 class="dropdown-header">SPARQL query</h6></li>
+            {{/* href is filled in by sparql-metric.js once the count response has
+                 delivered the query. Keeping it a REAL link (rather than href="#"
+                 plus window.open) is what makes target="_blank" a native
+                 navigation, which popup blockers do not intercept. */}}
+            <li><a class="dropdown-item sparql-endpoint-{{ $queryId }}" href="#" target="_blank" rel="noopener"><i data-lucide="play" style="width:1em;height:1em;"></i> Execute on endpoint</a></li>
+          </ul>
+        </div>
         <div class="d-flex align-items-start">
           {{ if $icon }}
           <div class="me-3">
@@ -45,4 +86,22 @@
     </div>
   </div>
 
+  <!-- Behaviour lives in static/js/sparql-metric.js; this partial emits only
+       markup, data islands and the data-sparql-metric marker it reads. Pages
+       hold many metric cards, so this tag re-executes; boot() guards per element. -->
+  <script src="/static/js/sparql-metric.js"></script>
+
 {{ end }}
+
+
+{{/* HTMX response body for /api/metric/:id — the count, plus the island holding
+     the finalized query and endpoint for the "Execute on endpoint" action.
+
+     Written with toJSON (not toJSONRaw): a <template> re-encodes entities when
+     read back via innerHTML, and toJSON escapes < > & to backslash-u sequences
+     so the angle-bracketed IRIs in the query survive the round trip intact. */}}
+{{ define "sparqlMetricValue" }}{{ .count }}<template id="{{ .queryId }}-metric-config">{{ toJSON (dict
+  "id"       .queryId
+  "query"    .query
+  "endpoint" .endpoint
+) }}</template>{{ end }}

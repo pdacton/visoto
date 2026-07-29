@@ -399,6 +399,33 @@ func metricHandler(c *gin.Context) {
 		}
 	}
 
+	// The response carries the finalized query and endpoint alongside the count so
+	// the card's "Execute on endpoint" action can open it in YASGUI — the same data
+	// the sparqlTable partial gets from its QueryResult. A failed query still gets
+	// them (ExecuteQuery may return early with an empty result), so the action keeps
+	// working on an errored metric, mirroring sparqlTable hanging its own YASGUI
+	// action off the card rather than the rows.
+	finalQuery, endpoint := result.Query, result.Endpoint
+	if finalQuery == "" {
+		finalQuery = preprocessor.FinalizeQuery(query, acceptLanguage)
+	}
+	if endpoint == "" {
+		endpoint = activeEndpointURL(c)
+	}
+
+	html, renderErr := templates.RenderSparqlMetricValue(map[string]any{
+		"queryId":  id,
+		"count":    count,
+		"query":    finalQuery,
+		"endpoint": endpoint,
+	})
+	if renderErr != nil {
+		c.Header("Cache-Control", "no-store")
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, count)
+		return
+	}
+
 	if err != nil {
 		// A transient SPARQL failure must never be cached as if it were a real
 		// (likely wrong) count.
@@ -408,7 +435,7 @@ func metricHandler(c *gin.Context) {
 		c.Header("Vary", "Accept-Language")
 	}
 	c.Header("Content-Type", "text/html")
-	c.String(http.StatusOK, count)
+	c.String(http.StatusOK, string(html))
 }
 
 // asyncTableHandler serves /api/async-table/:id — called by HTMX to lazily load a
