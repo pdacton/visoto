@@ -26,7 +26,7 @@
       {{ template "sparqlTable" (dict
             "result" .QueryResults.subclasses
             "id" "subclasses"
-            "title" "Subclasses of this Class"
+            "title" (t "card.subclassesOfThisClass" "Subclasses of this Class")
             "icon" "circle-chevron-down"
             "iconVar" "subclass")
       }}
@@ -37,7 +37,7 @@
       {{ template "sparqlTable" (dict
             "result" .QueryResults.superclasses
             "id" "superclasses"
-            "title" "Superclasses of this Class"
+            "title" (t "card.superclassesOfThisClass" "Superclasses of this Class")
             "icon" "circle-chevron-up"
             "iconVar" "superclass")
       }}

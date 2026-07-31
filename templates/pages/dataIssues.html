@@ -1,6 +1,6 @@
-{{ define "pageTitle" }}Data Quality Issues{{ end }}
-{{ define "pageSubtitle" }}Overview of data quality issues in the triple store.{{ end }}
-{{ define "pageIcon"}}<img src="/static/img/warning.svg" alt="Data Issues" width="48" height="48">{{end}}
+{{ define "pageTitle" }}{{ t "page.dataIssues.title" "Data Quality Issues" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.dataIssues.subtitle" "Overview of data quality issues in the triple store." }}{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/warning.svg" alt="{{ t "page.dataIssues.dataIssues" "Data Issues" }}" width="48" height="48">{{end}}
 {{ define "metaIcon" }}/static/img/warning.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -8,7 +8,7 @@
 <div class="row">
   <div class="col">
 
-    <p>The following tables list potential data quality issues in the knowledge graph.</p>
+    <p>{{ t "page.dataIssues.theFollowingTablesListPotential" "The following tables list potential data quality issues in the knowledge graph." }}</p>
     
     <!-- Municipalities without identifiers -->
     <div class="mb-3">
@@ -24,7 +24,7 @@
       {{ template "sparqlTable" (dict
           "result" .QueryResults.municipalitiesWithoutIdentifier
           "id" "municipalitiesWithoutIdentifier"
-          "title" "Municipalities without schema:identifier (Zombies)"
+          "title" (t "card.municipalitiesWithoutSchemaIdentifierZombies" "Municipalities without schema:identifier (Zombies)")
           "icon" "alert-triangle")
       }}
     </div>

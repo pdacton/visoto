@@ -2,7 +2,7 @@
   Partial template for rendering SPARQL query results in a datagrid
 
   Usage:
-    {{ template "sparqlGrid" (dict "result" .QueryResults.baseinfo "id" "baseinfo" "title" "Base info") }}
+    {{ template "sparqlGrid" (dict "result" .QueryResults.baseinfo "id" "baseinfo" "title" (t "card.baseInfo" "Base info")) }}
 
   Parameters (via dict):
     - result: QueryResult object with .Vars, .Bindings, .Error
@@ -46,13 +46,13 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               {{ if $hasResults }}
-                <li><h6 class="dropdown-header">Download</h6></li>
-                <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> CSV</a></li>
-                <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> JSON</a></li>
+                <li><h6 class="dropdown-header">{{ t "table.download" "Download" }}</h6></li>
+                <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> {{ t "format.csv" "CSV" }}</a></li>
+                <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> {{ t "format.json" "JSON" }}</a></li>
                 <li><hr class="dropdown-divider"></li>
               {{ end }}
-              <li><h6 class="dropdown-header">SPARQL query</h6></li>
-              <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> Execute on endpoint</a></li>
+              <li><h6 class="dropdown-header">{{ t "query.sparqlQuery" "SPARQL query" }}</h6></li>
+              <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> {{ t "query.executeOnEndpoint" "Execute on endpoint" }}</a></li>
             </ul>
           </div>
           <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">

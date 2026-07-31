@@ -60,7 +60,7 @@
       {{ template "sparqlGrid" (dict
             "result" .QueryResults.attributes
             "id" "attributes"
-            "title" "Attributes"
+            "title" (t "card.attributes" "Attributes")
             "icon" "tags")
       }}
     </div>
@@ -90,7 +90,7 @@
       {{ template "sparqlTable" (dict
             "result" .QueryResults.municipalities
             "id" "municipalities"
-            "title" "Municipalities"
+            "title" (t "card.municipalities" "Municipalities")
             "icon" "map-pinned"
             "iconVar" "type")
       }}
@@ -146,7 +146,7 @@
         {{ template "sparqlMermaidFlow" (dict
               "result" .QueryResults.versionflow
               "id" "versionflow"
-              "title" "Version Flow for District"
+              "title" (t "card.versionFlowForDistrict" "Version Flow for District")
               "icon" "history"
               "direction" "LR"
               "extraField" "validFrom")

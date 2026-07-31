@@ -1,13 +1,13 @@
 <!-- District Class Template, listing all instances of this class -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/resource?iri=schema:Country">Country</a></li>
-  <li class="breadcrumb-item"><a href="/resource?iri=schch:Canton">Canton</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.district.country" "<a href=\"/resource?iri=schema:Country\">Country</a>" }}</li>
+  <li class="breadcrumb-item">{{ tHTML "type.district.canton" "<a href=\"/resource?iri=schch:Canton\">Canton</a>" }}</li>
 {{ end}}
 
-{{ define "pageTitle" }}District{{ end }}
-{{ define "metaTitle" }}District{{ end }}
-{{ define "pageSubtitle" }}Bezirk (de) · District (fr) · Distretto (it){{ end }}
+{{ define "pageTitle" }}{{ t "type.district.title" "District" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.district.metaTitle" "District" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "type.district.subtitle" "Bezirk (de) · District (fr) · Distretto (it)" }}{{ end }}
 
 {{ define "pageContent" }}
 <div>
@@ -34,7 +34,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "districtInstances"
         "iri" .ResourceIRI
-        "title" "Districts"
+        "title" (t "card.districts" "Districts")
         "icon" "circle-dot"
         "iconVar" "type")
     }}

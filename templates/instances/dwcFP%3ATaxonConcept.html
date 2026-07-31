@@ -4,8 +4,8 @@
      built on, and the treatments that augment it. -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
-  <li class="breadcrumb-item"><a href="/resource?iri=dwcFP:TaxonConcept">Taxon Concept</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.taxonConcept.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
+  <li class="breadcrumb-item">{{ t "type.taxonConcept.taxonConcept" "Taxon Concept" }}</li>
 {{ end }}
 
 {{ template "pageHeader" . }}
@@ -29,7 +29,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.augmentingTreatments
             "id" "augmentingTreatments"
-            "title" "Augmented by Treatments"
+            "title" (t "card.augmentedByTreatments" "Augmented by Treatments")
             "icon" "file-description"
             "iconVar" "Treatment")
         }}

@@ -171,8 +171,7 @@ func facetValuesHandler(c *gin.Context) {
 }
 
 func writeFacetValues(c *gin.Context, values []facetValue) {
-	c.Header("Cache-Control", cacheControlPublic)
-	c.Header("Vary", "Accept-Language")
+	markCacheable(c)
 	c.JSON(http.StatusOK, gin.H{"values": values})
 }
 

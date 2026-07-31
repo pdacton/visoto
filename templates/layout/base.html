@@ -1,5 +1,8 @@
 <!DOCTYPE html>
-<html lang="en">
+<!-- lang reflects the resolved UI language. The "no language" choice renders an
+     empty attribute rather than a wrong one — screen readers then fall back to
+     the user agent's locale, which beats claiming a language we did not pick. -->
+<html lang="{{ siteLang }}">
 
   <head>
     <!-- Set theme immediately to prevent flash.
@@ -21,6 +24,16 @@
         document.documentElement.setAttribute('data-bs-theme', theme);
       })();
     </script>
+
+    <!-- UI strings for static/js, read through window.vsT (see i18n.js).
+         An island rather than a fetch: the strings then live inside the response
+         body, so they are covered by its ETag and can never be one language out
+         of step with the markup around them. In <head>, and paired with its
+         reader, because every other script on the page is a consumer. -->
+    <script id="i18n-strings" type="application/json">
+      {{ toJSON jsStrings }}
+    </script>
+    <script src="/static/js/i18n.js"></script>
 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -80,7 +93,7 @@
         <div class="page-body" id="main-content" tabindex="-1">
           <div class="container-fluid">
             <div id="resource-table-view">
-              {{ block "pageContent" . }}<p>This is the base page</p>{{ end }}
+              {{ block "pageContent" . }}<p>{{ t "layout.thisIsTheBasePage" "This is the base page" }}</p>{{ end }}
             </div>
             {{ if .ResourceIRI }}
             <!-- Graph view of the current resource. Hidden until the header's Table/Graph
@@ -110,7 +123,7 @@
               {{ template "sparqlAsyncTable" (dict
                     "queryId" "resourceTriples"
                     "iri" .ResourceIRI
-                    "title" "All Triples"
+                    "title" (t "card.allTriples" "All Triples")
                     "icon" "database"
                     "iconVar" "type"
                     "badgeVar" "kind"
@@ -162,6 +175,9 @@
 
     <!-- Endpoint switcher -->
     <script src="/static/js/endpoint-switcher.js"></script>
+
+    <!-- UI language switcher -->
+    <script src="/static/js/language-switcher.js"></script>
 
     <!-- Upload data modal -->
     <script src="/static/js/upload.js"></script>

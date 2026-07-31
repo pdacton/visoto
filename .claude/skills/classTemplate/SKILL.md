@@ -93,6 +93,36 @@ You'll be prompted for:
 - **Partial Integration**: Uses the Visoto partials — `sparqlAsyncTable` (lazy HTMX working-set table; the default for the instances list), `sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlMermaidFlow`, and the graph-embedding partials `sparqlGraph` / `schemaGraph`
 - **Component Integration**: uses the pre-built, ready to use building blocks (`pageHeader`, `literals`, `relationships`, `classHierarchy`, `ontologyShacl`)
 
+## UI strings must be translated
+
+Every user-visible string the generated template emits — card titles, headings,
+button labels, `placeholder`, `alt`, `title` — must go through the message
+catalog, never be written as literal English:
+
+```html
+{{ template "sparqlTable" (dict "result" $r "title" (t "card.instances")) }}
+<h3 class="card-title">{{ t "card.attributes" }}</h3>
+```
+
+So for each string the template needs:
+
+1. Reuse an existing key if one fits. `card.attributes`,
+   `card.incomingRelationships`, `card.outgoingRelationships`,
+   `card.instancesOfThisClass`, `card.subclasses`, `card.superclasses`,
+   `card.hierarchy` and most common headings already exist — check
+   `locales/en.toml` before inventing a key.
+2. Otherwise add a new key to `locales/en.toml` with the English text. Keys are
+   quoted and flat (`"type.municipality.postalCodes" = "Postal Codes"`); use the
+   `card.*` namespace for a heading reusable across templates, and
+   `type.<typeName>.*` for copy specific to this one type.
+3. Optionally translate it in `locales/de.toml`, `fr.toml`, `it.toml`. Skipping
+   this is fine — untranslated keys fall back to the English text.
+
+`go test ./internal/i18n/` fails if a template uses a key that is not defined, or
+defines a key nothing uses, so a generated template with a missing key is caught
+immediately. See `docs/templating.md#ui-strings`.
+
+
 ## Configuration
 
 The skill reads SPARQL endpoint configuration from `visoto.config`:

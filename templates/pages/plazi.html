@@ -1,27 +1,16 @@
-{{ define "metaTitle" }}Plazi Classification{{ end }}
-{{ define "pageTitle" }}Plazi Classification{{ end }}
-{{ define "pageSubtitle" }}An overview of the Plazi biological classification of living organisms.{{ end }}
-{{ define "pageIcon" }}<img src="/static/img/resource/TaxonName.svg" alt="Plazi Classification" width="48" height="48">{{ end }}
+{{ define "metaTitle" }}{{ t "page.plazi.metaTitle" "Plazi Classification" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.plazi.title" "Plazi Classification" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.plazi.subtitle" "An overview of the Plazi biological classification of living organisms." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/TaxonName.svg" alt="{{ t "page.plazi.plaziClassification" "Plazi Classification" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/resource/TaxonName.svg{{ end }}
 
 {{ define "pageContent" }}
 
-<h2>About Plazi</h2>
+<h2>{{ t "page.plazi.aboutPlazi" "About Plazi" }}</h2>
 
-<p>
-  <a href="https://plazi.org/" target="_blank" rel="noopener">Plazi</a> is a not-for-profit
-  organisation that liberates taxonomic knowledge from the scientific literature. It converts
-  descriptions of species &mdash; so-called <em>treatments</em> &mdash; from published
-  articles into machine-readable, openly accessible data, and publishes them as linked data.
-</p>
+<p>{{ tHTML "page.plazi.plaziIsANotFor" "<a href=\"https://plazi.org/\" target=\"_blank\" rel=\"noopener\">Plazi</a> is a not-for-profit organisation that liberates taxonomic knowledge from the scientific literature. It converts descriptions of species — so-called <em>treatments</em> — from published articles into machine-readable, openly accessible data, and publishes them as linked data." }}</p>
 
-<p>
-  Every organism described in the literature is placed within a hierarchical
-  <strong>classification</strong>. At its very top sit a handful of kingdoms that group all
-  living things. Each kingdom below is represented by a
-  <a href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FTaxonName">TaxonName</a>
-  resource that you can explore in Visoto to drill down through the tree of life.
-</p>
+<p>{{ tHTML "page.plazi.everyOrganismDescribedInThe" "Every organism described in the literature is placed within a hierarchical <strong>classification</strong>. At its very top sit a handful of kingdoms that group all living things. Each kingdom below is represented by a <a href=\"/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FTaxonName\">TaxonName</a> resource that you can explore in Visoto to drill down through the tree of life." }}</p>
 
 <div class="row row-deck row-cards mt-4">
 
@@ -70,19 +59,11 @@
     <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FAnimalia">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Animalia.svg" alt="Animalia" width="40" height="40" class="me-3">
-          <h3 class="card-title m-0">Animalia</h3>
+          <img src="/static/img/resource/Animalia.svg" alt="{{ t "page.plazi.animalia" "Animalia" }}" width="40" height="40" class="me-3">
+          <h3 class="card-title m-0">{{ t "page.plazi.animalia" "Animalia" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">Animals &mdash; multicellular organisms that feed on other organisms.</div>
-        <div class="mt-2">
-          <span class="h2 m-0"
-                hx-get="/api/metric/AnimaliaCount"
-                hx-trigger="load"
-                hx-swap="innerHTML">
-            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
-          </span>
-          <span class="text-secondary">taxon names</span>
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.plazi.animalsMulticellularOrganismsThatFeed" "Animals — multicellular organisms that feed on other organisms." }}</div>
+        <div class="mt-2">{{ tHTML "page.plazi.taxonNames" "<span class=\"h2 m-0\" hx-get=\"/api/metric/AnimaliaCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
       </div>
     </a>
   </div>
@@ -92,19 +73,11 @@
     <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FPlantae">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Plantae.svg" alt="Plantae" width="40" height="40" class="me-3">
-          <h3 class="card-title m-0">Plantae</h3>
+          <img src="/static/img/resource/Plantae.svg" alt="{{ t "page.plazi.plantae" "Plantae" }}" width="40" height="40" class="me-3">
+          <h3 class="card-title m-0">{{ t "page.plazi.plantae" "Plantae" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">Plants &mdash; mostly photosynthetic organisms, from mosses to flowering plants.</div>
-        <div class="mt-2">
-          <span class="h2 m-0"
-                hx-get="/api/metric/PlantaeCount"
-                hx-trigger="load"
-                hx-swap="innerHTML">
-            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
-          </span>
-          <span class="text-secondary">taxon names</span>
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.plazi.plantsMostlyPhotosyntheticOrganismsFrom" "Plants — mostly photosynthetic organisms, from mosses to flowering plants." }}</div>
+        <div class="mt-2">{{ tHTML "page.plazi.taxonNames2" "<span class=\"h2 m-0\" hx-get=\"/api/metric/PlantaeCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
       </div>
     </a>
   </div>
@@ -114,19 +87,11 @@
     <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FFungi">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Fungi.svg" alt="Fungi" width="40" height="40" class="me-3">
-          <h3 class="card-title m-0">Fungi</h3>
+          <img src="/static/img/resource/Fungi.svg" alt="{{ t "page.plazi.fungi" "Fungi" }}" width="40" height="40" class="me-3">
+          <h3 class="card-title m-0">{{ t "page.plazi.fungi" "Fungi" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">Fungi &mdash; moulds, yeasts and mushrooms that absorb nutrients from their surroundings.</div>
-        <div class="mt-2">
-          <span class="h2 m-0"
-                hx-get="/api/metric/FungiCount"
-                hx-trigger="load"
-                hx-swap="innerHTML">
-            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
-          </span>
-          <span class="text-secondary">taxon names</span>
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.plazi.fungiMouldsYeastsAndMushrooms" "Fungi — moulds, yeasts and mushrooms that absorb nutrients from their surroundings." }}</div>
+        <div class="mt-2">{{ tHTML "page.plazi.taxonNames3" "<span class=\"h2 m-0\" hx-get=\"/api/metric/FungiCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
       </div>
     </a>
   </div>
@@ -136,19 +101,11 @@
     <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FBacteria">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Bacteria.svg" alt="Bacteria" width="40" height="40" class="me-3">
-          <h3 class="card-title m-0">Bacteria</h3>
+          <img src="/static/img/resource/Bacteria.svg" alt="{{ t "page.plazi.bacteria" "Bacteria" }}" width="40" height="40" class="me-3">
+          <h3 class="card-title m-0">{{ t "page.plazi.bacteria" "Bacteria" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">Bacteria &mdash; single-celled prokaryotic microorganisms found in nearly every habitat.</div>
-        <div class="mt-2">
-          <span class="h2 m-0"
-                hx-get="/api/metric/BacteriaCount"
-                hx-trigger="load"
-                hx-swap="innerHTML">
-            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
-          </span>
-          <span class="text-secondary">taxon names</span>
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.plazi.bacteriaSingleCelledProkaryoticMicroorganisms" "Bacteria — single-celled prokaryotic microorganisms found in nearly every habitat." }}</div>
+        <div class="mt-2">{{ tHTML "page.plazi.taxonNames4" "<span class=\"h2 m-0\" hx-get=\"/api/metric/BacteriaCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
       </div>
     </a>
   </div>
@@ -158,19 +115,11 @@
     <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FChromista">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Chromista.svg" alt="Chromista" width="40" height="40" class="me-3">
-          <h3 class="card-title m-0">Chromista</h3>
+          <img src="/static/img/resource/Chromista.svg" alt="{{ t "page.plazi.chromista" "Chromista" }}" width="40" height="40" class="me-3">
+          <h3 class="card-title m-0">{{ t "page.plazi.chromista" "Chromista" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">Chromists &mdash; algae and protists such as diatoms, brown algae and water moulds.</div>
-        <div class="mt-2">
-          <span class="h2 m-0"
-                hx-get="/api/metric/ChromistaCount"
-                hx-trigger="load"
-                hx-swap="innerHTML">
-            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
-          </span>
-          <span class="text-secondary">taxon names</span>
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.plazi.chromistsAlgaeAndProtistsSuch" "Chromists — algae and protists such as diatoms, brown algae and water moulds." }}</div>
+        <div class="mt-2">{{ tHTML "page.plazi.taxonNames5" "<span class=\"h2 m-0\" hx-get=\"/api/metric/ChromistaCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
       </div>
     </a>
   </div>
@@ -180,19 +129,11 @@
     <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FProtozoa">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Protozoa.svg" alt="Protozoa" width="40" height="40" class="me-3">
-          <h3 class="card-title m-0">Protozoa</h3>
+          <img src="/static/img/resource/Protozoa.svg" alt="{{ t "page.plazi.protozoa" "Protozoa" }}" width="40" height="40" class="me-3">
+          <h3 class="card-title m-0">{{ t "page.plazi.protozoa" "Protozoa" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">Protozoa &mdash; single-celled eukaryotic organisms such as amoebae and flagellates.</div>
-        <div class="mt-2">
-          <span class="h2 m-0"
-                hx-get="/api/metric/ProtozoaCount"
-                hx-trigger="load"
-                hx-swap="innerHTML">
-            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
-          </span>
-          <span class="text-secondary">taxon names</span>
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.plazi.protozoaSingleCelledEukaryoticOrganisms" "Protozoa — single-celled eukaryotic organisms such as amoebae and flagellates." }}</div>
+        <div class="mt-2">{{ tHTML "page.plazi.taxonNames6" "<span class=\"h2 m-0\" hx-get=\"/api/metric/ProtozoaCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
       </div>
     </a>
   </div>
@@ -203,68 +144,50 @@
 <!-- Dataset information                                            -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">The dataset</h2>
+<h2 class="mt-5">{{ t "page.plazi.theDataset" "The dataset" }}</h2>
 
-<p>
-  The Plazi classification shown above is backed by the
-  <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fplazi">Plazi Taxonomic Treatments</a>
-  dataset, published on LINDAS in the named graph
-  <code>https://lindas.admin.ch/foen/plazi</code>.
-</p>
+<p>{{ tHTML "page.plazi.thePlaziClassificationShownAbove" "The Plazi classification shown above is backed by the <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fplazi\">Plazi Taxonomic Treatments</a> dataset, published on LINDAS in the named graph <code>https://lindas.admin.ch/foen/plazi</code>." }}</p>
 
-<p>
-  Plazi TreatmentBank deals with scientific, published, biosystematic literature &mdash; the corpus
-  documenting all of the world's ca. 1.9&nbsp;million known species across an estimated 500&nbsp;million
-  published pages. Each <em>treatment</em> is a well-defined part of an article that fixes the usage of a
-  scientific name by an author at a given time; like bibliographic references, treatments can be cited and
-  build on earlier ones. Together they represent the current scientific consensus on biological taxonomy,
-  fully reference the underlying literature, and link to specimens and images archived at
-  Zenodo/CERN. The cited publications are available through the
-  <a href="https://zenodo.org/communities/biosyslit/" target="_blank" rel="noopener">Biodiversity Literature Repository</a>.
-</p>
+<p>{{ tHTML "page.plazi.plaziTreatmentBankDealsWithScientific" "Plazi TreatmentBank deals with scientific, published, biosystematic literature — the corpus documenting all of the world's ca. 1.9 million known species across an estimated 500 million published pages. Each <em>treatment</em> is a well-defined part of an article that fixes the usage of a scientific name by an author at a given time; like bibliographic references, treatments can be cited and build on earlier ones. Together they represent the current scientific consensus on biological taxonomy, fully reference the underlying literature, and link to specimens and images archived at Zenodo/CERN. The cited publications are available through the <a href=\"https://zenodo.org/communities/biosyslit/\" target=\"_blank\" rel=\"noopener\">Biodiversity Literature Repository</a>." }}</p>
 
 <div class="card mb-4">
   <div class="card-body">
     <div class="datagrid">
       <div class="datagrid-item">
-        <div class="datagrid-title">Publisher</div>
-        <div class="datagrid-content"><a href="https://plazi.org" target="_blank" rel="noopener">Plazi</a></div>
+        <div class="datagrid-title">{{ t "page.plazi.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.plazi.plazi" "<a href=\"https://plazi.org\" target=\"_blank\" rel=\"noopener\">Plazi</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Identifier</div>
-        <div class="datagrid-content"><code>plazi-treatments-rdf</code></div>
+        <div class="datagrid-title">{{ t "page.plazi.identifier" "Identifier" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.plazi.plaziTreatmentsRdf" "<code>plazi-treatments-rdf</code>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Published</div>
-        <div class="datagrid-content">1 July 2023</div>
+        <div class="datagrid-title">{{ tHTML "page.plazi.published" "<span class=\"badge bg-green-lt\">Published</span>" }}</div>
+        <div class="datagrid-content">{{ t "page.plazi.1July2023" "1 July 2023" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Last modified</div>
-        <div class="datagrid-content">30 May 2026</div>
+        <div class="datagrid-title">{{ t "page.plazi.lastModified" "Last modified" }}</div>
+        <div class="datagrid-content">{{ t "page.plazi.30May2026" "30 May 2026" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Status</div>
-        <div class="datagrid-content"><span class="badge bg-green-lt">Published</span></div>
+        <div class="datagrid-title">{{ t "page.plazi.status" "Status" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.plazi.published" "<span class=\"badge bg-green-lt\">Published</span>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Terms of use</div>
-        <div class="datagrid-content">
-          <a href="https://ld.admin.ch/vocabulary/TermsOfUse/Open-Use" target="_blank" rel="noopener">Open use</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.plazi.termsOfUse" "Terms of use" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.plazi.openUse" "<a href=\"https://ld.admin.ch/vocabulary/TermsOfUse/Open-Use\" target=\"_blank\" rel=\"noopener\">Open use</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">License</div>
-        <div class="datagrid-content">
-          <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener">CC0 1.0 (Public Domain)</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.plazi.license" "License" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.plazi.cc010PublicDomain" "<a href=\"https://creativecommons.org/publicdomain/zero/1.0/\" target=\"_blank\" rel=\"noopener\">CC0 1.0 (Public Domain)</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">SPARQL endpoint</div>
+        <div class="datagrid-title">{{ t "page.plazi.sparqlEndpoint" "SPARQL endpoint" }}</div>
         <div class="datagrid-content"><a href="https://lindas.admin.ch/query" target="_blank" rel="noopener">lindas.admin.ch/query</a></div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Landing page</div>
-        <div class="datagrid-content"><a href="https://synospecies.plazi.org" target="_blank" rel="noopener">synospecies.plazi.org</a></div>
+        <div class="datagrid-title">{{ t "page.plazi.landingPage" "Landing page" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.plazi.synospeciesPlaziOrg" "<a href=\"https://synospecies.plazi.org\" target=\"_blank\" rel=\"noopener\">synospecies.plazi.org</a>" }}</div>
       </div>
     </div>
   </div>
@@ -274,15 +197,9 @@
 <!-- Classes in the dataset                                         -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">Classes in the dataset</h2>
+<h2 class="mt-5">{{ t "page.plazi.classesInTheDataset" "Classes in the dataset" }}</h2>
 
-<p>
-  The classes below are every class either declared in the graph as an
-  <code>rdfs:Class</code>/<code>owl:Class</code> or used as the object of an <code>rdf:type</code> statement,
-  ordered by the number of instances of each. Where a class is defined in a vocabulary loaded in the store, its
-  description is shown. The biodiversity content is carried by the first rows (material citations, taxon concepts
-  and names, treatments, figures and articles); the single-instance rows describe the dataset itself.
-</p>
+<p>{{ tHTML "page.plazi.theClassesBelowAreEvery" "The classes below are every class either declared in the graph as an <code>rdfs:Class</code>/<code>owl:Class</code> or used as the object of an <code>rdf:type</code> statement, ordered by the number of instances of each. Where a class is defined in a vocabulary loaded in the store, its description is shown. The biodiversity content is carried by the first rows (material citations, taxon concepts and names, treatments, figures and articles); the single-instance rows describe the dataset itself." }}</p>
 
 <div class="mb-3">
   <sparql-async id="plaziClasses" class="d-none">
@@ -307,7 +224,7 @@
   </sparql-async>
   {{ template "sparqlAsyncTable" (dict
       "queryId" "plaziClasses"
-      "title" "Classes"
+      "title" (t "card.classes" "Classes")
       "icon" "shapes"
       "iconVar" "class")
   }}

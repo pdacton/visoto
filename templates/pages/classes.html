@@ -1,7 +1,7 @@
-{{ define "pageTitle" }}Class overview{{ end }}
-{{ define "pageSubtitle" }}A list of all classes in the triple store.{{ end }}
-{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Graph Infos" width="48" height="48">{{end}}
-{{ define "metaTitle" }}Classes{{ end }}
+{{ define "pageTitle" }}{{ t "page.classes.title" "Class overview" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.classes.subtitle" "A list of all classes in the triple store." }}{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="{{ t "page.classes.graphInfos" "Graph Infos" }}" width="48" height="48">{{end}}
+{{ define "metaTitle" }}{{ t "page.classes.metaTitle" "Classes" }}{{ end }}
 {{ define "metaIcon" }}/static/img/info.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -14,7 +14,7 @@
       ?class a rdfs:Class .
     }
   </sparql-async>
-  {{ template "sparqlMetric" (dict "queryId" "rdfClassCount" "title" "rdfs:Class" "href" "/resource?iri=rdfs:Class" "icon" "/static/img/resource/Class.svg") }}
+  {{ template "sparqlMetric" (dict "queryId" "rdfClassCount" "title" (t "card.rdfsClass" "rdfs:Class") "href" "/resource?iri=rdfs:Class" "icon" "/static/img/resource/Class.svg") }}
 
   <!-- owl:Class count -->
   <sparql-async id="owlClassCount" class="d-none">
@@ -22,7 +22,7 @@
       ?class a owl:Class .
     }
   </sparql-async>
-  {{ template "sparqlMetric" (dict "queryId" "owlClassCount" "title" "owl:Class" "href" "/resource?iri=owl:Class" "icon" "/static/img/resource/Class.svg") }}
+  {{ template "sparqlMetric" (dict "queryId" "owlClassCount" "title" (t "card.owlClass" "owl:Class") "href" "/resource?iri=owl:Class" "icon" "/static/img/resource/Class.svg") }}
 
   <!-- implicit classes: used as rdf:type target but not declared as rdfs:Class or owl:Class -->
   <sparql-async id="implicitClassCount" class="d-none">
@@ -32,7 +32,7 @@
       FILTER NOT EXISTS { ?class a owl:Class }
     }
   </sparql-async>
-  {{ template "sparqlMetric" (dict "queryId" "implicitClassCount" "title" "Implicit Classes" "href" "/resource?iri=rdfs:Class" "icon" "/static/img/resource/defaultClass.svg") }}
+  {{ template "sparqlMetric" (dict "queryId" "implicitClassCount" "title" (t "card.implicitClasses" "Implicit Classes") "href" "/resource?iri=rdfs:Class" "icon" "/static/img/resource/defaultClass.svg") }}
 
 </div>
 
@@ -59,7 +59,7 @@
       </sparql-async>
       {{ template "sparqlAsyncTable" (dict
           "queryId" "allClasses"
-          "title" "Classes"
+          "title" (t "card.classes" "Classes")
           "icon" "circle-dot"
           "iconVar" "class")
       }}

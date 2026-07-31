@@ -69,9 +69,9 @@
     {{ end }}
   {{ end }}
   {{ if $flagURL }}
-    <img src="{{ $flagURL }}" alt="Municipality flag" width="64" height="64" style="object-fit: contain;">
+    <img src="{{ $flagURL }}" alt="{{ t "type.municipality.municipalityFlag" "Municipality flag" }}" width="64" height="64" style="object-fit: contain;">
   {{ else }}
-    <img src="{{ resourceIcon . }}" alt="Page icon" width="48" height="48">
+    <img src="{{ resourceIcon . }}" alt="{{ t "type.municipality.pageIcon" "Page icon" }}" width="48" height="48">
   {{ end }}
 {{ end }}
 
@@ -94,7 +94,7 @@
       {{ template "sparqlGrid" (dict
             "result" .QueryResults.attributes
             "id" "attributes"
-            "title" "Attributes"
+            "title" (t "card.attributes" "Attributes")
             "icon" "tags")
       }}
     </div>    
@@ -114,7 +114,7 @@
       {{ template "sparqlTable" (dict
             "result" .QueryResults.postals
             "id" "postals"
-            "title" "Postal Codes"
+            "title" (t "card.postalCodes" "Postal Codes")
             "icon" "mail") 
       }}
     </div>      
@@ -131,7 +131,7 @@
       {{ template "sparqlTable" (dict
           "result" .QueryResults.stationen
           "id" "stationen"
-          "title" "Stationen"
+          "title" (t "card.stationen" "Stationen")
           "icon" "train")
       }}
     </div>    
@@ -148,7 +148,7 @@
       {{ template "sparqlTable" (dict
           "result" .QueryResults.Organisationen
           "id" "Organisationen"
-          "title" "Zefix Organisationen"
+          "title" (t "card.zefixOrganisationen" "Zefix Organisationen")
           "icon" "users")
       }}
     </div>    
@@ -219,7 +219,7 @@
         {{ template "sparqlMermaidFlow" (dict
               "result" .QueryResults.versionflow
               "id" "versionflow"
-              "title" "Version Flow for Municipality"
+              "title" (t "card.versionFlowForMunicipality" "Version Flow for Municipality")
               "icon" "history"
               "direction" "LR"
               "extraField" "validFrom")

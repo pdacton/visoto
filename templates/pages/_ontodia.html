@@ -1,7 +1,7 @@
-{{ define "pageTitle" }}Ontodia / Graph Explorer Test{{ end }}
-{{ define "pageSubtitle"}}A test page for the Ontodia/Zazuko Graph Explorer component, connected to the public LINDAS SPARQL endpoint.{{ end }}
-{{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Graph Explorer Icon" width="40" />{{ end }}
-{{ define "metaTitle" }}Ontodia Test{{ end }}
+{{ define "pageTitle" }}{{ t "page.ontodia.title" "Ontodia / Graph Explorer Test" }}{{ end }}
+{{ define "pageSubtitle"}}{{ t "page.ontodia.subtitle" "A test page for the Ontodia/Zazuko Graph Explorer component, connected to the public LINDAS SPARQL endpoint." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="{{ t "page.graphExplorer.graphExplorerIcon" "Graph Explorer Icon" }}" width="40" />{{ end }}
+{{ define "metaTitle" }}{{ t "page.ontodia.metaTitle" "Ontodia Test" }}{{ end }}
 {{ define "metaIcon" }}/static/img/graphexplorer.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -25,7 +25,8 @@
   var container = document.getElementById('graph-explorer-root');
 
   if (!GE || !GE.Workspace || !GE.SparqlDataProvider) {
-    container.innerHTML = '<div class="alert alert-danger m-3">Failed to load Graph Explorer library</div>';
+    container.innerHTML = '<div class="alert alert-danger m-3">' +
+      vsT('js.graph.failedToLoadLibrary', 'Failed to load Graph Explorer library') + '</div>';
     return;
   }
 

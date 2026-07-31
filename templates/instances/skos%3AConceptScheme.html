@@ -1,7 +1,7 @@
 <!-- Concept Scheme Instance Template  -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/resource?iri=skos:ConceptScheme">Concept Scheme</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.conceptScheme.conceptScheme" "<a href=\"/resource?iri=skos:ConceptScheme\">Concept Scheme</a>" }}</li>
 {{ end }}
 
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
@@ -39,7 +39,7 @@
         {{ template "sparqlTree" (dict
           "result" .QueryResults.conceptTree
           "id" "conceptTree"
-          "title" "Concept Hierarchy"
+          "title" (t "card.conceptHierarchy" "Concept Hierarchy")
           "icon" "list-tree"
           "treeExpanded" false)
         }}
@@ -66,7 +66,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.incoming
           "id" "incoming"
-          "title" "Incoming Relationships"
+          "title" (t "card.incomingRelationships" "Incoming Relationships")
           "icon" "shrink"
           "collapsed" true
           "iconVar" "type")
@@ -89,7 +89,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.outgoing
           "id" "outgoing"
-          "title" "Outgoing Relationships"
+          "title" (t "card.outgoingRelationships" "Outgoing Relationships")
           "icon" "expand"
           "collapsed" true
           "iconVar" "type")

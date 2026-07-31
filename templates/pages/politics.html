@@ -1,28 +1,16 @@
-{{ define "metaTitle" }}Politics &amp; Government{{ end }}
-{{ define "pageTitle" }}Politics &amp; Government{{ end }}
-{{ define "pageSubtitle" }}How Switzerland is governed, and how its citizens decide.{{ end }}
-{{ define "pageIcon" }}<img src="/static/img/resource/Government.svg" alt="Politics &amp; Government" width="48" height="48">{{ end }}
+{{ define "metaTitle" }}{{ t "page.politics.metaTitle" "Politics & Government" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.politics.title" "Politics & Government" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.politics.subtitle" "How Switzerland is governed, and how its citizens decide." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Government.svg" alt="{{ t "page.politics.politicsGovernment" "Politics & Government" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/resource/Government.svg{{ end }}
 
 {{ define "pageContent" }}
 
-<h2>About this theme</h2>
+<h2>{{ t "page.politics.aboutThisTheme" "About this theme" }}</h2>
 
-<p>
-  This theme brings together everything the <strong>Federal Chancellery</strong> publishes about Swiss
-  politics, and it covers two very different kinds of material. The first is
-  <strong>what citizens decided</strong>: every popular vote, popular initiative and referendum since
-  1848 &mdash; the question that was put, the day it was held, whether it passed, and how each canton
-  voted. The second is <strong>who does the governing</strong>: the members of parliament and their
-  parties, the federal government and its departments, the offices beneath them, and the lobbyists
-  with access to the parliament building.
-</p>
+<p>{{ tHTML "page.politics.thisThemeBringsTogetherEverything" "This theme brings together everything the <strong>Federal Chancellery</strong> publishes about Swiss politics, and it covers two very different kinds of material. The first is <strong>what citizens decided</strong>: every popular vote, popular initiative and referendum since 1848 — the question that was put, the day it was held, whether it passed, and how each canton voted. The second is <strong>who does the governing</strong>: the members of parliament and their parties, the federal government and its departments, the offices beneath them, and the lobbyists with access to the parliament building." }}</p>
 
-<p>
-  Together they answer the two questions people usually arrive with &mdash; <em>what has Switzerland
-  voted on, and how did it turn out?</em> and <em>who holds which office today?</em> The sections
-  below walk through both, starting with how a vote comes about.
-</p>
+<p>{{ tHTML "page.politics.togetherTheyAnswerTheTwo" "Together they answer the two questions people usually arrive with — <em>what has Switzerland voted on, and how did it turn out?</em> and <em>who holds which office today?</em> The sections below walk through both, starting with how a vote comes about." }}</p>
 
 <!-- Metric strip: one bounded query per headline figure. Counts drift as the Chancellery
      reloads its exports, so nothing here is written into the prose. -->
@@ -58,22 +46,22 @@
 <div class="row row-deck row-cards mt-4">
   {{ template "sparqlMetric" (dict
       "queryId" "politicsProposalCount"
-      "title" "Vote Proposals"
+      "title" (t "card.voteProposals" "Vote Proposals")
       "href" "/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-vote%2F1"
       "icon" "/static/img/resource/Cube.svg") }}
   {{ template "sparqlMetric" (dict
       "queryId" "politicsVotingDays"
-      "title" "Polling Days"
+      "title" (t "card.pollingDays" "Polling Days")
       "href" "/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-vote%2Fvoting_dates%2F1"
       "icon" "/static/img/resource/Frequency.svg") }}
   {{ template "sparqlMetric" (dict
       "queryId" "politicsParliamentarians"
-      "title" "Parliamentarians"
+      "title" (t "card.parliamentarians" "Parliamentarians")
       "href" "/resource?iri=http%3A%2F%2Fschema.org%2FPerson"
       "icon" "/static/img/resource/Person.svg") }}
   {{ template "sparqlMetric" (dict
       "queryId" "politicsLobbyOrgs"
-      "title" "Lobby Organizations"
+      "title" (t "card.lobbyOrganizations" "Lobby Organizations")
       "href" "/resource?iri=http%3A%2F%2Fschema.org%2FLobbyOrganization"
       "icon" "/static/img/resource/LobbyOrganization.svg") }}
 </div>
@@ -82,13 +70,9 @@
 <!-- Direct democracy                                               -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">Direct democracy: how a vote happens</h2>
+<h2 class="mt-5">{{ t "page.politics.directDemocracyHowAVote" "Direct democracy: how a vote happens" }}</h2>
 
-<p>
-  Swiss citizens do not only elect a parliament; they vote on the laws themselves, several times a
-  year. Two instruments put a question to the people, and telling them apart is the single most
-  useful thing to understand about this data &mdash; they run in opposite directions.
-</p>
+<p>{{ t "page.politics.swissCitizensDoNotOnly" "Swiss citizens do not only elect a parliament; they vote on the laws themselves, several times a year. Two instruments put a question to the people, and telling them apart is the single most useful thing to understand about this data — they run in opposite directions." }}</p>
 
 <div class="row row-cards mb-4">
   <div class="col-md-6">
@@ -97,11 +81,7 @@
         <h3 class="card-title d-flex align-items-center">
           <i data-lucide="pen-line" class="me-2"></i>Popular initiative
         </h3>
-        <p class="text-secondary mb-0">
-          Citizens <em>propose</em>. Gather 100,000 signatures and you can demand a change to the
-          federal constitution, whether or not parliament wants one. Recorded since 1891, and tracked
-          from signature collection through withdrawal or ballot.
-        </p>
+        <p class="text-secondary mb-0">{{ tHTML "page.politics.citizensProposeGather100000" "Citizens <em>propose</em>. Gather 100,000 signatures and you can demand a change to the federal constitution, whether or not parliament wants one. Recorded since 1891, and tracked from signature collection through withdrawal or ballot." }}</p>
       </div>
     </a>
   </div>
@@ -111,24 +91,13 @@
         <h3 class="card-title d-flex align-items-center">
           <i data-lucide="hand" class="me-2"></i>Referendum
         </h3>
-        <p class="text-secondary mb-0">
-          Citizens <em>object</em>. Parliament has passed a law; 50,000 signatures force it to a
-          public vote before it can take effect. Emergency legislation is covered here too, and
-          follows its own accelerated rules.
-        </p>
+        <p class="text-secondary mb-0">{{ tHTML "page.politics.citizensObjectParliamentHasPassed" "Citizens <em>object</em>. Parliament has passed a law; 50,000 signatures force it to a public vote before it can take effect. Emergency legislation is covered here too, and follows its own accelerated rules." }}</p>
       </div>
     </a>
   </div>
 </div>
 
-<p>
-  Both routes end at the same place: a <strong>popular vote</strong>. That cube is the centrepiece of
-  this theme &mdash; and the richest political dataset in LINDAS. It records not one row per vote but
-  <em>one row per proposal per canton</em>, which is why a few hundred proposals become nearly twenty
-  thousand observations. Each row carries yes and no counts <em>and</em> percentages, turnout,
-  eligible voters, blank and invalid ballots, and the cantonal vote (<em>Standesstimme</em>) that
-  constitutional amendments must also win.
-</p>
+<p>{{ tHTML "page.politics.bothRoutesEndAtThe" "Both routes end at the same place: a <strong>popular vote</strong>. That cube is the centrepiece of this theme — and the richest political dataset in LINDAS. It records not one row per vote but <em>one row per proposal per canton</em>, which is why a few hundred proposals become nearly twenty thousand observations. Each row carries yes and no counts <em>and</em> percentages, turnout, eligible voters, blank and invalid ballots, and the cantonal vote (<em>Standesstimme</em>) that constitutional amendments must also win." }}</p>
 
 <sparql-async id="politicsRecentVotes" class="d-none">
   # ?title and ?observation stay IRIs on purpose: the backend resolves each to a label in the
@@ -147,24 +116,15 @@
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsRecentVotes"
-      "title" "Recent federal votes (national result)"
+      "title" (t "card.recentFederalVotesNationalResult" "Recent federal votes (national result)")
       "icon" "vote") }}
 </div>
 
-<p class="text-secondary">
-  Cantonal rows are omitted above to keep one line per proposal &mdash; open any
-  <a href="/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-vote%2F1">popular vote</a>
-  observation to see all 26 breakdowns. The polling-days cube also lists <em>future</em> dates, so
-  the most recent entries may be scheduled votes with no result yet.
-</p>
+<p class="text-secondary">{{ tHTML "page.politics.cantonalRowsAreOmittedAbove" "Cantonal rows are omitted above to keep one line per proposal — open any <a href=\"/resource?iri=https%3A%2F%2Fpolitics.ld.admin.ch%2Fpolitical-rights%2Fpopular-vote%2F1\">popular vote</a> observation to see all 26 breakdowns. The polling-days cube also lists <em>future</em> dates, so the most recent entries may be scheduled votes with no result yet." }}</p>
 
-<h3 class="mt-4">Petitions</h3>
+<h3 class="mt-4">{{ t "page.politics.petitions" "Petitions" }}</h3>
 
-<p>
-  The quietest instrument, and the only one open to everyone &mdash; no signature threshold, no
-  citizenship requirement, no minimum age. Anyone may petition the federal authorities, who are
-  obliged to take note but not to act.
-</p>
+<p>{{ t "page.politics.theQuietestInstrumentAndThe" "The quietest instrument, and the only one open to everyone — no signature threshold, no citizenship requirement, no minimum age. Anyone may petition the federal authorities, who are obliged to take note but not to act." }}</p>
 
 <sparql-async id="politicsPetitions" class="d-none">
   # ?title and ?observation stay IRIs on purpose: the backend resolves each to a label in the
@@ -181,7 +141,7 @@
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsPetitions"
-      "title" "Petitions to the Federal Council"
+      "title" (t "card.petitionsToTheFederalCouncil" "Petitions to the Federal Council")
       "icon" "scroll-text"
       "collapsed" true) }}
 </div>
@@ -190,16 +150,9 @@
 <!-- Elections                                                      -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">Elections: filling the National Council</h2>
+<h2 class="mt-5">{{ t "page.politics.electionsFillingTheNationalCouncil" "Elections: filling the National Council" }}</h2>
 
-<p>
-  Every four years Switzerland elects the 200 members of the National Council. LINDAS holds the
-  results as five cube families per election year, and together they describe the whole proportional
-  machinery: who stood, on which list, how many votes each list drew, and how seats were finally
-  allocated &mdash; including the distribution <em>within</em> joined lists
-  (<em>listes apparentées</em>), a Swiss speciality where small parties pool votes to clear the
-  threshold together.
-</p>
+<p>{{ tHTML "page.politics.everyFourYearsSwitzerlandElects" "Every four years Switzerland elects the 200 members of the National Council. LINDAS holds the results as five cube families per election year, and together they describe the whole proportional machinery: who stood, on which list, how many votes each list drew, and how seats were finally allocated — including the distribution <em>within</em> joined lists (<em>listes apparentées</em>), a Swiss speciality where small parties pool votes to clear the threshold together." }}</p>
 
 <sparql-async id="politicsElectionCandidates2023" class="d-none">
   SELECT (COUNT(?o) AS ?count) WHERE {
@@ -261,25 +214,15 @@
       "desc" "How the 200 seats were distributed across lists and list groups.") }}
 </div>
 
-<p class="text-secondary mt-3">
-  Cubes for <strong>2027</strong> are already registered but hold no results yet &mdash; the
-  candidate and list cubes are empty, and the cantonal statistics contain only the pre-seeded row
-  skeleton. Real data exists for 2019 and 2023.
-</p>
+<p class="text-secondary mt-3">{{ tHTML "page.politics.cubesFor2027AreAlready" "Cubes for <strong>2027</strong> are already registered but hold no results yet — the candidate and list cubes are empty, and the cantonal statistics contain only the pre-seeded row skeleton. Real data exists for 2019 and 2023." }}</p>
 
 <!-- ============================================================= -->
 <!-- People and institutions                                        -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">Who governs: people and institutions</h2>
+<h2 class="mt-5">{{ t "page.politics.whoGovernsPeopleAndInstitutions" "Who governs: people and institutions" }}</h2>
 
-<p>
-  Where the cubes above count votes, this family of graphs names people. <strong>Curia Vista</strong>
-  is the parliamentary register: every member of the Federal Assembly, living and dead, with their
-  party, their parliamentary group, the committees they sat on and the exact dates of each mandate.
-  Because memberships are modelled as dated <a href="/resource?iri=http%3A%2F%2Fschema.org%2FRole">roles</a>
-  rather than plain links, you can reconstruct the composition of parliament on any given day.
-</p>
+<p>{{ tHTML "page.politics.whereTheCubesAboveCount" "Where the cubes above count votes, this family of graphs names people. <strong>Curia Vista</strong> is the parliamentary register: every member of the Federal Assembly, living and dead, with their party, their parliamentary group, the committees they sat on and the exact dates of each mandate. Because memberships are modelled as dated <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FRole\">roles</a> rather than plain links, you can reconstruct the composition of parliament on any given day." }}</p>
 
 <sparql-async id="politicsGroups" class="d-none">
   # ?parliamentaryGroup stays an IRI on purpose: the backend resolves it to a label in the
@@ -323,29 +266,16 @@
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsGroups"
-      "title" "Parliamentary groups (Fraktionen)"
+      "title" (t "card.parliamentaryGroupsFraktionen" "Parliamentary groups (Fraktionen)")
       "icon" "users"
       "iconVar" "parliamentaryGroup") }}
 </div>
 
-<p class="text-secondary">
-  Names of groups, parties and vote proposals are published in all four national languages plus
-  Romansh, so the tables on this page follow your browser's language preference and fall back to
-  English, then German, where a translation is missing. People's names carry no language tag and are
-  shown as recorded.
-</p>
+<p class="text-secondary">{{ t "page.politics.namesOfGroupsPartiesAnd" "Names of groups, parties and vote proposals are published in all four national languages plus Romansh, so the tables on this page follow your browser's language preference and fall back to English, then German, where a translation is missing. People's names carry no language tag and are shown as recorded." }}</p>
 
-<h3 class="mt-4">Interest ties and lobbying</h3>
+<h3 class="mt-4">{{ t "page.politics.interestTiesAndLobbying" "Interest ties and lobbying" }}</h3>
 
-<p>
-  Members of parliament must declare their outside mandates, and the declarations are published here
-  as links between a person and a
-  <a href="/resource?iri=http%3A%2F%2Fschema.org%2FLobbyOrganization">lobby organization</a>. The
-  useful detail is that each tie is flagged <strong>paid or unpaid</strong>, and records the
-  <em>function</em> held &mdash; so the table below separates the seats a parliamentarian merely
-  occupies from the ones they <strong>chair</strong>. The two can diverge sharply: of the twelve
-  people with the most paid ties, some chair almost all of them and others chair one.
-</p>
+<p>{{ tHTML "page.politics.membersOfParliamentMustDeclare" "Members of parliament must declare their outside mandates, and the declarations are published here as links between a person and a <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FLobbyOrganization\">lobby organization</a>. The useful detail is that each tie is flagged <strong>paid or unpaid</strong>, and records the <em>function</em> held — so the table below separates the seats a parliamentarian merely occupies from the ones they <strong>chair</strong>. The two can diverge sharply: of the twelve people with the most paid ties, some chair almost all of them and others chair one." }}</p>
 
 <sparql-async id="politicsPaidMandates" class="d-none">
   # ?person stays an IRI on purpose: the backend resolves it to the person's name and the
@@ -386,22 +316,14 @@
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsPaidMandates"
-      "title" "Paid interest ties, by parliamentarian"
+      "title" (t "card.paidInterestTiesByParliamentarian" "Paid interest ties, by parliamentarian")
       "icon" "banknote"
       "iconVar" "person") }}
 </div>
 
-<h3 class="mt-4">Government and administration</h3>
+<h3 class="mt-4">{{ t "page.politics.governmentAndAdministration" "Government and administration" }}</h3>
 
-<p>
-  Three further registers describe the executive side. The
-  <strong>Federal Council</strong> graph covers the seven-member government since 1848 &mdash;
-  councillors, chancellors, which department each held, who was president in which year, and a
-  curiosity found in few national datasets: the people who were <em>elected and declined</em>. The
-  <strong>Staatskalender</strong> is the government directory, listing offices with their postal
-  addresses and staff. <strong>Extra-parliamentary commissions</strong> covers the expert bodies that
-  advise the administration from outside it.
-</p>
+<p>{{ tHTML "page.politics.threeFurtherRegistersDescribeThe" "Three further registers describe the executive side. The <strong>Federal Council</strong> graph covers the seven-member government since 1848 — councillors, chancellors, which department each held, who was president in which year, and a curiosity found in few national datasets: the people who were <em>elected and declined</em>. The <strong>Staatskalender</strong> is the government directory, listing offices with their postal addresses and staff. <strong>Extra-parliamentary commissions</strong> covers the expert bodies that advise the administration from outside it." }}</p>
 
 <sparql-async id="politicsPresidents" class="d-none">
   # ?president, ?vicePresident, ?party and ?canton stay IRIs on purpose: the backend resolves
@@ -424,7 +346,7 @@
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsPresidents"
-      "title" "Federal Presidents by year"
+      "title" (t "card.federalPresidentsByYear" "Federal Presidents by year")
       "icon" "users-round"
       "collapsed" true) }}
 </div>
@@ -474,7 +396,7 @@
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsCommissions"
-      "title" "Extra-parliamentary commissions"
+      "title" (t "card.extraParliamentaryCommissions" "Extra-parliamentary commissions")
       "icon" "landmark"
       "iconVar" "commission"
       "collapsed" true) }}
@@ -484,17 +406,9 @@
 <!-- Parliamentary business                                         -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">Parliamentary business</h2>
+<h2 class="mt-5">{{ t "page.politics.parliamentaryBusiness" "Parliamentary business" }}</h2>
 
-<p>
-  One graph in this theme is modelled quite differently from the rest. <strong>Procedural
-  requests</strong> &mdash; motions, postulates and interpellations through which members of
-  parliament formally ask the government to act &mdash; use the
-  <a href="https://ch.paf.link" target="_blank" rel="noopener">PAF ontology</a>, an
-  activity-and-entity model borrowed from provenance vocabularies rather than the cube or schema.org
-  shapes used everywhere else. Each request is an entity; each step in its handling is an activity
-  with its own status text from the administration.
-</p>
+<p>{{ tHTML "page.politics.oneGraphInThisTheme" "One graph in this theme is modelled quite differently from the rest. <strong>Procedural requests</strong> — motions, postulates and interpellations through which members of parliament formally ask the government to act — use the <a href=\"https://ch.paf.link\" target=\"_blank\" rel=\"noopener\">PAF ontology</a>, an activity-and-entity model borrowed from provenance vocabularies rather than the cube or schema.org shapes used everywhere else. Each request is an entity; each step in its handling is an activity with its own status text from the administration." }}</p>
 
 <sparql-async id="politicsProceduralRequests" class="d-none">
   # Each status text is published in de/fr/it, so without a language filter every request
@@ -522,66 +436,47 @@
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsProceduralRequests"
-      "title" "Procedural requests — status reports"
+      "title" (t "card.proceduralRequestsStatusReports" "Procedural requests — status reports")
       "icon" "file-text"
       "collapsed" true) }}
 </div>
 
-<p class="text-secondary">
-  Status texts are published in German, French and Italian, and follow your browser's language here.
-  A single request usually carries several as it moves through the process, so the same title can
-  appear more than once &mdash; each row is one report on that request, not one request.
-</p>
+<p class="text-secondary">{{ t "page.politics.statusTextsArePublishedIn" "Status texts are published in German, French and Italian, and follow your browser's language here. A single request usually carries several as it moves through the process, so the same title can appear more than once — each row is one report on that request, not one request." }}</p>
 
 <!-- ============================================================= -->
 <!-- Datasets                                                       -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">The datasets</h2>
+<h2 class="mt-5">{{ t "page.politics.theDatasets" "The datasets" }}</h2>
 
-<p>
-  Seventeen graphs, grouped by what they are for. All are published by the Federal Chancellery and
-  carry the <code>https://lindas.admin.ch/fch/</code> prefix.
-</p>
+<p>{{ tHTML "page.politics.seventeenGraphsGroupedByWhat" "Seventeen graphs, grouped by what they are for. All are published by the Federal Chancellery and carry the <code>https://lindas.admin.ch/fch/</code> prefix." }}</p>
 
 <div class="card mb-3">
   <div class="card-body">
     <div class="datagrid">
       <div class="datagrid-item">
-        <div class="datagrid-title">Group</div>
-        <div class="datagrid-content"><strong>Direct democracy</strong></div>
+        <div class="datagrid-title">{{ t "page.politics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.directDemocracy" "<strong>Direct democracy</strong>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Publisher</div>
-        <div class="datagrid-content">Federal Chancellery (FCh)</div>
+        <div class="datagrid-title">{{ t "page.politics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.federalChancelleryFCh" "Federal Chancellery (FCh)" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Named graphs</div>
-        <div class="datagrid-content">
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-vote">popular-vote</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-vote-stat">popular-vote-stat</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-initiative">popular-initiative</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-initiative-stat">popular-initiative-stat</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Freferendum">referendum</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Freferendum-stat">referendum-stat</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpetition">petition</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.namedGraphs" "Named graphs" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.popularVotePopularVoteStat" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-vote\">popular-vote</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-vote-stat\">popular-vote-stat</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-initiative\">popular-initiative</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpopular-initiative-stat\">popular-initiative-stat</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Freferendum\">referendum</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Freferendum-stat\">referendum-stat</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpetition\">petition</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Size</div>
-        <div class="datagrid-content">~1.9 million triples &mdash; popular-vote alone is ~1.0 million</div>
+        <div class="datagrid-title">{{ t "page.politics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.19MillionTriplesPopular" "~1.9 million triples — popular-vote alone is ~1.0 million" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Coverage</div>
-        <div class="datagrid-content">
-          Popular votes from 1848; initiatives from 1891; future polling dates included
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.coverage" "Coverage" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.popularVotesFrom1848Initiatives" "Popular votes from 1848; initiatives from 1891; future polling dates included" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Landing page</div>
-        <div class="datagrid-content">
-          <a href="https://www.bk.admin.ch" target="_blank" rel="noopener">bk.admin.ch</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.landingPage" "Landing page" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.bkAdminCh" "<a href=\"https://www.bk.admin.ch\" target=\"_blank\" rel=\"noopener\">bk.admin.ch</a>" }}</div>
       </div>
     </div>
   </div>
@@ -591,32 +486,28 @@
   <div class="card-body">
     <div class="datagrid">
       <div class="datagrid-item">
-        <div class="datagrid-title">Group</div>
-        <div class="datagrid-content"><strong>Elections</strong></div>
+        <div class="datagrid-title">{{ t "page.politics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.elections" "<strong>Elections</strong>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Publisher</div>
-        <div class="datagrid-content">Federal Chancellery (FCh)</div>
+        <div class="datagrid-title">{{ t "page.politics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.federalChancelleryFCh" "Federal Chancellery (FCh)" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Named graph</div>
-        <div class="datagrid-content">
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fnational-council-election">national-council-election</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.nationalCouncilElection" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fnational-council-election\">national-council-election</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Size</div>
-        <div class="datagrid-content">~292,000 triples &mdash; 18 cubes, 5 subjects &times; 3 years</div>
+        <div class="datagrid-title">{{ t "page.politics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.292000Triples18Cubes" "~292,000 triples — 18 cubes, 5 subjects × 3 years" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Contents</div>
-        <div class="datagrid-content">
-          Candidates, lists, seats per list, seats within joined lists, cantonal statistics
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.candidatesListsSeatsPerList" "Candidates, lists, seats per list, seats within joined lists, cantonal statistics" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Coverage</div>
-        <div class="datagrid-content">2019 and 2023 populated; 2027 registered but empty</div>
+        <div class="datagrid-title">{{ t "page.politics.coverage" "Coverage" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.2019And2023Populated2027" "2019 and 2023 populated; 2027 registered but empty" }}</div>
       </div>
     </div>
   </div>
@@ -626,41 +517,28 @@
   <div class="card-body">
     <div class="datagrid">
       <div class="datagrid-item">
-        <div class="datagrid-title">Group</div>
-        <div class="datagrid-content"><strong>People &amp; institutions</strong></div>
+        <div class="datagrid-title">{{ t "page.politics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.peopleInstitutions" "<strong>People & institutions</strong>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Publisher</div>
-        <div class="datagrid-content">Federal Chancellery (FCh)</div>
+        <div class="datagrid-title">{{ t "page.politics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.federalChancelleryFCh" "Federal Chancellery (FCh)" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Named graphs</div>
-        <div class="datagrid-content">
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fcuria">curia</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Ffederal-council">federal-council</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fstaatskalender">staatskalender</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Forganization">organization</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fextra-parliamentary-commission">extra-parliamentary-commission</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpolitical-party-register">political-party-register</a>,
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Frvov">rvov</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.namedGraphs" "Named graphs" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.curiaFederalCouncilStaatskalenderOrganization" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fcuria\">curia</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Ffederal-council\">federal-council</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fstaatskalender\">staatskalender</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Forganization\">organization</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fextra-parliamentary-commission\">extra-parliamentary-commission</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fpolitical-party-register\">political-party-register</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Frvov\">rvov</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Size</div>
-        <div class="datagrid-content">~1.6 million triples &mdash; organization is the largest at ~975,000</div>
+        <div class="datagrid-title">{{ t "page.politics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.16MillionTriplesOrganization" "~1.6 million triples — organization is the largest at ~975,000" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Contents</div>
-        <div class="datagrid-content">
-          Parliamentarians, parties, groups, committees, lobby ties, government members, offices and
-          commissions &mdash; modelled as dated <code>schema:Role</code> memberships
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.parliamentariansPartiesGroupsCommitteesLobby" "Parliamentarians, parties, groups, committees, lobby ties, government members, offices and commissions — modelled as dated <code>schema:Role</code> memberships" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Caveat</div>
-        <div class="datagrid-content">
-          The party register holds only a few dozen rows and is updated solely at a party's request
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.thePartyRegisterHoldsOnly" "The party register holds only a few dozen rows and is updated solely at a party's request" }}</div>
       </div>
     </div>
   </div>
@@ -670,45 +548,34 @@
   <div class="card-body">
     <div class="datagrid">
       <div class="datagrid-item">
-        <div class="datagrid-title">Group</div>
-        <div class="datagrid-content"><strong>Parliamentary business</strong></div>
+        <div class="datagrid-title">{{ t "page.politics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.parliamentaryBusiness2" "<strong>Parliamentary business</strong>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Publisher</div>
-        <div class="datagrid-content">Federal Chancellery (FCh)</div>
+        <div class="datagrid-title">{{ t "page.politics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.federalChancelleryFCh" "Federal Chancellery (FCh)" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Named graph</div>
-        <div class="datagrid-content">
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fprocedural-request">procedural-request</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.proceduralRequest" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fprocedural-request\">procedural-request</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Size</div>
-        <div class="datagrid-content">~42,000 triples</div>
+        <div class="datagrid-title">{{ t "page.politics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.42000Triples" "~42,000 triples" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Contents</div>
-        <div class="datagrid-content">
-          Motions, postulates and interpellations with their handling status
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.politics.motionsPostulatesAndInterpellationsWith" "Motions, postulates and interpellations with their handling status" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Vocabulary</div>
-        <div class="datagrid-content">
-          PAF &mdash; <code>https://ch.paf.link/</code>, the only non-cube model in this theme
-        </div>
+        <div class="datagrid-title">{{ t "page.politics.vocabulary" "Vocabulary" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.politics.pafHttpsChPafLink" "PAF — <code>https://ch.paf.link/</code>, the only non-cube model in this theme" }}</div>
       </div>
     </div>
   </div>
 </div>
 
-<p class="text-secondary">
-  A seventeenth graph,
-  <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Ftermdat">termdat</a>, holds the
-  Federal Administration's terminology database. It is administrative rather than political and is
-  left out of the groups above.
-</p>
+<p class="text-secondary">{{ tHTML "page.politics.aSeventeenthGraphTermdatHolds" "A seventeenth graph, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Ftermdat\">termdat</a>, holds the Federal Administration's terminology database. It is administrative rather than political and is left out of the groups above." }}</p>
 
 {{ end }}
 

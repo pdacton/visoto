@@ -39,7 +39,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "organizationInstances"
         "iri" .ResourceIRI
-        "title" "Organizations"
+        "title" (t "card.organizations" "Organizations")
         "icon" "circle-dot"
         "iconVar" "organization"
         "searchProp" "http://schema.org/name")

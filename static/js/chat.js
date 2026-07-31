@@ -277,9 +277,9 @@
     const infoDiv = document.createElement('div');
     infoDiv.className = 'alert alert-info mb-3';
     infoDiv.innerHTML = `
-      <h4 class="alert-heading"><i data-lucide="info" class="me-2"></i>Resource Assistant</h4>
-      <p>The chat assistant helps you understand RDF resources.</p>
-      <p class="mb-0">Navigate to a resource page to start chatting!</p>
+      <h4 class="alert-heading"><i data-lucide="info" class="me-2"></i>${vsT('js.chat.title', 'Resource Assistant')}</h4>
+      <p>${vsT('js.chat.intro', 'The chat assistant helps you understand RDF resources.')}</p>
+      <p class="mb-0">${vsT('js.chat.noResource', 'Navigate to a resource page to start chatting!')}</p>
     `;
     chatMessages.appendChild(infoDiv);
 

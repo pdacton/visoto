@@ -1,7 +1,7 @@
-{{ define "pageTitle" }}Data Schema (derived){{ end }}
-{{ define "pageSubtitle"}}An informal schema reconstructed from the actual data around one instance, drawn as a UML-style class diagram.{{ end }}
-{{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="Schema Icon" width="40" />{{ end }}
-{{ define "metaTitle" }}Data Schema{{ end }}
+{{ define "pageTitle" }}{{ t "page.schema.title" "Data Schema (derived)" }}{{ end }}
+{{ define "pageSubtitle"}}{{ t "page.schema.subtitle" "An informal schema reconstructed from the actual data around one instance, drawn as a UML-style class diagram." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/graphexplorer.svg" alt="{{ t "page.schema.schemaIcon" "Schema Icon" }}" width="40" />{{ end }}
+{{ define "metaTitle" }}{{ t "page.schema.metaTitle" "Data Schema" }}{{ end }}
 {{ define "metaIcon" }}/static/img/graphexplorer.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -24,7 +24,8 @@
   var statusEl = document.getElementById('schema-status');
 
   if (!GE || !GE.Workspace) {
-    container.innerHTML = '<div class="alert alert-danger m-3">Failed to load Graph Explorer library</div>';
+    container.innerHTML = '<div class="alert alert-danger m-3">' +
+      vsT('js.graph.failedToLoadLibrary', 'Failed to load Graph Explorer library') + '</div>';
     return;
   }
 
@@ -43,7 +44,8 @@
     return /^https?:\/\/[^<>"{}|\\^`\s]+$/.test(iri);
   }
   if (!validIri(instanceIRI) || (classIRI && !validIri(classIRI))) {
-    statusEl.innerHTML = '<div class="alert alert-danger">Invalid IRI parameter</div>';
+    statusEl.innerHTML = '<div class="alert alert-danger">' +
+      vsT('js.schema.invalidIri', 'Invalid IRI parameter') + '</div>';
     return;
   }
 
@@ -352,10 +354,15 @@
 
   function renderSchema(store, cls) {
     statusEl.innerHTML =
-      '<div class="text-secondary small">Schema derived from ' +
-      '<a href="/resource?iri=' + encodeURIComponent(instanceIRI) + '" target="_blank"><code>' + escapeHtml(localName(instanceIRI)) + '</code></a>' +
-      ' (anchored on <code>' + escapeHtml(localName(cls)) + '</code>) &mdash; ' +
-      Object.keys(store.elements).length + ' classes, ' + store.links.length + ' relations</div>';
+      '<div class="text-secondary small">' +
+      vsTf('js.schema.derivedFrom',
+           'Schema derived from {instance} (anchored on <code>{class}</code>) — {classes} classes, {relations} relations', {
+        instance: '<a href="/resource?iri=' + encodeURIComponent(instanceIRI) + '" target="_blank"><code>' +
+                  escapeHtml(localName(instanceIRI)) + '</code></a>',
+        class: escapeHtml(localName(cls)),
+        classes: Object.keys(store.elements).length,
+        relations: store.links.length
+      }) + '</div>';
 
     function onWorkspaceMounted(workspace) {
       if (!workspace) return;
@@ -424,7 +431,8 @@
     });
   }
 
-  statusEl.innerHTML = '<div class="text-secondary small">Deriving schema&hellip;</div>';
+  statusEl.innerHTML = '<div class="text-secondary small">' +
+    vsT('js.schema.deriving', 'Deriving schema…') + '</div>';
   detectClass()
     .then(function(cls) {
       return sparql(vizQuery(instanceIRI, cls), 'application/n-triples').then(function(nt) {
@@ -436,7 +444,9 @@
       });
     })
     .catch(function(err) {
-      statusEl.innerHTML = '<div class="alert alert-danger">Schema derivation failed: ' + escapeHtml(err.message) + '</div>';
+      statusEl.innerHTML = '<div class="alert alert-danger">' +
+        vsTf('js.schema.derivationFailed', 'Schema derivation failed: {error}',
+             { error: escapeHtml(err.message) }) + '</div>';
     });
 })();
 </script>

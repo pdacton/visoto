@@ -121,8 +121,7 @@ func asyncTableDataHandler(c *gin.Context) {
 // the full column list, every row of the working set, and whether that set is the
 // entire in-scope population (complete) or a capped subset (search to load more).
 func writeWorkingSet(c *gin.Context, result sparql.QueryResult, total int, complete bool) {
-	c.Header("Cache-Control", cacheControlPublic)
-	c.Header("Vary", "Accept-Language")
+	markCacheable(c)
 	c.JSON(http.StatusOK, gin.H{
 		"vars":     result.Vars,
 		"data":     result.Bindings,

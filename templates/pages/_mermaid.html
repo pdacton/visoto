@@ -1,5 +1,5 @@
-{{ define "pageTitle" }}Mermaid-Flow Test{{ end }}
-{{ define "pageSubtitle"}}A test page for the Mermaid flow diagram component.{{ end }}
+{{ define "pageTitle" }}{{ t "page.mermaid.title" "Mermaid-Flow Test" }}{{ end }}
+{{ define "pageSubtitle"}}{{ t "page.mermaid.subtitle" "A test page for the Mermaid flow diagram component." }}{{ end }}
 
 {{ define "pageContent" }}
 <div>
@@ -58,7 +58,7 @@
         {{ template "sparqlMermaidFlow" (dict
               "result" .QueryResults.versionflow
               "id" "versionflow"
-              "title" "Version Flow for Municipality 3871"
+              "title" (t "card.versionFlowForMunicipality3871" "Version Flow for Municipality 3871")
               "icon" "history"
               "direction" "LR")
         }}

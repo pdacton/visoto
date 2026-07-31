@@ -1,7 +1,7 @@
 <!-- dcat:Distribution Class Template -->
 
-{{ define "pageTitle" }}DCAT Distribution{{ end }}
-{{ define "metaTitle" }}DCAT Distribution{{ end }}
+{{ define "pageTitle" }}{{ t "type.distribution.title" "DCAT Distribution" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.distribution.metaTitle" "DCAT Distribution" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
 <sparql-query id="pageClasses" class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
@@ -34,7 +34,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "dcatDistributionInstances"
             "iri" .ResourceIRI
-            "title" "Distributions"
+            "title" (t "card.distributions" "Distributions")
             "icon" "file-download"
             "iconVar" "type")
         }}

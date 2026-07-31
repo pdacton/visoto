@@ -7,12 +7,12 @@
       <div class="chat-container d-flex flex-column h-100">
         <!-- Chat header with clear button -->
         <div class="chat-header p-3 border-bottom d-flex justify-content-between align-items-center">
-          <h3 class="mb-0">Resource Assistant</h3>
+          <h3 class="mb-0">{{ t "chat.title" "Resource Assistant" }}</h3>
           <div class="d-flex">
-            <a href="#" id="chat-clear" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Clear chat history" data-bs-original-title="Clear chat history">
+            <a href="#" id="chat-clear" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "chat.clearHistory" "Clear chat history" }}" data-bs-original-title="{{ t "chat.clearHistory" "Clear chat history" }}">
               <i data-lucide="trash-2" aria-hidden="true"></i>
             </a>
-            <a href="#" id="right-sidebar-close" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Close sidebar" data-bs-original-title="Close sidebar">
+            <a href="#" id="right-sidebar-close" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "chat.closeSidebar" "Close sidebar" }}" data-bs-original-title="{{ t "chat.closeSidebar" "Close sidebar" }}">
               <i data-lucide="x" aria-hidden="true"></i>
             </a>
           </div>
@@ -23,9 +23,9 @@
           <!-- Initial state: loading -->
           <div id="chat-initial" class="text-muted text-center mt-5">
             <div class="spinner-border spinner-border-sm mb-2" role="status">
-              <span class="visually-hidden">Loading...</span>
+              <span class="visually-hidden">{{ t "graphs.loading" "Loading..." }}</span>
             </div>
-            <p>Analyzing resource...</p>
+            <p>{{ t "chat.analyzing" "Analyzing resource..." }}</p>
           </div>
         </div>
 
@@ -34,7 +34,7 @@
           <form id="chat-form">
             <div class="input-group">
               <input type="text" id="chat-input" class="form-control"
-                     placeholder="Ask a question..." autocomplete="off">
+                     placeholder="{{ t "chat.inputPlaceholder" "Ask a question..." }}" autocomplete="off">
               <button type="submit" class="btn btn-primary" id="chat-send">
                 <i data-lucide="send"></i>
               </button>
@@ -42,7 +42,7 @@
           </form>
         </div>
         <div class="px-3 pb-2 text-center">
-          <small class="text-muted">Prefer your own AI? <a href="/connect.html">Connect Visoto as an MCP server</a></small>
+          <small class="text-muted">{{ tHTML "chat.ownAi" "Prefer your own AI? <a href=\"/connect.html\">Connect Visoto as an MCP server</a>" }}</small>
         </div>
       </div>
     </div>

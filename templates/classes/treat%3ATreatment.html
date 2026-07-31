@@ -1,7 +1,7 @@
 <!-- Treatment Class Template — lists instances of treat:Treatment in an async working-set table -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.treatment.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
 {{ end }}
 
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . }</sparql-query>
@@ -15,9 +15,9 @@
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}Taxonomic treatments — the sections of a publication describing a taxon — in the Plazi corpus.{{ end }}
+{{ define "pageSubtitle" }}{{ t "type.treatment.subtitle" "Taxonomic treatments — the sections of a publication describing a taxon — in the Plazi corpus." }}{{ end }}
 
-{{ define "pageIcon" }}<img src="/static/img/resource/Treatment.svg" alt="Treatment" width="48" height="48">{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Treatment.svg" alt="{{ t "type.treatment.treatment" "Treatment" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/resource/Treatment.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -38,7 +38,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "treatmentInstances"
         "iri" .ResourceIRI
-        "title" "Treatments"
+        "title" (t "card.treatments" "Treatments")
         "icon" "file-description"
         "iconVar" "Treatment")
     }}

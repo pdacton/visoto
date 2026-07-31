@@ -1,7 +1,7 @@
 <!-- OWL Class Template -->
 
-{{ define "pageTitle" }}OWL Class{{ end }}
-{{ define "metaTitle" }}OWL Class{{ end }}
+{{ define "pageTitle" }}{{ t "type.class.title" "RDF Class" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.class.metaTitle" "RDF Class" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
 <sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
@@ -33,7 +33,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "owlClassInstances"
             "iri" .ResourceIRI
-            "title" "Classes in Dataset"
+            "title" (t "card.classesInDataset" "Classes in Dataset")
             "icon" "circle-dot"
             "iconVar" "class")
         }}
@@ -57,7 +57,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.subclasses
             "id" "subclasses"
-            "title" "Subclasses"
+            "title" (t "card.subclasses" "Subclasses")
             "icon" "circle-chevron-down"
             "collapsed" false)
         }}
@@ -79,7 +79,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.superclasses
             "id" "superclasses"
-            "title" "Superclasses"
+            "title" (t "card.superclasses" "Superclasses")
             "icon" "circle-chevron-up"
             "collapsed" false)
         }}

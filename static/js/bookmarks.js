@@ -316,7 +316,7 @@
     h1.draggable = true;
     h1.dataset.dragIri = iri;
     h1.style.cursor = 'grab';
-    h1.title = 'Drag to bookmark or graph';
+    h1.title = vsT('js.bookmarks.dragHint', 'Drag to bookmark or graph');
   }
 
   // ── Init ───────────────────────────────────────────────────────────────────

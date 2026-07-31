@@ -5,10 +5,10 @@
     <script type="application/json" id="flow-config">
     { "typeMap": {...}, "styleConfig": {...} }
     </script>
-    {{ template "sparqlMermaidFlow" (dict "result" .QueryResults.flow "id" "flow" "title" "Relationship Flow" "direction" "LR") }}
+    {{ template "sparqlMermaidFlow" (dict "result" .QueryResults.flow "id" "flow" "title" (t "card.relationshipFlow" "Relationship Flow") "direction" "LR") }}
 
   OR (with Go template config parameter - define your own config variable first):
-    {{ template "sparqlMermaidFlow" (dict "result" .QueryResults.flow "id" "flow" "title" "Relationship Flow" "direction" "LR" "config" .YourConfigVariable) }}
+    {{ template "sparqlMermaidFlow" (dict "result" .QueryResults.flow "id" "flow" "title" (t "card.relationshipFlow" "Relationship Flow") "direction" "LR" "config" .YourConfigVariable) }}
 
   Parameters (via dict):
     - result: QueryResult object with .Vars, .Bindings, .Error
@@ -99,20 +99,20 @@
         <div class="ms-auto d-flex align-items-center gap-2">
           {{ if $id }}
             <select id="direction-{{ $id }}" class="form-select form-select-sm w-auto">
-              <option value="LR"{{ if or (eq $direction "LR") (not $direction) }} selected{{ end }}>Left to Right</option>
-              <option value="TD"{{ if eq $direction "TD" }} selected{{ end }}>Top Down</option>
-              <option value="graph"{{ if eq $direction "graph" }} selected{{ end }}>Graph</option>
+              <option value="LR"{{ if or (eq $direction "LR") (not $direction) }} selected{{ end }}>{{ t "flow.leftToRight" "Left to Right" }}</option>
+              <option value="TD"{{ if eq $direction "TD" }} selected{{ end }}>{{ t "flow.topDown" "Top Down" }}</option>
+              <option value="graph"{{ if eq $direction "graph" }} selected{{ end }}>{{ t "flow.graph" "Graph" }}</option>
             </select>
           {{ end }}
           <div class="btn-actions">
             {{ if $id }}
-              <a id="zoom-out-{{ $id }}" class="btn-action" title="Zoom out">
+              <a id="zoom-out-{{ $id }}" class="btn-action" title="{{ t "zoom.out" "Zoom out" }}">
                 <i data-lucide="zoom-out"></i>
               </a>
-              <a id="zoom-reset-{{ $id }}" class="btn-action" title="Reset zoom">
+              <a id="zoom-reset-{{ $id }}" class="btn-action" title="{{ t "zoom.reset" "Reset zoom" }}">
                 <i data-lucide="maximize"></i>
               </a>
-              <a id="zoom-in-{{ $id }}" class="btn-action" title="Zoom in">
+              <a id="zoom-in-{{ $id }}" class="btn-action" title="{{ t "zoom.in" "Zoom in" }}">
                 <i data-lucide="zoom-in"></i>
               </a>
             {{ end }}

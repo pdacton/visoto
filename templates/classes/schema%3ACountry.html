@@ -35,7 +35,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "countryInstances"
         "iri" .ResourceIRI
-        "title" "Countries"
+        "title" (t "card.countries" "Countries")
         "icon" "circle-dot"
         "iconVar" "type")
     }}

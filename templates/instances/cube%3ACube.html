@@ -57,10 +57,10 @@
         <div class="d-flex align-items-center gap-2">
           <i data-lucide="alert-triangle"></i>
           <div>
-            <strong>This version is superseded</strong> &mdash; it expired {{ $exp.Value }}.
+            <strong>{{ t "type.cube.thisVersionIsSuperseded" "This version is superseded" }}</strong> &mdash; it expired {{ $exp.Value }}.
             {{ $newest := index $b "newest" }}
             {{ if $newest.Value }}
-              <a href="/resource?iri={{ urlquery $newest.Value }}" class="alert-link">Open the current version</a>.
+              <a href="/resource?iri={{ urlquery $newest.Value }}" class="alert-link">{{ t "type.cube.openTheCurrentVersion" "Open the current version" }}</a>.
             {{ end }}
           </div>
         </div>
@@ -103,18 +103,18 @@
     {{ template "sparqlMetric" (dict
         "queryId" "cubeObservationCount"
         "iri" .ResourceIRI
-        "title" "Observations"
+        "title" (t "card.observations" "Observations")
         "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
         "icon" "/static/img/resource/Cube.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "cubeDimensionCount"
         "iri" .ResourceIRI
-        "title" "Dimensions"
+        "title" (t "card.dimensions" "Dimensions")
         "href" "#dimensions") }}
     {{ template "sparqlMetric" (dict
         "queryId" "cubeVersionMetric"
         "iri" .ResourceIRI
-        "title" "Version"
+        "title" (t "card.version" "Version")
         "href" "#versions") }}
   </div>
 
@@ -147,7 +147,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "cubeDimensions"
             "iri" .ResourceIRI
-            "title" "Dimensions"
+            "title" (t "card.dimensions" "Dimensions")
             "icon" "columns-3")
         }}
       </div>
@@ -178,7 +178,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "cubeVersions"
             "iri" .ResourceIRI
-            "title" "Other Versions"
+            "title" (t "card.otherVersions" "Other Versions")
             "icon" "history"
             "badgeVar" "status"
             "collapsed" true)

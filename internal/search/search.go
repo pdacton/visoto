@@ -2,7 +2,6 @@ package search
 
 import (
 	"log/slog"
-	"net/http"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -124,34 +123,8 @@ func (s *Searcher) Execute(params SearchParams, acceptLanguage string) SearchRes
 	return result
 }
 
-// Handler returns a Gin handler function for the search route
-func (s *Searcher) Handler() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		params := ParseParams(c)
-
-		// Validate required query parameter
-		if params.Query == "" {
-			c.HTML(http.StatusOK, "pages/search.html", gin.H{
-				"ClassFilters":    GetClassFilters(),
-				"PropertyFilters": GetPropertyFilters(),
-				"Error":           "",
-			})
-			return
-		}
-
-		// Execute search
-		acceptLanguage := c.Request.Header.Get("Accept-Language")
-		result := s.Execute(params, acceptLanguage)
-
-		// Render results
-		c.HTML(http.StatusOK, "pages/search.html", gin.H{
-			"Query":            result.Query,
-			"ClassFilters":     GetClassFilters(),
-			"PropertyFilters":  GetPropertyFilters(),
-			"SelectedClass":    params.Class,
-			"SelectedProperty": params.Property,
-			"SearchResults":    result.Results,
-			"Provider":         result.Provider,
-		})
-	}
-}
+// The search route is served by searchHandler in cmd/visoto, which also stamps
+// the endpoint data every page needs and names the template's language variant.
+// A duplicate Handler method used to live here; it was unreferenced and rendered
+// pages/search.html without that data, so it was removed rather than kept in
+// sync with the language-qualified render path.

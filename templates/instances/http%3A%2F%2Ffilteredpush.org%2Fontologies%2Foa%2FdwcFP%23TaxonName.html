@@ -3,8 +3,8 @@
      Darwin Core attributes and the taxon concepts built on this name. -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
-  <li class="breadcrumb-item"><a href="/resource?iri=dwcFP:TaxonName">Taxon Name</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.taxonName.org%2Fontologies%2Foa%2FdwcFP%23TaxonName.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
+  <li class="breadcrumb-item">{{ t "type.taxonName.org%2Fontologies%2Foa%2FdwcFP%23TaxonName.taxonName" "Taxon Name" }}</li>
 {{ end }}
 
 {{ template "pageHeader" . }}
@@ -28,7 +28,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.usingConcepts
             "id" "usingConcepts"
-            "title" "Taxon Concepts"
+            "title" (t "card.taxonConcepts" "Taxon Concepts")
             "icon" "bug"
             "iconVar" "TaxonConcept"
             "badgeVar" "rank")

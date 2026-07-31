@@ -13,10 +13,10 @@ document.addEventListener('DOMContentLoaded', function () {
     if (themeIcon) {
       if (theme === 'dark') {
         themeIcon.setAttribute('data-lucide', 'sun');
-        themeIcon.setAttribute('aria-label', 'Switch to light mode');
+        themeIcon.setAttribute('aria-label', vsT('js.theme.switchToLight', 'Switch to light mode'));
       } else {
         themeIcon.setAttribute('data-lucide', 'moon');
-        themeIcon.setAttribute('aria-label', 'Switch to dark mode');
+        themeIcon.setAttribute('aria-label', vsT('js.theme.switchToDark', 'Switch to dark mode'));
       }
       // Re-initialize lucide icons after changing the data-lucide attribute
       if (window.lucide) {
@@ -26,11 +26,13 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // switch the container of the icon
     if (theme === 'dark') {
-      themeToggle.setAttribute('aria-label', 'Enable light mode');
-      themeToggle.setAttribute('data-bs-original-title', 'Enable light mode');
+      var enableLight = vsT('js.theme.enableLight', 'Enable light mode');
+      themeToggle.setAttribute('aria-label', enableLight);
+      themeToggle.setAttribute('data-bs-original-title', enableLight);
     } else {
-      themeToggle.setAttribute('aria-label', 'Enable dark mode');
-      themeToggle.setAttribute('data-bs-original-title', 'Enable dark mode');
+      var enableDark = vsT('js.theme.enableDark', 'Enable dark mode');
+      themeToggle.setAttribute('aria-label', enableDark);
+      themeToggle.setAttribute('data-bs-original-title', enableDark);
     }
     
     // If using Bootstrap tooltips, update the tooltip if already initialized

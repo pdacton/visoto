@@ -18,6 +18,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"hutzli.org/visoto/internal/chat"
 	"hutzli.org/visoto/internal/config"
+	"hutzli.org/visoto/internal/i18n"
+	"hutzli.org/visoto/internal/lang"
 	"hutzli.org/visoto/internal/logger"
 	mcpserver "hutzli.org/visoto/internal/mcp"
 	"hutzli.org/visoto/internal/monitor"
@@ -34,20 +36,90 @@ import (
 var cfg *config.Config
 var mon *monitor.Monitor
 
-// cacheControlPublic is the Cache-Control value for successful, SPARQL-backed
-// responses (metric/table/resource handlers): 6h, cacheable by Caddy's cache
-// module. These routes resolve their endpoint from the URL only (resolveEndpoint
-// with allowCookie=false) and never emit Set-Cookie, so the response is a pure
-// function of the URL and safe for a shared cache — no qualified no-cache
-// directive is needed here, and adding one made Souin revalidate against the
-// origin on every read, defeating the cache.
-const cacheControlPublic = `public, max-age=21600`
+// siteLangs is the configured UI language set, built once from visoto.config.
+var siteLangs *lang.Set
+
+// catalogs holds the UI message catalogs, loaded once from ./locales.
+var catalogs *i18n.Catalogs
+
+// Successful, SPARQL-backed responses (metric/table/resource handlers) call
+// markCacheable to declare themselves storable by Caddy's cache module. Those
+// routes resolve their endpoint from the URL only (resolveEndpoint with
+// allowCookie=false) and never emit Set-Cookie, so the response is a pure
+// function of the URL and the negotiated language, and safe for a shared cache.
+// The Cache-Control and Vary values themselves are assembled centrally — see
+// cacheControlFor in etag.go, which explains why the browser is told to
+// revalidate while Souin is still allowed to serve for hours.
 
 // ---- Request helpers ----
 
 // activeEndpointKey is the gin-context key under which resolveEndpoint stores
 // the request's resolved *config.SparqlEndpoint.
 const activeEndpointKey = "activeEndpoint"
+
+// configLanguages converts the configured languages into the form
+// internal/lang takes. The two structs are deliberately separate so the language
+// resolver does not depend on the config loader.
+func configLanguages(in []config.Language) []lang.Language {
+	out := make([]lang.Language, 0, len(in))
+	for _, l := range in {
+		out = append(out, lang.Language{Code: l.Code, Label: l.Label})
+	}
+	return out
+}
+
+// activeLangKey / langViaHeaderKey are the gin-context keys under which
+// resolveLang stores the request's UI language and whether it arrived via the
+// X-Site-Lang header.
+const (
+	activeLangKey    = "activeLang"
+	langViaHeaderKey = "langViaHeader"
+)
+
+// resolveLang resolves the request's UI language once, into the context.
+//
+// Unlike resolveEndpoint there is only one variant: the language is safe to read
+// from a cookie even on routes in the shared Caddy/Souin cache, because in
+// production Caddy normalizes the cookie and Accept-Language into X-Site-Lang
+// *before* the cache and folds that header into the cache key. The cookie branch
+// inside lang.FromRequest therefore only ever runs in dev, where no shared cache
+// exists. See internal/lang.
+func resolveLang() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		code, viaHeader := siteLangs.FromRequest(c.Request)
+		c.Set(activeLangKey, code)
+		c.Set(langViaHeaderKey, viaHeader)
+	}
+}
+
+// activeLang returns the UI language resolved by resolveLang, falling back to
+// the configured default when the middleware has not run (e.g. in tests).
+func activeLang(c *gin.Context) string {
+	if v, ok := c.Get(activeLangKey); ok {
+		if code, ok := v.(string); ok {
+			return code
+		}
+	}
+	return siteLangs.Default()
+}
+
+// renderName maps a logical template name ("pages/home.html") onto the variant
+// registered for this request's language. Every c.HTML call must go through it —
+// the bare name is not registered with the renderer.
+func renderName(c *gin.Context, templateName string) string {
+	return templates.Name(activeLang(c), templateName)
+}
+
+// langViaHeader reports whether the request carried an X-Site-Lang header, i.e.
+// whether a normalizing cache sits in front of us. Decides the Vary header.
+func langViaHeader(c *gin.Context) bool {
+	v, ok := c.Get(langViaHeaderKey)
+	if !ok {
+		return false
+	}
+	b, _ := v.(bool)
+	return b
+}
 
 // resolveEndpoint returns a middleware that resolves the active SPARQL endpoint
 // exactly once per request into the context: ?endpoint=<slug> → (optionally) the
@@ -225,7 +297,7 @@ func staticPageHandler(c *gin.Context) {
 		slog.Int("queryResults", len(data.QueryResults)))
 
 	// Render template
-	c.HTML(http.StatusOK, templateName, data)
+	c.HTML(http.StatusOK, renderName(c, templateName), data)
 }
 
 // legacyResourceRedirectHandler permanently redirects old path-form resource
@@ -291,10 +363,9 @@ func resourcePageHandler(c *gin.Context) {
 	// List the named graphs containing this resource (shown in the IRI dropdown)
 	r.FetchNamedGraphs(c.Request.Context(), preprocessor, cfg.RDF.ParsedPrefixes)
 
-	c.Header("Cache-Control", cacheControlPublic)
-	c.Header("Vary", "Accept-Language")
+	markCacheable(c)
 	// native gin template rendering
-	c.HTML(http.StatusOK, r.TemplateName, r.Data)
+	c.HTML(http.StatusOK, renderName(c, r.TemplateName), r.Data)
 }
 
 func searchHandler(c *gin.Context) {
@@ -313,7 +384,7 @@ func searchHandler(c *gin.Context) {
 
 	// Validate required query parameter
 	if params.Query == "" {
-		c.HTML(http.StatusOK, "pages/search.html", endpointTemplateData(c, gin.H{
+		c.HTML(http.StatusOK, renderName(c, "pages/search.html"), endpointTemplateData(c, gin.H{
 			"ClassFilters":    search.GetClassFilters(),
 			"PropertyFilters": search.GetPropertyFilters(),
 			"SelectedLimit":   search.DefaultLimit,
@@ -327,7 +398,7 @@ func searchHandler(c *gin.Context) {
 	result := searcher.Execute(params, acceptLanguage)
 
 	// Render results
-	c.HTML(http.StatusOK, "pages/search.html", endpointTemplateData(c, gin.H{
+	c.HTML(http.StatusOK, renderName(c, "pages/search.html"), endpointTemplateData(c, gin.H{
 		"Query":            result.Query,
 		"ClassFilters":     search.GetClassFilters(),
 		"PropertyFilters":  search.GetPropertyFilters(),
@@ -413,7 +484,7 @@ func metricHandler(c *gin.Context) {
 		endpoint = activeEndpointURL(c)
 	}
 
-	html, renderErr := templates.RenderSparqlMetricValue(map[string]any{
+	html, renderErr := templates.RenderSparqlMetricValue(activeLang(c), map[string]any{
 		"queryId":  id,
 		"count":    count,
 		"query":    finalQuery,
@@ -431,8 +502,7 @@ func metricHandler(c *gin.Context) {
 		// (likely wrong) count.
 		c.Header("Cache-Control", "no-store")
 	} else {
-		c.Header("Cache-Control", cacheControlPublic)
-		c.Header("Vary", "Accept-Language")
+		markCacheable(c)
 	}
 	c.Header("Content-Type", "text/html")
 	c.String(http.StatusOK, string(html))
@@ -549,14 +619,13 @@ func asyncTableHandler(c *gin.Context) {
 // wants this response cached (false for transient query errors, which must
 // never be served stale for hours).
 func renderTableFragment(c *gin.Context, params map[string]any, cacheable bool) {
-	html, err := templates.RenderSparqlTable(params)
+	html, err := templates.RenderSparqlTable(activeLang(c), params)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "failed to render table")
 		return
 	}
 	if cacheable {
-		c.Header("Cache-Control", cacheControlPublic)
-		c.Header("Vary", "Accept-Language")
+		markCacheable(c)
 	} else {
 		c.Header("Cache-Control", "no-store")
 	}
@@ -567,7 +636,7 @@ func renderTableFragment(c *gin.Context, params map[string]any, cacheable bool) 
 // ---- Monitoring handlers ----
 
 func monitoringPageHandler(c *gin.Context) {
-	c.HTML(http.StatusOK, "pages/monitoring.html", endpointTemplateData(c, gin.H{}))
+	c.HTML(http.StatusOK, renderName(c, "pages/monitoring.html"), endpointTemplateData(c, gin.H{}))
 }
 
 func monitoringStatusHandler(c *gin.Context) {
@@ -644,7 +713,24 @@ func main() {
 			slog.String("port", cfg.GetPort()),
 			slog.String("endpoint", cfg.Application.SparqlEndpoint),
 			slog.Duration("timeout", cfg.GetTimeout()),
-			slog.Int("prefixes", len(cfg.RDF.ParsedPrefixes)))
+			slog.Int("prefixes", len(cfg.RDF.ParsedPrefixes)),
+			slog.Any("languages", cfg.Application.LanguageCodes()))
+	}
+
+	// Build the UI language set before anything that renders or resolves a
+	// language. Config load already validated its shape.
+	siteLangs = lang.New(configLanguages(cfg.Application.Languages), cfg.Application.DefaultLanguage)
+
+	// Message catalogs must exist before templates are parsed: every template set
+	// is cloned once per language with that language's translation functions.
+	catalogs, err = i18n.Load("./locales", siteLangs.Codes())
+	if err != nil {
+		log.Error("failed to load message catalogs", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	if err := templates.InitPartials(catalogs, siteLangs); err != nil {
+		log.Error("failed to initialize partial templates", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	// Validate Gemini API key
@@ -684,8 +770,16 @@ func main() {
 	// Create router
 	router := gin.Default()
 
-	// Load templates and register with Gin
-	router.HTMLRender = templates.Load("./templates")
+	// The UI language applies to every rendered route, so unlike the endpoint
+	// resolver this runs globally rather than per route class. It must precede
+	// etagMiddleware, which stamps the resolved language into the ETag and picks
+	// the Vary header from how that language arrived.
+	router.Use(resolveLang())
+	router.Use(etagMiddleware())
+
+	// Load templates and register with Gin. Every page is registered once per
+	// configured language; handlers name the variant via templates.Name.
+	router.HTMLRender = templates.Load("./templates", catalogs, siteLangs)
 
 	// Define routing rules
 	router.StaticFile("/favicon.ico", "./static/img/favicon.svg")

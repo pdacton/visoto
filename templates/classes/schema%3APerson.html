@@ -37,7 +37,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "personInstances"
         "iri" .ResourceIRI
-        "title" "Persons"
+        "title" (t "card.persons" "Persons")
         "icon" "circle-dot"
         "iconVar" "type")
     }}

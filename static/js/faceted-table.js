@@ -125,7 +125,7 @@
     var row = el('div', 'form-check mt-1');
     var input = el('input', 'form-check-input vs-novalue', { type: 'checkbox' });
     var lab = el('label', 'form-check-label text-secondary fst-italic');
-    lab.textContent = '(no value)';
+    lab.textContent = vsT('js.facet.noValue', '(no value)');
     lab.style.cursor = 'pointer';
     lab.addEventListener('click', function () { input.click(); });
     input.addEventListener('change', onToggle);
@@ -147,8 +147,8 @@
     if (spec.control === 'range') {
       var inputType = spec.type === 'date' ? 'date' : 'number';
       var line = el('div', 'd-flex align-items-center gap-1');
-      var min = el('input', 'form-control form-control-sm vs-min', { type: inputType, placeholder: 'min' });
-      var max = el('input', 'form-control form-control-sm vs-max', { type: inputType, placeholder: 'max' });
+      var min = el('input', 'form-control form-control-sm vs-min', { type: inputType, placeholder: vsT('js.facet.min', 'min') });
+      var max = el('input', 'form-control form-control-sm vs-max', { type: inputType, placeholder: vsT('js.facet.max', 'max') });
       var dash = el('span', 'text-secondary'); dash.textContent = '–';
       line.appendChild(min); line.appendChild(dash); line.appendChild(max);
       wrap.appendChild(line);
@@ -157,7 +157,7 @@
       wrap.appendChild(noValueToggle(apply));
 
     } else if (spec.control === 'text') {
-      var input = el('input', 'form-control form-control-sm vs-text', { type: 'text', placeholder: 'contains…' });
+      var input = el('input', 'form-control form-control-sm vs-text', { type: 'text', placeholder: vsT('js.facet.contains', 'contains…') });
       wrap.appendChild(input);
       // Apply on blur/Enter only — never per keystroke (bounds the URL/cache key space).
       input.addEventListener('change', apply);
@@ -171,10 +171,10 @@
       menu.style.minWidth = '12rem';
       menu.dataset.loaded = '0';
       // Fixed "(no value)" option — available even before the value list loads.
-      menu.appendChild(checkRow(NO_VALUE, '(no value)', 0, true, apply));
+      menu.appendChild(checkRow(NO_VALUE, vsT('js.facet.noValue', '(no value)'), 0, true, apply));
       menu.appendChild(el('div', 'dropdown-divider'));
       var listHost = el('div', 'vs-select-list');
-      var loading = el('div', 'text-secondary small px-1'); loading.textContent = 'Loading…';
+      var loading = el('div', 'text-secondary small px-1'); loading.textContent = vsT('js.facet.loading', 'Loading…');
       listHost.appendChild(loading);
       menu.appendChild(listHost);
       wrap.appendChild(menu);
@@ -199,7 +199,7 @@
         if (list) list.innerHTML = '';
         var values = data.values || [];
         if (!values.length && list) {
-          var none = el('div', 'text-secondary small px-1'); none.textContent = 'No values';
+          var none = el('div', 'text-secondary small px-1'); none.textContent = vsT('js.facet.noValues', 'No values');
           list.appendChild(none);
         }
         values.forEach(function (v) {
@@ -211,7 +211,7 @@
         menu.dataset.loaded = '0'; // allow a retry on next open
         if (list) {
           list.innerHTML = '';
-          var errRow = el('div', 'text-danger small px-1'); errRow.textContent = 'Failed to load';
+          var errRow = el('div', 'text-danger small px-1'); errRow.textContent = vsT('js.facet.failedToLoad', 'Failed to load');
           list.appendChild(errRow);
         }
       });
@@ -240,7 +240,7 @@
       var dd = el('span', 'dropdown vs-facet-dd');
       var btn = el('button', 'btn btn-sm btn-ghost-secondary p-0 px-1 vs-facet-btn',
         { type: 'button', 'aria-expanded': 'false' });
-      btn.title = 'Filter by ' + spec.label;
+      btn.title = vsTf('js.facet.filterBy', 'Filter by {label}', { label: spec.label });
       btn.innerHTML = '<i data-lucide="list-filter" style="width:0.9em;height:0.9em;"></i>';
       dd.appendChild(btn);
 

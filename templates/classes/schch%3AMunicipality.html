@@ -1,8 +1,8 @@
 <!-- Municipality Class Template, listing all instances of this class -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item">  <a href="/resource?iri=schema:Country">Country</a></li>
-  <li class="breadcrumb-item">  <a href="/resource?iri=schch:Canton">Canton</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.municipality.country" "<a href=\"/resource?iri=schema:Country\">Country</a>" }}</li>
+  <li class="breadcrumb-item">{{ tHTML "type.municipality.canton" "<a href=\"/resource?iri=schch:Canton\">Canton</a>" }}</li>
 {{ end}}
 
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
@@ -44,7 +44,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "municipalityInstances"
         "iri" .ResourceIRI
-        "title" "Municipalities"
+        "title" (t "card.municipalities" "Municipalities")
         "icon" "circle-dot"
         "iconVar" "type")
     }}

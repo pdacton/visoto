@@ -4,15 +4,15 @@
 
     <!-- hamburger button to toggle sidebar  -->
     <div class="nav-item flex-shrink-0">
-        <button id="sidebar-toggle" class="nav-link" type="button" aria-label="Toggle sidebar">
+        <button id="sidebar-toggle" class="nav-link" type="button" aria-label="{{ t "topbar.toggleSidebar" "Toggle sidebar" }}">
           <i data-lucide="menu" style="width: 1.25rem; height: 1.25rem;"></i>
         </button>
     </div>
 
     <!-- logo and title -->
     <a href="/" class="navbar-brand navbar-brand-autodark mb-0 me-0 d-flex align-items-center text-decoration-none flex-shrink-0">
-      <img src="/static/img/visoto_light.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-1 logo-light">
-      <img src="/static/img/visoto_dark.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-1 logo-dark">
+      <img src="/static/img/visoto_light.svg" alt="{{ t "topbar.logo" "Logo" }}" width="48" height="48" class="navbar-brand-image me-1 logo-light">
+      <img src="/static/img/visoto_dark.svg" alt="{{ t "topbar.logo" "Logo" }}" width="48" height="48" class="navbar-brand-image me-1 logo-dark">
       <span class="d-none d-md-inline">visoto</span>
     </a>
 
@@ -36,8 +36,8 @@
             name="q"
             id="topbar-search-input"
             class="form-control form-control-rounded"
-            placeholder="Search..."
-            aria-label="Search"
+            placeholder="{{ t "topbar.search" "Search..." }}"
+            aria-label="{{ t "topbar.searchAria" "Search" }}"
             aria-keyshortcuts="/">
           <!-- Hint for the "/" focus shortcut wired up in static/js/search.js.
                Hidden once the field is in use, and on touch/coarse pointers
@@ -59,28 +59,42 @@
       <div class="nav-item me-2 d-none d-md-flex align-items-center">
         <!-- Option values are endpoint slugs — the only endpoint identifier used on
              the wire (?endpoint= param, selectedEndpoint cookie). -->
-        <select class="form-select form-select-sm" id="endpoint-selector" name="endpoint" style="width: auto;" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Select SPARQL endpoint" data-bs-original-title="Select SPARQL endpoint">
+        <select class="form-select form-select-sm" id="endpoint-selector" name="endpoint" style="width: auto;" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "topbar.selectEndpoint" "Select SPARQL endpoint" }}" data-bs-original-title="{{ t "topbar.selectEndpoint" "Select SPARQL endpoint" }}">
           {{ range .SparqlEndpoints }}
             <option value="{{ .Slug }}"{{ if eq .Slug $.SelectedEndpointSlug }} selected{{ end }}>{{ .Name }}</option>
           {{ end }}
         </select>
       </div>
       {{ end }}
+      <!-- UI language selector -->
+      {{ with siteLanguages }}
+      <div class="nav-item me-2 d-flex align-items-center">
+        <!-- Option values are the site-lang cookie values; "" is the deliberate
+             "no language" choice, not a missing option. The selection is rendered
+             server-side from the resolved language — language-switcher.js only
+             writes the cookie, it never fixes up the selection. -->
+        <select class="form-select form-select-sm" id="site-lang-selector" name="site-lang" style="width: auto;" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "topbar.selectLanguage" "Select language" }}" data-bs-original-title="{{ t "topbar.selectLanguage" "Select language" }}">
+          {{ range . }}
+            <option value="{{ .Code }}"{{ if .Selected }} selected{{ end }}>{{ .Label }}</option>
+          {{ end }}
+        </select>
+      </div>
+      {{ end }}
       <!-- darkmode button -->
       <div class="nav-item">
-        <a href="#" id="theme-toggle" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Enable dark mode" data-bs-original-title="Enable dark mode">
+        <a href="#" id="theme-toggle" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "topbar.enableDarkMode" "Enable dark mode" }}" data-bs-original-title="{{ t "topbar.enableDarkMode" "Enable dark mode" }}">
           <i id="theme-icon" data-lucide="moon" aria-hidden="true" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
       </div>
       <!-- assistant button -->
       <div class="nav-item d-none d-sm-flex">
-        <a href="#" id="right-sidebar-toggle" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Otto, the assistant" data-bs-original-title="Otto, the assistant">
+        <a href="#" id="right-sidebar-toggle" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "topbar.assistant" "Otto, the assistant" }}" data-bs-original-title="{{ t "topbar.assistant" "Otto, the assistant" }}">
           <i data-lucide="sparkle" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
       </div>
       <!-- settings menu -->
       <div class="nav-item dropdown">
-        <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" aria-label="Open settings menu" data-bs-original-title="Settings">
+        <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" aria-label="{{ t "topbar.openSettings" "Open settings menu" }}" data-bs-original-title="{{ t "topbar.settings" "Settings" }}">
           <i data-lucide="more-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-end">
@@ -88,7 +102,7 @@
                <select>, which these entries drive (see endpoint-switcher.js). -->
           {{ if .SparqlEndpoints }}
           <div class="d-md-none">
-            <h6 class="dropdown-header">SPARQL endpoint</h6>
+            <h6 class="dropdown-header">{{ t "topbar.selectEndpoint" "SPARQL endpoint" }}</h6>
             {{ range .SparqlEndpoints }}
             <a class="dropdown-item endpoint-menu-item{{ if eq .Slug $.SelectedEndpointSlug }} active{{ end }}" href="#" data-endpoint-slug="{{ .Slug }}">
               <i data-lucide="{{ if eq .Slug $.SelectedEndpointSlug }}check{{ else }}database{{ end }}" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ .Name }}
@@ -99,22 +113,22 @@
           {{ end }}
           <!-- Assistant, narrow screens only: its topbar button is hidden there. -->
           <a class="dropdown-item d-sm-none" href="#" id="right-sidebar-toggle-menu">
-            <i data-lucide="sparkle" style="width: 1rem; height: 1rem;" class="me-2"></i>Otto, the assistant
+            <i data-lucide="sparkle" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.assistant" "Otto, the assistant" }}
           </a>
           <div class="dropdown-divider d-sm-none"></div>
-          <h6 class="dropdown-header">Settings</h6>
+          <h6 class="dropdown-header">{{ t "topbar.settings" "Settings" }}</h6>
           <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#uploadDataModal">
-            <i data-lucide="upload" style="width: 1rem; height: 1rem;" class="me-2"></i>Upload data
+            <i data-lucide="upload" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.uploadData" "Upload data" }}
           </a>
           <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#namedGraphsModal">
-            <i data-lucide="database" style="width: 1rem; height: 1rem;" class="me-2"></i>Named graphs
+            <i data-lucide="database" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.namedGraphs" "Named graphs" }}
           </a>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" href="/monitoring">
-            <i data-lucide="chart-line" style="width: 1rem; height: 1rem;" class="me-2"></i>Endpoint Monitoring
+            <i data-lucide="chart-line" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.monitoring" "Endpoint Monitoring" }}
           </a>
           <a class="dropdown-item" href="#" id="clear-cache-btn">
-            <i data-lucide="refresh-cw" style="width: 1rem; height: 1rem;" class="me-2"></i>Clear cache
+            <i data-lucide="refresh-cw" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.clearCache" "Clear cache" }}
           </a>
         </div>
       </div>
@@ -131,26 +145,26 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="uploadDataModalLabel">
-          <i data-lucide="upload-cloud" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>Upload RDF data
+          <i data-lucide="upload-cloud" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>{{ t "upload.title" "Upload RDF data" }}
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t "modal.close" "Close" }}"></button>
       </div>
       <div class="modal-body">
         <!-- Source tabs -->
         <ul class="nav nav-tabs mb-3" id="uploadTabs" role="tablist">
           <li class="nav-item" role="presentation">
             <button class="nav-link active" id="tab-file-btn" data-bs-toggle="tab" data-bs-target="#tab-file" type="button" role="tab" aria-controls="tab-file" aria-selected="true">
-              <i data-lucide="file" style="width: 1rem; height: 1rem;" class="me-1"></i>File
+              <i data-lucide="file" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.tab.file" "File" }}
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-url-btn" data-bs-toggle="tab" data-bs-target="#tab-url" type="button" role="tab" aria-controls="tab-url" aria-selected="false">
-              <i data-lucide="link" style="width: 1rem; height: 1rem;" class="me-1"></i>URL
+              <i data-lucide="link" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.tab.url" "URL" }}
             </button>
           </li>
           <li class="nav-item" role="presentation">
             <button class="nav-link" id="tab-ontologies-btn" data-bs-toggle="tab" data-bs-target="#tab-ontologies" type="button" role="tab" aria-controls="tab-ontologies" aria-selected="false">
-              <i data-lucide="library" style="width: 1rem; height: 1rem;" class="me-1"></i>Ontologies
+              <i data-lucide="library" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.tab.ontologies" "Ontologies" }}
             </button>
           </li>
         </ul>
@@ -161,8 +175,8 @@
             <div class="dropzone" id="upload-dropzone">
               <div class="dropzone-body">
                 <i data-lucide="upload-cloud" style="width: 2.5rem; height: 2.5rem;" class="mb-2 text-muted"></i>
-                <p class="mb-1">Drag &amp; drop a file here, or <label for="upload-file-input" class="text-primary" style="cursor:pointer;">browse</label></p>
-                <p class="text-muted small mb-0">Supported formats: .ttl, .nq, .nt, .rdf, .jsonld, .trig</p>
+                <p class="mb-1">{{ tHTML "upload.dropzone" "Drag & drop a file here, or <label for=\"upload-file-input\" class=\"text-primary\" style=\"cursor:pointer;\">browse</label>" }}</p>
+                <p class="text-muted small mb-0">{{ t "upload.formats" "Supported formats: .ttl, .nq, .nt, .rdf, .jsonld, .trig" }}</p>
                 <input type="file" id="upload-file-input" accept=".ttl,.nq,.nt,.rdf,.owl,.xml,.jsonld,.trig" class="d-none">
               </div>
               <div id="upload-file-name" class="mt-2 small text-muted d-none"></div>
@@ -172,38 +186,38 @@
           <!-- URL tab -->
           <div class="tab-pane fade" id="tab-url" role="tabpanel" aria-labelledby="tab-url-btn">
             <div class="mb-2">
-              <label for="upload-url-input" class="form-label">RDF resource URL</label>
+              <label for="upload-url-input" class="form-label">{{ t "upload.urlLabel" "RDF resource URL" }}</label>
               <input type="url" class="form-control" id="upload-url-input" placeholder="https://www.w3.org/TR/rdf11-schema/">
-              <div class="form-text">The server will fetch this URL and upload its contents.</div>
+              <div class="form-text">{{ t "upload.urlHelp" "The server will fetch this URL and upload its contents." }}</div>
             </div>
           </div>
 
           <!-- Ontologies tab -->
           <div class="tab-pane fade" id="tab-ontologies" role="tabpanel" aria-labelledby="tab-ontologies-btn">
             <div id="ontologies-list-container">
-              <div class="text-muted small">Loading ontologies…</div>
+              <div class="text-muted small">{{ t "upload.loadingOntologies" "Loading ontologies…" }}</div>
             </div>
           </div>
         </div>
 
         <!-- Named graph URI (hidden on Ontologies tab) -->
         <div class="mb-3 mt-3" id="upload-graph-uri-section">
-          <label for="upload-graph-uri" class="form-label">Named graph URI</label>
-          <input type="text" class="form-control" id="upload-graph-uri" list="named-graphs-list" placeholder="Loading existing graphs…" autocomplete="off">
+          <label for="upload-graph-uri" class="form-label">{{ t "upload.graphUriLabel" "Named graph URI" }}</label>
+          <input type="text" class="form-control" id="upload-graph-uri" list="named-graphs-list" placeholder="{{ t "upload.graphUriPlaceholder" "Loading existing graphs…" }}" autocomplete="off">
           <datalist id="named-graphs-list"></datalist>
-          <div class="form-text">Choose an existing graph or enter a new URI. A proposal is generated from the source name.</div>
+          <div class="form-text">{{ t "upload.graphUriHelp" "Choose an existing graph or enter a new URI. A proposal is generated from the source name." }}</div>
         </div>
 
         <!-- Result area -->
         <div id="upload-result" class="d-none"></div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">{{ t "modal.close" "Close" }}</button>
         <button type="button" class="btn btn-primary" id="upload-submit-btn">
-          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>Upload
+          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.submit" "Upload" }}
         </button>
         <button type="button" class="btn btn-primary d-none" id="upload-ontologies-btn">
-          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>Load Selected
+          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.loadSelected" "Load Selected" }}
         </button>
       </div>
     </div>
@@ -217,14 +231,14 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="namedGraphsModalLabel">
-          <i data-lucide="database" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>Named graphs
+          <i data-lucide="database" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>{{ t "topbar.namedGraphs" "Named graphs" }}
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t "topbar.close" "Close" }}"></button>
       </div>
       <div class="modal-body p-0">
         <!-- Loading state -->
         <div id="ng-loading" class="text-center py-4">
-          <div class="spinner-border text-muted" role="status"><span class="visually-hidden">Loading...</span></div>
+          <div class="spinner-border text-muted" role="status"><span class="visually-hidden">{{ t "graphs.loading" "Loading..." }}</span></div>
         </div>
         <!-- Error state -->
         <div id="ng-error" class="alert alert-danger m-3 d-none"></div>
@@ -234,40 +248,40 @@
             <thead>
               <tr>
                 <th style="width: 2.5rem;">
-                  <input type="checkbox" class="form-check-input" id="ng-select-all" aria-label="Select all">
+                  <input type="checkbox" class="form-check-input" id="ng-select-all" aria-label="{{ t "graphs.selectAll" "Select all" }}">
                 </th>
-                <th>Graph IRI</th>
-                <th>Label</th>
-                <th class="text-end" style="width: 7rem;">Triples</th>
+                <th>{{ t "graphs.iri" "Graph IRI" }}</th>
+                <th>{{ t "graphs.label" "Label" }}</th>
+                <th class="text-end" style="width: 7rem;">{{ t "graphs.triples" "Triples" }}</th>
               </tr>
             </thead>
             <tbody id="ng-tbody"></tbody>
           </table>
-          <div id="ng-empty" class="text-center text-muted py-4 d-none">No named graphs found.</div>
+          <div id="ng-empty" class="text-center text-muted py-4 d-none">{{ t "graphs.empty" "No named graphs found." }}</div>
         </div>
         <!-- Delete result -->
         <div id="ng-delete-result" class="d-none m-3"></div>
       </div>
       <div class="modal-footer gap-2">
         <button type="button" class="btn btn-danger" id="ng-delete-btn" disabled>
-          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete selected
+          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteSelected" "Delete selected" }}
         </button>
         <button type="button" class="btn btn-outline-danger" id="ng-delete-default-btn">
-          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete default graph
+          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteDefault" "Delete default graph" }}
         </button>
         <div class="ms-auto d-flex gap-2 align-items-center">
-          <select class="form-select form-select-sm" id="ng-export-format" style="width: auto;" aria-label="Export format">
-            <option value="text/turtle">.ttl — Turtle</option>
-            <option value="application/n-quads">.nq — N-Quads</option>
-            <option value="application/n-triples">.nt — N-Triples</option>
-            <option value="application/rdf+xml">.rdf — RDF/XML</option>
-            <option value="application/ld+json">.jsonld — JSON-LD</option>
-            <option value="application/trig">.trig — TriG</option>
+          <select class="form-select form-select-sm" id="ng-export-format" style="width: auto;" aria-label="{{ t "graphs.exportFormat" "Export format" }}">
+            <option value="text/turtle">{{ t "topbar.ttlTurtle" ".ttl — Turtle" }}</option>
+            <option value="application/n-quads">{{ t "topbar.nqNQuads" ".nq — N-Quads" }}</option>
+            <option value="application/n-triples">{{ t "topbar.ntNTriples" ".nt — N-Triples" }}</option>
+            <option value="application/rdf+xml">{{ t "topbar.rdfRDFXML" ".rdf — RDF/XML" }}</option>
+            <option value="application/ld+json">{{ t "topbar.jsonldJSONLD" ".jsonld — JSON-LD" }}</option>
+            <option value="application/trig">{{ t "topbar.trigTriG" ".trig — TriG" }}</option>
           </select>
           <button type="button" class="btn btn-primary" id="ng-export-btn" disabled>
-            <i data-lucide="download" style="width: 1rem; height: 1rem;" class="me-1"></i>Export selected
+            <i data-lucide="download" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.exportSelected" "Export selected" }}
           </button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Done</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{ t "graphs.done" "Done" }}</button>
         </div>
       </div>
     </div>

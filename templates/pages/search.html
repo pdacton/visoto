@@ -2,10 +2,10 @@
 {{ define "header" }}
 <div class="mt-3 d-flex flex-column flex-sm-row align-items-start gap-3">
   <div class="flex-shrink-0">
-    <img src="/static/img/search.svg" alt="Search" width="48" height="48">
+    <img src="/static/img/search.svg" alt="{{ t "page.search.search" "Search" }}" width="48" height="48">
   </div>
   <div>
-    <h1 class="page-title">Search</h1>
+    <h1 class="page-title">{{ t "page.search.search" "Search" }}</h1>
     {{ if .Error }}
       <div class="alert alert-warning mt-2">
         <i class="bi bi-exclamation-triangle"></i>
@@ -24,32 +24,30 @@
     <div class="col">
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Search Parameters</h3>
+          <h3 class="card-title">{{ t "page.search.searchParameters" "Search Parameters" }}</h3>
         </div>
         <div class="card-body">
           <form action="/search" method="GET" id="search-form">
 
             <!-- Search Query Input -->
             <div class="mb-3">
-              <label for="search-query" class="form-label">Search Query</label>
+              <label for="search-query" class="form-label">{{ t "page.search.searchQuery" "Search Query" }}</label>
               <input
                 type="text"
                 name="q"
                 id="search-query"
                 class="form-control form-control-lg"
-                placeholder="Enter search terms..."
+                placeholder="{{ t "page.search.enterSearchTerms" "Enter search terms..." }}"
                 value="{{ .Query }}"
                 required>
-              <div class="form-text">
-                Examples: <code>SBB</code>, <code>Bern</code>, <code>Strompreis</code>
-              </div>
+              <div class="form-text">{{ tHTML "page.search.examplesSBBBernStrompreis" "Examples: <code>SBB</code>, <code>Bern</code>, <code>Strompreis</code>" }}</div>
             </div>
 
             <div class="row mb-3">
 
               <!-- Class Filter -->
               <div class="col-md-4 mb-3">
-                <label for="class-filter" class="form-label">RDF Class</label>
+                <label for="class-filter" class="form-label">{{ t "page.search.rdfClass" "RDF Class" }}</label>
                 <select name="class" id="class-filter" class="form-select">
                   {{ range .ClassFilters }}
                     <option value="{{ .IRI }}"
@@ -58,12 +56,12 @@
                     </option>
                   {{ end }}
                 </select>
-                <div class="form-text">Filter results by RDF type/class</div>
+                <div class="form-text">{{ t "page.search.filterResultsByRDFType" "Filter results by RDF type/class" }}</div>
               </div>
 
               <!-- Property Filter -->
               <div class="col-md-4 mb-3">
-                <label for="property-filter" class="form-label">RDF Property</label>
+                <label for="property-filter" class="form-label">{{ t "page.search.rdfProperty" "RDF Property" }}</label>
                 <select name="property" id="property-filter" class="form-select">
                   {{ range .PropertyFilters }}
                     <option value="{{ .IRI }}"
@@ -72,12 +70,12 @@
                     </option>
                   {{ end }}
                 </select>
-                <div class="form-text">Search only within specific property</div>
+                <div class="form-text">{{ t "page.search.searchOnlyWithinSpecificProperty" "Search only within specific property" }}</div>
               </div>
 
               <!-- Result Limit -->
               <div class="col-md-4 mb-3">
-                <label for="limit-input" class="form-label">Max Results</label>
+                <label for="limit-input" class="form-label">{{ t "page.search.maxResults" "Max Results" }}</label>
                 <input
                   type="number"
                   name="limit"
@@ -86,7 +84,7 @@
                   min="1"
                   max="500"
                   value="{{ .SelectedLimit }}">
-                <div class="form-text">Maximum number of results to return</div>
+                <div class="form-text">{{ t "page.search.maximumNumberOfResultsTo" "Maximum number of results to return" }}</div>
               </div>
 
             </div>

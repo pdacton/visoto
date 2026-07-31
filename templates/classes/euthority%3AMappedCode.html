@@ -1,7 +1,7 @@
 <!-- euthority:MappedCode Class Template -->
 
-{{ define "pageTitle" }}Mapped Code{{ end }}
-{{ define "metaTitle" }}Mapped Code{{ end }}
+{{ define "pageTitle" }}{{ t "type.mappedCode.title" "Mapped Code" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.mappedCode.metaTitle" "Mapped Code" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
 <sparql-query id="pageClasses" class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
@@ -34,7 +34,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "mappedCodeInstances"
             "iri" .ResourceIRI
-            "title" "Mapped Codes"
+            "title" (t "card.mappedCodes" "Mapped Codes")
             "icon" "code"
             "iconVar" "type")
         }}

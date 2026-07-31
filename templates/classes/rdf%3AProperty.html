@@ -1,7 +1,7 @@
 <!-- RDF Property Class Template -->
 
-{{ define "pageTitle" }}RDF Property{{ end }}
-{{ define "metaTitle" }}RDF Property{{ end }}
+{{ define "pageTitle" }}{{ t "type.property.title" "RDF Property" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.property.metaTitle" "RDF Property" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
 <sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
@@ -37,7 +37,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "rdfPropertyInstances"
             "iri" .ResourceIRI
-            "title" "Property Instances"
+            "title" (t "card.propertyInstances" "Property Instances")
             "icon" "circle-dot"
             "iconVar" "type")
         }}
@@ -71,7 +71,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.subclasses
             "id" "subclasses"
-            "title" "Property Subtypes"
+            "title" (t "card.propertySubtypes" "Property Subtypes")
             "icon" "circle-chevron-down"
             "collapsed" false)
         }}
@@ -92,7 +92,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.superclasses
             "id" "superclasses"
-            "title" "Property Supertypes"
+            "title" (t "card.propertySupertypes" "Property Supertypes")
             "icon" "circle-chevron-up"
             "collapsed" false)
         }}
@@ -117,7 +117,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.ontology
             "id" "ontology"
-            "title" "Schema information (domain / range)"
+            "title" (t "card.schemaInformationDomainRange" "Schema information (domain / range)")
             "icon" "circle-dashed"
             "collapsed" true)
         }}
@@ -137,7 +137,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.shacl
             "id" "shacl"
-            "title" "Shape information (SHACL)"
+            "title" (t "card.shapeInformationSHACL" "Shape information (SHACL)")
             "icon" "shapes"
             "collapsed" true)
         }}

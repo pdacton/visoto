@@ -28,7 +28,7 @@
     {{ template "sparqlGrid" (dict
           "result" .QueryResults.attributes
           "id" "attributes"
-          "title" "Attributes"
+          "title" (t "card.attributes" "Attributes")
           "icon" "tags")
     }}
   </div>
@@ -51,7 +51,7 @@
       {{ template "sparqlGrid" (dict
             "result" .QueryResults.identifiers
             "id" "identifiers"
-            "title" "Identifiers"
+            "title" (t "card.identifiers" "Identifiers")
             "icon" "fingerprint")
       }}
     </div>
@@ -75,7 +75,7 @@
       {{ template "sparqlGrid" (dict
             "result" .QueryResults.address
             "id" "address"
-            "title" "Address"
+            "title" (t "card.address" "Address")
             "icon" "map-pin")
       }}
     </div>

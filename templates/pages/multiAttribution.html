@@ -1,7 +1,7 @@
-{{ define "pageTitle" }}Multi-Attribution{{ end }}
-{{ define "pageSubtitle" }}Instances that belong to more than one class (grouped by type combination).{{ end }}
-{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Multi-Attribution" width="48" height="48">{{end}}
-{{ define "metaTitle" }}Multi-Attribution{{ end }}
+{{ define "pageTitle" }}{{ t "page.multiAttribution.title" "Multi-Attribution" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.multiAttribution.subtitle" "Instances that belong to more than one class (grouped by type combination)." }}{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="{{ t "page.multiAttribution.multiAttribution" "Multi-Attribution" }}" width="48" height="48">{{end}}
+{{ define "metaTitle" }}{{ t "page.multiAttribution.metaTitle" "Multi-Attribution" }}{{ end }}
 {{ define "metaIcon" }}/static/img/info.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -27,7 +27,7 @@
       </sparql-async>
       {{ template "sparqlAsyncTable" (dict
           "queryId" "multiAttribution"
-          "title" "Type Combinations with Multiple Classes"
+          "title" (t "card.typeCombinationsWithMultipleClasses" "Type Combinations with Multiple Classes")
           "icon" "circles-relation"
           "iconVar" "type")
       }}

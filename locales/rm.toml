@@ -1,0 +1,12 @@
+# Romansh (Rumantsch Grischun) UI strings.
+#
+# STUB — this catalog holds only the strings that are certain (the language
+# endonyms, which are identical in every catalog). Everything else falls back to
+# locales/en.toml by design, so the site renders correctly in English wherever a
+# translation is missing.
+#
+# Romansh is not machine-translatable to a usable standard; these strings need a
+# native speaker. Add keys here as they are translated — no code change is
+# needed, the fallback simply stops applying to each key you fill in.
+
+# ── Language names ───────────────────────────────────────────────────────────

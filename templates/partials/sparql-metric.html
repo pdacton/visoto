@@ -3,7 +3,7 @@
   The count is loaded asynchronously via HTMX from /api/metric/:queryId.
 
   Usage:
-    {{ template "sparqlMetric" (dict "queryId" "termSetCount" "title" "Defined Term Sets" "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "termSetCount" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
 
   Parameters (via dict):
     - queryId: ID matching the <sparql-async> element in the page template
@@ -58,12 +58,12 @@
             <i data-lucide="ellipsis-vertical" style="width:1rem;height:1rem;"></i>
           </a>
           <ul class="dropdown-menu dropdown-menu-end">
-            <li><h6 class="dropdown-header">SPARQL query</h6></li>
+            <li><h6 class="dropdown-header">{{ t "query.sparqlQuery" "SPARQL query" }}</h6></li>
             {{/* href is filled in by sparql-metric.js once the count response has
                  delivered the query. Keeping it a REAL link (rather than href="#"
                  plus window.open) is what makes target="_blank" a native
                  navigation, which popup blockers do not intercept. */}}
-            <li><a class="dropdown-item sparql-endpoint-{{ $queryId }}" href="#" target="_blank" rel="noopener"><i data-lucide="play" style="width:1em;height:1em;"></i> Execute on endpoint</a></li>
+            <li><a class="dropdown-item sparql-endpoint-{{ $queryId }}" href="#" target="_blank" rel="noopener"><i data-lucide="play" style="width:1em;height:1em;"></i> {{ t "query.executeOnEndpoint" "Execute on endpoint" }}</a></li>
           </ul>
         </div>
         <div class="d-flex align-items-start">

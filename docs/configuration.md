@@ -40,6 +40,82 @@ cp visoto.config.example visoto.config
 | `timeout` | integer | `30` | Per-query timeout in seconds for all SPARQL requests. |
 | `gemini_api_key` | string | — | Google Gemini API key. Required only for the AI chat feature at `/api/chat`. The rest of the app works without it. Get a key at [aistudio.google.com](https://aistudio.google.com/app/apikey). |
 | `allow_private_upload_urls` | boolean | `false` | Allows the URL mode of `/api/upload` to fetch from loopback, private and link-local hosts. Off by default as an SSRF guard — enable only in a local test environment where you need to upload from e.g. `http://localhost`. |
+| `default_language` | string | `"en"` | Language used when a request expresses no usable preference. Must be one of the codes in `[[application.languages]]`. See [UI languages](#ui-languages). |
+
+---
+
+## UI languages {#ui-languages}
+
+The interface is translated per request. `[[application.languages]]` is the
+closed set the site offers, in the order the topbar picker lists them:
+
+```toml
+[application]
+default_language = "en"
+
+[[application.languages]]
+code  = "de"
+label = "Deutsch"
+
+[[application.languages]]
+code  = ""
+label = "No language"
+```
+
+| Field | Description |
+|---|---|
+| `code` | The value carried by the `site-lang` cookie and the `X-Site-Lang` header, and the name of the `locales/<code>.toml` catalog. Each non-empty code needs that catalog, or startup fails. |
+| `label` | The text the picker displays. A literal, not a message key — one label per code, the same in every locale. Conventionally the language's own endonym ("Deutsch", not "German"), so the list reads identically whichever language the page is rendered in. That is what a reader scanning for their own language needs. |
+
+The empty `code` is a legal, deliberate member: it is the **"no language"**
+choice in the picker. For UI strings it renders the base (English) catalog; the
+semantics reserved for it in RDF literal filtering are "untagged literals only".
+
+> **TOML ordering.** `[[application.languages]]` is an array of tables, so every
+> bare key written after it belongs to that table rather than to `[application]`.
+> Keep `port`, `timeout`, `gemini_api_key`, `default_language` and friends
+> *above* the language blocks — otherwise they silently move, with no parse
+> error. `TestExampleConfigParses` guards the shipped example against exactly
+> this.
+
+### How a request's language is resolved
+
+In order, first usable wins:
+
+1. the `X-Site-Lang` request header,
+2. the `site-lang` cookie,
+3. `Accept-Language`, matched against `languages` with CLDR-aware matching,
+4. `default_language`.
+
+Every branch is validated against `languages`, so an unconfigured code can never
+reach the renderer — it falls back to `default_language` instead.
+
+In production Caddy collapses the cookie and `Accept-Language` into a single
+normalized `X-Site-Lang` before the shared cache and folds that header into the
+cache key, so only step 1 runs. Steps 2 and 3 are what make the same code behave
+correctly in development, where there is no cache in front.
+
+### Keeping the Caddyfile in sync
+
+The `languages` list is duplicated in the `Caddyfile`, which cannot read this
+file. The duplication is safe — visoto re-validates `X-Site-Lang` against the
+configured set, so a Caddyfile listing a code visoto does not know only causes a
+fallback to `default_language`. But **adding or removing a language means editing
+both files**, plus adding the catalog.
+
+Changing the list also changes every shared-cache key, so a deploy that touches
+it should be followed by a cache purge (Settings → "Clear cache").
+
+### Response caching
+
+Because the language now comes from a cookie rather than the URL, every response
+carries `Cache-Control: public, max-age=0, must-revalidate` and an
+`ETag: "<lang>-v<hash>"`, and `Vary` names `X-Site-Lang` when that header was
+present and `Accept-Language` otherwise. Browsers therefore revalidate on every
+navigation — which is what stops a language switch from re-serving the previous
+language out of the private cache — and get a cheap `304`. Responses a handler
+marks cacheable additionally carry `s-maxage=21600`, so Souin still serves them
+for six hours and answers those revalidations itself.
 
 ---
 

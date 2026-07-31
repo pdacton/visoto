@@ -1,5 +1,5 @@
-{{ define "pageTitle" }}Tree test{{ end }}
-{{ define "pageSubtitle" }}SKOS concept hierarchy tree.{{ end }}
+{{ define "pageTitle" }}{{ t "page.tree.title" "Tree test" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.tree.subtitle" "SKOS concept hierarchy tree." }}{{ end }}
 
 {{ define "pageContent" }}
 
@@ -18,7 +18,7 @@
       {{ template "sparqlTree" (dict
           "result" .QueryResults.conceptTree
           "id" "conceptTree"
-          "title" "NOGA Code Hierarchy"
+          "title" (t "card.nogaCodeHierarchy" "NOGA Code Hierarchy")
           "icon" "list-tree"
           "treeExpanded" false)
       }}

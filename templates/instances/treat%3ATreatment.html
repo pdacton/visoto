@@ -4,8 +4,8 @@
      cites, and the work it was published in. -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
-  <li class="breadcrumb-item"><a href="/resource?iri=treat:Treatment">Treatment</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.treatment.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
+  <li class="breadcrumb-item">{{ t "type.treatment.treatment" "Treatment" }}</li>
 {{ end }}
 
 {{ template "pageHeader" . }}
@@ -29,7 +29,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.citedResources
             "id" "citedResources"
-            "title" "Cites"
+            "title" (t "card.cites" "Cites")
             "icon" "quote"
             "iconVar" "type")
         }}

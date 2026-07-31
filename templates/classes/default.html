@@ -26,7 +26,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "instances"
             "iri" .ResourceIRI
-            "title" "Instances"
+            "title" (t "card.instances" "Instances")
             "icon" "circle-dot"
             "iconVar" "class")
         }}

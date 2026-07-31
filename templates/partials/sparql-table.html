@@ -2,7 +2,7 @@
   Partial template for rendering SPARQL query results in a table using Tabulator.js
 
   Usage:
-    {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" "Outgoing Relationships") }}
+    {{ template "sparqlTable" (dict "result" .QueryResults.outgoing "id" "outgoing" "title" (t "card.outgoingRelationships" "Outgoing Relationships")) }}
 
   Parameters (via dict):
     - result: QueryResult object with .Vars, .Bindings, .Error
@@ -76,8 +76,8 @@
             <!-- Working set: the search box filters the loaded set instantly; this
                  button (shown only when the set is incomplete) rebuilds the working
                  set from a full-class backend search. -->
-            <a id="search-all-{{ $id }}" class="btn btn-sm btn-outline-primary d-none" style="cursor:pointer; white-space:nowrap;" title="Search all instances on the server">
-              <i data-lucide="search" style="width:1em;height:1em;"></i> <span id="search-all-label-{{ $id }}">Search all</span>
+            <a id="search-all-{{ $id }}" class="btn btn-sm btn-outline-primary d-none" style="cursor:pointer; white-space:nowrap;" title="{{ t "table.searchAllTitle" "Search all instances on the server" }}">
+              <i data-lucide="search" style="width:1em;height:1em;"></i> <span id="search-all-label-{{ $id }}">{{ t "table.searchAll" "Search all" }}</span>
             </a>
           {{ end }}
           {{ if and $id $hasResults }}
@@ -85,12 +85,12 @@
                  the working set otherwise). Column names come from the first data
                  response in working-set mode, so this is populated client-side. -->
             <select id="groupby-{{ $id }}" class="form-select form-select-sm text-muted" style="min-width: 100px; padding-right: 1.5rem; background-size: 0.75rem; background-position: right 0.5rem center;"{{ if $workingSet }} data-ws-groupby="1"{{ end }}>
-              <option value="" class="text-muted">Group by...</option>
+              <option value="" class="text-muted">{{ t "table.groupBy" "Group by..." }}</option>
               {{ range $result.Vars }}
               <option value="{{ . }}">{{ . }}</option>
               {{ end }}
             </select>
-            <a id="toggle-groups-{{ $id }}" class="btn-action d-none" title="Collapse all groups" style="cursor:pointer;">
+            <a id="toggle-groups-{{ $id }}" class="btn-action d-none" title="{{ t "table.collapseGroups" "Collapse all groups" }}" style="cursor:pointer;">
               <i data-lucide="list-chevrons-up-down"></i>
             </a>
           {{ end }}
@@ -100,17 +100,17 @@
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               {{ if $hasResults }}
-                <li><h6 class="dropdown-header">Advanced Search</h6></li>
-                <li><a class="dropdown-item" id="toggle-filters-{{ $id }}" href="#"><i data-lucide="list-filter" style="width:1em;height:1em;"></i> <span id="toggle-filters-label-{{ $id }}">Show column filters</span></a></li>
+                <li><h6 class="dropdown-header">{{ t "table.advancedSearch" "Advanced Search" }}</h6></li>
+                <li><a class="dropdown-item" id="toggle-filters-{{ $id }}" href="#"><i data-lucide="list-filter" style="width:1em;height:1em;"></i> <span id="toggle-filters-label-{{ $id }}">{{ t "table.showColumnFilters" "Show column filters" }}</span></a></li>
                 <li><hr class="dropdown-divider"></li>
-                <li><h6 class="dropdown-header">Download{{ if $workingSet }} (loaded set){{ end }}</h6></li>
-                <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> CSV</a></li>
-                <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> JSON</a></li>
-                <li><a class="dropdown-item download-xlsx-{{ $id }}" href="#"><i data-lucide="table-2" style="width:1em;height:1em;"></i> Excel (XLSX)</a></li>
+                <li><h6 class="dropdown-header">{{ if $workingSet }}{{ t "table.downloadLoadedSet" "Download (loaded set)" }}{{ else }}{{ t "table.download" "Download" }}{{ end }}</h6></li>
+                <li><a class="dropdown-item download-csv-{{ $id }}" href="#"><i data-lucide="file-text" style="width:1em;height:1em;"></i> {{ t "format.csv" "CSV" }}</a></li>
+                <li><a class="dropdown-item download-json-{{ $id }}" href="#"><i data-lucide="braces" style="width:1em;height:1em;"></i> {{ t "format.json" "JSON" }}</a></li>
+                <li><a class="dropdown-item download-xlsx-{{ $id }}" href="#"><i data-lucide="table-2" style="width:1em;height:1em;"></i> {{ t "format.xlsx" "Excel (XLSX)" }}</a></li>
                 <li><hr class="dropdown-divider"></li>
               {{ end }}
-              <li><h6 class="dropdown-header">SPARQL query</h6></li>
-              <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> Execute on endpoint</a></li>
+              <li><h6 class="dropdown-header">{{ t "query.sparqlQuery" "SPARQL query" }}</h6></li>
+              <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> {{ t "query.executeOnEndpoint" "Execute on endpoint" }}</a></li>
             </ul>
           </div>
           <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
@@ -148,8 +148,8 @@
             <!-- Reset chip: clears the search box + all funnel facets + column
                  text-filters and returns to the clean browse working set. Shown only
                  while something is actually filtering (toggled in renderStatus). -->
-            <a id="ws-reset-{{ $id }}" class="btn btn-sm btn-link text-reset text-decoration-none ms-auto d-none p-0" style="cursor:pointer; white-space:nowrap;" role="button" title="Clear the search and all filters">
-              <i data-lucide="x" style="width:1em;height:1em;"></i> Clear all
+            <a id="ws-reset-{{ $id }}" class="btn btn-sm btn-link text-reset text-decoration-none ms-auto d-none p-0" style="cursor:pointer; white-space:nowrap;" role="button" title="{{ t "table.clearFiltersTitle" "Clear the search and all filters" }}">
+              <i data-lucide="x" style="width:1em;height:1em;"></i> {{ t "table.clearAll" "Clear all" }}
             </a>
             <!-- Indeterminate activity strip, seamed to the bottom border of the
                  bar. Toggled via .vs-ws-busy on the status bar (see renderStatus). -->

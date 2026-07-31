@@ -1,7 +1,7 @@
-{{ define "pageTitle" }}Named Graphs Overview{{ end }}
-{{ define "pageSubtitle" }}A list of all named graphs in the triple store and their classes.{{ end }}
-{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Graph Infos" width="48" height="48">{{end}}
-{{ define "metaTitle" }}Named Graphs{{ end }}
+{{ define "pageTitle" }}{{ t "page.namedGraphs.title" "Named Graphs Overview" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.namedGraphs.subtitle" "A list of all named graphs in the triple store and their classes." }}{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="{{ t "page.namedGraphs.graphInfos" "Graph Infos" }}" width="48" height="48">{{end}}
+{{ define "metaTitle" }}{{ t "page.namedGraphs.metaTitle" "Named Graphs" }}{{ end }}
 {{ define "metaIcon" }}/static/img/info.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -26,7 +26,7 @@
       </sparql-async>
       {{ template "sparqlAsyncTable" (dict
           "queryId" "namedGraphsList"
-          "title" "Named Graphs & Attributes"
+          "title" (t "card.namedGraphsAttributes" "Named Graphs & Attributes")
           "icon" "package"
           "groupBy" "graph")
       }}
@@ -43,7 +43,7 @@
       </sparql-async>
       {{ template "sparqlAsyncTable" (dict
           "queryId" "namedGraphs"
-          "title" "Named Graphs and Classes"
+          "title" (t "card.namedGraphsAndClasses" "Named Graphs and Classes")
           "icon" "package"
           "groupBy" "graph")
       }}

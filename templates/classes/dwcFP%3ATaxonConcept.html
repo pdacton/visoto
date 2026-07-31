@@ -1,7 +1,7 @@
 <!-- TaxonConcept Class Template — lists instances of dwcFP:TaxonConcept in an async working-set table -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.taxonConcept.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
 {{ end }}
 
 <sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
@@ -15,9 +15,9 @@
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}Taxonomic concepts — a scientific name under a given authority and rank — in the Plazi classification.{{ end }}
+{{ define "pageSubtitle" }}{{ t "type.taxonConcept.subtitle" "Taxonomic concepts — a scientific name under a given authority and rank — in the Plazi classification." }}{{ end }}
 
-{{ define "pageIcon" }}<img src="/static/img/resource/TaxonConcept.svg" alt="Taxon Concept" width="48" height="48">{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/TaxonConcept.svg" alt="{{ t "type.taxonConcept.taxonConcept" "Taxon Concept" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/resource/TaxonConcept.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -40,7 +40,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "taxonConceptInstances"
         "iri" .ResourceIRI
-        "title" "Taxon Concepts"
+        "title" (t "card.taxonConcepts" "Taxon Concepts")
         "icon" "bug"
         "iconVar" "TaxonConcept"
         "badgeVar" "rank")

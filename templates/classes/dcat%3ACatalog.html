@@ -29,7 +29,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "dcatCatalogInstances"
             "iri" .ResourceIRI
-            "title" "Catalogs"
+            "title" (t "card.catalogs" "Catalogs")
             "icon" "books"
             "iconVar" "type")
         }}

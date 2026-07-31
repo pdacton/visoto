@@ -1,7 +1,7 @@
-{{ define "pageTitle" }}Property Overview{{ end }}
-{{ define "pageSubtitle" }}A list of all properties used in the triple store.{{ end }}
-{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Graph Infos" width="48" height="48">{{end}}
-{{ define "metaTitle" }}Properties{{ end }}
+{{ define "pageTitle" }}{{ t "page.properties.title" "Property Overview" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.properties.subtitle" "A list of all properties used in the triple store." }}{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="{{ t "page.properties.graphInfos" "Graph Infos" }}" width="48" height="48">{{end}}
+{{ define "metaTitle" }}{{ t "page.properties.metaTitle" "Properties" }}{{ end }}
 {{ define "metaIcon" }}/static/img/info.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -31,7 +31,7 @@
       </sparql-async>
       {{ template "sparqlAsyncTable" (dict
            "queryId" "allProperties"
-           "title" "Properties"
+           "title" (t "card.properties" "Properties")
            "icon" "tag")
       }}
     </div>

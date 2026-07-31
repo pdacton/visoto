@@ -11,9 +11,9 @@
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}Book chapters and sections cited as the source of Plazi taxonomic treatments.{{ end }}
+{{ define "pageSubtitle" }}{{ t "type.bookSection.subtitle" "Book chapters and sections cited as the source of Plazi taxonomic treatments." }}{{ end }}
 
-{{ define "pageIcon" }}<img src="/static/img/resource/BookSection.svg" alt="Book Section" width="48" height="48">{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/BookSection.svg" alt="{{ t "type.bookSection.bookSection" "Book Section" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/resource/BookSection.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -34,7 +34,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "bookSectionInstances"
         "iri" .ResourceIRI
-        "title" "Book Sections"
+        "title" (t "card.bookSections" "Book Sections")
         "icon" "book-2"
         "iconVar" "BookSection")
     }}

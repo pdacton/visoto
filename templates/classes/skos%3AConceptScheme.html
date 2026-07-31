@@ -1,7 +1,7 @@
 <!-- SKOS Concept Scheme Class Template -->
 
-{{ define "pageTitle" }}SKOS Concept Scheme{{ end }}
-{{ define "metaTitle" }}SKOS Concept Scheme{{ end }}
+{{ define "pageTitle" }}{{ t "type.conceptScheme.title" "SKOS Concept Scheme" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.conceptScheme.metaTitle" "SKOS Concept Scheme" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
 <sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
@@ -54,7 +54,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "skosConceptSchemeInstances"
             "iri" .ResourceIRI
-            "title" "Available SKOS Concept Schemas"
+            "title" (t "card.availableSKOSConceptSchemas" "Available SKOS Concept Schemas")
             "icon" "circle-dot"
             "badgeVar" "status"
             "iconVar" "type")
@@ -81,7 +81,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.incoming
             "id" "incoming"
-            "title" "Incoming Relationships"
+            "title" (t "card.incomingRelationships" "Incoming Relationships")
             "icon" "shrink"
             "collapsed" true)
         }}
@@ -102,7 +102,7 @@
         {{ template "sparqlTable" (dict
               "result" .QueryResults.outgoing
               "id" "outgoing"
-              "title" "Outgoing Relationships"
+              "title" (t "card.outgoingRelationships" "Outgoing Relationships")
               "icon" "expand"
               "collapsed" true)
         }}

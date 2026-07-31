@@ -241,10 +241,10 @@
 
     var paginationLangs = {
       "default": { "pagination": {
-        "first": "<i data-lucide='chevrons-left'></i>", "first_title": "First Page",
-        "prev": "<i data-lucide='chevron-left'></i>", "prev_title": "Prev Page",
-        "next": "<i data-lucide='chevron-right'></i>", "next_title": "Next Page",
-        "last": "<i data-lucide='chevrons-right'></i>", "last_title": "Last Page"
+        "first": "<i data-lucide='chevrons-left'></i>", "first_title": vsT("js.table.firstPage", "First Page"),
+        "prev": "<i data-lucide='chevron-left'></i>", "prev_title": vsT("js.table.prevPage", "Prev Page"),
+        "next": "<i data-lucide='chevron-right'></i>", "next_title": vsT("js.table.nextPage", "Next Page"),
+        "last": "<i data-lucide='chevrons-right'></i>", "last_title": vsT("js.table.lastPage", "Last Page")
       }}
     };
 
@@ -399,17 +399,21 @@
         // Backend faceted result: a facet is necessarily active, so the bar
         // stays visible (chip home) and reports the truthful full-class count.
         text = wsComplete
-          ? ("Showing all " + fmtNum(wsLoaded) + " full-class matches.")
-          : ("Showing the first " + fmtNum(wsLoaded) +
-             " full-class matches — narrow the facets to see them all.");
+          ? vsTf("js.table.showingAllMatches", "Showing all {n} full-class matches.",
+                 { n: fmtNum(wsLoaded) })
+          : vsTf("js.table.showingFirstMatches",
+                 "Showing the first {n} full-class matches — narrow the facets to see them all.",
+                 { n: fmtNum(wsLoaded) });
       } else if (wsSearchTerm) {
-        text = "Showing the first " + fmtNum(wsLoaded) +
-          " full-class matches for “" + wsSearchTerm + "” — refine your search to narrow further.";
+        text = vsTf("js.table.showingFirstMatchesFor",
+          "Showing the first {n} full-class matches for “{term}” — refine your search to narrow further.",
+          { n: fmtNum(wsLoaded), term: wsSearchTerm });
       } else if (!wsComplete) {
-        text = "Showing " + fmtNum(wsLoaded) + " of " + fmtNum(wsTotal) +
-          " — filter a column or use “Search all” to reach the full class.";
+        text = vsTf("js.table.showingOf",
+          "Showing {n} of {total} — filter a column or use “Search all” to reach the full class.",
+          { n: fmtNum(wsLoaded), total: fmtNum(wsTotal) });
       } else if (active) {
-        text = "Filtered."; // complete set, locally narrowed — bar hosts the chip
+        text = vsT("js.table.filtered", "Filtered."); // complete set, locally narrowed — bar hosts the chip
       } else {
         text = "";
         visible = false;
@@ -430,7 +434,7 @@
       if (!searchAllLabel) return;
       searchAllLabel.textContent = wsSearchTerm
         ? ("Searching all " + fmtNum(wsTotal))
-        : ("Search all " + fmtNum(wsTotal));
+        : vsTf("js.table.searchAllN", "Search all {total}", { total: fmtNum(wsTotal) });
     }
 
     // Fetch a working set (browse or search) and load it into the table.
@@ -438,7 +442,9 @@
       var url = wsBaseUrl;
       if (term) url += "&search=" + encodeURIComponent(term);
       // Backend request in flight → activity indicator with an in-flight message.
-      wsBusyMsg = term ? ("Searching all instances for “" + term + "”…") : "Loading…";
+      wsBusyMsg = term
+        ? vsTf("js.table.searchingAllFor", "Searching all instances for “{term}”…", { term: term })
+        : vsT("js.table.loading", "Loading…");
       wsErrorMsg = "";
       renderStatus();
       return fetch(url, dataFetchOptions({ headers: { "Accept": "application/json" } }))
@@ -479,7 +485,7 @@
         .catch(function(e) {
           console.warn("working-set fetch failed:", e);
           wsBusyMsg = "";
-          wsErrorMsg = "Failed to load data.";
+          wsErrorMsg = vsT("js.table.failedToLoad", "Failed to load data.");
           renderStatus();
         });
     }
@@ -630,7 +636,7 @@
       // returns to the browse set, no fetch). Busy on now; loadFacetedSet keeps
       // it on through the debounce+fetch and clears it when the result lands.
       if (activeFacetSelections().length) {
-        wsBusyMsg = "Previewing loaded rows — fetching full-class results…";
+        wsBusyMsg = vsT("js.table.previewing", "Previewing loaded rows — fetching full-class results…");
         wsErrorMsg = "";
         renderStatus();
       }
@@ -661,7 +667,7 @@
       wsLastFacetURL = url;       // mark this query as requested (dedupes re-fires)
       // Backend request in flight → activity indicator on (scheduleApplyFacets
       // may already have shown it; this keeps it on across the debounce).
-      wsBusyMsg = "Searching all " + fmtNum(wsTotal) + " on the server…";
+      wsBusyMsg = vsTf("js.table.searchingAllOnServer", "Searching all {total} on the server…", { total: fmtNum(wsTotal) });
       wsErrorMsg = "";
       renderStatus();
       fetch(url, dataFetchOptions({ headers: { "Accept": "application/json" } }))
@@ -687,7 +693,7 @@
           console.warn("faceted fetch failed:", e);
           wsLastFacetURL = ""; // allow the same facets to be retried after a failure
           wsBusyMsg = "";
-          wsErrorMsg = "Failed to load matches.";
+          wsErrorMsg = vsT("js.table.failedToLoadMatches", "Failed to load matches.");
           renderStatus();
         });
     }
@@ -737,7 +743,9 @@
         document.getElementById(ID + "-table")
           .classList.toggle("vs-show-header-filters", filtersShown);
         if (toggleFiltersLabel) {
-          toggleFiltersLabel.textContent = filtersShown ? "Hide column filters" : "Show column filters";
+          toggleFiltersLabel.textContent = filtersShown
+            ? vsT("js.table.hideColumnFilters", "Hide column filters")
+            : vsT("js.table.showColumnFilters", "Show column filters");
         }
         // Clear on hide so rows are never invisibly filtered by hidden inputs
         if (!filtersShown) table.clearHeaderFilter();
@@ -753,7 +761,9 @@
     function setToggleBtnState(expanded) {
       groupsExpanded = expanded;
       var iconName = expanded ? "list-chevrons-down-up" : "list-chevrons-up-down";
-      toggleGroupsBtn.title = expanded ? "Collapse all groups" : "Expand all groups";
+      toggleGroupsBtn.title = expanded
+        ? vsT("js.table.collapseAllGroups", "Collapse all groups")
+        : vsT("js.table.expandAllGroups", "Expand all groups");
       toggleGroupsBtn.innerHTML = '<i data-lucide="' + iconName + '"></i>';
       if (window.lucide) lucide.createIcons({ nodes: [toggleGroupsBtn] });
     }

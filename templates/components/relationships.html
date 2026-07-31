@@ -42,7 +42,7 @@
       {{ template "sparqlTable" (dict
             "result" .QueryResults.outgoing
             "id" "outgoing"
-            "title" "Outgoing Relationships"
+            "title" (t "card.outgoingRelationships" "Outgoing Relationships")
             "icon" "expand"
             "collapsed" true
             "iconVar" "type")
@@ -54,7 +54,7 @@
       {{ template "sparqlTable" (dict
             "result" .QueryResults.incoming
             "id" "incoming"
-            "title" "Incoming Relationships"
+            "title" (t "card.incomingRelationships" "Incoming Relationships")
             "icon" "shrink"
             "collapsed" true
             "iconVar" "type")

@@ -1,32 +1,32 @@
-{{ define "pageTitle" }}About visoto{{ end }}
-{{ define "pageSubtitle" }}Some background info about Visoto.{{ end }}
-{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="Graph Infos" width="48" height="48">{{end}}
+{{ define "pageTitle" }}{{ t "page.about.title" "About visoto" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.about.subtitle" "Some background info about Visoto." }}{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/info.svg" alt="{{ t "page.about.graphInfos" "Graph Infos" }}" width="48" height="48">{{end}}
 {{ define "metaIcon" }}/static/img/info.svg{{ end }}
 
 {{ define "pageContent" }}
 
-<h2>About Visoto</h2>
+<h2>{{ t "page.about.aboutVisoto" "About Visoto" }}</h2>
 
-<p>Visoto is a graph exploration and visualization tool for RDF data. It provides an more intuitive interface for browsing, querying, and understanding linked data.</p>
+<p>{{ t "page.about.visotoIsAGraphExploration" "Visoto is a graph exploration and visualization tool for RDF data. It provides an more intuitive interface for browsing, querying, and understanding linked data." }}</p>
 
 <div class="card">
   <div class="card-header">
-    <h3 class="card-title">Acknowledgements</h3>
+    <h3 class="card-title">{{ t "page.about.acknowledgements" "Acknowledgements" }}</h3>
     &nbsp;
-    <div class="card-subtitle">This project builds upon the work of many talented teams and open-source communities</div>
+    <div class="card-subtitle">{{ t "page.about.thisProjectBuildsUponThe" "This project builds upon the work of many talented teams and open-source communities" }}</div>
   </div>
   <div class="card-body">
     <ul>
-      <li><a href="https://en.wikipedia.org/wiki/Fluid_Operations" target="_blank">fluidOps</a> for the original concept behind the Information Workbench</li>
-      <li><a href="https://go.dev/" target="_blank">Go</a> for the programming language</li>
-      <li><a href="https://gin-gonic.com/en/" target="_blank">Gin</a> for the web framework</li>
-      <li><a href="https://tabulator.info/" target="_blank">Tabulator</a> for interactive data tables</li>
-      <li><a href="https://github.com/mermaid-js/mermaid" target="_blank">Mermaid</a> for the flow visualization</li>
-      <li><a href="https://github.com/zazuko/graph-explorer" target="_blank">Ontodia/Zazuko Graph Explorer</a> for the graph explorer</li>
-      <li><a href="https://tabler.io/" target="_blank">Tabler</a> for the admin dashboard template</li>
-      <li><a href="https://getbootstrap.com/" target="_blank">Bootstrap</a> for the CSS framework</li>
-      <li><a href="https://lucide.dev/" target="_blank">Lucide</a> for the icon set</li>
-      <li><a href="https://claude.ai/" target="_blank">Claude Code</a> for AI-assisted development</li>
+      <li>{{ tHTML "page.about.fluidopsForTheOriginalConcept" "<a href=\"https://en.wikipedia.org/wiki/Fluid_Operations\" target=\"_blank\">fluidOps</a> for the original concept behind the Information Workbench" }}</li>
+      <li>{{ tHTML "page.about.goForTheProgrammingLanguage" "<a href=\"https://go.dev/\" target=\"_blank\">Go</a> for the programming language" }}</li>
+      <li>{{ tHTML "page.about.ginForTheWebFramework" "<a href=\"https://gin-gonic.com/en/\" target=\"_blank\">Gin</a> for the web framework" }}</li>
+      <li>{{ tHTML "page.about.tabulatorForInteractiveDataTables" "<a href=\"https://tabulator.info/\" target=\"_blank\">Tabulator</a> for interactive data tables" }}</li>
+      <li>{{ tHTML "page.about.mermaidForTheFlowVisualization" "<a href=\"https://github.com/mermaid-js/mermaid\" target=\"_blank\">Mermaid</a> for the flow visualization" }}</li>
+      <li>{{ tHTML "page.about.ontodiaZazukoGraphExplorerFor" "<a href=\"https://github.com/zazuko/graph-explorer\" target=\"_blank\">Ontodia/Zazuko Graph Explorer</a> for the graph explorer" }}</li>
+      <li>{{ tHTML "page.about.tablerForTheAdminDashboard" "<a href=\"https://tabler.io/\" target=\"_blank\">Tabler</a> for the admin dashboard template" }}</li>
+      <li>{{ tHTML "page.about.bootstrapForTheCSSFramework" "<a href=\"https://getbootstrap.com/\" target=\"_blank\">Bootstrap</a> for the CSS framework" }}</li>
+      <li>{{ tHTML "page.about.lucideForTheIconSet" "<a href=\"https://lucide.dev/\" target=\"_blank\">Lucide</a> for the icon set" }}</li>
+      <li>{{ tHTML "page.about.claudeCodeForAIAssisted" "<a href=\"https://claude.ai/\" target=\"_blank\">Claude Code</a> for AI-assisted development" }}</li>
     </ul>
   </div>
 </div>

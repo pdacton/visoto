@@ -23,7 +23,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.publishedTreatments
             "id" "publishedTreatments"
-            "title" "Treatments Published In"
+            "title" (t "card.treatmentsPublishedIn" "Treatments Published In")
             "icon" "file-description"
             "iconVar" "Treatment")
         }}

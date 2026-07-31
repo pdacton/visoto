@@ -5,13 +5,7 @@
 {{ define "pageContent" }}
 <div>
 
-  <p class="text-secondary">
-    A <strong>Cube</strong> is a versioned statistical dataset described with the
-    <a href="https://cube.link/" target="_blank" rel="noopener">cube.link</a> vocabulary:
-    a set of observations sharing the same dimensions, published with rich metadata
-    (publisher, themes, status, versions). Superseded versions stay in the graph and are
-    marked with an expiry date &mdash; the table below hides them by default.
-  </p>
+  <p class="text-secondary">{{ tHTML "type.cube.aCubeIsAVersioned" "A <strong>Cube</strong> is a versioned statistical dataset described with the <a href=\"https://cube.link/\" target=\"_blank\" rel=\"noopener\">cube.link</a> vocabulary: a set of observations sharing the same dimensions, published with rich metadata (publisher, themes, status, versions). Superseded versions stay in the graph and are marked with an expiry date — the table below hides them by default." }}</p>
 
   <!-- Metric strip: counts are queried live (LINDAS counts drift). -->
   <sparql-async id="cubeTotal" class="d-none">
@@ -39,20 +33,20 @@
   <div class="row row-deck row-cards mb-3">
     {{ template "sparqlMetric" (dict
         "queryId" "cubeTotal"
-        "title" "Cubes (all versions)"
+        "title" (t "card.cubesAllVersions" "Cubes (all versions)")
         "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
         "icon" "/static/img/resource/Cube.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "cubeCurrent"
-        "title" "Current Versions"
+        "title" (t "card.currentVersions" "Current Versions")
         "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube") }}
     {{ template "sparqlMetric" (dict
         "queryId" "cubePublishedCurrent"
-        "title" "Published & Current"
+        "title" (t "card.publishedCurrent" "Published & Current")
         "href" "/resource?iri=https%3A%2F%2Fld.admin.ch%2Fvocabulary%2FCreativeWorkStatus%2FPublished") }}
     {{ template "sparqlMetric" (dict
         "queryId" "cubePublishers"
-        "title" "Publishers"
+        "title" (t "card.publishers" "Publishers")
         "href" "/resource?iri=http%3A%2F%2Fschema.org%2FOrganization") }}
   </div>
 
@@ -74,7 +68,7 @@
               <span id="cube-facet-publishers" class="d-flex flex-wrap gap-1"></span>
               <label class="form-check form-switch mb-0 ms-auto">
                 <input id="cube-toggle-superseded" class="form-check-input" type="checkbox">
-                <span class="form-check-label" id="cube-toggle-superseded-label">Include superseded versions</span>
+                <span class="form-check-label" id="cube-toggle-superseded-label">{{ t "type.cube.includeSupersededVersions" "Include superseded versions" }}</span>
               </label>
             </div>
           </div>
@@ -105,7 +99,7 @@
         </sparql-async>
         {{ template "sparqlAsyncTable" (dict
             "queryId" "cubeCatalog"
-            "title" "Data Cubes"
+            "title" (t "card.dataCubes" "Data Cubes")
             "icon" "box"
             "badgeVar" "status")
         }}

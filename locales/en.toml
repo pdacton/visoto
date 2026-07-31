@@ -1,0 +1,55 @@
+# Base catalog: the English source of truth for the frontend strings only.
+#
+# UI text for TEMPLATES now lives inline at the call site, as the fallback
+# argument to {{ t "key" "English text" }} — the catalog no longer duplicates it.
+# Translations for those keys still live in de/fr/it/rm.toml and continue to win
+# over the inline text; this file simply no longer restates the English.
+#
+# What remains here are the js.* strings, which have no template call site: they
+# are serialized into a JSON island (see i18n.Catalogs.JSStrings and base.html)
+# and read by static/js through window.vsT. Deleting them would silently drop
+# every non-English frontend string, so they must stay in the catalog.
+#
+# This file must exist: i18n.Load treats a missing base catalog as fatal.
+
+"js.bookmarks.dragHint" = "Drag to bookmark or graph"
+"js.chat.intro" = "The chat assistant helps you understand RDF resources."
+"js.chat.noResource" = "Navigate to a resource page to start chatting!"
+"js.chat.title" = "Resource Assistant"
+"js.facet.contains" = "contains…"
+"js.facet.failedToLoad" = "Failed to load"
+"js.facet.filterBy" = "Filter by {label}"
+"js.facet.loading" = "Loading…"
+"js.facet.max" = "max"
+"js.facet.min" = "min"
+"js.facet.noValue" = "(no value)"
+"js.facet.noValues" = "No values"
+"js.graph.failedToLoadLibrary" = "Failed to load Graph Explorer library"
+"js.schema.derivationFailed" = "Schema derivation failed: {error}"
+"js.schema.derivedFrom" = "Schema derived from {instance} (anchored on <code>{class}</code>) — {classes} classes, {relations} relations"
+"js.schema.deriving" = "Deriving schema…"
+"js.schema.invalidIri" = "Invalid IRI parameter"
+"js.table.collapseAllGroups" = "Collapse all groups"
+"js.table.expandAllGroups" = "Expand all groups"
+"js.table.failedToLoad" = "Failed to load data."
+"js.table.failedToLoadMatches" = "Failed to load matches."
+"js.table.filtered" = "Filtered."
+"js.table.firstPage" = "First Page"
+"js.table.hideColumnFilters" = "Hide column filters"
+"js.table.lastPage" = "Last Page"
+"js.table.loading" = "Loading…"
+"js.table.nextPage" = "Next Page"
+"js.table.prevPage" = "Prev Page"
+"js.table.previewing" = "Previewing loaded rows — fetching full-class results…"
+"js.table.searchAllN" = "Search all {total}"
+"js.table.searchingAllFor" = "Searching all instances for “{term}”…"
+"js.table.searchingAllOnServer" = "Searching all {total} on the server…"
+"js.table.showColumnFilters" = "Show column filters"
+"js.table.showingAllMatches" = "Showing all {n} full-class matches."
+"js.table.showingFirstMatches" = "Showing the first {n} full-class matches — narrow the facets to see them all."
+"js.table.showingFirstMatchesFor" = "Showing the first {n} full-class matches for “{term}” — refine your search to narrow further."
+"js.table.showingOf" = "Showing {n} of {total} — filter a column or use “Search all” to reach the full class."
+"js.theme.enableDark" = "Enable dark mode"
+"js.theme.enableLight" = "Enable light mode"
+"js.theme.switchToDark" = "Switch to dark mode"
+"js.theme.switchToLight" = "Switch to light mode"

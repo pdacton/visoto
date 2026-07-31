@@ -47,9 +47,9 @@
     {{ end }}
   {{ end }}
   {{ if $coatOfArms }}
-    <img src="{{ $coatOfArms }}" alt="Canton coat of arms" width="64" height="64" style="object-fit: contain;">
+    <img src="{{ $coatOfArms }}" alt="{{ t "type.canton.cantonCoatOfArms" "Canton coat of arms" }}" width="64" height="64" style="object-fit: contain;">
   {{ else }}
-    <img src="{{ resourceIcon . }}" alt="Page icon" width="48" height="48">
+    <img src="{{ resourceIcon . }}" alt="{{ t "type.canton.pageIcon" "Page icon" }}" width="48" height="48">
   {{ end }}
 {{ end }}
 
@@ -70,7 +70,7 @@
       {{ template "sparqlGrid" (dict
             "result" .QueryResults.attributes
             "id" "attributes"
-            "title" "Attributes"
+            "title" (t "card.attributes" "Attributes")
             "icon" "tags")
       }}
     </div>
@@ -99,7 +99,7 @@
       {{ template "sparqlTable" (dict
             "result" .QueryResults.districts
             "id" "districts"
-            "title" "Districts"
+            "title" (t "card.districts" "Districts")
             "icon" "map-pinned")
       }}
     </div>
@@ -125,7 +125,7 @@
       {{ template "sparqlTable" (dict
             "result" .QueryResults.municipalities
             "id" "municipalities"
-            "title" "Municipalities"
+            "title" (t "card.municipalities" "Municipalities")
             "icon" "map-pinned")
       }}
     </div>

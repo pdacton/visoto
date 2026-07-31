@@ -1,11 +1,11 @@
 <!-- Canton Class Template, listing all instances of this class -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item">  <a href="/resource?iri=http://schema.org/Country">Countries</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.canton.countries" "<a href=\"/resource?iri=http://schema.org/Country\">Countries</a>" }}</li>
 {{ end}}
 
-{{ define "pageTitle" }}Kantone{{ end }}
-{{ define "metaTitle" }}Kantone{{ end }}
+{{ define "pageTitle" }}{{ t "type.canton.title" "Kantone" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.canton.metaTitle" "Kantone" }}{{ end }}
 
 <sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
@@ -14,7 +14,7 @@
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}Schweizer Kantone{{ end }}
+{{ define "pageSubtitle" }}{{ t "type.canton.subtitle" "Schweizer Kantone" }}{{ end }}
 
 
 {{ define "pageContent" }}
@@ -40,7 +40,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "cantonInstances"
         "iri" .ResourceIRI
-        "title" "Cantons"
+        "title" (t "card.cantons" "Cantons")
         "icon" "circle-dot"
         "iconVar" "type")
     }}

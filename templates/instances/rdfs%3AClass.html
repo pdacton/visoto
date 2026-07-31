@@ -21,7 +21,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "classInstances"
             "iri" .ResourceIRI
-            "title" "Instances of this class"
+            "title" (t "card.instancesOfThisClass" "Instances of this class")
             "icon" "circle-dot"
             "iconVar" "instance")
         }}
@@ -45,7 +45,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.subclasses
             "id" "subclasses"
-            "title" "Subclasses"
+            "title" (t "card.subclasses" "Subclasses")
             "icon" "circle-chevron-down"
             "collapsed" true)
         }}
@@ -67,7 +67,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.superclasses
             "id" "superclasses"
-            "title" "Superclasses"
+            "title" (t "card.superclasses" "Superclasses")
             "icon" "circle-chevron-up"
             "collapsed" true)
         }}

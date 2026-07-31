@@ -1,7 +1,7 @@
 <!-- SKOS Concept Class Template -->
 
-{{ define "pageTitle" }}SKOS Concept{{ end }}
-{{ define "metaTitle" }}SKOS Concept{{ end }}
+{{ define "pageTitle" }}{{ t "type.concept.title" "SKOS Concept" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.concept.metaTitle" "SKOS Concept" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
 <sparql-query id="pageClasses" class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
@@ -35,7 +35,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "skosConceptInstances"
             "iri" .ResourceIRI
-            "title" "Available SKOS Concepts"
+            "title" (t "card.availableSKOSConcepts" "Available SKOS Concepts")
             "icon" "circle-dot")
         }}
       </div>

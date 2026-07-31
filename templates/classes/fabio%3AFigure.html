@@ -11,9 +11,9 @@
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}Figures and illustrations extracted from Plazi taxonomic publications.{{ end }}
+{{ define "pageSubtitle" }}{{ t "type.figure.subtitle" "Figures and illustrations extracted from Plazi taxonomic publications." }}{{ end }}
 
-{{ define "pageIcon" }}<img src="/static/img/resource/Figure.svg" alt="Figure" width="48" height="48">{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Figure.svg" alt="{{ t "type.figure.figure" "Figure" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/resource/Figure.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -31,7 +31,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "figureInstances"
         "iri" .ResourceIRI
-        "title" "Figures"
+        "title" (t "card.figures" "Figures")
         "icon" "photo"
         "iconVar" "Figure")
     }}

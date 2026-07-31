@@ -445,3 +445,144 @@ func TestSparqlEndpointJSONOmitsCredentials(t *testing.T) {
 		}
 	}
 }
+
+// TestValidateLanguages covers the structural rules for the UI language set.
+func TestValidateLanguages(t *testing.T) {
+	tests := []struct {
+		name      string
+		languages []Language
+		def       string
+		wantErr   bool
+		wantCodes []string // expected codes after validation (nil = unchanged)
+	}{
+		{
+			name:      "shipped default set",
+			languages: DefaultLanguages(),
+			def:       "en",
+		},
+		{
+			name:      "empty list falls back to the defaults",
+			languages: []Language{},
+			def:       "en",
+			wantCodes: []string{"de", "fr", "it", "en", "rm", ""},
+		},
+		{
+			name:      "empty string is a legal member",
+			languages: []Language{{Code: "de", Label: "Deutsch"}, {Code: "", Label: "None"}},
+			def:       "",
+		},
+		{
+			name:      "default outside the list is rejected",
+			languages: []Language{{Code: "de", Label: "Deutsch"}, {Code: "fr", Label: "Français"}},
+			def:       "en",
+			wantErr:   true,
+		},
+		{
+			name:      "duplicate code is rejected",
+			languages: []Language{{Code: "de", Label: "Deutsch"}, {Code: "de", Label: "Tedesco"}},
+			def:       "de",
+			wantErr:   true,
+		},
+		{
+			name:      "uppercase code is rejected",
+			languages: []Language{{Code: "DE", Label: "Deutsch"}},
+			def:       "DE",
+			wantErr:   true,
+		},
+		{
+			name:      "region subtag is rejected",
+			languages: []Language{{Code: "de-CH", Label: "Schweizerdeutsch"}},
+			def:       "de-CH",
+			wantErr:   true,
+		},
+		{
+			name:      "missing label is rejected",
+			languages: []Language{{Code: "de"}},
+			def:       "de",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &ApplicationConfig{Languages: tt.languages, DefaultLanguage: tt.def}
+			err := a.validateLanguages()
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("validateLanguages() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if tt.wantCodes != nil {
+				got := a.LanguageCodes()
+				if len(got) != len(tt.wantCodes) {
+					t.Fatalf("LanguageCodes() = %v, want %v", got, tt.wantCodes)
+				}
+				for i, want := range tt.wantCodes {
+					if got[i] != want {
+						t.Errorf("LanguageCodes()[%d] = %q, want %q", i, got[i], want)
+					}
+				}
+			}
+		})
+	}
+}
+
+// TestLoadDefaultsLanguages checks that a config file with no language keys
+// still comes back with a usable set.
+func TestLoadDefaultsLanguages(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "test.toml")
+	if err := os.WriteFile(configPath, []byte("[application]\nport = 8080\n"), 0644); err != nil {
+		t.Fatalf("write config: %v", err)
+	}
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+	if len(cfg.Application.Languages) != len(DefaultLanguages()) {
+		t.Errorf("Languages = %v, want the default set", cfg.Application.Languages)
+	}
+	if cfg.Application.DefaultLanguage != "en" {
+		t.Errorf("DefaultLanguage = %q, want \"en\"", cfg.Application.DefaultLanguage)
+	}
+}
+
+// TestExampleConfigParses loads the shipped example config, which is the file
+// users copy — a mistake in it is a mistake in every new deployment.
+//
+// It specifically guards the TOML trap that [[application.languages]]
+// introduces: every bare key written *after* an array-of-tables header belongs
+// to that table, not to [application]. Put gemini_api_key below the language
+// blocks and it silently becomes a field of the last language instead, with no
+// parse error to notice. Asserting a scalar key alongside the languages catches
+// that reordering.
+func TestExampleConfigParses(t *testing.T) {
+	cfg, err := Load("../../visoto.config.example")
+	if err != nil {
+		t.Fatalf("Load(visoto.config.example) error = %v", err)
+	}
+
+	if got := cfg.Application.GeminiAPIKey; got == "" {
+		t.Error("gemini_api_key did not land on [application] — a scalar key is below an array-of-tables")
+	}
+	if got := cfg.Application.Port; got == 0 {
+		t.Error("port did not land on [application]")
+	}
+	if len(cfg.Application.SparqlEndpoints) == 0 {
+		t.Error("no sparqlEndpoints parsed")
+	}
+
+	codes := cfg.Application.LanguageCodes()
+	if len(codes) < 2 {
+		t.Fatalf("LanguageCodes() = %v, want the full configured set", codes)
+	}
+	for _, l := range cfg.Application.Languages {
+		if l.Label == "" {
+			t.Errorf("language %q has no label", l.Code)
+		}
+	}
+	var hasDefault bool
+	for _, c := range codes {
+		hasDefault = hasDefault || c == cfg.Application.DefaultLanguage
+	}
+	if !hasDefault {
+		t.Errorf("default_language %q is not among %v", cfg.Application.DefaultLanguage, codes)
+	}
+}

@@ -1,25 +1,25 @@
-{{ define "pageTitle" }}What's New{{ end }}
+{{ define "pageTitle" }}{{ t "page.whatsnew.title" "What's New" }}{{ end }}
 
 {{ define "pageContent" }}
 
 <div class="card">
   <div class="card-header">
-    <h3 class="card-title">Some recent changes to visoto</h3>
+    <h3 class="card-title">{{ t "page.whatsnew.someRecentChangesToVisoto" "Some recent changes to visoto" }}</h3>
   </div>
   <div class="card-body">
     <ol>
-      <li>Added links to the menu to make cubes (cube.link) entities accessible</li>
-      <li>The graph explorer has been improved, however, it only works on the LINDAS next end points (due to limitation of Stardog)</li>
-      <li>Added a metrics partial, to display counts of various resource types in the knowledge graph</li>
-      <li>Select a pre-configured SPARQL endpoint from the menu to connect Visoto to other endpoints, particularly useful when comparing different environments like test, dev or prod.</li>
-      <li>Added a right sidebar with bookmarks and additional context panels</li>
-      <li>Added SPARQL endpoint response time monitoring</li>
-      <li>New resource templates for Districts, Countries, and other geographic entities</li>
-      <li>Async metric cards via HTMX for faster page loads</li>
-      <li>Expanded resource icons for better visual identification of RDF types</li>
-      <li>Multi-endpoint SPARQL support with cookie-based endpoint switching</li>
-      <li>MCP server integration for AI-assisted exploration of the knowledge graph</li>
-      <li>Shared template components to reduce duplication across resource pages</li>
+      <li>{{ t "page.whatsnew.addedLinksToTheMenu" "Added links to the menu to make cubes (cube.link) entities accessible" }}</li>
+      <li>{{ t "page.whatsnew.theGraphExplorerHasBeen" "The graph explorer has been improved, however, it only works on the LINDAS next end points (due to limitation of Stardog)" }}</li>
+      <li>{{ t "page.whatsnew.addedAMetricsPartialTo" "Added a metrics partial, to display counts of various resource types in the knowledge graph" }}</li>
+      <li>{{ t "page.whatsnew.selectAPreConfiguredSPARQL" "Select a pre-configured SPARQL endpoint from the menu to connect Visoto to other endpoints, particularly useful when comparing different environments like test, dev or prod." }}</li>
+      <li>{{ t "page.whatsnew.addedARightSidebarWith" "Added a right sidebar with bookmarks and additional context panels" }}</li>
+      <li>{{ t "page.whatsnew.addedSPARQLEndpointResponseTime" "Added SPARQL endpoint response time monitoring" }}</li>
+      <li>{{ t "page.whatsnew.newResourceTemplatesForDistricts" "New resource templates for Districts, Countries, and other geographic entities" }}</li>
+      <li>{{ t "page.whatsnew.asyncMetricCardsViaHTMX" "Async metric cards via HTMX for faster page loads" }}</li>
+      <li>{{ t "page.whatsnew.expandedResourceIconsForBetter" "Expanded resource icons for better visual identification of RDF types" }}</li>
+      <li>{{ t "page.whatsnew.multiEndpointSPARQLSupportWith" "Multi-endpoint SPARQL support with cookie-based endpoint switching" }}</li>
+      <li>{{ t "page.whatsnew.mcpServerIntegrationForAI" "MCP server integration for AI-assisted exploration of the knowledge graph" }}</li>
+      <li>{{ t "page.whatsnew.sharedTemplateComponentsToReduce" "Shared template components to reduce duplication across resource pages" }}</li>
     </ol>
   </div>
 </div>

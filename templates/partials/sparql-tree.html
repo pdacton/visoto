@@ -2,7 +2,7 @@
   Partial template for rendering SPARQL query results as a tree using Wunderbaum
 
   Usage:
-    {{ template "sparqlTree" (dict "result" .QueryResults.classTree "id" "classTree" "title" "Class Hierarchy" "icon" "git-branch" "ResourceIRI" .ResourceIRI) }}
+    {{ template "sparqlTree" (dict "result" .QueryResults.classTree "id" "classTree" "title" (t "card.classHierarchy" "Class Hierarchy") "icon" "git-branch" "ResourceIRI" .ResourceIRI) }}
 
   Parameters (via dict):
     - result: QueryResult object with .Vars, .Bindings, .Error
@@ -73,14 +73,14 @@
         </div>
         <div class="ms-auto d-flex align-items-center gap-2">
           {{ if $id }}
-            <input type="text" id="search-{{ $id }}" class="form-control form-control-sm" style="min-width: 150px; max-width: 300px;" placeholder="Filter tree...">
+            <input type="text" id="search-{{ $id }}" class="form-control form-control-sm" style="min-width: 150px; max-width: 300px;" placeholder="{{ t "tree.filterPlaceholder" "Filter tree..." }}">
           {{ end }}
           <div class="btn-actions">
             {{ if $id }}
-              <a id="expand-{{ $id }}" class="btn-action" title="Expand all">
+              <a id="expand-{{ $id }}" class="btn-action" title="{{ t "tree.expandAll" "Expand all" }}">
                 <i data-lucide="list-chevrons-up-down"></i>
               </a>
-              <a id="collapse-tree-{{ $id }}" class="btn-action" title="Collapse all">
+              <a id="collapse-tree-{{ $id }}" class="btn-action" title="{{ t "tree.collapseAll" "Collapse all" }}">
                 <i data-lucide="list-chevrons-down-up"></i>
               </a>
             {{ end }}

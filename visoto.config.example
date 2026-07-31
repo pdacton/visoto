@@ -8,6 +8,10 @@ sparqlEndpoint = "https://ld.admin.ch/query/"  # Default endpoint
 timeout = 30 # timeout in seconds
 gemini_api_key = "YOUR_GEMINI_API_KEY_HERE" # Get from: https://aistudio.google.com/app/apikey
 
+# Used when the request expresses no usable preference. Must be one of the codes
+# declared in the [[application.languages]] blocks below.
+default_language = "en"
+
 # Named SPARQL endpoints for the sidebar endpoint-switcher menu.
 # Each endpoint can have:
 #   name    — display label in the menu
@@ -20,6 +24,47 @@ gemini_api_key = "YOUR_GEMINI_API_KEY_HERE" # Get from: https://aistudio.google.
 #             entries, unlike tag). Enables shareable links via ?endpoint=<slug>, which
 #             overrides the selectedEndpoint cookie for that request and updates it to
 #             match. Omit to leave an endpoint unreachable via the query param.
+
+# UI languages offered by the topbar picker, in the order they are declared here.
+#   code  — the value carried by the site-lang cookie and the X-Site-Lang header,
+#           and the name of the locales/<code>.toml message catalog. Every
+#           non-empty code needs that catalog, or startup fails. The empty string
+#           is a legal member: it is the "no language" choice, which renders the
+#           base (English) catalog.
+#   label — the text the picker displays. Conventionally the language's own
+#           endonym ("Deutsch", not "German"), so the list reads the same
+#           whichever language the page is currently rendered in. It is a
+#           literal, not a message key: one label per code, in every locale.
+#
+# In production the codes are duplicated in the Caddyfile, which normalizes the
+# site-lang cookie and Accept-Language into a single X-Site-Lang header ahead of
+# the shared cache. The backend re-validates that header against the list below,
+# so a Caddyfile that drifts out of sync can only fall back to
+# default_language — it can never select an unconfigured language.
+[[application.languages]]
+code = "de"
+label = "Deutsch"
+
+[[application.languages]]
+code = "fr"
+label = "Français"
+
+[[application.languages]]
+code = "it"
+label = "Italiano"
+
+[[application.languages]]
+code = "en"
+label = "English"
+
+[[application.languages]]
+code = "rm"
+label = "Rumantsch"
+
+[[application.languages]]
+code = ""
+label = "No language"
+
 [[application.sparqlEndpoints]]
 name = "LINDAS prod"
 url = "https://ld.admin.ch/query/"

@@ -18,7 +18,7 @@
       {{ template "sparqlGrid" (dict
             "result" .QueryResults.literals
             "id" "literals"
-            "title" "Attributes"
+            "title" (t "card.attributes" "Attributes")
             "icon" "tags")
       }}
     </div>

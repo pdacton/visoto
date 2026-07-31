@@ -1,22 +1,14 @@
-{{ define "metaTitle" }}Health{{ end }}
-{{ define "pageTitle" }}Health{{ end }}
-{{ define "pageSubtitle" }}How Switzerland recorded a pandemic, and how it watches its medicine cabinet.{{ end }}
-{{ define "pageIcon" }}<img src="/static/img/resource/Health.svg" alt="Health" width="48" height="48">{{ end }}
+{{ define "metaTitle" }}{{ t "page.health.metaTitle" "Health" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.health.title" "Health" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.health.subtitle" "How Switzerland recorded a pandemic, and how it watches its medicine cabinet." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Health.svg" alt="{{ t "page.health.health" "Health" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/resource/Health.svg{{ end }}
 
 {{ define "pageContent" }}
 
-<h2>About this theme</h2>
+<h2>{{ t "page.health.aboutThisTheme" "About this theme" }}</h2>
 
-<p>
-  Two LINDAS graphs cover public health, and they could hardly be more different in temperament.
-  The <strong>FOPH COVID-19 graph</strong> is a sealed archive: the complete daily record of the
-  pandemic in Switzerland &mdash; cases, deaths, hospitalizations, vaccinations &mdash; frozen at
-  1&nbsp;January 2023, when mandatory daily reporting ended. The
-  <strong>FONES supply-disruptions graph</strong> is its opposite, a living feed: every day the
-  Federal Office for National Economic Supply publishes a fresh snapshot of which vital medicines
-  are currently unavailable, and when they are expected back.
-</p>
+<p>{{ tHTML "page.health.twoLINDASGraphsCoverPublic" "Two LINDAS graphs cover public health, and they could hardly be more different in temperament. The <strong>FOPH COVID-19 graph</strong> is a sealed archive: the complete daily record of the pandemic in Switzerland — cases, deaths, hospitalizations, vaccinations — frozen at 1 January 2023, when mandatory daily reporting ended. The <strong>FONES supply-disruptions graph</strong> is its opposite, a living feed: every day the Federal Office for National Economic Supply publishes a fresh snapshot of which vital medicines are currently unavailable, and when they are expected back." }}</p>
 
 <!-- Metric strip: one bounded query per headline figure. -->
 <sparql-async id="healthCovidObservations" class="d-none">
@@ -63,22 +55,22 @@
 <div class="row row-deck row-cards mt-4">
   {{ template "sparqlMetric" (dict
       "queryId" "healthCovidObservations"
-      "title" "COVID-19 Observations"
+      "title" (t "card.covid19Observations" "COVID-19 Observations")
       "href" "/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Faffected"
       "icon" "/static/img/resource/Pandemic.svg") }}
   {{ template "sparqlMetric" (dict
       "queryId" "healthVaccinationRecords"
-      "title" "Vaccination Data Points"
+      "title" (t "card.vaccinationDataPoints" "Vaccination Data Points")
       "href" "/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Fvaccine-doses"
       "icon" "/static/img/resource/Vaccination.svg") }}
   {{ template "sparqlMetric" (dict
       "queryId" "healthOpenDisruptions"
-      "title" "Open Supply Disruptions"
+      "title" (t "card.openSupplyDisruptions" "Open Supply Disruptions")
       "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffones%2Fsupply-disruptions"
       "icon" "/static/img/resource/Shortage.svg") }}
   {{ template "sparqlMetric" (dict
       "queryId" "healthMedicinesTracked"
-      "title" "Medicines Tracked"
+      "title" (t "card.medicinesTracked" "Medicines Tracked")
       "href" "/resource?iri=http%3A%2F%2Fschema.org%2FDefinedTerm"
       "icon" "/static/img/resource/Medicine.svg") }}
 </div>
@@ -87,7 +79,7 @@
 <!-- FOPH pandemic record                                           -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">The pandemic record</h2>
+<h2 class="mt-5">{{ t "page.health.thePandemicRecord" "The pandemic record" }}</h2>
 
 <sparql-async id="healthReportingDays" class="d-none">
   SELECT (COUNT(DISTINCT ?date) AS ?count) WHERE {
@@ -98,17 +90,7 @@
   }
 </sparql-async>
 
-<p>
-  From 24&nbsp;February 2020 &mdash; the day Switzerland confirmed its first case &mdash; to
-  1&nbsp;January 2023, the Federal Office of Public Health logged the pandemic day by day:
-  <span hx-get="/api/metric/healthReportingDays" hx-trigger="load" hx-swap="innerHTML">
-    <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
-  </span>
-  days of reporting, for the country as a whole and for every canton. The data is organised as
-  three <a href="/resource?iri=https%3A%2F%2Fcube.link%2FCube">data cubes</a>, and unlike most
-  LINDAS datasets this one will never grow again: it is the finished statistical record of an
-  event, kept precisely because it is finished.
-</p>
+<p>{{ tHTML "page.health.from24February2020The" "From 24 February 2020 — the day Switzerland confirmed its first case — to 1 January 2023, the Federal Office of Public Health logged the pandemic day by day: <span hx-get=\"/api/metric/healthReportingDays\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> days of reporting, for the country as a whole and for every canton. The data is organised as three <a href=\"/resource?iri=https%3A%2F%2Fcube.link%2FCube\">data cubes</a>, and unlike most LINDAS datasets this one will never grow again: it is the finished statistical record of an event, kept precisely because it is finished." }}</p>
 
 <div class="row row-deck row-cards">
 
@@ -117,12 +99,9 @@
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
           <i data-lucide="activity" class="me-3"></i>
-          <h3 class="card-title m-0">Cases, deaths &amp; hospitalizations</h3>
+          <h3 class="card-title m-0">{{ t "page.health.casesDeathsHospitalizations" "Cases, deaths & hospitalizations" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">
-          The epidemiological core: daily and cumulative counts per canton and for the whole
-          country, each with the reference population.
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.health.theEpidemiologicalCoreDailyAnd" "The epidemiological core: daily and cumulative counts per canton and for the whole country, each with the reference population." }}</div>
       </div>
     </a>
   </div>
@@ -132,12 +111,9 @@
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
           <i data-lucide="syringe" class="me-3"></i>
-          <h3 class="card-title m-0">Vaccine doses</h3>
+          <h3 class="card-title m-0">{{ t "page.health.vaccineDoses" "Vaccine doses" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">
-          Doses administered by region and by vaccine &mdash; the largest of the three cubes,
-          because every day is broken down per manufacturer.
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.health.dosesAdministeredByRegionAnd" "Doses administered by region and by vaccine — the largest of the three cubes, because every day is broken down per manufacturer." }}</div>
       </div>
     </a>
   </div>
@@ -147,27 +123,18 @@
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-center mb-2">
           <i data-lucide="users" class="me-3"></i>
-          <h3 class="card-title m-0">Vaccinated population</h3>
+          <h3 class="card-title m-0">{{ t "page.health.vaccinatedPopulation" "Vaccinated population" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">
-          People rather than doses: how many residents of each canton held which vaccination
-          status, from first dose to second booster.
-        </div>
+        <div class="text-secondary mt-auto">{{ t "page.health.peopleRatherThanDosesHow" "People rather than doses: how many residents of each canton held which vaccination status, from first dose to second booster." }}</div>
       </div>
     </a>
   </div>
 
 </div>
 
-<h3 class="mt-4">The vaccines</h3>
+<h3 class="mt-4">{{ t "page.health.theVaccines" "The vaccines" }}</h3>
 
-<p>
-  Six vaccines were administered in Switzerland, and each is modelled as a
-  <a href="/resource?iri=http%3A%2F%2Fschema.org%2FTherapeuticProcedure">therapeutic procedure</a>
-  linked to its manufacturer &mdash; the two bivalent variants are recorded separately from the
-  original formulations. The vaccinated-population cube slices its counts by vaccination status,
-  a small controlled vocabulary worth reading before querying that cube.
-</p>
+<p>{{ tHTML "page.health.sixVaccinesWereAdministeredIn" "Six vaccines were administered in Switzerland, and each is modelled as a <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FTherapeuticProcedure\">therapeutic procedure</a> linked to its manufacturer — the two bivalent variants are recorded separately from the original formulations. The vaccinated-population cube slices its counts by vaccination status, a small controlled vocabulary worth reading before querying that cube." }}</p>
 
 <sparql-async id="healthVaccines" class="d-none">
   SELECT ?vaccine ?name WHERE {
@@ -182,7 +149,7 @@
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "healthVaccines"
-      "title" "Vaccines"
+      "title" (t "card.vaccines" "Vaccines")
       "icon" "syringe"
       "collapsed" true) }}
 </div>
@@ -200,7 +167,7 @@
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "healthVaccinationStatus"
-      "title" "Vaccination statuses"
+      "title" (t "card.vaccinationStatuses" "Vaccination statuses")
       "icon" "list-checks"
       "collapsed" true) }}
 </div>
@@ -209,18 +176,9 @@
 <!-- FONES supply disruptions                                       -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">The medicine cabinet</h2>
+<h2 class="mt-5">{{ t "page.health.theMedicineCabinet" "The medicine cabinet" }}</h2>
 
-<p>
-  Companies that market vital medicines for human use in Switzerland are legally required to
-  report supply disruptions to the Federal Office for National Economic Supply. The graph turns
-  those reports into a rolling series of daily snapshots: one observation is <em>one medicine on
-  one day</em>, carrying its <abbr title="Anatomical Therapeutic Chemical classification (WHO)">ATC
-  code</abbr>, package identifier (GTIN), the date the disruption began, the expected end, and a
-  recommendation for prescribers. To see the situation <em>today</em>, you read the latest
-  snapshot &mdash; which is exactly what the tables below do. A companion cube tracks just the
-  daily totals of open and closed disruptions over time.
-</p>
+<p>{{ tHTML "page.health.companiesThatMarketVitalMedicines" "Companies that market vital medicines for human use in Switzerland are legally required to report supply disruptions to the Federal Office for National Economic Supply. The graph turns those reports into a rolling series of daily snapshots: one observation is <em>one medicine on one day</em>, carrying its <abbr title=\"{{.atcTitle}}\">ATC code</abbr>, package identifier (GTIN), the date the disruption began, the expected end, and a recommendation for prescribers. To see the situation <em>today</em>, you read the latest snapshot &mdash; which is exactly what the tables below do. A companion cube tracks just the daily totals of open and closed disruptions over time." (dict "atcTitle" (t "page.health.anatomicalTherapeuticChemicalClassificationWHO" "Anatomical Therapeutic Chemical classification (WHO)")) }}</p>
 
 <sparql-async id="healthDisruptedMedicines" class="d-none">
   SELECT ?product (SAMPLE(?n) AS ?name) ?atc ?since ?until WHERE {
@@ -245,17 +203,12 @@
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "healthDisruptedMedicines"
-      "title" "Medicines currently in short supply"
+      "title" (t "card.medicinesCurrentlyInShortSupply" "Medicines currently in short supply")
       "icon" "pill"
       "collapsed" true) }}
 </div>
 
-<p>
-  Grouping the open disruptions by the first letter of their ATC code &mdash; the anatomical main
-  group &mdash; shows <em>which kinds</em> of medicines run short. It is rarely the everyday
-  painkillers: cancer therapies and anti-infectives usually dominate the list, the categories with
-  the most fragile supply chains.
-</p>
+<p>{{ tHTML "page.health.groupingTheOpenDisruptionsBy" "Grouping the open disruptions by the first letter of their ATC code — the anatomical main group — shows <em>which kinds</em> of medicines run short. It is rarely the everyday painkillers: cancer therapies and anti-infectives usually dominate the list, the categories with the most fragile supply chains." }}</p>
 
 <sparql-async id="healthAtcGroups" class="d-none">
   SELECT ?group ?label (COUNT(?obs) AS ?disruptions) WHERE {
@@ -293,7 +246,7 @@
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "healthAtcGroups"
-      "title" "Open disruptions by ATC group"
+      "title" (t "card.openDisruptionsByATCGroup" "Open disruptions by ATC group")
       "icon" "layers"
       "collapsed" true) }}
 </div>
@@ -302,41 +255,34 @@
 <!-- Datasets                                                       -->
 <!-- ============================================================= -->
 
-<h2 class="mt-5">The datasets</h2>
+<h2 class="mt-5">{{ t "page.health.theDatasets" "The datasets" }}</h2>
 
 <div class="card mb-3">
   <div class="card-body">
     <div class="datagrid">
       <div class="datagrid-item">
-        <div class="datagrid-title">Dataset</div>
-        <div class="datagrid-content">
-          <a href="/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Faffected">COVID-19 epidemiology &amp; vaccination</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.health.dataset" "Dataset" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.health.covid19EpidemiologyVaccination" "<a href=\"/resource?iri=https%3A%2F%2Fhealth.ld.admin.ch%2Ffoph%2Fcovid19%2Faffected\">COVID-19 epidemiology & vaccination</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Publisher</div>
-        <div class="datagrid-content">FOPH &mdash; Federal Office of Public Health</div>
+        <div class="datagrid-title">{{ t "page.health.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.health.fophFederalOfficeOfPublic" "FOPH — Federal Office of Public Health" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-title">{{ t "page.health.namedGraph" "Named graph" }}</div>
         <div class="datagrid-content"><code>https://lindas.admin.ch/foph/covid19</code></div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Size</div>
-        <div class="datagrid-content">~4.3 million triples &mdash; 3 cubes</div>
+        <div class="datagrid-title">{{ t "page.health.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.health.43MillionTriples3" "~4.3 million triples — 3 cubes" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Contents</div>
-        <div class="datagrid-content">
-          Daily cases, deaths and hospitalizations per canton; vaccine doses by region and vaccine;
-          vaccinated population by status (24 Feb 2020 &ndash; 1 Jan 2023)
-        </div>
+        <div class="datagrid-title">{{ t "page.health.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.health.dailyCasesDeathsAndHospitalizations" "Daily cases, deaths and hospitalizations per canton; vaccine doses by region and vaccine; vaccinated population by status (24 Feb 2020 – 1 Jan 2023)" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Landing page</div>
-        <div class="datagrid-content">
-          <a href="https://www.bag.admin.ch" target="_blank" rel="noopener">bag.admin.ch</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.health.landingPage" "Landing page" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.health.bagAdminCh" "<a href=\"https://www.bag.admin.ch\" target=\"_blank\" rel=\"noopener\">bag.admin.ch</a>" }}</div>
       </div>
     </div>
   </div>
@@ -346,38 +292,31 @@
   <div class="card-body">
     <div class="datagrid">
       <div class="datagrid-item">
-        <div class="datagrid-title">Dataset</div>
-        <div class="datagrid-content">
-          <a href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffones%2Fsupply-disruptions">Medicine supply disruptions</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.health.dataset" "Dataset" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.health.medicineSupplyDisruptions" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffones%2Fsupply-disruptions\">Medicine supply disruptions</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Publisher</div>
-        <div class="datagrid-content">FONES &mdash; Federal Office for National Economic Supply</div>
+        <div class="datagrid-title">{{ t "page.health.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.health.fonesFederalOfficeForNational" "FONES — Federal Office for National Economic Supply" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Named graph</div>
+        <div class="datagrid-title">{{ t "page.health.namedGraph" "Named graph" }}</div>
         <div class="datagrid-content"><code>https://lindas.admin.ch/fones/supply-disruptions</code></div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Size</div>
-        <div class="datagrid-content">~52,000 triples &mdash; updated daily</div>
+        <div class="datagrid-title">{{ t "page.health.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.health.52000TriplesUpdatedDaily" "~52,000 triples — updated daily" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Contents</div>
-        <div class="datagrid-content">
-          Daily snapshots of open disruptions per medicine (ATC code, GTIN, start and expected end)
-          plus a daily open/closed aggregate
-        </div>
+        <div class="datagrid-title">{{ t "page.health.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.health.dailySnapshotsOfOpenDisruptions" "Daily snapshots of open disruptions per medicine (ATC code, GTIN, start and expected end) plus a daily open/closed aggregate" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">Landing page</div>
-        <div class="datagrid-content">
-          <a href="https://www.bwl.admin.ch" target="_blank" rel="noopener">bwl.admin.ch</a>
-        </div>
+        <div class="datagrid-title">{{ t "page.health.landingPage" "Landing page" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.health.bwlAdminCh" "<a href=\"https://www.bwl.admin.ch\" target=\"_blank\" rel=\"noopener\">bwl.admin.ch</a>" }}</div>
       </div>
       <div class="datagrid-item">
-        <div class="datagrid-title">SPARQL endpoint</div>
+        <div class="datagrid-title">{{ t "page.health.sparqlEndpoint" "SPARQL endpoint" }}</div>
         <div class="datagrid-content">
           <a href="https://lindas.admin.ch/query" target="_blank" rel="noopener">lindas.admin.ch/query</a>
         </div>

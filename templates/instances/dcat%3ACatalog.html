@@ -28,7 +28,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.datasets
             "id" "datasets"
-            "title" "Datasets"
+            "title" (t "card.datasets" "Datasets")
             "icon" "database"
             "iconVar" "type")
         }}
@@ -56,7 +56,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.records
             "id" "records"
-            "title" "Catalog Records"
+            "title" (t "card.catalogRecords" "Catalog Records")
             "icon" "file-description"
             "iconVar" "type")
         }}

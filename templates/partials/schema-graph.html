@@ -51,7 +51,7 @@
         <span class="text-secondary small" id="{{ $id }}-status"></span>
       </div>
       <div class="btn-actions">
-        <a class="btn-action" id="{{ $id }}-maximize" title="Fullscreen" style="cursor: pointer;">
+        <a class="btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
           <i data-lucide="maximize"></i>
         </a>
       </div>
@@ -63,7 +63,7 @@
            data-schema-graph
            data-schema-graph-id="{{ $id }}"
            {{ if $lazy }}data-schema-graph-lazy="true"{{ end }}></div>
-      <button type="button" class="btn btn-icon graph-exit-fullscreen" id="{{ $id }}-exit" title="Exit fullscreen">
+      <button type="button" class="btn btn-icon graph-exit-fullscreen" id="{{ $id }}-exit" title="{{ t "graph.exitFullscreen" "Exit fullscreen" }}">
         <i data-lucide="minimize"></i>
       </button>
     </div>

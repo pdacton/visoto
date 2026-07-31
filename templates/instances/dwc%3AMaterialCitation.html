@@ -4,8 +4,8 @@
      cite it, and its taxonomic / collection relationships. -->
 
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item"><a href="/plazi.html">Plazi</a></li>
-  <li class="breadcrumb-item"><a href="/resource?iri=dwc:MaterialCitation">Material Citation</a></li>
+  <li class="breadcrumb-item">{{ tHTML "type.materialCitation.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
+  <li class="breadcrumb-item">{{ t "type.materialCitation.materialCitation" "Material Citation" }}</li>
 {{ end }}
 
 {{ template "pageHeader" . }}
@@ -29,7 +29,7 @@
         {{ template "sparqlTable" (dict
             "result" .QueryResults.citingTreatments
             "id" "citingTreatments"
-            "title" "Cited by Treatments"
+            "title" (t "card.citedByTreatments" "Cited by Treatments")
             "icon" "file-description"
             "iconVar" "type")
         }}

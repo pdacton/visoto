@@ -49,7 +49,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.accessLinks
           "id" "accessLinks"
-          "title" "Access & Download URLs"
+          "title" (t "card.accessDownloadURLs" "Access & Download URLs")
           "icon" "link")
         }}
       </div>
@@ -69,7 +69,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.parentDataset
           "id" "parentDataset"
-          "title" "Part of Dataset"
+          "title" (t "card.partOfDataset" "Part of Dataset")
           "icon" "database")
         }}
       </div>
@@ -96,7 +96,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.formatInfo
           "id" "formatInfo"
-          "title" "Format & Media Type"
+          "title" (t "card.formatMediaType" "Format & Media Type")
           "icon" "file")
         }}
       </div>
@@ -128,7 +128,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.licenseInfo
           "id" "licenseInfo"
-          "title" "License & Rights"
+          "title" (t "card.licenseRights" "License & Rights")
           "icon" "lock")
         }}
       </div>
@@ -146,7 +146,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.accessService
           "id" "accessService"
-          "title" "Access Service"
+          "title" (t "card.accessService" "Access Service")
           "icon" "server")
         }}
       </div>
@@ -169,7 +169,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.incoming
           "id" "incoming"
-          "title" "Incoming Relationships"
+          "title" (t "card.incomingRelationships" "Incoming Relationships")
           "icon" "shrink"
           "collapsed" true
           "iconVar" "type")
@@ -191,7 +191,7 @@
         {{ template "sparqlTable" (dict
           "result" .QueryResults.outgoing
           "id" "outgoing"
-          "title" "Outgoing Relationships"
+          "title" (t "card.outgoingRelationships" "Outgoing Relationships")
           "icon" "expand"
           "collapsed" true
           "iconVar" "type")

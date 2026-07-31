@@ -228,8 +228,85 @@ SPARQL queries are embedded in template files using `<sparql-query>` custom elem
 | `firstValue` | Returns the first `.Value` for a given variable from a `QueryResult`. Returns `""` if no results. | `{{ firstValue .QueryResults.title "title" }}` |
 | `lastPathSegment` | Returns the fragment after `#`, or the last `/`-separated segment of an IRI. | `{{ lastPathSegment .ResourceIRI }}` |
 | `groupByValue` | Deduplicates bindings by `value`, merging `property` labels. Used internally by the `literals` component. | `{{ groupByValue $bindings }}` |
+| `t` | Translated UI string for the page's language. See [UI strings](#ui-strings). | `{{ t "table.download" }}` |
+| `tHTML` | Same as `t`, but the message may contain inline markup (a link inside a sentence). | `{{ tHTML "chat.ownAi" }}` |
+| `tn` | Plural form of a message, with `{{.Count}}` pre-seeded. | `{{ tn "table.rowCount" $n }}` |
+| `siteLang` | The active language code (`""` for the no-language choice). | `<html lang="{{ siteLang }}">` |
+| `siteLanguages` | The language picker's options (`Code`, `Label`, `Selected`), from `[[application.languages]]` — not from a catalog. | `{{ range siteLanguages }}…{{ end }}` |
+| `jsStrings` | The `js.*` catalog subset, for the JSON island `static/js` reads. | `{{ toJSON jsStrings }}` |
 
 All content rendered by `render` and `firstValue` is already HTML-safe — no need to add `| safeHTML`.
+
+---
+
+## UI strings {#ui-strings}
+
+**Never write user-visible English directly in a template.** Every label, heading,
+button, placeholder, `alt` and `title` goes through the message catalog:
+
+```html
+<h3 class="card-title">{{ t "card.attributes" }}</h3>
+<input placeholder="{{ t "topbar.search" }}">
+{{ template "sparqlTable" (dict "result" $r "title" (t "card.instances")) }}
+```
+
+`locales/en.toml` is the source catalog — it defines which keys exist. The other
+`locales/<code>.toml` files translate it, key by key, and anything they omit
+falls back to the English text, so a locale that is behind renders English for
+the gaps rather than blanks or raw keys.
+
+### Adding a string
+
+1. Add the key to `locales/en.toml` with the English text. Keys are **quoted and
+   flat** (`"card.attributes" = "Attributes"`) — an unquoted dotted key would be
+   read by TOML as a nested table.
+2. Reference it with `{{ t "key" }}`.
+3. Optionally translate it in `de/fr/it/rm.toml`. Skipping this is fine.
+
+Namespaces in use: `topbar.*`, `nav.*`, `card.*` (table/card headings), `table.*`,
+`view.*`, `header.*`, `footer.*`, `chat.*`, `upload.*`, `graphs.*`, `query.*`,
+`page.<name>.*` (copy belonging to one page), `type.*` (copy on a class/instance
+template) and `js.*`.
+
+`go test ./internal/i18n/` fails on a key used but not defined, a key defined but
+never used, and a translation defining a key the base catalog does not have — so
+a rename that misses one side is caught before it reaches the UI.
+
+### Strings containing markup
+
+Use `tHTML` when the message deliberately holds inline markup, so a translator
+can move the link inside the sentence instead of reassembling fragments:
+
+```toml
+"chat.ownAi" = "Prefer your own AI? <a href=\"/connect.html\">Connect Visoto as an MCP server</a>"
+```
+
+Reserve it for that case: catalog content is trusted and not escaped, so routing
+ordinary strings through `tHTML` would quietly disable escaping. Note also that
+`<i data-lucide=...>` icons stay in the template, never in the message.
+
+### Strings used by JavaScript
+
+Keys under `js.` are serialized into a JSON island in `<head>` and read through
+`window.vsT` (see `static/js/i18n.js`):
+
+```js
+btn.textContent = vsT('js.table.searchAll', 'Search all');
+msg = vsTf('js.table.showingOf', 'Showing {n} of {total}', { n: a, total: b });
+```
+
+Always pass the English text as the second argument: it keeps the call site
+readable and means a missing key degrades to correct English. `vsTf` substitutes
+`{named}` placeholders, which a translation is free to reorder.
+
+### How it works
+
+Template functions bind at parse time, so `t` has to know its language before
+anything renders. `internal/templates` parses each page's file set **once**, then
+clones it per configured language and overrides only the i18n functions on each
+clone (`internal/i18n.Catalogs.FuncMap`). Handlers pick the variant by name via
+`templates.Name(lang, "pages/home.html")` — which is why every `c.HTML` call goes
+through `renderName`. Adding a language costs clones, not parses.
 
 ---
 

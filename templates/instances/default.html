@@ -25,7 +25,7 @@
         {{ template "sparqlAsyncTable" (dict
               "queryId" "outgoing"
               "iri" .ResourceIRI
-              "title" "Outgoing Relationships"
+              "title" (t "card.outgoingRelationships" "Outgoing Relationships")
               "icon" "expand"
               "iconVar" "type")
         }}
@@ -54,7 +54,7 @@
         {{ template "sparqlAsyncTable" (dict
             "queryId" "incoming"
             "iri" .ResourceIRI
-            "title" "Incoming Relationships"
+            "title" (t "card.incomingRelationships" "Incoming Relationships")
             "icon" "shrink"
             "iconVar" "type")
         }}

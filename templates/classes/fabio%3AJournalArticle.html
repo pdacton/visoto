@@ -11,9 +11,9 @@
   {{ end }}
 {{ end }}
 
-{{ define "pageSubtitle" }}Journal articles cited as the source of Plazi taxonomic treatments.{{ end }}
+{{ define "pageSubtitle" }}{{ t "type.journalArticle.subtitle" "Journal articles cited as the source of Plazi taxonomic treatments." }}{{ end }}
 
-{{ define "pageIcon" }}<img src="/static/img/resource/JournalArticle.svg" alt="Journal Article" width="48" height="48">{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/JournalArticle.svg" alt="{{ t "type.journalArticle.journalArticle" "Journal Article" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/resource/JournalArticle.svg{{ end }}
 
 {{ define "pageContent" }}
@@ -35,7 +35,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "journalArticleInstances"
         "iri" .ResourceIRI
-        "title" "Journal Articles"
+        "title" (t "card.journalArticles" "Journal Articles")
         "icon" "article"
         "iconVar" "JournalArticle"
         "badgeVar" "journal")

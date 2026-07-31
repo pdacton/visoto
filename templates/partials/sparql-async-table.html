@@ -14,7 +14,7 @@
     <sparql-async id="myTable">SELECT ... WHERE { ... }</sparql-async>
     {{ template "sparqlAsyncTable" (dict
           "queryId" "myTable"
-          "title"   "My Table"
+          "title"   (t "card.myTable" "My Table")
           "icon"    "database"
           "iconVar" "type"
           "badgeVar" "kind") }}
@@ -83,7 +83,7 @@
                   control="select" label="Rank" class="d-none"></sparql-facet>
     {{ template "sparqlAsyncTable" (dict
           "queryId" "taxa" "facetFor" "taxa"
-          "iri" .ResourceIRI "title" "Taxa" "icon" "search") }}
+          "iri" .ResourceIRI "title" (t "card.taxa" "Taxa") "icon" "search") }}
 -->
 
 {{ define "sparqlAsyncTable" }}
