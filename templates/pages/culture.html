@@ -1,0 +1,473 @@
+{{ define "metaTitle" }}{{ t "page.culture.metaTitle" "Culture & Archives" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.culture.title" "Culture & Archives" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.culture.subtitle" "The memory of the Swiss state — nine million archival descriptions, a register of every collecting institution, and a school survey from 1799." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Culture.svg" alt="{{ t "page.culture.culture" "Culture" }}" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Culture.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>{{ t "page.culture.aboutThisTheme" "About this theme" }}</h2>
+
+<p>{{ tHTML "page.culture.intro" "This is the largest theme in LINDAS by a wide margin, and the least like the others. Where energy or agriculture publish <em>measurements</em>, the <strong>Swiss Federal Archives</strong> publish <em>descriptions</em>: an archival finding aid is a nested account of what exists, where it sits in the holdings, and what it is about. The <strong>Swiss National Library</strong> adds the register of institutions that hold such material across the country." }}</p>
+
+<p>{{ tHTML "page.culture.ricIntro" "The archive is modelled in <strong>Records in Contexts</strong> (RiC-O), the International Council on Archives' ontology — not in the cube vocabulary used almost everywhere else on the platform. That choice is the single most important thing to know before querying it. RiC is built for description rather than aggregation: its central idea is that a record is only meaningful through its <em>context</em>, so the relationships (what includes what, who held it, what activity produced it) carry as much of the meaning as the titles do." }}</p>
+
+<!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
+     reloads, so no figure here is repeated as a hard number in the prose. -->
+<sparql-async id="cultureRecordSets" class="d-none">
+  SELECT (COUNT(?rs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+      ?rs a &lt;https://www.ica.org/standards/RiC/ontology#RecordSet&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="cultureRecords" class="d-none">
+  SELECT (COUNT(?r) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+      ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="cultureIsil" class="d-none">
+  SELECT (COUNT(?i) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/nl/isil&gt; {
+      ?i a &lt;https://schema.ld.admin.ch/Isil&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="cultureStapferSchools" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfa/stapfer_enquete&gt; {
+      ?obs a &lt;http://purl.org/linked-data/cube#Observation&gt; .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "cultureRecordSets"
+      "title" (t "card.recordSets" "Record Sets")
+      "href" "/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23RecordSet"
+      "icon" "/static/img/resource/RecordSet.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "cultureRecords"
+      "title" (t "card.records" "Records")
+      "href" "/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Record"
+      "icon" "/static/img/resource/Record.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "cultureIsil"
+      "title" (t "card.isilInstitutions" "ISIL Institutions")
+      "href" "/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FIsil"
+      "icon" "/static/img/resource/Isil.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "cultureStapferSchools"
+      "title" (t "card.stapferSchools" "Schools Surveyed, 1799")
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsfa%2Fstapfer_enquete"
+      "icon" "/static/img/resource/Book.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- The shape of an archive                                        -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.culture.shapeOfAnArchive" "The shape of an archive" }}</h2>
+
+<p>{{ tHTML "page.culture.hierarchyIntro" "Archival description is strictly hierarchical, and the levels have names archivists have used for a century. Everything nests downward from the archive itself through main departments and fonds to the individual dossier, and each level is a <code>RecordSet</code> carrying a <code>hasRecordSetType</code> that says which rung it occupies. Almost the entire volume sits at the bottom: dossiers outnumber every other level combined by roughly ten to one." }}</p>
+
+<sparql-async id="cultureRecordSetTypes" class="d-none">
+  # ?type stays an IRI so the backend resolves and links it.
+  #
+  # SAMPLE on the name is REQUIRED, not cosmetic: ric:name is untagged and repeated
+  # once per language (Dossier / Dossier / Dossier / Dossier, Serie / Série / Serie),
+  # so a plain ?typeName in the SELECT multiplies every row three or four times.
+  # There is no lang() filter available to fix it — the literals carry no tags at all.
+  SELECT ?type ?level ?recordSets WHERE {
+    {
+      SELECT ?type (COUNT(?rs) AS ?recordSets) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?rs a &lt;https://www.ica.org/standards/RiC/ontology#RecordSet&gt; ;
+              &lt;https://www.ica.org/standards/RiC/ontology#hasRecordSetType&gt; ?type .
+        }
+      } GROUP BY ?type
+    }
+    {
+      SELECT ?type (SAMPLE(?n) AS ?level) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?type &lt;https://www.ica.org/standards/RiC/ontology#name&gt; ?n .
+        }
+      } GROUP BY ?type
+    }
+  } ORDER BY DESC(?recordSets)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "cultureRecordSetTypes"
+      "title" (t "card.descriptionLevels" "Levels of description")
+      "icon" "list-tree"
+      "iconVar" "type") }}
+</div>
+
+<p>{{ tHTML "page.culture.divisionsIntro" "At the very top the archive divides into eight <strong>main departments</strong>, and they are periods of Swiss history rather than subjects. The <em>Archiv der Helvetik</em> covers the short-lived Helvetic Republic of 1798–1803, followed by the Mediation and the Tagsatzung; the bulk of everything sits under the <em>Archiv des Schweizerischen Bundesstaates</em>, the federal state from 1848 onward. Deposits and donations from private hands form their own division alongside them." }}</p>
+
+<sparql-async id="cultureTopDivisions" class="d-none">
+  # ?division stays an IRI so the table links straight into the finding aid.
+  # ?children counts only DIRECT members (one hop of isOrWasIncludedIn), not the
+  # full subtree — a transitive count over 4.8M record sets would not return.
+  SELECT ?division ?title ?children WHERE {
+    {
+      SELECT ?division (COUNT(?child) AS ?children) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?division &lt;https://www.ica.org/standards/RiC/ontology#hasRecordSetType&gt;
+                    &lt;https://culture.ld.admin.ch/ais/vocabularies/recordSetTypes/10001&gt; .
+          ?child &lt;https://www.ica.org/standards/RiC/ontology#isOrWasIncludedIn&gt; ?division .
+        }
+      } GROUP BY ?division
+    }
+    GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+      ?division &lt;https://www.ica.org/standards/RiC/ontology#title&gt; ?title .
+    }
+  } ORDER BY DESC(?children)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "cultureTopDivisions"
+      "title" (t "card.mainDepartments" "Main departments of the archive")
+      "icon" "library"
+      "iconVar" "division") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.culture.divisionsCaveat" "The child counts above are <em>direct</em> members only — the fonds sitting immediately beneath each department, not the millions of dossiers below those. A department showing a single child is not small; it is simply described through one intermediate level before it fans out." }}</p>
+
+<!-- ============================================================= -->
+<!-- What the records describe                                      -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.culture.whatRecordsDescribe" "What the records describe" }}</h2>
+
+<p>{{ tHTML "page.culture.recordsIntro" "Beneath the record sets sit the records themselves, and they are richer than a catalogue entry. Alongside a title and a reference code, a record can carry a <strong>scope and content</strong> note, an author, a publisher, a named cameraman, a physical format and a subject descriptor. That mix is a clue to what a large part of this archive actually holds: not only paper files but <strong>broadcast material</strong> — television and radio items deposited by the public broadcaster, with running times, colour information and tape formats recorded in the <code>format</code> field." }}</p>
+
+<p>{{ tHTML "page.culture.accessIntro" "Every record also carries an <strong>access rule</strong> via <code>isAssociatedWithRule</code>. Archival access in Switzerland is governed by protective periods — normally thirty years, longer for files touching personal data — so this property is what separates a description you can read from a document you can actually request. The description is public even when the document is not yet." }}</p>
+
+<sparql-async id="cultureRecordFormats" class="d-none">
+  # Which descriptive fields are actually populated across the 263k records.
+  # Counting property usage rather than values: this is a profile of how completely
+  # the archive is described, which is the useful thing to know before querying it.
+  #
+  # Bounded deliberately to a hand-picked property list — an unrestricted
+  # ?record ?p ?o GROUP BY ?p over 263k records with ~20 properties each is a
+  # multi-million-row scan and times out.
+  SELECT ?field ?records WHERE {
+    {
+      SELECT ("Scope and content" AS ?field) (COUNT(?r) AS ?records) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; ;
+             &lt;https://www.ica.org/standards/RiC/ontology#scopeAndContent&gt; ?v .
+        }
+      }
+    } UNION {
+      SELECT ("Physical form" AS ?field) (COUNT(?r) AS ?records) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; ;
+             &lt;https://schema.ld.admin.ch/form&gt; ?v .
+        }
+      }
+    } UNION {
+      SELECT ("Technical format" AS ?field) (COUNT(?r) AS ?records) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; ;
+             &lt;https://schema.ld.admin.ch/format&gt; ?v .
+        }
+      }
+    } UNION {
+      SELECT ("Subject descriptor" AS ?field) (COUNT(?r) AS ?records) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; ;
+             &lt;https://schema.ld.admin.ch/thema&gt; ?v .
+        }
+      }
+    } UNION {
+      SELECT ("Author" AS ?field) (COUNT(?r) AS ?records) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; ;
+             &lt;https://schema.ld.admin.ch/author&gt; ?v .
+        }
+      }
+    } UNION {
+      SELECT ("Publisher" AS ?field) (COUNT(?r) AS ?records) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; ;
+             &lt;https://schema.ld.admin.ch/publisher&gt; ?v .
+        }
+      }
+    } UNION {
+      SELECT ("Geographic / temporal coverage" AS ?field) (COUNT(?r) AS ?records) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; ;
+             &lt;https://schema.ld.admin.ch/coverture&gt; ?v .
+        }
+      }
+    } UNION {
+      SELECT ("Camera / crew credit" AS ?field) (COUNT(?r) AS ?records) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+          ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; ;
+             &lt;https://schema.ld.admin.ch/involve&gt; ?v .
+        }
+      }
+    }
+  } ORDER BY DESC(?records)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "cultureRecordFormats"
+      "title" (t "card.descriptiveCompleteness" "How completely records are described")
+      "icon" "file-text") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Who holds what                                                 -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.culture.whoHoldsWhat" "Who holds what" }}</h2>
+
+<p>{{ tHTML "page.culture.isilIntro" "An <strong>ISIL</strong> is the international standard identifier for a library or archive — <code>CH-000018-2</code> is the Federal Archives itself — and the National Library maintains the Swiss register of them. It reaches well beyond national institutions: municipal libraries, school mediatheques, parish archives, corporate collections and theatre archives all carry one. For many entries the register records a founding year, the size of the holdings, a prose administrative history and a description of what the collection contains." }}</p>
+
+<p>{{ tHTML "page.culture.isilJoin" "The identifier is what makes the two archival graphs join. Every record in the Federal Archives points through <code>hasOrHadHolder</code> at an ISIL resource, so a description and the institution holding it are linked by a shared identifier rather than a name string — the same pattern the energy theme uses for company UIDs." }}</p>
+
+<sparql-async id="cultureIsilInstitutions" class="d-none">
+  # ?isil stays an IRI so the backend resolves the institution and links it.
+  #
+  # libraryMaterials is a plain literal holding count, present on only a subset of
+  # the register — the join is deliberately NOT optional here so the table shows the
+  # institutions that actually report their size, sorted by it.
+  SELECT ?isil ?holdings ?foundedIn ?code WHERE {
+    GRAPH &lt;https://lindas.admin.ch/nl/isil&gt; {
+      ?isil a &lt;https://schema.ld.admin.ch/Isil&gt; ;
+            &lt;https://schema.ld.admin.ch/libraryMaterials&gt; ?holdings ;
+            schema:termCode ?code .
+      OPTIONAL { ?isil schema:validFrom ?foundedIn }
+    }
+  } ORDER BY DESC(xsd:integer(?holdings))
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "cultureIsilInstitutions"
+      "title" (t "card.collectingInstitutions" "Collecting institutions by reported holdings")
+      "icon" "building-2"
+      "iconVar" "isil") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.culture.isilCaveat" "The holdings figures are self-reported and not on a common basis — some institutions count volumes, others items or linear metres — so treat the ordering as indicative rather than a ranking. Only part of the register reports a figure at all; the institutions without one are missing from this table, not empty." }}</p>
+
+<!-- ============================================================= -->
+<!-- The Stapfer survey                                             -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.culture.stapfer" "A school survey from 1799" }}</h2>
+
+<p>{{ tHTML "page.culture.stapferIntro" "The <strong>Stapfer Enquête</strong> is the oldest dataset on the platform and the most vivid. In 1799 Minister of Arts and Sciences Philipp Albert Stapfer sent a questionnaire to every schoolmaster in the Helvetic Republic, asking who taught, who attended, what was taught and on what the school lived. Thousands of replies survive, and they have been transcribed into a queryable dataset — the closest thing Switzerland has to a census of its schools at the moment the modern state began." }}</p>
+
+<p>{{ tHTML "page.culture.stapferSeasons" "One detail in the structure tells you almost everything about rural life in 1799: attendance is recorded <strong>separately for winter and summer</strong>, and separately for boys and girls. Summer figures are routinely a fraction of winter ones, because in summer children worked the fields. The seasonal gap in this data is a measurement of agricultural labour, not of schooling." }}</p>
+
+<sparql-async id="cultureStapferAttendance" class="d-none">
+  # This graph uses the OLD W3C data cube vocabulary (qb:Observation from
+  # purl.org/linked-data/cube), NOT cube.link like the rest of the platform —
+  # a cube:Observation pattern here matches nothing at all.
+  #
+  # The school NAME lives on the linked Schule resource, not on the observation,
+  # so the extra hop through ?school is required to get a readable label.
+  # Summer columns are OPTIONAL: many schools reported only a winter term.
+  SELECT ?schoolName ?boysWinter ?girlsWinter ?boysSummer ?girlsSummer ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfa/stapfer_enquete&gt; {
+      ?observation a &lt;http://purl.org/linked-data/cube#Observation&gt; ;
+           &lt;https://education.ld.admin.ch/stapfer_enquete/schule&gt; ?school ;
+           &lt;https://education.ld.admin.ch/stapfer_enquete/schueler-anzahl-maennlich-winter&gt; ?boysWinter ;
+           &lt;https://education.ld.admin.ch/stapfer_enquete/schueler-anzahl-weiblich-winter&gt; ?girlsWinter .
+      ?school &lt;https://education.ld.admin.ch/stapfer_enquete/schule-name&gt; ?schoolName .
+      OPTIONAL { ?observation &lt;https://education.ld.admin.ch/stapfer_enquete/schueler-anzahl-maennlich-sommer&gt; ?boysSummer }
+      OPTIONAL { ?observation &lt;https://education.ld.admin.ch/stapfer_enquete/schueler-anzahl-weiblich-sommer&gt; ?girlsSummer }
+    }
+  } ORDER BY ?schoolName
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "cultureStapferAttendance"
+      "title" (t "card.stapferAttendance" "Pupils per school, winter and summer 1799")
+      "icon" "graduation-cap") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.culture.stapferCaveat" "These are transcriptions of a 226-year-old manuscript source, and they read like it. A handful of entries carry implausible figures — one school reports over a thousand boys against ninety-five girls — which reflect the original return or its transcription rather than the village. Sort by any column and the outliers surface immediately; treat them as documents, not measurements." }}</p>
+
+<!-- ============================================================= -->
+<!-- State accounts                                                 -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.culture.stateAccounts" "The federal budget since 1850" }}</h2>
+
+<p>{{ tHTML "page.culture.stateAccountsIntro" "The Federal Archives also publish something that is not a finding aid at all: the <strong>state accounts</strong>, the federal budget and closing accounts as a continuous cube reaching back to <strong>1850</strong> — two years after the founding of the federal state. The same figures are cut four ways, one cube family per view: by <em>domain</em>, by <em>office</em>, by <em>function</em> and by <em>category</em>." }}</p>
+
+<p>{{ tHTML "page.culture.budgetVsAccounts" "Each row is tagged with a <strong>report type</strong>, and the distinction matters more than it first appears: <code>Voranschlag</code> is the budget as planned, <code>Rechnung</code> the accounts as they closed. Both are present for the same year and the same line, so the gap between what the Confederation intended to spend and what it actually spent is directly queryable across 175 years. The earliest years are recognisably a different state — in 1850 the largest items are the postal administration, customs duties and the military department." }}</p>
+
+<sparql-async id="cultureStateAccounts" class="d-none">
+  # Rooted in ONE cube version on purpose: this family has 11 versioned cubes that
+  # share dimension IRIs, so an unrooted pattern would sum the same 11,506 rows
+  # eleven times over. Always take the highest-numbered cube unless comparing releases.
+  #
+  # Two traps here:
+  #  1. time:year is typed xsd:gYear — a bare "1850" string matches nothing.
+  #  2. domain names are untagged and repeated per language, so the lang(?n)="" test
+  #     keeps a single row; there are no language tags to filter on properly.
+  # RT2 = Rechnung / Comptes (accounts as closed), as opposed to RT1 (budget).
+  SELECT ?year ?domainName ?amountCHF ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfa/cube&gt; {
+      &lt;https://culture.ld.admin.ch/sfa/StateAccounts_Domain/12&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;http://www.w3.org/2006/time#year&gt; ?year ;
+           &lt;http://schema.org/amount&gt; ?amountCHF ;
+           &lt;https://culture.ld.admin.ch/sfa/StateAccounts_Domain/domain&gt; ?domain ;
+           &lt;https://culture.ld.admin.ch/sfa/StateAccounts_Domain/reporttype&gt;
+             &lt;https://culture.ld.admin.ch/sfa/StateAccounts_Domain/12/ReportType/RT2&gt; .
+      ?domain schema:name ?domainName .
+      FILTER (?year &gt;= "1850"^^xsd:gYear &amp;&amp; ?year &lt;= "1875"^^xsd:gYear)
+      FILTER (xsd:decimal(?amountCHF) &gt; 0)
+      FILTER (lang(?domainName) = "")
+    }
+  } ORDER BY ?year DESC(xsd:decimal(?amountCHF))
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "cultureStateAccounts"
+      "title" (t "card.stateAccounts" "Federal accounts by domain, 1850–1875 (CHF)")
+      "icon" "landmark"
+      "collapsed" true) }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.culture.theDatasets" "The datasets" }}</h2>
+
+<p>{{ tHTML "page.culture.datasetsIntro" "Four named graphs, published under the <code>https://culture.ld.admin.ch/</code> namespace — with one exception noted below. Between them they make this the largest theme on the platform by triple count." }}</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.aisGroup" "<strong>Archival Information System</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.sfaPublisher" "Swiss Federal Archives" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.aisGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsfa%2Fais\">sfa/ais</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.aisSize" "~4.8 million record sets, ~263,000 records, ~5.1 million date ranges — the largest graph in LINDAS" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.model" "Model" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.aisModel" "<strong>RiC-O</strong> (Records in Contexts), the ICA archival ontology — <em>not</em> the cube vocabulary" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.coverage" "Coverage" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.aisCoverage" "1798 to the present, in eight main departments by historical period" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.aisCaveat" "Vocabulary labels use <code>ric:name</code> with <strong>no language tags</strong>, repeated once per language — always <code>SAMPLE</code> them or every row multiplies" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.isilGroup" "<strong>ISIL register</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.nlPublisher" "Swiss National Library" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.isilGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fnl%2Fisil\">nl/isil</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.isilSize" "~2,120 institutions, each with a postal address and an organization resource" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.isilContents" "Libraries, archives, mediatheques and private collections — with founding year, holdings size, administrative history and a link to the institution's own catalogue" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.stapferGroup" "<strong>Stapfer Enquête (1799)</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.sfaPublisher" "Swiss Federal Archives" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.stapferGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsfa%2Fstapfer_enquete\">sfa/stapfer_enquete</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.stapferSize" "~3,230 school returns, with pupil counts by sex and season, school type, confession and place" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.stapferCaveatCard" "Uses the <strong>old W3C cube vocabulary</strong> (<code>qb:Observation</code>) and lives under the <code>education.ld.admin.ch</code> namespace, not <code>culture</code>" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.stateAccountsGroup" "<strong>State accounts</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.sfaPublisher" "Swiss Federal Archives" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.sfaCubeGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsfa%2Fcube\">sfa/cube</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.sfaCubeSize" "41 cubes in 5 families — but only ~4 distinct datasets, the rest are versions" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.coverage" "Coverage" }}</div>
+        <div class="datagrid-content">{{ t "page.culture.sfaCubeCoverage" "1850 onward, budget and closing accounts, cut by domain / office / function / category" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.culture.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.culture.sfaCubeCaveat" "Heavily versioned — <code>StateAccounts_Domain</code> alone has 11 cubes with identical row counts. Root every query in one cube IRI or you will count the same figures many times over" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-secondary">{{ tHTML "page.culture.crossLinks" "The theme links outward as well as inward: records name their holding institution through the <a href=\"/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FIsil\">ISIL</a> register, state-account observations name the publishing office through <code>cube:observedBy</code> pointing at <code>ld.admin.ch/office</code> resources, and the RiC-O ontology itself is published separately on the platform as <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fegad%2Fric-o\">egad/ric-o</a> — so the vocabulary describing the archive can be browsed alongside the archive it describes." }}</p>
+
+{{ end }}

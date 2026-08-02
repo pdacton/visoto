@@ -1,0 +1,398 @@
+{{ define "metaTitle" }}{{ t "page.government.metaTitle" "Government & Administration" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.government.title" "Government & Administration" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.government.subtitle" "Who works for the Confederation, in which office, under which name — and the four-language vocabulary the state uses to say it." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Administration.svg" alt="{{ t "page.government.administration" "Administration" }}" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Administration.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>{{ t "page.government.aboutThisTheme" "About this theme" }}</h2>
+
+<p>{{ tHTML "page.government.intro" "All three graphs here come from the <strong>Federal Chancellery</strong>, and together they answer a question the other themes take for granted: <em>who is the state, exactly?</em> Every other page on this site links to an office — a publishing authority, a source of a statistic. This is where those offices are actually defined." }}</p>
+
+<p>{{ tHTML "page.government.threeAnswers" "They answer it three different ways. The <strong>Staatskalender</strong> is the directory as it stands today: every unit, its address, and the people holding roles in it. <strong>Organisation data</strong> is the same administration seen through time, with every renaming and reorganisation preserved as a dated version. <strong>TERMDAT</strong> is the vocabulary itself — the terminology the administration uses, in German, French, Italian and English, so that the same legal concept can be named correctly in all four." }}</p>
+
+<!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
+     reloads, so no figure here is repeated as a hard number in the prose. -->
+<sparql-async id="govOrganizations" class="d-none">
+  SELECT (COUNT(?o) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+      ?o a schema:GovernmentOrganization .
+    }
+  }
+</sparql-async>
+<sparql-async id="govPeople" class="d-none">
+  SELECT (COUNT(?p) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+      ?p a schema:Person .
+    }
+  }
+</sparql-async>
+<sparql-async id="govTerms" class="d-none">
+  SELECT (COUNT(?t) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/termdat&gt; {
+      ?t a &lt;https://schema.ld.admin.ch/Term&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="govOrgVersions" class="d-none">
+  SELECT (COUNT(?v) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/organization&gt; {
+      ?v a &lt;https://version.link/Version&gt; .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "govOrganizations"
+      "title" (t "card.governmentUnits" "Government Units")
+      "href" "/resource?iri=http%3A%2F%2Fschema.org%2FGovernmentOrganization"
+      "icon" "/static/img/resource/GovernmentOrganization.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "govPeople"
+      "title" (t "card.officeHolders" "Office Holders")
+      "href" "/resource?iri=http%3A%2F%2Fschema.org%2FPerson"
+      "icon" "/static/img/resource/Person.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "govTerms"
+      "title" (t "card.terminologyEntries" "Terminology Entries")
+      "href" "/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FTerm"
+      "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "govOrgVersions"
+      "title" (t "card.organisationVersions" "Organisation Versions")
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Forganization"
+      "icon" "/static/img/resource/Organization.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- The shape of the state                                         -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.government.shapeOfTheState" "The shape of the state" }}</h2>
+
+<p>{{ tHTML "page.government.hierarchyIntro" "The Staatskalender is a single tree held together by <code>schema:parentOrganization</code>, and its top level is the Swiss constitutional order laid out as data. The <strong>Federal Council</strong> sits at the head of seven departments plus the Federal Chancellery; the <strong>federal courts</strong> — Supreme, Administrative, Criminal and Patent — stand beside it rather than beneath it, as the separation of powers requires; and the cantons form their own branch alongside the Confederation." }}</p>
+
+<p>{{ tHTML "page.government.departmentsIntro" "Counted by everything beneath them, the departments are strikingly uneven. <strong>Defence</strong> is by far the largest — it carries the whole army structure, which is why a department with a modest headquarters expands into thousands of units. The <strong>Chancellery</strong>, which coordinates the government rather than delivering services, is the smallest by an order of magnitude." }}</p>
+
+<sparql-async id="govDepartments" class="d-none">
+  # ?dept stays an IRI so the backend resolves the department name and links it.
+  #
+  # parentOrganization+ is TRANSITIVE on purpose: it counts every descendant at any
+  # depth, not just direct children. That is what makes Defence's army structure show
+  # up. A non-transitive count would report single digits for every department and
+  # say nothing.
+  #
+  # The name is fetched in an OUTER pattern rather than inside the aggregate, and
+  # filtered to one language — Staatskalender names carry de/fr/it tags, so an
+  # unfiltered ?name multiplies each row three times.
+  SELECT ?dept ?units WHERE {
+    {
+      SELECT ?dept (COUNT(?descendant) AS ?units) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+          &lt;https://register.ld.admin.ch/staatskalender/organization/10000000&gt; schema:subOrganization ?dept .
+          ?descendant schema:parentOrganization+ ?dept .
+        }
+      } GROUP BY ?dept
+    }
+  } ORDER BY DESC(?units)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "govDepartments"
+      "title" (t "card.departmentsBySize" "Federal departments by units beneath them")
+      "icon" "network"
+      "iconVar" "dept") }}
+</div>
+
+<p>{{ tHTML "page.government.topLevelIntro" "Above the departments sit the bodies that answer to no one inside the administration. Listing the organisations with no parent at all gives the constitutional top of the tree in one query — the government, the four federal courts, the prosecution service and its supervisory authority, the parliamentary services, and the cantons." }}</p>
+
+<sparql-async id="govTopLevel" class="d-none">
+  # "No parent" is the definition of a top-level body here, expressed as
+  # FILTER NOT EXISTS. ?children counts DIRECT members only (no +), because at this
+  # level the interesting figure is how the body itself is subdivided.
+  SELECT ?org ?children WHERE {
+    {
+      SELECT ?org (COUNT(?child) AS ?children) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+          ?org a schema:GovernmentOrganization .
+          ?child schema:parentOrganization ?org .
+          FILTER NOT EXISTS { ?org schema:parentOrganization ?anyParent }
+        }
+      } GROUP BY ?org
+    }
+  } ORDER BY DESC(?children)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "govTopLevel"
+      "title" (t "card.topLevelBodies" "Bodies at the top of the tree")
+      "icon" "landmark"
+      "iconVar" "org") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- People in roles                                                -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.government.peopleInRoles" "People, and the roles they hold" }}</h2>
+
+<p>{{ tHTML "page.government.rolesIntro" "A person is never attached to an office directly. Between them sits an <strong>OrganizationRole</strong> — a small resource naming the function, pointing at the person with <code>schema:member</code> and at the unit with <code>schema:memberOf</code>. It is a modelling choice worth noticing: because the role is its own resource, one person can hold several distinct functions in several bodies without any of them being confused, and the function itself (<em>Mitglied</em>, <em>Direktor</em>, <em>Juge fédéral suppléant</em>) is data rather than a label buried in a string." }}</p>
+
+<p>{{ tHTML "page.government.federalCouncilNote" "Query it for the Federal Council and you get the seven sitting members by name, each through a role called simply <em>Mitglied</em>. The same pattern retrieves the judges of every federal court and the directors of every office." }}</p>
+
+<sparql-async id="govRoles" class="d-none">
+  # People carry givenName/familyName — NOT schema:name. A ?person schema:name pattern
+  # matches nothing at all here and returns an empty table.
+  #
+  # ?org stays an IRI so the backend resolves and links the unit. Role names carry
+  # language tags, so dispLang keeps one row per role instead of three.
+  SELECT ?familyName ?givenName ?roleName ?org ?person WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+      ?role a schema:OrganizationRole ;
+            schema:member ?person ;
+            schema:memberOf ?org ;
+            schema:name ?roleName .
+      ?person schema:givenName ?givenName ;
+              schema:familyName ?familyName .
+      FILTER (lang(?roleName) = "de")
+    }
+  } ORDER BY ?familyName ?givenName
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "govRoles"
+      "title" (t "card.rolesAndHolders" "Roles and the people holding them")
+      "icon" "users"
+      "iconVar" "org"
+      "collapsed" true) }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.government.rolesCaveat" "Role names are filtered to German here so each role appears once; the same resources carry French and Italian names, and opening a role shows all of them. Note also that only around half the people in the directory have a recorded gender and only a subset a direct telephone number — the register is a directory of functions first and of individuals second." }}</p>
+
+<!-- ============================================================= -->
+<!-- The administration through time                                -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.government.throughTime" "The administration through time" }}</h2>
+
+<p>{{ tHTML "page.government.versioningIntro" "The organisation graph is the most unusual model in this theme, and possibly on the whole platform. It does not describe the administration as it is; it describes <em>every state the administration has been in</em>. Each unit has a stable <strong>identity</strong>, and hanging off that identity is a chain of dated <strong>versions</strong>, each with a start date, an end date, and <code>predecessor</code> and <code>successor</code> links to its neighbours in time." }}</p>
+
+<p>{{ tHTML "page.government.versioningConsequence" "The consequence is that most of what this graph contains is deliberately <em>historical</em>: the large majority of versions are marked deprecated, because they have been superseded. That is the point rather than a defect. When an office is renamed or absorbed, the old version is not overwritten — it is closed with an end date and linked to what replaced it, so a reference from a document written in 2015 still resolves to the body that existed then." }}</p>
+
+<sparql-async id="govVersionsPerIdentity" class="d-none">
+  # ?identity stays an IRI so the backend resolves the unit's current name and links it.
+  #
+  # Counts how many dated versions each organisational identity has accumulated —
+  # a direct measure of how often that unit has been renamed or restructured.
+  # Bounded with HAVING so the table shows the genuinely churn-heavy units rather
+  # than 20,000 rows of "1 version, never changed".
+  SELECT ?identity ?versions ?firstStart ?lastEnd WHERE {
+    {
+      SELECT ?identity
+             (COUNT(?v) AS ?versions)
+             (MIN(?start) AS ?firstStart)
+             (MAX(?end) AS ?lastEnd)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fch/organization&gt; {
+          ?v a &lt;https://version.link/Version&gt; ;
+             &lt;https://version.link/identity&gt; ?identity ;
+             schema:startDate ?start .
+          OPTIONAL { ?v schema:endDate ?end }
+        }
+      } GROUP BY ?identity
+      HAVING (COUNT(?v) &gt; 3)
+    }
+  } ORDER BY DESC(?versions)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "govVersionsPerIdentity"
+      "title" (t "card.mostRevisedUnits" "Most frequently revised organisational units")
+      "icon" "history"
+      "iconVar" "identity"
+      "collapsed" true) }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.government.versioningCaveat" "A high version count is not a sign of instability so much as of granular record-keeping — an address change or a corrected abbreviation creates a version just as a merger does. Note too that this graph uses <code>ld.admin.ch/ou/</code> IRIs while the Staatskalender uses <code>register.ld.admin.ch/staatskalender/organization/</code>: they describe the same administration but are not the same resources, and they do not join on the IRI." }}</p>
+
+<!-- ============================================================= -->
+<!-- TERMDAT                                                        -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.government.termdat" "Saying the same thing in four languages" }}</h2>
+
+<p>{{ tHTML "page.government.termdatIntro" "A federal state with four official languages has a problem no monolingual administration faces: every law, form and press release must exist in German, French and Italian, and the words must mean exactly the same thing in each. <strong>TERMDAT</strong> is the Chancellery's answer — the terminology database of the federal administration, and the largest such resource in the country." }}</p>
+
+<p>{{ tHTML "page.government.termdatStructure" "The model puts the <em>concept</em> first, not the word. An entry is a concept; the terms in each language hang off it through <code>schema:hasPart</code>, each with a position marking whether it is the preferred term or a permitted variant. That inversion is what makes the database work as a translation aid: the Freedom of Information Act is one entry carrying <code>BGÖ</code>, <code>LTrans</code>, <code>LTras</code> and <code>FoIA</code> as four names for a single thing, rather than four separate records hoping to be matched. The table further down shows exactly that, for every federal act abbreviated in all four languages." }}</p>
+
+<p>{{ tHTML "page.government.termdatStatus" "Entries also carry their editorial state. Most are <strong>validated</strong> — checked and approved by the Terminology Section — while others are marked in progress or deprecated, so a query can restrict itself to the terminology that is actually authoritative. Many entries add a definition with a <em>citation of the legal act it comes from</em>, which turns the database into a route from a word back to the article of law that defines it." }}</p>
+
+<sparql-async id="govTermDomains" class="d-none">
+  # ?domain stays an IRI so the backend resolves and links the subject field.
+  #
+  # Terms attach to a SUB-domain, which is schema:isPartOf a domain — the one-hop
+  # pattern (?t domain ?domain) matches nothing and returns zeros for every row.
+  # The two-hop path through ?sub is required.
+  SELECT ?domain ?terms WHERE {
+    {
+      SELECT ?domain (COUNT(?t) AS ?terms) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fch/termdat&gt; {
+          ?t &lt;https://schema.ld.admin.ch/termDomain&gt; ?sub .
+          ?sub schema:isPartOf ?domain .
+          ?domain a &lt;https://schema.ld.admin.ch/TermDomain&gt; .
+        }
+      } GROUP BY ?domain
+    }
+  } ORDER BY DESC(?terms)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "govTermDomains"
+      "title" (t "card.terminologyDomains" "Terminology by subject field")
+      "icon" "book-open"
+      "iconVar" "domain") }}
+</div>
+
+<p>{{ tHTML "page.government.termdatLawNote" "Law dominates the collection by a wide margin, with politics a distant second — an accurate picture of what the Confederation most often needs to translate precisely. Below them the subject fields track the rest of this site almost exactly: agriculture and forestry, environment, medicine, finance, transport." }}</p>
+
+<sparql-async id="govFourLanguages" class="d-none">
+  # The four-language join, done the cheap way.
+  #
+  # A term resource holds ALL FOUR language literals on the SAME node — the language
+  # lives in the literal tag, not in separate resources. So this is one node with four
+  # filtered names, not a four-way self-join.
+  #
+  # Joining four separate ?termDe/?termFr/?termIt/?termEn nodes through hasPart is the
+  # obvious formulation and it TIMES OUT on this graph: ~35k entries × the cross
+  # product of their parts. Don't reintroduce it.
+  #
+  # Abbreviations are used here because they are the clearest demonstration — the same
+  # federal act named four ways (BGÖ / LTrans / LTras / FoIA).
+  SELECT ?de ?fr ?it ?en ?entry WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/termdat&gt; {
+      ?term a &lt;https://schema.ld.admin.ch/Abbreviation&gt; ;
+            schema:name ?de, ?fr, ?it, ?en .
+      ?entry schema:hasPart ?term ;
+             a &lt;https://schema.ld.admin.ch/ValidatedEntry&gt; .
+      FILTER (lang(?de) = "de")
+      FILTER (lang(?fr) = "fr")
+      FILTER (lang(?it) = "it")
+      FILTER (lang(?en) = "en")
+    }
+  } ORDER BY ?de
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "govFourLanguages"
+      "title" (t "card.fourLanguageTerms" "Federal act abbreviations in four languages")
+      "icon" "languages") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.government.fourLanguagesCaveat" "Only entries carrying an abbreviation in all four languages appear here; a great many concepts are recorded in the three national languages without an English equivalent, and those are absent from this table rather than incomplete. English is a working addition to TERMDAT, not an official language of the Confederation — which is why some rows repeat the French form in the English column when no separate English abbreviation exists." }}</p>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.government.theDatasets" "The datasets" }}</h2>
+
+<p>{{ tHTML "page.government.datasetsIntro" "Three named graphs, all published by the Federal Chancellery, and all of them reference data that the rest of the platform points at rather than statistics in their own right." }}</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.staatskalenderGroup" "<strong>Staatskalender</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.government.fchPublisher" "Federal Chancellery" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.staatskalenderGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fstaatskalender\">fch/staatskalender</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.government.staatskalenderSize" "~11,500 government units, ~6,800 people, ~3,570 roles, ~9,800 postal addresses" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.model" "Model" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.staatskalenderModel" "Plain schema.org — <code>GovernmentOrganization</code> in a parent/child tree, with <code>OrganizationRole</code> mediating between people and units" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.government.staatskalenderContents" "The Confederation as it stands today: government, departments, offices, federal courts, prosecution service, parliamentary services and the cantons" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.termdatGroup" "<strong>TERMDAT</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.government.fchPublisher" "Federal Chancellery" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.termdatGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Ftermdat\">fch/termdat</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.government.termdatSize" "~78,000 terms, ~63,000 synonyms, ~35,000 validated entries, ~8,900 abbreviations, 41 subject domains" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.government.termdatContents" "The federal terminology database — concepts with their preferred terms, synonyms, abbreviations and phraseology in German, French, Italian and English, many with definitions citing the legal act of origin" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.termdatCaveat" "Terms link to a <em>sub</em>-domain, not a domain — the subject field is two hops away via <code>schema:isPartOf</code>, and a one-hop query silently returns nothing" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.organizationGroup" "<strong>Organisation data</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.government.fchPublisher" "Federal Chancellery" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.organizationGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Forganization\">fch/organization</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.government.organizationSize" "~20,200 organisational identities carrying ~38,600 dated versions, of which ~30,600 are deprecated" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.model" "Model" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.organizationModel" "<strong>version.link</strong> — a stable <code>Identity</code> per unit with a dated chain of <code>Version</code> resources linked by <code>predecessor</code>/<code>successor</code>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.government.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.government.organizationCaveat" "Uses <code>ld.admin.ch/ou/</code> IRIs, which do <em>not</em> match the Staatskalender's organisation IRIs — the two graphs describe the same bodies but cannot be joined directly" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-secondary">{{ tHTML "page.government.crossLinks" "This theme is where the rest of the platform terminates. Market observations in <a href=\"/agriculture.html\">Agriculture</a> name their source office through <code>cube:observedBy</code> pointing at Staatskalender organisations; the state accounts in <a href=\"/culture.html\">Culture &amp; Archives</a> and the cubes in <a href=\"/energy.html\">Energy</a> do the same through <code>ld.admin.ch/office</code> resources. TERMDAT's subject domains, meanwhile, read as a table of contents for the whole of LINDAS — law, politics, agriculture, environment, transport, medicine." }}</p>
+
+{{ end }}

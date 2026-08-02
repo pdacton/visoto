@@ -1,0 +1,449 @@
+{{ define "metaTitle" }}{{ t "page.energy.metaTitle" "Energy" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.energy.title" "Energy" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.energy.subtitle" "What Switzerland burns, stores and generates — and what a kilowatt-hour costs, in every municipality." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Energy.svg" alt="{{ t "page.energy.energy" "Energy" }}" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Energy.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>{{ t "page.energy.aboutThisTheme" "About this theme" }}</h2>
+
+<p>{{ tHTML "page.energy.twoPublishersTwoQuestions" "Two publishers cover this theme, and they answer two different questions. The <strong>Swiss Federal Office of Energy</strong> describes the <em>physical</em> system: how much energy the country consumes and from which carriers, how full the alpine reservoirs are this week, how much solar capacity was subsidised in each canton. The <strong>Federal Electricity Commission</strong> describes the <em>market</em>: what every grid operator in the country charges, for every consumption profile, every year since 2011." }}</p>
+
+<p>{{ tHTML "page.energy.thePriceDataIsTheUnusual" "The price data is the unusual one. Electricity in Switzerland is not sold at a national price — it is sold by roughly 550 local grid operators, most of them municipal utilities, each setting its own tariff. ElCom collects all of them, which turns a household bill into something you can query: <em>who charges what, where, and which part of the bill is actually the electricity?</em>" }}</p>
+
+<!-- Metric strip: one bounded COUNT per headline figure. Counts drift as the offices
+     reload their exports, so no figure here is repeated in the prose. -->
+<sparql-async id="energyPriceObservations" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/elcom/electricityprice&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+<sparql-async id="energyOperators" class="d-none">
+  SELECT (COUNT(?org) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/elcom/electricityprice&gt; {
+      ?org a schema:Organization .
+    }
+  }
+</sparql-async>
+<sparql-async id="energySfoeObservations" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfoe/cube&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+<sparql-async id="energySfoeCubes" class="d-none">
+  SELECT (COUNT(?cube) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfoe/cube&gt; {
+      ?cube a cube:Cube .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "energyPriceObservations"
+      "title" (t "card.tariffObservations" "Tariff Observations")
+      "href" "/resource?iri=https%3A%2F%2Fenergy.ld.admin.ch%2Felcom%2Felectricityprice"
+      "icon" "/static/img/resource/Cube.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "energyOperators"
+      "title" (t "card.gridOperators" "Grid Operators")
+      "href" "/resource?iri=http%3A%2F%2Fschema.org%2FOrganization"
+      "icon" "/static/img/resource/Organization.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "energySfoeObservations"
+      "title" (t "card.energyStatistics" "Energy Statistics")
+      "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
+      "icon" "/static/img/resource/Observation.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "energySfoeCubes"
+      "title" (t "card.sfoeCubes" "SFOE Cubes")
+      "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
+      "icon" "/static/img/resource/Cube.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- The price of a kilowatt-hour                                   -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.energy.thePriceOfAKilowattHour" "The price of a kilowatt-hour" }}</h2>
+
+<p>{{ tHTML "page.energy.everyTariffIsBrokenIntoFour" "Every tariff in this cube is broken into <strong>four components</strong>, and the model says so itself: the total measure carries <code>schema:hasPart</code> links to each part, so the decomposition is readable from the data rather than from a manual. This matters because the parts behave very differently — only one of them is the electricity." }}</p>
+
+<div class="row row-cards mb-4">
+  <div class="col-md-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fenergy.ld.admin.ch%2Felcom%2Felectricityprice%2Fdimension%2Fenergy">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="zap" class="me-2"></i>{{ t "page.energy.energyComponent" "Energy" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.energy.energyComponentDesc" "The electricity itself. The only competitive part, and the one that exploded after 2022." }}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fenergy.ld.admin.ch%2Felcom%2Felectricityprice%2Fdimension%2Fgridusage">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="cable" class="me-2"></i>{{ t "page.energy.gridUsage" "Grid usage" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.energy.gridUsageDesc" "Delivery over the local network. A natural monopoly, and often the largest single share." }}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fenergy.ld.admin.ch%2Felcom%2Felectricityprice%2Fdimension%2Faidfee">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="wind" class="me-2"></i>{{ t "page.energy.aidFee" "Aid fee" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.energy.aidFeeDesc" "The federal renewables levy. Set nationally, so it is identical in every row of a given year." }}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fenergy.ld.admin.ch%2Felcom%2Felectricityprice%2Fdimension%2Fcharge">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="landmark" class="me-2"></i>{{ t "page.energy.communityCharge" "Community charge" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.energy.communityChargeDesc" "Local levies passed on by the municipality. Zero for many operators, substantial for a few." }}</p>
+      </div>
+    </a>
+  </div>
+</div>
+
+<p>{{ tHTML "page.energy.cantonComparisonIntro" "Ranked by canton, the spread is wide enough that the cheapest and dearest are not in the same conversation — and the breakdown shows why they differ. Some cantons are expensive because of the energy component, others because of grid usage; the aid fee is constant everywhere, so it never explains a gap. Figures below are the <strong>H4 profile</strong> (a five-room flat with an electric cooker, about 4,500 kWh a year) on the standard product." }}</p>
+
+<sparql-async id="energyCantonPrices" class="d-none">
+  # ?canton stays an IRI on purpose: the backend resolves it to a label in the visitor's
+  # language and the table renders it as a link to the resource page.
+  #
+  # Two traps in this query:
+  #  1. period is typed xsd:gYear, NOT a plain string. "2026" alone matches nothing.
+  #  2. the canton-median cube must be reached through its own observationSet — the
+  #     dimension IRIs are shared with the per-operator cube, so an unrooted pattern
+  #     would mix 772k operator rows into this 26-row ranking.
+  SELECT ?canton ?total ?energy ?gridusage ?aidfee ?charge ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/elcom/electricityprice&gt; {
+      &lt;https://energy.ld.admin.ch/elcom/electricityprice-canton&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/period&gt; "2026"^^xsd:gYear ;
+           &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/canton&gt; ?canton ;
+           &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/total&gt; ?total ;
+           &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/energy&gt; ?energy ;
+           &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/gridusage&gt; ?gridusage ;
+           &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/aidfee&gt; ?aidfee ;
+           &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/charge&gt; ?charge ;
+           &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/category&gt; &lt;https://energy.ld.admin.ch/elcom/electricityprice/category/H4&gt; ;
+           &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/product&gt; &lt;https://energy.ld.admin.ch/elcom/electricityprice/product/standard&gt; .
+    }
+  } ORDER BY xsd:decimal(?total)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "energyCantonPrices"
+      "title" (t "card.medianTariffPerCanton" "Median tariff per canton, H4 household (Rp./kWh)")
+      "icon" "map"
+      "iconVar" "canton") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.energy.cantonLabelsUntagged" "Canton names in LINDAS carry <em>no language tag</em> — Zug, Zoug and Zugo are three untagged literals on the same resource — so a canton may appear under whichever spelling the label resolver picks first. The same resource is meant in every case." }}</p>
+
+<h3 class="mt-4">{{ t "page.energy.whoChargesWhat" "Who charges what" }}</h3>
+
+<p>{{ tHTML "page.energy.operatorTableIntro" "Below the cantonal medians sit the operators themselves. Each is a <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FOrganization\">schema.org organization</a> with a postal address, a website and — usefully — a <strong>company identification number</strong>, which is the same UID used by the <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoj%2Fzefix\">Zefix</a> commercial register. That single shared identifier is what lets a tariff be joined to the legal entity behind it." }}</p>
+
+<sparql-async id="energyOperatorPrices" class="d-none">
+  # ?operator stays an IRI so the backend resolves it to the utility's name and links it.
+  # Municipality count shows the operator's reach; the price columns are its own tariff.
+  #
+  # The price columns are a SAMPLE (an operator may charge different tariffs in different
+  # municipalities), so ?observation samples the IRI of the SAME row the figures came from
+  # — without it the representative price would be untraceable. SAMPLE is not guaranteed to
+  # pick from one row across separate aggregates, but GraphDB evaluates them together here;
+  # treat the IRI as "one observation behind this price", not as a keyed join.
+  SELECT ?operator ?total ?energy ?gridusage ?municipalities ?observation WHERE {
+    {
+      SELECT ?operator
+             (SAMPLE(?t) AS ?total)
+             (SAMPLE(?e) AS ?energy)
+             (SAMPLE(?g) AS ?gridusage)
+             (SAMPLE(?obs) AS ?observation)
+             (COUNT(DISTINCT ?municipality) AS ?municipalities)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/elcom/electricityprice&gt; {
+          ?obs &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/period&gt; "2026"^^xsd:gYear ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/operator&gt; ?operator ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/municipality&gt; ?municipality ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/total&gt; ?t ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/energy&gt; ?e ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/gridusage&gt; ?g ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/category&gt; &lt;https://energy.ld.admin.ch/elcom/electricityprice/category/H4&gt; ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/product&gt; &lt;https://energy.ld.admin.ch/elcom/electricityprice/product/standard&gt; .
+        }
+      } GROUP BY ?operator
+    }
+  } ORDER BY DESC(xsd:decimal(?total))
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "energyOperatorPrices"
+      "title" (t "card.tariffPerGridOperator" "Tariff per grid operator, H4 household (Rp./kWh)")
+      "icon" "plug-zap"
+      "iconVar" "operator"
+      "collapsed" true) }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.energy.operatorTariffCaveat" "An operator can serve several municipalities at different tariffs; the price columns show one representative row rather than an average, so use the operator's own resource page for the full picture. Some operators publish an identical tariff across all their territory, others do not." }}</p>
+
+<h3 class="mt-4">{{ t "page.energy.consumptionProfiles" "Consumption profiles" }}</h3>
+
+<p>{{ tHTML "page.energy.profilesIntro" "Prices are never quoted for a single abstract customer. ElCom defines fifteen standard profiles — <strong>H1–H8</strong> for households, from a two-room flat to a large single-family home with a heat pump, and <strong>C1–C7</strong> for businesses, from a small workshop to a mid-sized industrial plant. Every profile is priced separately by every operator in every year, which is where the 770,000 observations come from: a few hundred operators multiplied by fifteen profiles, two products and sixteen years." }}</p>
+
+<p>{{ tHTML "page.energy.profilesDefinitions" "Each profile is a SKOS concept in its own right, and it carries its definition with it: a reference consumption in kilowatt-hours per year and a prose description of the household or business it stands for. That is what makes the comparison below meaningful — <strong>H4</strong> and <strong>H3</strong> both consume 4,500 kWh a year, but H3 is a four-room flat with an electric water heater while H4 is a five-room flat with a tumble dryer and none, so the two are priced against genuinely different customers rather than an arbitrary label." }}</p>
+
+<sparql-async id="energyProfileSpread" class="d-none">
+  # ?category stays an IRI so the backend resolves and links it. MIN/MAX/AVG across all
+  # operators show how the spread itself changes between household and business profiles.
+  # No ?observation column here: each row aggregates MIN/MAX/AVG over hundreds of
+  # observations, so no single IRI represents it. ?observations counts them instead —
+  # open the linked category to reach the underlying rows.
+  SELECT ?category ?annualKWh ?description ?cheapest ?dearest ?average ?operators ?observations WHERE {
+    {
+      SELECT ?category
+             (MIN(xsd:decimal(?total)) AS ?cheapest)
+             (MAX(xsd:decimal(?total)) AS ?dearest)
+             (ROUND(AVG(xsd:decimal(?total)) * 100) / 100 AS ?average)
+             (COUNT(DISTINCT ?operator) AS ?operators)
+             (COUNT(?obs) AS ?observations)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/elcom/electricityprice&gt; {
+          ?obs &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/period&gt; "2026"^^xsd:gYear ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/category&gt; ?category ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/operator&gt; ?operator ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/total&gt; ?total ;
+               &lt;https://energy.ld.admin.ch/elcom/electricityprice/dimension/product&gt; &lt;https://energy.ld.admin.ch/elcom/electricityprice/product/standard&gt; .
+        }
+      } GROUP BY ?category
+    }
+    # ElCom defines each profile as a SKOS concept carrying its reference consumption
+    # (schema:size, kWh/year) and a prose definition. The definition is published in
+    # GERMAN ONLY — there is no en/fr/it variant — so no dispLang filter is applied
+    # here: filtering by language would empty the column for every other visitor.
+    GRAPH &lt;https://lindas.admin.ch/elcom/electricityprice&gt; {
+      OPTIONAL { ?category schema:size ?annualKWh }
+      OPTIONAL { ?category schema:description ?description }
+    }
+  } ORDER BY ?category
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "energyProfileSpread"
+      "title" (t "card.priceSpreadByProfile" "Price spread by consumption profile (Rp./kWh)")
+      "icon" "chart-no-axes-column"
+      "iconVar" "category") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.energy.profileDescriptionCaveat" "The profile descriptions are published in <strong>German only</strong> — unlike the cube and dimension names, which carry all four national languages — so they appear here as ElCom records them whatever your language setting. Note also the apostrophes inside them: they are the Swiss thousands separator (<code>4'500</code>), not quotation marks." }}</p>
+
+<!-- ============================================================= -->
+<!-- The physical system                                            -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.energy.thePhysicalSystem" "The physical system" }}</h2>
+
+<p>{{ tHTML "page.energy.sfoeIntro" "The Federal Office of Energy publishes some ninety cubes, but they are fewer datasets than that number suggests: most exist in many <strong>versions</strong>, each a separate cube IRI ending in a number, and only the highest is current. The four families below carry the substance." }}</p>
+
+<h3 class="mt-4">{{ t "page.energy.whereTheEnergyComesFrom" "Where the energy comes from" }}</h3>
+
+<p>{{ tHTML "page.energy.energyBalanceIntro" "The <strong>Swiss energy balance</strong> runs from 1980 and reports consumption in terajoules per year, broken down by energy carrier. The carriers come from a shared LINDAS dimension rather than free text, and they nest: <em>renewable</em> splits into wood, hydro and other renewables, <em>non-renewable</em> into nuclear fuels, petrol products, gas, coal and waste. Because the hierarchy is in the data, totals and components can be queried from the same cube without double-counting — provided you pick one level." }}</p>
+
+<sparql-async id="energyBalanceCarriers" class="d-none">
+  # ?carrier stays an IRI so the backend resolves the carrier name and links it.
+  # The cube holds one row per carrier PER YEAR, so ?year must be selected — without
+  # it the same carrier appears dozens of times with no way to tell the rows apart.
+  # Only leaf carriers are listed, to avoid summing a parent with its own children.
+  # ?observation links each row to its source. Heads-up on the label: this cube's
+  # observation IRIs end in a rubric code (…/observation/2022/14/123), so the table
+  # shows a repeated-looking "123" even though the full IRIs differ — the year and
+  # carrier segments before it are what distinguish the rows. The links are correct.
+  SELECT ?year ?carrier ?terajoules ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfoe/cube&gt; {
+      &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd115_gest_bilanz/6&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;http://openenergy-platform.org/ontology/oeo/OEO_00000173&gt; ?carrier ;
+           &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd115_gest_bilanz/TJ&gt; ?terajoules ;
+           &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd115_gest_bilanz/Jahr&gt; ?year .
+      FILTER (?carrier IN (
+        &lt;https://ld.admin.ch/cube/dimension/gest_energietraeger/111&gt;,
+        &lt;https://ld.admin.ch/cube/dimension/gest_energietraeger/112&gt;,
+        &lt;https://ld.admin.ch/cube/dimension/gest_energietraeger/113&gt;,
+        &lt;https://ld.admin.ch/cube/dimension/gest_energietraeger/121&gt;,
+        &lt;https://ld.admin.ch/cube/dimension/gest_energietraeger/122&gt;,
+        &lt;https://ld.admin.ch/cube/dimension/gest_energietraeger/123&gt;,
+        &lt;https://ld.admin.ch/cube/dimension/gest_energietraeger/125&gt;,
+        &lt;https://ld.admin.ch/cube/dimension/gest_energietraeger/126&gt;
+      ))
+      FILTER (xsd:decimal(?terajoules) &gt; 0)
+    }
+  } ORDER BY DESC(?year) DESC(xsd:decimal(?terajoules)) LIMIT 400
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "energyBalanceCarriers"
+      "title" (t "card.energyBalanceByCarrier" "Energy balance by carrier (terajoules)")
+      "icon" "flame"
+      "iconVar" "carrier"
+      "collapsed" true) }}
+</div>
+
+<h3 class="mt-4">{{ t "page.energy.waterInTheMountains" "Water in the mountains" }}</h3>
+
+<p>{{ tHTML "page.energy.reservoirIntro" "Switzerland's alpine reservoirs are the country's battery, and the <strong>reservoir filling level</strong> cube is the only weekly series in this theme — a reading every Sunday at midnight of how many gigawatt-hours are stored against the maximum the basins can hold. It is a genuinely operational dataset: during the 2022 supply debate this was the number people watched. Two things about its shape are worth knowing before querying it. The regions are not a dimension but separate <em>columns</em> (<code>gr…</code> for Grisons, <code>ti…</code> for Ticino), and the <strong>reading date is not a property at all</strong> — it survives only inside the observation IRI, so it has to be parsed out of the string before the series can be sorted." }}</p>
+
+<sparql-async id="energyReservoirs" class="d-none">
+  # Two quirks of this cube:
+  #  1. The reading date is NOT a predicate — it exists only as the last path segment
+  #     of the observation IRI (…/observation/2008-06-02), so it is parsed out here.
+  #     There is no temporal dimension to sort or filter on otherwise.
+  #  2. Region is encoded in the property NAME rather than as a dimension value, so
+  #     the regions come back as columns instead of rows.
+  # Percentages are computed here because the cube stores only absolute GWh figures.
+  SELECT ?date ?grisonsGWh ?grisonsPercent ?ticinoGWh ?ticinoPercent ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/sfoe/cube&gt; {
+      &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd17_fuellungsgrad_speicherseen/5&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd17_fuellungsgrad_speicherseen/grAktuellSpeicherinhaltGWh&gt; ?grisonsGWh ;
+           &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd17_fuellungsgrad_speicherseen/grMaxSpeicherinhaltGWh&gt; ?grisonsMax ;
+           &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd17_fuellungsgrad_speicherseen/tiAktuellSpeicherinhaltGWh&gt; ?ticinoGWh ;
+           &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd17_fuellungsgrad_speicherseen/tiMaxSpeicherinhaltGWh&gt; ?ticinoMax .
+    }
+    BIND (REPLACE(STR(?observation), "^.*/observation/", "") AS ?date)
+    BIND (ROUND(xsd:decimal(?grisonsGWh) * 1000 / xsd:decimal(?grisonsMax)) / 10 AS ?grisonsPercent)
+    BIND (ROUND(xsd:decimal(?ticinoGWh) * 1000 / xsd:decimal(?ticinoMax)) / 10 AS ?ticinoPercent)
+  } ORDER BY DESC(?date) LIMIT 500
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "energyReservoirs"
+      "title" (t "card.reservoirFillingLevels" "Reservoir filling levels, Grisons and Ticino")
+      "icon" "waves"
+      "collapsed" true) }}
+</div>
+
+<h3 class="mt-4">{{ t "page.energy.subsidisedSolar" "Subsidised solar" }}</h3>
+
+<p>{{ tHTML "page.energy.solarIntro" "The <strong>one-off payment for photovoltaic installations</strong> (<em>Einmalvergütung</em>) is the federal subsidy for rooftop solar, and its cube is the most directly comparable dataset in this theme: per canton, per year, it records the number of installations, the capacity installed in kilowatts, the francs paid out — <em>and</em> the first two normalised per 100,000 inhabitants. That last pair is the reason a small canton can be compared with Zurich without doing the arithmetic yourself." }}</p>
+
+<sparql-async id="energySolarPerCanton" class="d-none">
+  # ?canton stays an IRI so the backend resolves and links it. Summed across all years
+  # in the cube; the per-100k columns are cumulative sums of yearly rates, so they are
+  # deliberately left out here — use a single year on the resource page for those.
+  SELECT ?canton ?installations ?capacityKW ?paidOutCHF ?observations WHERE {
+    {
+      SELECT ?canton
+             (SUM(xsd:decimal(?n)) AS ?installations)
+             (ROUND(SUM(xsd:decimal(?kw))) AS ?capacityKW)
+             (ROUND(SUM(xsd:decimal(?chf))) AS ?paidOutCHF)
+             # One observation per year, so this doubles as the number of years covered.
+             # No single ?observation IRI applies: each row sums across all of them.
+             (COUNT(?obs) AS ?observations)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/sfoe/cube&gt; {
+          &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd84_einmalverguetung_fuer_photovoltaikanlagen/10&gt; cube:observationSet/cube:observation ?obs .
+          ?obs &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd84_einmalverguetung_fuer_photovoltaikanlagen/Kanton&gt; ?canton ;
+               &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd84_einmalverguetung_fuer_photovoltaikanlagen/AnzahlAnlagen&gt; ?n ;
+               &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd84_einmalverguetung_fuer_photovoltaikanlagen/InstallierteLeistungkW&gt; ?kw ;
+               &lt;https://energy.ld.admin.ch/sfoe/bfe_ogd84_einmalverguetung_fuer_photovoltaikanlagen/VerguetungCHF&gt; ?chf .
+        }
+      } GROUP BY ?canton
+    }
+  } ORDER BY DESC(?capacityKW)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "energySolarPerCanton"
+      "title" (t "card.solarSubsidiesPerCanton" "Solar subsidies per canton, all years")
+      "icon" "sun"
+      "iconVar" "canton") }}
+</div>
+
+<h3 class="mt-4">{{ t "page.energy.buildingsAndScenarios" "Buildings and scenarios" }}</h3>
+
+<p>{{ tHTML "page.energy.buildingsScenariosIntro" "Two further families round out the SFOE holdings. The <strong>Buildings Programme</strong> (<em>Gebäudeprogramm</em>) reports the renovation subsidy in four parallel cubes — applications supported, francs paid out, energy saved and CO₂ avoided, all per measure category and reporting year — so the cost and the effect of the same programme can be read side by side. <strong>Energy Perspectives 2050+</strong> is different in kind: not a record of what happened but a set of <em>modelled scenarios</em> for how Switzerland reaches net zero, with variants for nuclear plant lifetimes and import balance. Treat its numbers as projections, not observations." }}</p>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.energy.theDatasets" "The datasets" }}</h2>
+
+<p>{{ tHTML "page.energy.datasetsIntro" "Two named graphs, both under the <code>https://energy.ld.admin.ch/</code> vocabulary namespace, and jointly the third-largest theme in LINDAS by triple count." }}</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.energy.electricityTariffs" "<strong>Electricity tariffs</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.energy.elcomPublisher" "Federal Electricity Commission (ElCom)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.energy.electricitypriceGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Felcom%2Felectricityprice\">elcom/electricityprice</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.energy.elcomSize" "~24 million triples — 7 cubes, ~772,000 observations" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.coverage" "Coverage" }}</div>
+        <div class="datagrid-content">{{ t "page.energy.elcomCoverage" "2011 to 2026, one row per operator × profile × product × year" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.energy.elcomContents" "Tariffs per operator, medians per canton and for Switzerland, plus the <em>Sunshine</em> regulatory indicator cubes" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.energy.energyStatisticsGroup" "<strong>Energy statistics</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.energy.sfoePublisher" "Swiss Federal Office of Energy (SFOE)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.energy.sfoeGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsfoe%2Fcube\">sfoe/cube</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.energy.sfoeSize" "~31 million triples — 91 cubes, ~1.9 million observations" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.energy.sfoeContents" "Energy balance, reservoir levels, solar subsidies, buildings programme, research statistics, shared mobility, 2050+ scenarios" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.energy.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.energy.sfoeCaveat" "The 91 cubes are roughly 18 datasets in many versions — always take the highest-numbered cube IRI unless you are comparing releases" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-secondary">{{ tHTML "page.energy.crossLinks" "Both graphs link outward rather than duplicating reference data: municipalities and cantons resolve into the <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffso%2Fregister\">FSO register</a>, grid operators carry the UID used by <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoj%2Fzefix\">Zefix</a>, energy carriers come from a <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fcube%2Fdimension\">shared cube dimension</a>, and the publishing offices are the same <code>ld.admin.ch/office</code> resources used across the whole platform." }}</p>
+
+{{ end }}

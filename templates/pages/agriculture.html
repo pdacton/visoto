@@ -1,0 +1,437 @@
+{{ define "metaTitle" }}{{ t "page.agriculture.metaTitle" "Agriculture & Food" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.agriculture.title" "Agriculture & Food" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.agriculture.subtitle" "What Swiss farms produce and what it costs at every step from the field to the shelf — plus what protects the crop and the herd." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Agriculture.svg" alt="{{ t "page.agriculture.agriculture" "Agriculture" }}" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Agriculture.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>{{ t "page.agriculture.aboutThisTheme" "About this theme" }}</h2>
+
+<p>{{ tHTML "page.agriculture.intro" "Three federal offices publish here, and between them they follow food along its whole journey. The <strong>Federal Office for Agriculture</strong> tracks the market — what a product fetches at each stage from the farm gate to the till. The <strong>Food Safety and Veterinary Office</strong> covers the two things that can go wrong: pests in the field and disease in the barn. <strong>Agroscope</strong>, the federal agricultural research institute, contributes a small research series." }}</p>
+
+<p>{{ tHTML "page.agriculture.valueChainIdea" "The organising idea across the market data is the <strong>value chain</strong>. The same product is priced separately at production, at wholesale and processing, at catering wholesale, and at consumption — plus import and export. That is what makes this theme unusual: for milk, eggs or a kilo of carrots you can follow the <em>same</em> good through each hand it passes and see where the margin sits, rather than comparing a farm price with a shop price from two unrelated sources." }}</p>
+
+<!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
+     reloads, so no figure here is repeated as a hard number in the prose. -->
+<sparql-async id="agriMarketObservations" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foag/agricultural-market-data&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+<sparql-async id="agriProducts" class="d-none">
+  SELECT (COUNT(?p) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foag/agricultural-market-data&gt; {
+      ?p a &lt;https://agriculture.ld.admin.ch/foag/Product&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="agriPlantProtectionProducts" class="d-none">
+  SELECT (COUNT(?p) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fsvo/plant-protection-products&gt; {
+      ?p a &lt;https://agriculture.ld.admin.ch/plant-protection/Product&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="agriDiseaseCases" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fsvo/animaldisease&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "agriMarketObservations"
+      "title" (t "card.marketObservations" "Market Observations")
+      "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
+      "icon" "/static/img/resource/Observation.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "agriProducts"
+      "title" (t "card.trackedProducts" "Tracked Products")
+      "href" "/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Ffoag%2FProduct"
+      "icon" "/static/img/resource/Product.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "agriPlantProtectionProducts"
+      "title" (t "card.plantProtectionProducts" "Plant Protection Products")
+      "href" "/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FProduct"
+      "icon" "/static/img/resource/Product.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "agriDiseaseCases"
+      "title" (t "card.animalDiseaseCases" "Animal Disease Cases")
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffsvo%2Fanimaldisease"
+      "icon" "/static/img/resource/Animalia.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- The value chain                                                -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.agriculture.theValueChain" "From the farm gate to the till" }}</h2>
+
+<p>{{ tHTML "page.agriculture.stagesIntro" "Every market observation is stamped with the stage of the chain it belongs to. The stages are a coded dimension rather than free text, so a price is never ambiguous about which hand it was measured in." }}</p>
+
+<div class="row row-cards mb-4">
+  <div class="col-md-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Ffoag%2Fvalue-chain%2F1">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="tractor" class="me-2"></i>{{ t "page.agriculture.stageProduction" "Production" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.agriculture.stageProductionDesc" "The farm gate. What the producer is actually paid, before anyone else touches the goods." }}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Ffoag%2Fvalue-chain%2F2">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="factory" class="me-2"></i>{{ t "page.agriculture.stageWholesale" "Wholesale / processing" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.agriculture.stageWholesaleDesc" "The dairy, the mill, the slaughterhouse. Where raw output becomes a product." }}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Ffoag%2Fvalue-chain%2F6">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="shopping-basket" class="me-2"></i>{{ t "page.agriculture.stageConsumption" "Consumption" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.agriculture.stageConsumptionDesc" "The retail shelf. The largest slice of this dataset by a wide margin." }}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6 col-lg-3">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Ffoag%2Fvalue-chain%2F9">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="ship" class="me-2"></i>{{ t "page.agriculture.stageTrade" "Import & export" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.agriculture.stageTradeDesc" "Cross-border quantities and prices — the reference against which domestic figures are read." }}</p>
+      </div>
+    </a>
+  </div>
+</div>
+
+<p>{{ tHTML "page.agriculture.groupStageIntro" "Crossing the product groups with those stages shows where the office concentrates its effort. Fruit and vegetables dominate, and they are measured overwhelmingly at the consumption end — a weekly shelf-price survey across a hundred-odd items. Milk is the mirror image: most of its rows sit at production, because the farm-gate milk price is a politically watched figure in its own right." }}</p>
+
+<sparql-async id="agriGroupByStage" class="d-none">
+  # ?group and ?stage stay IRIs on purpose: the backend resolves each to a label in
+  # the visitor's language and the table renders them as links to the resource page.
+  #
+  # Deliberately NOT rooted in a single cube — this counts across all 49 market cubes
+  # to show the shape of the whole collection. The dimensions are shared, so the
+  # unrooted pattern is correct here (unlike a per-cube figure, which must be rooted).
+  SELECT ?group ?stage ?observations ?products WHERE {
+    {
+      SELECT ?group ?stage
+             (COUNT(?obs) AS ?observations)
+             (COUNT(DISTINCT ?product) AS ?products)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/foag/agricultural-market-data&gt; {
+          ?obs &lt;https://agriculture.ld.admin.ch/foag/dimension/product-group&gt; ?group ;
+               &lt;https://agriculture.ld.admin.ch/foag/dimension/value-chain&gt; ?stage ;
+               &lt;https://agriculture.ld.admin.ch/foag/dimension/product&gt; ?product .
+        }
+      } GROUP BY ?group ?stage
+    }
+  } ORDER BY DESC(?observations)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "agriGroupByStage"
+      "title" (t "card.productGroupByStage" "Product group by value-chain stage")
+      "icon" "git-branch"
+      "iconVar" "group") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.agriculture.groupLabelCaveat" "Product-group names come back in <em>mixed languages</em> — <code>Vegetables</code> and <code>Fruits</code> next to <code>Rohmilch</code>, <code>Käse</code> and <code>Rahm</code>. The German ones simply have no English label in the register, so the resolver falls back to what exists. The resources themselves are perfectly well-formed; only the naming is uneven." }}</p>
+
+<!-- ============================================================= -->
+<!-- Milk                                                           -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.agriculture.milk" "The milk price, at home and abroad" }}</h2>
+
+<p>{{ tHTML "page.agriculture.milkIntro" "Milk is the best-instrumented product in the theme, and its monthly producer-price cube carries something unusual: alongside the Swiss figures it holds the <strong>same month's price in Germany, France, Austria, Italy, the EU as a whole, the United States and New Zealand</strong>. The international series are ordinary products in the same cube, so a domestic price and its foreign benchmark can be compared without leaving the dataset." }}</p>
+
+<p>{{ tHTML "page.agriculture.milkSegments" "The Swiss rows are split by <strong>segment</strong> — A for milk sold into protected domestic markets, B for exposed export products, C for the residual sold at world prices. The three trade at genuinely different levels, and the gap between them is the point of the segmentation." }}</p>
+
+<sparql-async id="agriMilkPrices" class="d-none">
+  # ?product stays an IRI so the backend resolves and links each series.
+  #
+  # The date dimension is an IRI (…/time/month/2025-08), NOT a literal — so the month
+  # is parsed out of the IRI string. Ordering on that string works because the
+  # YYYY-MM form sorts lexically the same way it sorts chronologically.
+  SELECT ?month ?product ?price ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foag/agricultural-market-data&gt; {
+      &lt;https://agriculture.ld.admin.ch/foag/cube/MilkDairyProducts/Production_Price_Month&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;https://agriculture.ld.admin.ch/foag/dimension/date&gt; ?date ;
+           &lt;https://agriculture.ld.admin.ch/foag/dimension/product&gt; ?product ;
+           &lt;https://agriculture.ld.admin.ch/foag/measure/price&gt; ?price .
+      BIND (REPLACE(STR(?date), "^.*/month/", "") AS ?month)
+      FILTER (?month &gt;= "2024-01")
+    }
+  } ORDER BY DESC(?month) ?product
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "agriMilkPrices"
+      "title" (t "card.milkProducerPrices" "Monthly milk producer prices, Switzerland and abroad")
+      "icon" "milk"
+      "iconVar" "product") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.agriculture.milkUnitCaveat" "Prices are per 100 kg in Swiss francs unless the product says otherwise, and the foreign series are converted to francs by the office — so movements in them mix a real price change with an exchange-rate change. Each row carries its own <code>unit</code> and <code>currency</code> dimension; open an observation to see exactly what was measured." }}</p>
+
+<!-- ============================================================= -->
+<!-- Eggs                                                           -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.agriculture.eggs" "Eggs, and what husbandry costs" }}</h2>
+
+<p>{{ tHTML "page.agriculture.eggsIntro" "Eggs make the clearest case for the <strong>production system</strong> dimension. The same size of egg is priced separately for organic, free-range and barn husbandry, and the spread between them is large and stable — roughly double from the cheapest system to organic. Because husbandry is a coded dimension rather than part of the product name, the premium is a subtraction rather than a manual comparison of two labels." }}</p>
+
+<sparql-async id="agriEggPrices" class="d-none">
+  # Same date-IRI parsing as the milk cube. Producer prices only: this is what the
+  # farm receives, not the shelf price — the Consumption cube holds that separately.
+  SELECT ?month ?product ?price ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foag/agricultural-market-data&gt; {
+      &lt;https://agriculture.ld.admin.ch/foag/cube/Eggs/Production_Price_Month&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;https://agriculture.ld.admin.ch/foag/dimension/date&gt; ?date ;
+           &lt;https://agriculture.ld.admin.ch/foag/dimension/product&gt; ?product ;
+           &lt;https://agriculture.ld.admin.ch/foag/measure/price&gt; ?price .
+      BIND (REPLACE(STR(?date), "^.*/month/", "") AS ?month)
+      FILTER (?month &gt;= "2024-01")
+    }
+  } ORDER BY DESC(?month) ?product
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "agriEggPrices"
+      "title" (t "card.eggProducerPrices" "Monthly egg producer prices by husbandry system")
+      "icon" "egg"
+      "iconVar" "product"
+      "collapsed" true) }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Plant protection                                               -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.agriculture.plantProtection" "What is licensed to be sprayed" }}</h2>
+
+<p>{{ tHTML "page.agriculture.plantProtectionIntro" "The plant protection register is the complete list of pesticides a Swiss farmer may legally apply, and it is a register rather than a statistic — every authorised product, its federal admission number, the company holding the permission, its active substances and the exact crop-and-pest combinations it is cleared for. It is the one dataset in this theme with real regulatory force: if a product is not here, using it is illegal." }}</p>
+
+<p>{{ tHTML "page.agriculture.plantProtectionStructure" "The structure repays a moment's attention. A product carries <strong>indications</strong> — thousands of them — and each indication is a specific triple of crop, pest and dose, which is why the register holds several times more indications than products. Withdrawn products are not deleted but given a <code>soldOutDeadline</code> and an <code>exhaustionDeadline</code>: the dates by which stock must leave the shelves and by which remaining stock must be used up. That makes the register a record of the phase-out as well as the permission." }}</p>
+
+<sparql-async id="agriPesticideTypes" class="d-none">
+  # ?type stays an IRI so the backend resolves and links each product category.
+  # ?companies counts the distinct permission holders per category — a rough measure
+  # of how competitive that corner of the market is.
+  SELECT ?type ?products ?companies WHERE {
+    {
+      SELECT ?type
+             (COUNT(DISTINCT ?product) AS ?products)
+             (COUNT(DISTINCT ?holder) AS ?companies)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fsvo/plant-protection-products&gt; {
+          ?product a &lt;https://agriculture.ld.admin.ch/plant-protection/Product&gt; ;
+                   &lt;https://agriculture.ld.admin.ch/plant-protection/productType&gt; ?type .
+          OPTIONAL { ?product &lt;https://agriculture.ld.admin.ch/plant-protection/permissionHolder&gt; ?holder }
+        }
+      } GROUP BY ?type
+    }
+  } ORDER BY DESC(?products)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "agriPesticideTypes"
+      "title" (t "card.pesticidesByCategory" "Authorised products by category")
+      "icon" "spray-can"
+      "iconVar" "type") }}
+</div>
+
+<p>{{ tHTML "page.agriculture.biologicalAgents" "Note what sits in the lower half of that table. Alongside the herbicides and fungicides the register lists <strong>beneficial insects, predatory mites and nematodes</strong> as authorised plant protection products in their own right — biological control agents licensed on the same basis as a chemical spray, with the same admission numbers and the same permission holders." }}</p>
+
+<!-- ============================================================= -->
+<!-- Animal health                                                  -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.agriculture.animalHealth" "Disease in the barn" }}</h2>
+
+<p>{{ tHTML "page.agriculture.animalDiseaseIntro" "The animal disease dataset is the most immediate thing in this theme: a <strong>case register</strong> in which every row is one reported outbreak on one holding, with the diagnosis date, the animal species, the canton and municipality, and counts of how many animals in the stock were sick, infected, put down or died. It is updated continuously — the most recent diagnoses are usually only days old." }}</p>
+
+<p>{{ tHTML "page.agriculture.bluetongueStory" "Query it by disease and the recent history of Swiss livestock falls out of the data. The <strong>bluetongue</strong> epidemic that began in August 2024 dominates everything else by an order of magnitude and reached essentially every canton; <strong>foot rot</strong> follows, reflecting the national eradication programme that obliges holdings to report it. Further down sit the endemic background diseases that tick over at a few dozen cases a year." }}</p>
+
+<sparql-async id="agriDiseaseByEpidemic" class="d-none">
+  # ?epidemic stays an IRI so the backend resolves the disease name and links it.
+  #
+  # diagnosis-date is typed xsd:date, NOT a plain string — a bare "2024-01-01" in the
+  # FILTER matches nothing at all and the table comes back silently empty. The typed
+  # literal is required.
+  SELECT ?epidemic ?cases ?cantons ?firstCase ?latestCase WHERE {
+    {
+      SELECT ?epidemic
+             (COUNT(?obs) AS ?cases)
+             (COUNT(DISTINCT ?canton) AS ?cantons)
+             (MIN(?d) AS ?firstCase)
+             (MAX(?d) AS ?latestCase)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fsvo/animaldisease&gt; {
+          ?obs &lt;https://agriculture.ld.admin.ch/fsvo/animal-disease/epidemics&gt; ?epidemic ;
+               &lt;https://agriculture.ld.admin.ch/fsvo/animal-disease/diagnosis-date&gt; ?d ;
+               &lt;https://agriculture.ld.admin.ch/fsvo/animal-disease/canton&gt; ?canton .
+          FILTER (?d &gt;= "2024-01-01"^^xsd:date)
+        }
+      } GROUP BY ?epidemic
+    }
+  } ORDER BY DESC(?cases)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "agriDiseaseByEpidemic"
+      "title" (t "card.animalDiseaseOutbreaks" "Reported outbreaks by disease, since 2024")
+      "icon" "activity"
+      "iconVar" "epidemic") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.agriculture.cantonCountCaveat" "The canton column can read 27 rather than 26: the register uses a separate code for the Principality of Liechtenstein, which participates in the Swiss veterinary area. Note too that a case is a <em>report</em>, not an animal — one row can cover a whole affected herd, and the stock and sick counts on the observation say how many." }}</p>
+
+<!-- ============================================================= -->
+<!-- Reference data                                                 -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.agriculture.referenceData" "The vocabularies underneath" }}</h2>
+
+<p>{{ tHTML "page.agriculture.cropsIntro" "Two graphs in this theme hold no measurements at all. <strong>Crops</strong> is a genuine OWL ontology of Swiss cultivated plants — several hundred cultivation types arranged by <code>rdfs:subClassOf</code>, with <code>owl:disjointWith</code> axioms asserting that a plot cannot be two things at once, and deprecated classes retained so that older records still resolve. Crucially it is <em>faceted</em>: the same plant appears as a plant-protection crop, a nutrient-balance crop and a direct-payment crop, because the three regulatory regimes cut the plant world along different lines. <strong>Inspections</strong> is the corresponding checklist — the individual points an inspector verifies on a farm visit, grouped into collections." }}</p>
+
+<p class="text-secondary">{{ tHTML "page.agriculture.cropsLabelCaveat" "Crop names carry <strong>no language tag</strong>: <em>Zuckerrüben</em>, <em>Betteraves sucrières</em> and <em>Barbabietole da zucchero</em> are three untagged literals on one resource, and there is no English at all. A crop may therefore surface under whichever spelling the resolver reaches first, and language filtering with <code>lang()</code> will discard every one of them. The same pattern appears in the plant-protection substance names." }}</p>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.agriculture.theDatasets" "The datasets" }}</h2>
+
+<p>{{ tHTML "page.agriculture.datasetsIntro" "Seven named graphs from three publishers, nearly all of them under the <code>https://agriculture.ld.admin.ch/</code> vocabulary namespace even where the publisher is the veterinary office rather than the agriculture office." }}</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.marketDataGroup" "<strong>Agricultural market data</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.foagPublisher" "Federal Office for Agriculture (FOAG)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.marketDataGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoag%2Fagricultural-market-data\">foag/agricultural-market-data</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.marketDataSize" "49 cubes, ~180,000 observations, ~1,700 distinct products" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.shape" "Shape" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.marketDataShape" "A regular grid of <em>product group × value-chain stage × measure × frequency</em> — e.g. <code>Eggs/Production_Price_Month</code>, <code>MilkDairyProducts/Consumption_Price_Year</code>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.marketDataContents" "Milk and dairy, fruit/vegetables/potatoes, eggs, meat, bread cereals, oilseeds, protein crops, feedstuffs" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.marketDataCaveat" "Observations carry <strong>20 dimensions</strong>, every one an IRI. Powerful, but a query that omits a dimension silently aggregates across it — always check which slice you actually selected" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.plantProtectionGroup" "<strong>Plant protection products</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.fsvoPublisher" "Food Safety and Veterinary Office (FSVO)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.plantProtectionGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffsvo%2Fplant-protection-products\">fsvo/plant-protection-products</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.plantProtectionSize" "~2,400 authorised products, ~7,900 indications, ~450 substances, 24 product categories" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.plantProtectionContents" "The federal pesticide register: admissions, permission holders, active substances, crop/pest indications, parallel imports, phase-out deadlines" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.animalDiseaseGroup" "<strong>Animal disease reporting</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.fsvoPublisher" "Food Safety and Veterinary Office (FSVO)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.animalDiseaseGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffsvo%2Fanimaldisease\">fsvo/animaldisease</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.animalDiseaseSize" "One cube, ~58,000 case reports" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.coverage" "Coverage" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.animalDiseaseCoverage" "Continuously updated; individual outbreaks geocoded to municipality and canton" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.referenceGroup" "<strong>Reference vocabularies and research</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.namedGraph" "Named graphs" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.referenceGraphs" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoag%2Fcrops\">foag/crops</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoag%2Finspections\">foag/inspections</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoag%2Fsystem-map\">foag/system-map</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fagroscope%2Fcube\">agroscope/cube</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.agriculture.referenceContents" "Crop ontology (~740 cultivation types), farm inspection checkpoints (~3,950), the agricultural system reference map, and a small Agroscope research cube" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.agriculture.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.agriculture.referenceCaveat" "These are vocabularies, not statistics — <code>foag/crops</code> is an OWL ontology and holds almost no observations" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-secondary">{{ tHTML "page.agriculture.crossLinks" "The graphs lean on shared reference data rather than restating it: outbreak locations resolve into the <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fterritorial\">territorial</a> cantons and municipalities, market observations name their source office through <code>cube:observedBy</code> pointing at <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffch%2Fstaatskalender\">Staatskalender</a> organisations, and time is expressed with the platform-wide <code>ld.admin.ch/time/</code> resources. One further FSVO graph, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffsvo%2Fcube\">fsvo/cube</a>, straddles this theme and <a href=\"/health.html\">Health</a> — it holds meat inspection and food control alongside animal experimentation statistics, and is published under a <code>health.ld.admin.ch</code> namespace." }}</p>
+
+{{ end }}

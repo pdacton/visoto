@@ -1,0 +1,438 @@
+{{ define "metaTitle" }}{{ t "page.environment.metaTitle" "Environment & Nature" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.environment.title" "Environment & Nature" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.environment.subtitle" "Rivers measured every ten minutes, forests measured once a decade, and a Red List that counts what Switzerland has already lost." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Environment.svg" alt="{{ t "page.environment.environment" "Environment" }}" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Environment.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>{{ t "page.environment.aboutThisTheme" "About this theme" }}</h2>
+
+<p>{{ tHTML "page.environment.oneOfficeManyClocks" "This theme has a single publisher — the <strong>Federal Office for the Environment</strong> — and that is what makes it unusual. Everything here comes from one office, but the datasets run on wildly different clocks. The hydrological network reports <em>every ten minutes</em>. Forest fire warnings are reissued when the weather turns. The National Forest Inventory takes roughly a decade to complete one pass. The Red List is revised once a generation." }}</p>
+
+<p>{{ tHTML "page.environment.readTheClockFirst" "That spread is the thing to keep in mind while reading these tables. A number from the hydro graph is a <em>reading</em> and will have changed by the time you refresh; a number from the forest inventory is an <em>estimate</em> with a published margin of error; a number from the Red List is an <em>assessment</em> that stands until the next revision. The data model tells you which is which — the inventory even ships its own standard errors — but only if you look." }}</p>
+
+<!-- Metric strip: one bounded COUNT per headline figure. Counts drift as FOEN
+     reloads its exports, so no figure here is repeated in the prose. -->
+<sparql-async id="envHydroStations" class="d-none">
+  SELECT (COUNT(?s) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/hydro&gt; {
+      ?s a &lt;http://example.com/HydroMeasuringStation&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="envFireRegions" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/forest-fire-risk-warning&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+<sparql-async id="envNfiObservations" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/national-forest-inventory&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+<sparql-async id="envCubeObservations" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/cube&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "envHydroStations"
+      "title" (t "card.hydroStations" "Hydro Stations")
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fhydro"
+      "icon" "/static/img/resource/Water.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "envFireRegions"
+      "title" (t "card.fireWarningRegions" "Fire Warning Regions")
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fforest-fire-risk-warning"
+      "icon" "/static/img/resource/Fire.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "envNfiObservations"
+      "title" (t "card.forestInventoryRows" "Forest Inventory Rows")
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fnational-forest-inventory"
+      "icon" "/static/img/resource/Forest.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "envCubeObservations"
+      "title" (t "card.environmentalStatistics" "Environmental Statistics")
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fcube"
+      "icon" "/static/img/resource/Observation.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Right now                                                      -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.environment.rightNow" "Right now" }}</h2>
+
+<p>{{ tHTML "page.environment.liveDataIntro" "Two of these datasets are <strong>live</strong>, which is rare in LINDAS. Most of the platform is a record of things that already happened; the hydro graph and the forest fire warnings describe the country as it is at this moment. They also happen to be the two that a person might act on — whether to swim, whether to light a fire." }}</p>
+
+<h3 class="mt-4">{{ t "page.environment.forestFireDanger" "Forest fire danger" }}</h3>
+
+<p>{{ tHTML "page.environment.fireDangerIntro" "Switzerland is divided into 143 <strong>forest fire warning regions</strong>, each carrying a danger level from 1 (low) to 5 (very high). What makes this pair of graphs worth reading together is that danger and <em>response</em> are published separately: FOEN assesses the risk, and the cantons decide what to forbid. The table below joins them, so each region shows the hazard alongside the fire ban actually in force there — from a warning to take care, up to an absolute ban on fires in the open." }}</p>
+
+<sparql-async id="envFireDanger" class="d-none">
+  # ?region, ?canton, ?dangerLevel and ?measure all stay IRIs on purpose: the backend
+  # resolves each to a label in the visitor's language and links it to its resource page.
+  #
+  # The join is across TWO named graphs — the warning (FOEN's hazard assessment) and the
+  # cantonal prevention measure (the legal response) are separate datasets that share the
+  # region IRI. It is an OPTIONAL because not every region has a measure in force; the
+  # join stays 1:1 (143 rows in, 143 out), so no aggregation is needed to keep it flat.
+  #
+  # ?issued is the warning's own timestamp rather than a query time — these rows are
+  # reissued as the weather changes, so a stale-looking date is information, not a bug.
+  SELECT ?region ?canton ?dangerLevel ?measure ?issued WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/forest-fire-risk-warning&gt; {
+      ?w a cube:Observation ;
+         &lt;https://environment.ld.admin.ch/foen/gefahren-waldbrand-warnung/region&gt; ?region ;
+         &lt;https://environment.ld.admin.ch/foen/gefahren-waldbrand-warnung/canton&gt; ?canton ;
+         &lt;https://environment.ld.admin.ch/foen/gefahren-waldbrand-warnung/level&gt; ?dangerLevel ;
+         schema:validFrom ?issued .
+    }
+    OPTIONAL {
+      GRAPH &lt;https://lindas.admin.ch/foen/forest-fire-prevention-measures-cantons&gt; {
+        ?m &lt;https://environment.ld.admin.ch/foen/gefahren-waldbrand-praeventionsmassnahmen-kantone/region&gt; ?region ;
+           &lt;https://environment.ld.admin.ch/foen/gefahren-waldbrand-praeventionsmassnahmen-kantone/level&gt; ?measure .
+      }
+    }
+  } ORDER BY DESC(?dangerLevel) ?region
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "envFireDanger"
+      "title" (t "card.fireDangerAndBans" "Forest fire danger and fire bans in force, by region")
+      "icon" "flame"
+      "iconVar" "canton") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.environment.fireLabelCaveat" "The danger levels and ban descriptions carry <em>no language tag</em> — the German, French, Italian and English wordings sit on the same resource as four untagged literals — so a level may appear in whichever language the label resolver reaches first. The IRI is what identifies the level; the wording is a label on it." }}</p>
+
+<h3 class="mt-4">{{ t "page.environment.riversAndLakes" "Rivers and lakes, this minute" }}</h3>
+
+<p>{{ tHTML "page.environment.hydroIntro" "The <strong>hydrological network</strong> is the most immediate dataset on this platform. Around 230 stations report water level, discharge and — at some of them — water temperature, refreshed continuously; the timestamp on each row is when the instrument actually read, not when the file was published. Each station is tied to the <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FBodyOfWater\">body of water</a> it sits on and carries geographic coordinates, so the same reading answers both <em>how warm is the Rhine</em> and <em>where exactly</em>." }}</p>
+
+<p>{{ tHTML "page.environment.hydroWhatIsMissing" "Note which columns are sparse. Every station reports a level, most report discharge, but only about a third measure temperature — and lake stations naturally report no discharge at all. Those gaps are in the data rather than in the query: the measures are <code>OPTIONAL</code> because a station simply does not carry the instruments it does not have." }}</p>
+
+<sparql-async id="envHydroLive" class="d-none">
+  # ?station and ?water stay IRIs so the backend resolves and links them; the station page
+  # carries the coordinates and the water body page groups every station on that river.
+  #
+  # All three measures are OPTIONAL because station equipment differs — a lake gauge has
+  # no discharge, and only about a third of stations carry a thermometer. Making any of
+  # them mandatory would silently drop most of the network from the table.
+  #
+  # Sorted by temperature descending so the warmest water in the country is the first row;
+  # unmeasured stations sort to the end rather than disappearing.
+  SELECT ?station ?water ?waterTemperature ?discharge ?waterLevel ?measured WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/hydro&gt; {
+      ?obs a cube:Observation ;
+           &lt;https://environment.ld.admin.ch/foen/hydro/dimension/station&gt; ?station ;
+           &lt;https://environment.ld.admin.ch/foen/hydro/dimension/measurementTime&gt; ?measured .
+      OPTIONAL { ?obs &lt;https://environment.ld.admin.ch/foen/hydro/dimension/waterTemperature&gt; ?waterTemperature }
+      OPTIONAL { ?obs &lt;https://environment.ld.admin.ch/foen/hydro/dimension/discharge&gt; ?discharge }
+      OPTIONAL { ?obs &lt;https://environment.ld.admin.ch/foen/hydro/dimension/waterLevel&gt; ?waterLevel }
+      ?station schema:containedInPlace ?water .
+    }
+  } ORDER BY DESC(xsd:decimal(?waterTemperature))
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "envHydroLive"
+      "title" (t "card.hydroLive" "Live readings: water temperature, discharge and level")
+      "icon" "droplets"
+      "iconVar" "water") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.environment.hydroUnits" "Water level is metres above sea level (not depth), discharge is m³/s, temperature is °C. A station may briefly appear twice when a new reading lands while an older one is still being replaced — the measurement timestamp distinguishes them." }}</p>
+
+<!-- ============================================================= -->
+<!-- The state of the forest                                        -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.environment.theStateOfTheForest" "The state of the forest" }}</h2>
+
+<p>{{ tHTML "page.environment.nfiIntro" "The <strong>National Forest Inventory</strong> is the most carefully modelled dataset in this theme, and the one that rewards reading the model before the numbers. Field crews visit a grid of sample plots across the country; a full pass takes years. Five inventories have been completed since the early 1980s, and — importantly — the data also treats the <em>intervals between them</em> (NFI1–NFI2, NFI2–NFI3, …) as inventory periods in their own right, so change over time is a first-class value rather than something you compute by subtraction." }}</p>
+
+<p>{{ tHTML "page.environment.nfiStandardError" "Because every figure is an <em>estimate from a sample</em> rather than a census, each measure ships with its own <strong>standard error</strong>: alongside topic <code>21</code> (growing stock) sits <code>SE21</code>, the error on that estimate as a percentage. This is genuinely unusual for open government data, and it changes how the table should be read — a cantonal figure with ±15% attached is not comparable to one with ±6% in the way the raw numbers suggest. Small cantons have fewer sample plots, so their estimates are correspondingly less certain." }}</p>
+
+<sparql-async id="envForestStock" class="d-none">
+  # Growing stock per hectare, by canton, from the most recent completed inventory (NFI5).
+  # ?canton stays an IRI so the backend resolves and links it to the standard canton page.
+  #
+  # FOUR dimensions must be pinned or this cube fans out badly — each is a real choice:
+  #  1. inventory        = 550 (NFI5). Omitting it returns all five inventories AND the
+  #                        four change periods between them, stacked.
+  #  2. classificationUnit = Total. This cube breaks results down by tree diameter class;
+  #                        "Total" is the aggregate. (ClassificationUnit/1029/0 looks like
+  #                        a total but is the 12-15 cm class — an easy and silent mistake.)
+  #  3. evaluationType   = 1 ("State"), i.e. a stock figure rather than a rate of change.
+  #  4. unitOfEvaluation = 434, "accessible forest without shrub forest" as assessed for
+  #                        THIS inventory. The alternative (2382) is the same population
+  #                        restricted to what is comparable across NFI1-NFI5 — correct for
+  #                        time series, wrong here, and it silently doubles the row count.
+  #
+  # ?standardErrorPercent is the published error on the estimate to its left, not a
+  # separate measurement. Read the two columns together.
+  SELECT ?canton ?stockPerHectare ?standardErrorPercent ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/national-forest-inventory&gt; {
+      &lt;https://environment.ld.admin.ch/foen/nfi/nfi_C-1029/cube/2024-1&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;https://environment.ld.admin.ch/foen/nfi/inventory&gt; &lt;https://environment.ld.admin.ch/foen/nfi/Inventory/550&gt; ;
+           &lt;https://environment.ld.admin.ch/foen/nfi/unitOfReference&gt; ?canton ;
+           &lt;https://environment.ld.admin.ch/foen/nfi/classificationUnit&gt; &lt;https://environment.ld.admin.ch/foen/nfi/ClassificationUnit/Total&gt; ;
+           &lt;https://environment.ld.admin.ch/foen/nfi/evaluationType&gt; &lt;https://environment.ld.admin.ch/foen/nfi/EvaluationType/1&gt; ;
+           &lt;https://environment.ld.admin.ch/foen/nfi/unitOfEvaluation&gt; &lt;https://environment.ld.admin.ch/foen/nfi/UnitOfEvaluation/434&gt; ;
+           &lt;https://environment.ld.admin.ch/foen/nfi/Topic/21r&gt; ?stockPerHectare ;
+           &lt;https://environment.ld.admin.ch/foen/nfi/Topic/SE21r&gt; ?standardErrorPercent .
+      FILTER (CONTAINS(STR(?canton), "/canton/"))
+    }
+  } ORDER BY DESC(xsd:decimal(?stockPerHectare))
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "envForestStock"
+      "title" (t "card.growingStockPerCanton" "Growing stock per hectare of forest, NFI5 (m³/ha, with standard error)")
+      "icon" "trees"
+      "iconVar" "canton") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.environment.nfiTopicCaveat" "The inventory publishes each measure as its own <em>predicate</em> rather than as a value of a shared dimension — <code>Topic/21</code> is growing stock, <code>Topic/13</code> is fellings and mortality, and so on for several hundred topics, each with an <code>r</code> variant expressing it per hectare. So changing what this table reports means changing a predicate, not a filter." }}</p>
+
+<p class="text-secondary">{{ tHTML "page.environment.nfiCantonCaveat" "Twenty-four rows, not twenty-six: <strong>Basel-Stadt and Basel-Landschaft are not reported separately</strong> in this cube — they appear only as a combined region — and the inventory also publishes the same topics for Switzerland as a whole, for economic regions and for protection-forest regions. The <em>unit of reference</em> is a dimension in its own right, so a canton is one of several ways to slice the forest rather than the only one." }}</p>
+
+<!-- ============================================================= -->
+<!-- What has been lost                                             -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.environment.whatHasBeenLost" "What has been lost" }}</h2>
+
+<p>{{ tHTML "page.environment.redListIntro" "The <strong>Red List</strong> assesses Swiss species against the <a href=\"/resource?iri=https%3A%2F%2Fenvironment.ld.admin.ch%2Fvocabulary%2Fiucn_conservation_categories\">IUCN conservation categories</a> — from <em>least concern</em> through <em>vulnerable</em>, <em>endangered</em> and <em>critically endangered</em>, to <em>regionally extinct</em>. Each category is a proper resource here, not a code in a string: it carries its four-language name, an <code>owl:sameAs</code> link to Wikidata, and even the official colour used to render it on FOEN's own charts." }}</p>
+
+<p>{{ tHTML "page.environment.redListStructure" "Species are grouped by a FOEN classification that nests via <code>skos:broader</code> — <em>all organisms</em> contains <em>animals</em>, which contains <em>insects</em>, which contains <em>butterflies</em> — so the same cube answers both the national headline and the question of which group is faring worst. Pick one level when summing, or the totals will count the same species several times over. The <code>part</code> column is the share of that group's assessed species falling in the category, which is what makes small and large groups comparable." }}</p>
+
+<sparql-async id="envRedList" class="d-none">
+  # ?group and ?status stay IRIs so the backend resolves both to labels and links them —
+  # the status page carries the IUCN definition and the Wikidata link.
+  #
+  # Only the TOP level of the species hierarchy is selected (foen_species_classification
+  # /100000, "all organisms" and its immediate children are nested via skos:broader).
+  # Listing every level would double-count, since a butterfly is also an insect and an
+  # animal; the ?group link leads to the finer breakdown.
+  #
+  # ?share is the cube's own "part" measure — the percentage of that group's assessed
+  # species in this category — so it is comparable across groups of very different size.
+  #
+  # Note there is deliberately NO year filter. This cube's yearissue is the literal
+  # string "no" for the current assessment (it is not a per-year series), so filtering
+  # on a year would empty the table.
+  SELECT ?group ?status ?species ?share ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/cube&gt; {
+      &lt;https://environment.ld.admin.ch/foen/ubd003001/10&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;https://environment.ld.admin.ch/foen/ubd003001/statuscode&gt; ?status ;
+           &lt;https://environment.ld.admin.ch/foen/ubd003001/groupid&gt; ?group ;
+           &lt;https://environment.ld.admin.ch/foen/ubd003001/value&gt; ?species ;
+           &lt;https://environment.ld.admin.ch/foen/ubd003001/part&gt; ?share .
+    }
+  } ORDER BY ?group DESC(xsd:decimal(?species))
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "envRedList"
+      "title" (t "card.redListByGroup" "Red List: species per conservation status and organism group")
+      "icon" "bird"
+      "iconVar" "group"
+      "groupBy" "group") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.environment.redListDataDeficient" "Watch the <em>data deficient</em> rows. They are not a category of threat but an admission that too little is known to assess the species at all, and for some groups they outnumber every threat category combined — a statement about the survey effort rather than about the organisms." }}</p>
+
+<!-- ============================================================= -->
+<!-- Emissions and pollution                                        -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.environment.emissionsAndPollution" "Emissions and pollution" }}</h2>
+
+<p>{{ tHTML "page.environment.ghgIntro" "The <strong>greenhouse gas inventory</strong> is the dataset behind Switzerland's climate reporting, running from 1990 to the most recent completed year. It is broken down by sector and by gas, and both are hierarchical: the national total splits into buildings, transport, industry and other, while the gases split into CO₂, methane, nitrous oxide and the synthetic gases — with an <em>all greenhouse gases</em> member expressing everything in CO₂ equivalents." }}</p>
+
+<p>{{ tHTML "page.environment.ghgLandUse" "One part of the model deserves attention: <strong>land use is reported separately and excluded from the headline total</strong>, as is international aviation. Forest land in particular is usually a net <em>sink</em> — a negative number — because growing trees absorb more carbon than felling releases. Folding it into the national figure would understate emissions; keeping it out is the convention, and the cube marks it explicitly rather than leaving you to guess." }}</p>
+
+<sparql-async id="envGreenhouseGases" class="d-none">
+  # ?sector stays an IRI so the backend resolves the sector name and links it.
+  #
+  # Three traps in this cube:
+  #  1. The year is typed xsd:gYear, NOT a plain string — "2024" alone matches nothing.
+  #  2. The "all greenhouse gases" member (everything in CO2 equivalents) has the
+  #     misleading IRI .../testdimension/test1. It is not test data — it is the total,
+  #     and using a single gas instead would silently report only part of the emissions.
+  #  3. ?hierachie (sic, misspelled in the source data) is the depth of the sector in
+  #     the hierarchy: "1" is the national total, two-digit codes are its components.
+  #     Mixing levels double-counts, so it is selected rather than filtered out — the
+  #     column makes the nesting visible instead of hiding it.
+  SELECT ?sector ?level ?megatonnesCO2eq ?year ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foen/cube&gt; {
+      &lt;https://environment.ld.admin.ch/foen/ubd000502/8&gt; cube:observationSet/cube:observation ?observation .
+      ?observation &lt;https://environment.ld.admin.ch/foen/ubd000502/sektorid&gt; ?sector ;
+           &lt;https://environment.ld.admin.ch/foen/ubd000502/gas&gt; &lt;https://ld.admin.ch/cube/dimension/testdimension/test1&gt; ;
+           &lt;https://environment.ld.admin.ch/foen/ubd000502/jahr&gt; ?year ;
+           &lt;https://environment.ld.admin.ch/foen/ubd000502/hierachie&gt; ?level ;
+           &lt;https://environment.ld.admin.ch/foen/ubd000502/werte&gt; ?megatonnesCO2eq .
+      FILTER (STRLEN(?level) &lt;= 2)
+    }
+  } ORDER BY DESC(?year) ?level DESC(xsd:decimal(?megatonnesCO2eq))
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "envGreenhouseGases"
+      "title" (t "card.greenhouseGasesBySector" "Greenhouse gas emissions by sector (million tonnes CO₂-equivalent)")
+      "icon" "factory"
+      "iconVar" "sector"
+      "collapsed" true) }}
+</div>
+
+<p>{{ tHTML "page.environment.otherPollutionCubes" "Several smaller cubes round out the pollution picture, and each is worth knowing about even though none is tabulated here. <strong>Traffic noise pollution</strong> estimates how many people are exposed to road, rail and aircraft noise above the legal thresholds. <strong>Heavy metal soil contamination</strong> reports measured concentrations at monitoring sites. <strong>Bathing water quality</strong> holds roughly twelve thousand individual laboratory results — E. coli and enterococci counts per sampling date and location — which is a genuinely fine-grained public health series. And a family of cubes tracks <strong>air pollution along the A2 and A13</strong>, the two motorways carrying alpine transit traffic, measuring NO₂, particulates and soot at roadside." }}</p>
+
+<!-- ============================================================= -->
+<!-- Species literature                                             -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.environment.speciesLiterature" "Species literature" }}</h2>
+
+<p>{{ tHTML "page.environment.plaziIntro" "The largest graph FOEN publishes has nothing to do with monitoring. <strong>Plazi</strong> is a corpus of taxonomic treatments — the formal descriptions by which species are named and delimited in the scientific literature — mined from published papers and turned into linked data. It answers a different kind of question from everything above: not <em>how much</em> or <em>how warm</em>, but <em>who described this species, where, and under what name</em>. It has its own page here, because its structure has nothing in common with the cubes." }}</p>
+
+<div class="row row-cards mb-4">
+  <div class="col-md-6">
+    <a class="card card-link h-100" href="/plazi.html">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="bug" class="me-2"></i>{{ t "page.environment.plaziClassification" "Plazi Classification" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.environment.plaziDesc" "Taxonomic names, treatments and the publications they come from — hundreds of thousands of species records." }}</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-6">
+    <a class="card card-link h-100" href="/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fthemes">
+      <div class="card-body">
+        <h3 class="card-title d-flex align-items-center">
+          <i data-lucide="sprout" class="me-2"></i>{{ t "page.environment.themeVocabulary" "FOEN theme vocabulary" }}
+        </h3>
+        <p class="text-secondary mb-0">{{ t "page.environment.themeVocabularyDesc" "The shared dimensions behind these cubes — species groups, chemical elements, warning levels — as reusable terms." }}</p>
+      </div>
+    </a>
+  </div>
+</div>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.environment.theDatasets" "The datasets" }}</h2>
+
+<p>{{ tHTML "page.environment.datasetsIntro" "Seven named graphs, all published by the same office, all under the <code>https://environment.ld.admin.ch/</code> vocabulary namespace." }}</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.environmentalStatisticsGroup" "<strong>Environmental statistics</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.cubeGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fcube\">foen/cube</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.environment.cubeSize" "121 cubes, ~469,000 observations" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.environment.cubeContents" "Greenhouse gases, air pollution, traffic noise, soil contamination, bathing water, Red List, wood flow" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.cubeCaveat" "The 121 cubes are roughly 18 datasets in many versions — take the highest-numbered cube IRI unless comparing releases" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.forestGroup" "<strong>National Forest Inventory</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.nfiGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fnational-forest-inventory\">foen/national-forest-inventory</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.environment.nfiSize" "125 cubes, ~630,000 observations" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.coverage" "Coverage" }}</div>
+        <div class="datagrid-content">{{ t "page.environment.nfiCoverage" "Five inventories since the early 1980s, plus the change periods between them" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.nfiContents" "Several hundred forest topics, each as its own predicate and each paired with a published standard error; surveyed by <a href=\"/resource?iri=https%3A%2F%2Fregister.ld.admin.ch%2Fopendataswiss%2Forg%2Fwsl\">WSL</a>" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.liveMonitoringGroup" "<strong>Live monitoring</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.namedGraphs" "Named graphs" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.liveGraphs" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fhydro\">foen/hydro</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fforest-fire-risk-warning\">forest-fire-risk-warning</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fforest-fire-prevention-measures-cantons\">forest-fire-prevention-measures-cantons</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.environment.liveSize" "~230 hydro stations, 143 fire warning regions" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.updateFrequency" "Update frequency" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.liveFrequency" "Continuous — these graphs hold the <em>current</em> state only, not a history" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.referenceGroup" "<strong>Literature and vocabulary</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.namedGraphs" "Named graphs" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.referenceGraphs" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fplazi\">foen/plazi</a>, <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fthemes\">foen/themes</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.environment.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.environment.referenceContents" "Plazi taxonomic treatments (by far the largest graph in this theme — see the <a href=\"/plazi.html\">Plazi page</a>), plus the shared dimensions the cubes draw their terms from" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-secondary">{{ tHTML "page.environment.crossLinks" "As elsewhere on the platform, these graphs link outward instead of duplicating reference data: cantons resolve into the standard <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fterritorial\">territorial</a> units, species groups and conservation categories come from <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fcube%2Fdimension\">shared cube dimensions</a> that carry Wikidata links, and the surveying bodies — FOEN itself, WSL for the forest inventory — are the same <code>ld.admin.ch</code> organisation resources used across LINDAS." }}</p>
+
+{{ end }}

@@ -1,0 +1,467 @@
+{{ define "metaTitle" }}{{ t "page.statistics.metaTitle" "Statistics & Registers" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.statistics.title" "Statistics & Registers" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.statistics.subtitle" "The reference data everything else is measured against — every municipality, every registered company, and the code lists Swiss statistics agree to share." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Statistics.svg" alt="{{ t "page.statistics.statistics" "Statistics" }}" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Statistics.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>{{ t "page.statistics.aboutThisTheme" "About this theme" }}</h2>
+
+<p>{{ tHTML "page.statistics.intro" "This theme is the substrate. Nothing here is a measurement of the world — it is the machinery that lets measurements be compared: <em>which</em> municipality a figure belongs to, <em>which</em> occupation a person was recorded as having, <em>which</em> industry code a business falls under. Every other page on this site depends on it, usually without saying so." }}</p>
+
+<p>{{ tHTML "page.statistics.twoProblems" "Two problems dominate, and the two main graphs each solve one. Reference data <strong>changes</strong> — municipalities merge, and a statistic about Wald in 2005 is not about the same territory as one from 2025. And reference data must be <strong>shared</strong> — if the health office and the labour office each invent their own occupation codes, their figures can never be joined. The <strong>Federal Statistical Office</strong> answers both, with a versioned municipality register and the I14Y interoperability platform." }}</p>
+
+<p>{{ tHTML "page.statistics.registersToo" "Alongside them sit the registers of <em>things that exist</em> rather than codes: the <strong>Zefix</strong> commercial register from the Federal Office of Justice, naming every legal entity in the country, and the territorial resources that cube observations across the platform resolve into." }}</p>
+
+<!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
+     reloads, so no figure here is repeated as a hard number in the prose. -->
+<sparql-async id="statsMunicipalities" class="d-none">
+  SELECT (COUNT(?m) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fso/register&gt; {
+      ?m a &lt;https://schema.ld.admin.ch/PoliticalMunicipality&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="statsChangeEvents" class="d-none">
+  SELECT (COUNT(?e) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fso/register&gt; {
+      ?e a &lt;https://schema.ld.admin.ch/MunicipalityChangeEvent&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="statsI14yConcepts" class="d-none">
+  SELECT (COUNT(?c) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fso/i14y&gt; {
+      ?c a &lt;http://www.w3.org/2004/02/skos/core#Concept&gt; .
+    }
+  }
+</sparql-async>
+<sparql-async id="statsZefixCompanies" class="d-none">
+  SELECT (COUNT(?o) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/foj/zefix&gt; {
+      ?o a &lt;https://schema.ld.admin.ch/ZefixOrganisation&gt; .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "statsMunicipalities"
+      "title" (t "card.municipalities" "Municipalities")
+      "href" "/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FPoliticalMunicipality"
+      "icon" "/static/img/resource/Municipality.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "statsChangeEvents"
+      "title" (t "card.changeEvents" "Change Events")
+      "href" "/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FMunicipalityChangeEvent"
+      "icon" "/static/img/resource/ChangeEvent.fallback.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "statsI14yConcepts"
+      "title" (t "card.classificationConcepts" "Classification Concepts")
+      "href" "/resource?iri=http%3A%2F%2Fwww.w3.org%2F2004%2F02%2Fskos%2Fcore%23Concept"
+      "icon" "/static/img/resource/Concept.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "statsZefixCompanies"
+      "title" (t "card.registeredCompanies" "Registered Companies")
+      "href" "/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FZefixOrganisation"
+      "icon" "/static/img/resource/Corporation.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Municipalities                                                 -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.statistics.theMunicipalities" "Three and a half thousand municipalities" }}</h2>
+
+<p>{{ tHTML "page.statistics.municipalitiesIntro" "The municipality is the atom of Swiss statistics: almost every figure the Confederation publishes is either reported per municipality or aggregated up from them. The register defines the full three-level hierarchy — <strong>canton</strong>, <strong>district</strong>, <strong>municipality</strong> — and the shape is uneven in ways that reflect history rather than population. Bern and Vaud each carry hundreds of communes; Graubünden has more districts than Zurich has, for a fraction of the people." }}</p>
+
+<sparql-async id="statsMunicipalitiesPerCanton" class="d-none">
+  # ?canton stays an IRI so the backend resolves the canton name and links it.
+  #
+  # The hierarchy is TWO hops: municipality -> district -> canton via schema:isPartOf.
+  # There is no direct municipality-to-canton edge, and a containedInPlace* path does
+  # NOT reach the canton either — it stops at the district. Use isPartOf twice.
+  SELECT ?canton ?municipalities ?districts WHERE {
+    {
+      SELECT ?canton
+             (COUNT(DISTINCT ?m) AS ?municipalities)
+             (COUNT(DISTINCT ?d) AS ?districts)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fso/register&gt; {
+          ?m a &lt;https://schema.ld.admin.ch/PoliticalMunicipality&gt; ;
+             schema:isPartOf ?d .
+          ?d schema:isPartOf ?canton .
+          ?canton a &lt;https://schema.ld.admin.ch/Canton&gt; .
+        }
+      } GROUP BY ?canton
+    }
+  } ORDER BY DESC(?municipalities)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "statsMunicipalitiesPerCanton"
+      "title" (t "card.municipalitiesPerCanton" "Municipalities and districts per canton")
+      "icon" "map"
+      "iconVar" "canton") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.statistics.municipalitiesCaveat" "Municipalities also carry a <code>geosparql:hasGeometry</code> link to their boundary polygon in <code>geo.ld.admin.ch</code>, and a GeoNames feature code — so the register is a bridge into mapping data as well as a list of names. Not every municipality has a geometry attached; the coverage is partial." }}</p>
+
+<!-- ============================================================= -->
+<!-- Mergers                                                        -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.statistics.theGreatMerging" "The great merging" }}</h2>
+
+<p>{{ tHTML "page.statistics.mergersIntro" "Switzerland had over 3,000 municipalities for most of the twentieth century and has been steadily losing them ever since — not through any federal policy but through thousands of local decisions to merge. The register records every one of these as a <strong>change event</strong>, with the predecessors that went in, the successor that came out, and the date it took effect. This is the same <code>version.link</code> model the <a href=\"/government.html\">federal administration</a> uses for its own reorganisations." }}</p>
+
+<p>{{ tHTML "page.statistics.mergersWaves" "Grouped by year, the mergers arrive in waves rather than a trickle. The cantons drive them — a canton offers financial incentives, and dozens of communes merge in a single January. <strong>2006</strong> and <strong>2010</strong> stand out sharply, each absorbing over four hundred municipalities into successors. Because every merger takes effect on 1 January, the whole map of Switzerland changes on one day each year." }}</p>
+
+<sparql-async id="statsMergersPerYear" class="d-none">
+  # ?absorbed counts PREDECESSOR links, not events: one event can absorb several
+  # municipalities at once, so the two columns diverge — and the gap between them is
+  # itself informative (2009 shows 114 absorbed across only 32 events).
+  #
+  # The year is parsed from the validFrom string with SUBSTR rather than compared as
+  # a typed date, which keeps the GROUP BY cheap. String comparison is safe here
+  # because YYYY-MM-DD sorts chronologically.
+  SELECT ?year ?events ?absorbed WHERE {
+    {
+      SELECT ?year
+             (COUNT(DISTINCT ?ev) AS ?events)
+             (COUNT(?pred) AS ?absorbed)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fso/register&gt; {
+          ?ev a &lt;https://schema.ld.admin.ch/MunicipalityChangeEvent&gt; ;
+              schema:validFrom ?d ;
+              &lt;https://version.link/predecessor&gt; ?pred .
+          BIND (SUBSTR(STR(?d), 1, 4) AS ?year)
+        }
+      } GROUP BY ?year
+    }
+  } ORDER BY DESC(?year)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "statsMergersPerYear"
+      "title" (t "card.mergersPerYear" "Municipality change events per year")
+      "icon" "git-merge") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.statistics.mergersCaveat" "Not every change event is a merger — the register uses the same mechanism for renamings, boundary corrections and transfers between districts, so the event count is an upper bound on genuine amalgamations. An event with several predecessors and one successor is the classic merger shape; one predecessor and one successor is usually a rename." }}</p>
+
+<p>{{ tHTML "page.statistics.mergersWhyItMatters" "The practical consequence for anyone querying this platform: a municipality IRI is a <em>version</em>, not a place. If you join a 2005 statistic to a 2026 municipality list on identifier alone, the rows that merged in between will silently vanish. The register exists precisely so that the join can be done properly, by walking the predecessor chain." }}</p>
+
+<!-- ============================================================= -->
+<!-- Zefix                                                          -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.statistics.zefix" "Every company in the country" }}</h2>
+
+<p>{{ tHTML "page.statistics.zefixIntro" "<strong>Zefix</strong> — the Central Business Names Index, kept by the Federal Office of Justice — is the register of every legal entity in the Swiss commercial register. At close to <strong>800,000 organisations</strong> it is by a wide margin the largest register on this platform, and it is the counterpart to the municipality register: one identifies places, the other identifies the businesses standing in them." }}</p>
+
+<p>{{ tHTML "page.statistics.zefixUid" "Its load-bearing feature is the <strong>UID</strong>, the company identification number, which every entity carries. That single identifier is what lets a company be recognised across otherwise unrelated datasets — the electricity grid operators in the <a href=\"/energy.html\">energy</a> theme carry their UID, and it resolves to the legal entity here. Each entry also holds a legal form from the <code>eCH-0097</code> standard, a registered address, the municipality of domicile, and in most cases the company's stated purpose in full prose." }}</p>
+
+<sparql-async id="statsZefixLegalForms" class="d-none">
+  # ?legalForm stays an IRI so the backend resolves and links the eCH-0097 code.
+  #
+  # Legal forms are a SHARED vocabulary (ld.admin.ch/ech/97/legalforms/…), not strings
+  # local to Zefix — which is why the resolved label works and why the same codes
+  # appear in other registers.
+  SELECT ?legalForm ?companies WHERE {
+    {
+      SELECT ?legalForm (COUNT(?org) AS ?companies) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/foj/zefix&gt; {
+          ?org a &lt;https://schema.ld.admin.ch/ZefixOrganisation&gt; ;
+               schema:additionalType ?legalForm .
+        }
+      } GROUP BY ?legalForm
+    }
+  } ORDER BY DESC(?companies)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "statsZefixLegalForms"
+      "title" (t "card.zefixLegalForms" "Registered entities by legal form")
+      "icon" "building"
+      "iconVar" "legalForm") }}
+</div>
+
+<p>{{ tHTML "page.statistics.zefixForms" "Three forms account for almost the whole register: the <strong>GmbH/Sàrl</strong>, the <strong>Aktiengesellschaft</strong> and the sole proprietorship. Everything else — foundations, associations, cooperatives, partnerships, branches of foreign companies — is a long tail. The presence of foundations and associations is a reminder that this is a register of <em>legal entities</em>, not only of businesses trading for profit." }}</p>
+
+<p>{{ tHTML "page.statistics.zefixJoinIntro" "Because every company records its municipality of domicile as an IRI from the register described above, the two datasets join directly — and counting companies per canton shows something the population figures do not. Zurich leads as expected, but <strong>Zug</strong> appears far higher than its size warrants: a canton of some 130,000 people hosting tens of thousands of registered entities, which is its low-tax corporate domicile policy made visible in the data." }}</p>
+
+<sparql-async id="statsZefixPerCanton" class="d-none">
+  # A genuine CROSS-GRAPH join: the company lives in foj/zefix, the municipality
+  # hierarchy in fso/register, and they meet on the municipality IRI.
+  #
+  # ?canton stays an IRI so the backend resolves and links it. The canton is two hops
+  # from the municipality (via the district) — the same trap noted further up this page.
+  SELECT ?canton ?companies WHERE {
+    {
+      SELECT ?canton (COUNT(?org) AS ?companies) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/foj/zefix&gt; {
+          ?org a &lt;https://schema.ld.admin.ch/ZefixOrganisation&gt; ;
+               &lt;https://schema.ld.admin.ch/municipality&gt; ?municipality .
+        }
+        GRAPH &lt;https://lindas.admin.ch/fso/register&gt; {
+          ?municipality schema:isPartOf ?district .
+          ?district schema:isPartOf ?canton .
+          ?canton a &lt;https://schema.ld.admin.ch/Canton&gt; .
+        }
+      } GROUP BY ?canton
+    }
+  } ORDER BY DESC(?companies)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "statsZefixPerCanton"
+      "title" (t "card.zefixPerCanton" "Registered entities per canton")
+      "icon" "briefcase"
+      "iconVar" "canton") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.statistics.zefixCaveat" "These are <em>registered</em> entities at their legal domicile, which is not the same as economic activity: a holding company registered in Zug may employ nobody there. Note also that the register carries current entries — it is a snapshot of who exists now, not a history of formations and dissolutions." }}</p>
+
+<!-- ============================================================= -->
+<!-- I14Y                                                           -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.statistics.i14y" "The code lists everyone agrees on" }}</h2>
+
+<p>{{ tHTML "page.statistics.i14yIntro" "<strong>I14Y</strong> — the numeronym for <em>interoperability</em> — is the federal platform where agencies publish the code lists they use, so that others can adopt the same ones instead of inventing parallel versions. It is by some distance the largest graph in this theme, and its content is a fair summary of what the Swiss state counts: occupations, diseases, surgical procedures, industries, languages, countries, airports." }}</p>
+
+<p>{{ tHTML "page.statistics.i14yModel" "Everything is modelled in <strong>SKOS</strong>, the standard vocabulary for classification schemes, with <code>xkos:ClassificationLevel</code> layered on top to mark the rungs of a hierarchy — so a four-digit occupation code knows it sits beneath a three-digit group. Concepts carry their broader and narrower relations, which is what makes a classification usable for aggregation rather than just lookup." }}</p>
+
+<sparql-async id="statsI14yLargest" class="d-none">
+  # Restricted to version.link Identity schemes on purpose.
+  #
+  # Every scheme exists as an identity PLUS one row per published version (PROFESSIONS
+  # alone has 1.1.0, 1.2.0, 1.2.1, 1.2.2, 1.2.3 …). Without the Identity filter the
+  # table is mostly the same handful of classifications repeated at slightly different
+  # concept counts, which tells you nothing.
+  #
+  # ?scheme is left as a bare IRI and NOT paired with a name column: the backend's
+  # label resolver already renders it as a linked, language-aware title. Selecting
+  # schema:name alongside it produced two near-identical columns — the resolved
+  # English label next to the raw German one.
+  #
+  # Those raw labels all end in "(identity)", an artefact of the versioning model,
+  # which is why showing them directly is worse than letting the resolver do it.
+  SELECT ?scheme ?concepts WHERE {
+    {
+      SELECT ?scheme (COUNT(?c) AS ?concepts) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/fso/i14y&gt; {
+          ?scheme a &lt;https://version.link/Identity&gt; .
+          ?c &lt;http://www.w3.org/2004/02/skos/core#inScheme&gt; ?scheme .
+        }
+      } GROUP BY ?scheme
+    }
+  } ORDER BY DESC(?concepts) LIMIT 60
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "statsI14yLargest"
+      "title" (t "card.largestClassifications" "The largest classifications")
+      "icon" "list-tree"
+      "iconVar" "scheme") }}
+</div>
+
+<p>{{ tHTML "page.statistics.i14yNames" "The names in that table are worth reading as a list. <strong>CH-ISCO-19</strong> is the Swiss occupation nomenclature, the largest thing here at some twenty-five thousand entries. <strong>CHOP</strong> is the surgical procedure classification and <strong>ICD-10-GM</strong> the disease classification — both of which every Swiss hospital codes against. <strong>NOGA</strong> is the industry classification behind business statistics. Between them they are the vocabulary in which the state describes work, illness and the economy." }}</p>
+
+<p class="text-secondary">{{ tHTML "page.statistics.i14yCaveat" "I14Y is aggressively versioned: each classification exists as a stable identity plus one concept scheme per published release, and the release schemes are what the raw counts return. The table above filters to identities only. Note also the <code>DV_</code> prefix on many identifiers — those are the distributed-vocabulary copies, sometimes carrying a slightly different concept count than the original of the same name." }}</p>
+
+<!-- ============================================================= -->
+<!-- Shared dimensions                                              -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.statistics.sharedDimensions" "Shared dimensions" }}</h2>
+
+<p>{{ tHTML "page.statistics.territorialIntro" "The <strong>territorial</strong> graph is small but disproportionately load-bearing. It holds the country, canton and district resources that cube observations across the whole platform point at, plus a set of <strong>shared dimensions</strong> — ready-made code lists for things that recur across themes: hydropower plants, bathing-water measurement stations, forest-fire warning regions, civil and military aerodromes, biogeographical regions." }}</p>
+
+<p>{{ tHTML "page.statistics.sharedDimensionsWhy" "The point of publishing these centrally is that two offices measuring the same lake, or the same airfield, use the same IRI for it. When the <a href=\"/energy.html\">energy</a> theme lists a hydropower plant and the <a href=\"/environment.html\">environment</a> theme reports on the river it sits on, the shared dimension is what allows those to be related at all." }}</p>
+
+<sparql-async id="statsSharedDimensions" class="d-none">
+  # ?dim stays an IRI so the backend resolves and links each dimension.
+  #
+  # The name is fetched in its own subquery with SAMPLE: these dimensions carry
+  # de/fr/it/en names WITHOUT consistent tagging across all four, so a plain
+  # ?dim schema:name ?name in the main pattern duplicates every row per language.
+  SELECT ?dim ?terms WHERE {
+    {
+      SELECT ?dim (COUNT(?t) AS ?terms) WHERE {
+        GRAPH &lt;https://lindas.admin.ch/territorial&gt; {
+          ?dim a &lt;https://cube.link/meta/SharedDimension&gt; .
+          ?t schema:inDefinedTermSet ?dim .
+        }
+      } GROUP BY ?dim
+    }
+  } ORDER BY DESC(?terms)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "statsSharedDimensions"
+      "title" (t "card.sharedDimensions" "Shared geographic dimensions")
+      "icon" "layers"
+      "iconVar" "dim") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.statistics.theDatasets" "The datasets" }}</h2>
+
+<p>{{ tHTML "page.statistics.datasetsIntro" "Five named graphs from three publishers. Unusually for this platform, none of them contains a single observation — they are all definitions, identifiers and code lists." }}</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.registerGroup" "<strong>Municipality register</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.fsoPublisher" "Federal Statistical Office (FSO)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.registerGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffso%2Fregister\">fso/register</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.registerSize" "~3,250 political municipalities, ~5,870 municipality versions, ~5,845 change events, ~265 districts" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.model" "Model" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.registerModel" "<strong>version.link</strong> over the <code>eCH-0071</code> standard — stable identities with dated versions, plus <code>ChangeEvent</code> resources recording mergers and renamings" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.registerCaveat" "The canton is <em>two</em> hops from a municipality (via the district) — there is no direct edge, and <code>containedInPlace*</code> does not reach it" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.i14yGroup" "<strong>I14Y interoperability platform</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.fsoPublisher" "Federal Statistical Office (FSO)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.i14yGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffso%2Fi14y\">fso/i14y</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.i14ySize" "~453,000 SKOS concepts in ~670 concept schemes, ~134,000 identities carrying ~320,000 versions" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.i14yContents" "The federal code-list catalogue: occupations (CH-ISCO-19), diseases (ICD-10-GM), surgical procedures (CHOP), industries (NOGA), languages, countries, airports, spatial base units" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.i14yCaveatCard" "Every classification appears once as an identity and once per release — filter to <code>version.link/Identity</code> or the same list repeats at slightly different counts" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.zefixGroup" "<strong>Zefix commercial register</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.fojPublisher" "Federal Office of Justice (FOJ)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.zefixGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoj%2Fzefix\">foj/zefix</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.zefixSize" "~791,000 registered entities, each with a UID, legal form, address and municipality of domicile" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.zefixContents" "The Central Business Names Index — every legal entity in the Swiss commercial register, with its stated purpose in prose for most entries" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.zefixCaveatCard" "Legal domicile, not economic activity — and a current snapshot rather than a history of formations and dissolutions" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.territorialGroup" "<strong>Territorial reference data</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.lindasPublisher" "LINDAS (shared platform data)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.territorialGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fterritorial\">territorial</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.territorialSize" "~284 countries, ~301 administrative areas, 18 shared dimensions, 6 continents" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.territorialContents" "Countries and continents, plus shared geographic code lists — hydropower plants, bathing waters, forest-fire warning regions, aerodromes, biogeographical regions" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.opendataGroup" "<strong>opendata.swiss harvest</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.sfaPublisher" "Swiss Federal Archives" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.opendataGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fsfa%2Fopendataswiss\">sfa/opendataswiss</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.statistics.opendataSize" "~175 publishing organisations and ~213 defined terms" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.statistics.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.statistics.opendataCaveat" "Much smaller than its name suggests — this is the <em>publisher list</em> behind the national open-data portal, not a catalogue of its datasets" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-secondary">{{ tHTML "page.statistics.crossLinks" "Everything on this platform eventually points here. Municipality and canton IRIs from this register appear in <a href=\"/energy.html\">electricity tariffs</a>, <a href=\"/agriculture.html\">animal disease reports</a> and <a href=\"/politics.html\">vote results</a> alike; company UIDs from Zefix identify the grid operators behind those tariffs; the shared dimensions carry <a href=\"/environment.html\">environmental</a> monitoring stations; and the classification schemes underpin the cube dimensions used throughout. When a figure on another page resolves to a place, a company or a code, this is where it resolves to." }}</p>
+
+{{ end }}

@@ -1,0 +1,301 @@
+{{ define "metaTitle" }}{{ t "page.media.metaTitle" "Media & Communications" }}{{ end }}
+{{ define "pageTitle" }}{{ t "page.media.title" "Media & Communications" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.media.subtitle" "What Switzerland watches, reads and listens to — who pays for it, and the network it all arrives over." }}{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/Media.svg" alt="{{ t "page.media.media" "Media" }}" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/Media.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<h2>{{ t "page.media.aboutThisTheme" "About this theme" }}</h2>
+
+<p>{{ tHTML "page.media.intro" "Both graphs here come from the <strong>Federal Office of Communications</strong>, and they sit either side of the same question. One describes the <em>content</em>: how many people watch, read and listen, what the programmes actually contain, and where the advertising money goes. The other describes the <em>pipe</em>: which broadband speeds reach which building, in every municipality in the country." }}</p>
+
+<p>{{ tHTML "page.media.whyOfcom" "That pairing is not accidental. OFCOM both regulates broadcasting — awarding licences, distributing the reception fee, monitoring whether public-service obligations are met — and oversees telecommunications infrastructure. The media research exists because the regulator needs evidence for licence decisions, which is why the data runs to programme-level content analysis rather than just audience totals." }}</p>
+
+<!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
+     reloads, so no figure here is repeated as a hard number in the prose. -->
+<sparql-async id="mediaCubes" class="d-none">
+  SELECT (COUNT(?c) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/ofcom/cube&gt; {
+      ?c a cube:Cube .
+    }
+  }
+</sparql-async>
+<sparql-async id="mediaObservations" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/ofcom/cube&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+<sparql-async id="mediaNgaObservations" class="d-none">
+  SELECT (COUNT(?obs) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/ofcom/nga&gt; {
+      ?obs a cube:Observation .
+    }
+  }
+</sparql-async>
+<sparql-async id="mediaNgaMunicipalities" class="d-none">
+  SELECT (COUNT(DISTINCT ?m) AS ?count) WHERE {
+    GRAPH &lt;https://lindas.admin.ch/ofcom/nga&gt; {
+      ?obs &lt;https://communication.ld.admin.ch/ofcom/nga/gdenr&gt; ?m .
+    }
+  }
+</sparql-async>
+
+<div class="row row-deck row-cards mt-4">
+  {{ template "sparqlMetric" (dict
+      "queryId" "mediaCubes"
+      "title" (t "card.mediaCubes" "Media Research Cubes")
+      "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
+      "icon" "/static/img/resource/Cube.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "mediaObservations"
+      "title" (t "card.mediaObservations" "Media Observations")
+      "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
+      "icon" "/static/img/resource/Observation.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "mediaNgaObservations"
+      "title" (t "card.broadbandReadings" "Broadband Readings")
+      "href" "/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fofcom%2Fnga"
+      "icon" "/static/img/resource/Observation.svg") }}
+  {{ template "sparqlMetric" (dict
+      "queryId" "mediaNgaMunicipalities"
+      "title" (t "card.municipalitiesCovered" "Municipalities Surveyed")
+      "href" "/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FMunicipality"
+      "icon" "/static/img/resource/Municipality.svg") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- Advertising                                                    -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.media.followTheMoney" "Where the advertising went" }}</h2>
+
+<p>{{ tHTML "page.media.advertisingIntro" "The clearest series in this theme is also the bleakest for anyone who works in Swiss media: <strong>advertising revenue by media genre</strong>, year by year. It shows the press still the largest single category by revenue, but falling steadily — and online advertising, the thing that was supposed to replace it, sitting at less than half the press figure and not growing." }}</p>
+
+<p>{{ tHTML "page.media.advertisingNuance" "The reason is that this cube measures advertising booked with <em>Swiss</em> media. The money leaving newspapers has not moved to Swiss news websites; it has largely left the domestic market altogether for global platforms that OFCOM does not survey. Read the online column as \"online advertising captured by Swiss publishers\", not as the size of digital advertising in Switzerland." }}</p>
+
+<sparql-async id="mediaAdvertisingRevenue" class="d-none">
+  # ?genre stays an IRI so the backend resolves it to Press / Television / Online /
+  # Radio in the visitor's language and links it.
+  #
+  # Rooted in ONE cube version. This family has 8 versions sharing dimension IRIs,
+  # so an unrooted pattern multiplies every row eightfold.
+  #
+  # observationDate here is a plain literal year ("2024"), NOT xsd:gYear as in most
+  # cubes on this platform — a "2024"^^xsd:gYear filter matches nothing.
+  SELECT ?year ?genre ?revenueCHF ?observation WHERE {
+    GRAPH &lt;https://lindas.admin.ch/ofcom/cube&gt; {
+      &lt;https://communication.ld.admin.ch/ofcom/advertising_revenue_per_media_genre/8&gt; cube:observationSet/cube:observation ?observation .
+      ?observation schema:observationDate ?year ;
+           &lt;https://communication.ld.admin.ch/ofcom/advertising_revenue_per_media_genre/conceptmediengattung&gt; ?genre ;
+           &lt;https://communication.ld.admin.ch/ofcom/advertising_revenue_per_media_genre/advertisingRevenue&gt; ?revenueCHF .
+    }
+  } ORDER BY DESC(?year) DESC(xsd:decimal(?revenueCHF))
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "mediaAdvertisingRevenue"
+      "title" (t "card.advertisingRevenue" "Advertising revenue by media genre (CHF)")
+      "icon" "banknote"
+      "iconVar" "genre") }}
+</div>
+
+<!-- ============================================================= -->
+<!-- The research collection                                        -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.media.theCollection" "Five hundred cubes of media research" }}</h2>
+
+<p>{{ tHTML "page.media.collectionIntro" "OFCOM's media graph is large and unusually granular. Beyond audience figures it carries <strong>programme analyses</strong> — studies that code broadcast output by topic and format, so it is possible to ask what proportion of a regional radio station's airtime was regional news rather than music. That level of detail exists because private broadcasters receiving a share of the reception fee carry a performance mandate, and the analyses are how compliance is measured." }}</p>
+
+<p>{{ tHTML "page.media.collectionSpread" "The families below span the whole media landscape: Mediapulse audience measurement for television, reach and programme structure for SRG and commercial radio, print readership by age, online media by topic and genre, and the revenue structure of the public broadcaster itself." }}</p>
+
+<sparql-async id="mediaCubeFamilies" class="d-none">
+  # Groups the 533 cubes into families by stripping the trailing version number.
+  #
+  # ?rowsPerCube is MAX rather than SUM on purpose: the versions of a family are
+  # re-publications of the same dataset, so summing them would report a collection
+  # several times larger than it is. MAX gives the size of one release.
+  #
+  # ?family is a plain string, not an IRI — there is no resource representing a
+  # family, only the individual versioned cubes.
+  SELECT ?family ?versions ?rowsPerCube WHERE {
+    {
+      SELECT ?family
+             (COUNT(DISTINCT ?cube) AS ?versions)
+             (MAX(?n) AS ?rowsPerCube)
+      WHERE {
+        {
+          SELECT ?cube (COUNT(?obs) AS ?n) WHERE {
+            GRAPH &lt;https://lindas.admin.ch/ofcom/cube&gt; {
+              ?cube a cube:Cube ; cube:observationSet/cube:observation ?obs .
+            }
+          } GROUP BY ?cube
+        }
+        BIND (REPLACE(STR(?cube), "^https://communication.ld.admin.ch/ofcom/([^/]+)/.*$", "$1") AS ?family)
+      } GROUP BY ?family
+    }
+  } ORDER BY DESC(?rowsPerCube)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "mediaCubeFamilies"
+      "title" (t "card.mediaCubeFamilies" "Media research datasets, by size of one release")
+      "icon" "layers"
+      "collapsed" true) }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.media.collectionCaveat" "The 533 cubes are far fewer datasets than that number suggests — most families exist in eight to fourteen versions, each a separate cube IRI ending in a number, and only the highest is current. Always root a query in one cube IRI, or the same observations are counted once per release." }}</p>
+
+<!-- ============================================================= -->
+<!-- Broadband                                                      -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.media.broadband" "The pipe into the building" }}</h2>
+
+<p>{{ tHTML "page.media.ngaIntro" "The <strong>NGA</strong> dataset — for <em>next-generation access</em> — is the national broadband coverage survey, and its unit of measurement is unusually concrete: not households or people but <strong>premises</strong>, the individual buildings a network could be connected to. For every municipality it reports how many premises can obtain a given service, expressed both as an absolute count and as a percentage." }}</p>
+
+<p>{{ tHTML "page.media.ngaConditions" "Coverage is not one number but thirteen, one per <strong>condition</strong>. Seven are download-speed thresholds from 10 Mbit/s up to a gigabit, four are upload thresholds, and three name the physical medium — fibre, coaxial cable or copper. Reading them as a ladder shows where the network thins out: near-universal at basic broadband, still strong at 100 Mbit/s, and dropping sharply once gigabit service is the requirement." }}</p>
+
+<sparql-async id="mediaBroadbandLadder" class="d-none">
+  # One row per coverage condition, aggregated over all municipalities.
+  #
+  # ?avgCoverage is the mean of the per-municipality percentages — it weights a
+  # 200-premises alpine commune the same as the city of Zurich. ?premisesCovered
+  # sums the absolute counts instead, which is the population-weighted view. The two
+  # deliberately disagree (fibre averages ~44% of municipalities but reaches ~57% of
+  # premises) because fibre is built where the buildings are.
+  SELECT ?condition ?avgCoveragePct ?premisesCovered ?premisesTotal WHERE {
+    {
+      SELECT ?condition
+             (ROUND(AVG(xsd:decimal(?pct)) * 10) / 10 AS ?avgCoveragePct)
+             (SUM(xsd:integer(?cov)) AS ?premisesCovered)
+             (SUM(xsd:integer(?tot)) AS ?premisesTotal)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/ofcom/nga&gt; {
+          ?obs &lt;https://communication.ld.admin.ch/ofcom/nga/cond&gt; ?condition ;
+               &lt;https://communication.ld.admin.ch/ofcom/nga/pctcov&gt; ?pct ;
+               &lt;https://communication.ld.admin.ch/ofcom/nga/abscond&gt; ?cov ;
+               &lt;https://communication.ld.admin.ch/ofcom/nga/abstot&gt; ?tot .
+        }
+      } GROUP BY ?condition
+    }
+  } ORDER BY DESC(?premisesCovered)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "mediaBroadbandLadder"
+      "title" (t "card.broadbandLadder" "Broadband coverage by service condition")
+      "icon" "signal") }}
+</div>
+
+<p>{{ tHTML "page.media.ngaGap" "Note the disagreement between the two coverage columns. Averaged across municipalities, fibre reaches around forty-four per cent; counted by premises it reaches well over half. The gap is the rural–urban divide stated arithmetically — fibre is built where the buildings already are, so it covers many people in few places." }}</p>
+
+<sparql-async id="mediaBroadbandByCanton" class="d-none">
+  # ?canton stays an IRI so the backend resolves and links it.
+  #
+  # Restricted to ONE condition (gigabit download) because the cube holds thirteen
+  # rows per municipality — without the filter each canton's figures are averaged
+  # across every speed tier at once, which is meaningless.
+  SELECT ?canton ?gigabitPct ?premisesCovered ?premisesTotal WHERE {
+    {
+      SELECT ?canton
+             (ROUND(SUM(xsd:integer(?cov)) * 1000 / SUM(xsd:integer(?tot))) / 10 AS ?gigabitPct)
+             (SUM(xsd:integer(?cov)) AS ?premisesCovered)
+             (SUM(xsd:integer(?tot)) AS ?premisesTotal)
+      WHERE {
+        GRAPH &lt;https://lindas.admin.ch/ofcom/nga&gt; {
+          ?obs &lt;https://communication.ld.admin.ch/ofcom/nga/ktnr&gt; ?canton ;
+               &lt;https://communication.ld.admin.ch/ofcom/nga/cond&gt; "DOWN &gt;= 1000" ;
+               &lt;https://communication.ld.admin.ch/ofcom/nga/abscond&gt; ?cov ;
+               &lt;https://communication.ld.admin.ch/ofcom/nga/abstot&gt; ?tot .
+        }
+      } GROUP BY ?canton
+    }
+  } ORDER BY DESC(?gigabitPct)
+</sparql-async>
+<div class="mb-4">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "mediaBroadbandByCanton"
+      "title" (t "card.gigabitPerCanton" "Gigabit coverage per canton (% of premises)")
+      "icon" "map"
+      "iconVar" "canton") }}
+</div>
+
+<p class="text-secondary">{{ tHTML "page.media.ngaCaveat" "The whole dataset is a <strong>single monthly snapshot</strong>, not a time series — every observation carries the same month, so this shows the state of the network now rather than how it got here. Note also that coverage means <em>a premises could subscribe</em>, not that anyone has: this is availability, not take-up." }}</p>
+
+<!-- ============================================================= -->
+<!-- Datasets                                                       -->
+<!-- ============================================================= -->
+
+<h2 class="mt-5">{{ t "page.media.theDatasets" "The datasets" }}</h2>
+
+<p>{{ tHTML "page.media.datasetsIntro" "Two named graphs, both from OFCOM, both under the <code>https://communication.ld.admin.ch/</code> vocabulary namespace — but very different in shape." }}</p>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.media.mediaGroup" "<strong>Media research</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.media.ofcomPublisher" "Federal Office of Communications (OFCOM)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.media.mediaGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fofcom%2Fcube\">ofcom/cube</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.media.mediaSize" "533 cubes, ~139,000 observations — but roughly 60 distinct datasets in many versions" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.contents" "Contents" }}</div>
+        <div class="datagrid-content">{{ t "page.media.mediaContents" "Mediapulse TV audience data, radio and TV reach, programme and topic analyses, print readership, online media usage, advertising revenue, SRG revenue structure, media ownership" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.media.mediaCaveat" "Some cubes date observations with a plain literal year rather than <code>xsd:gYear</code> — a typed filter silently matches nothing" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="datagrid">
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.group" "Group" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.media.ngaGroup" "<strong>Broadband coverage (NGA)</strong>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.publisher" "Publisher" }}</div>
+        <div class="datagrid-content">{{ t "page.media.ofcomPublisher" "Federal Office of Communications (OFCOM)" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.namedGraph" "Named graph" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.media.ngaGraph" "<a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Fofcom%2Fnga\">ofcom/nga</a>" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.size" "Size" }}</div>
+        <div class="datagrid-content">{{ t "page.media.ngaSize" "One cube, ~27,400 observations — 13 conditions × ~2,110 municipalities" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.coverage" "Coverage" }}</div>
+        <div class="datagrid-content">{{ t "page.media.ngaCoverage" "A single monthly snapshot covering ~1.92 million premises nationwide" }}</div>
+      </div>
+      <div class="datagrid-item">
+        <div class="datagrid-title">{{ t "page.media.caveat" "Caveat" }}</div>
+        <div class="datagrid-content">{{ tHTML "page.media.ngaCaveatCard" "Availability, not subscription — and the condition strings (<code>DOWN &gt;= 1000</code>) are plain literals, so they must be matched exactly, spaces included" }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="text-secondary">{{ tHTML "page.media.crossLinks" "Both graphs lean on shared reference data: NGA observations resolve their municipality and canton into the <a href=\"/statistics.html\">FSO register</a>, and media cubes name their publishing office through <code>cube:observedBy</code> pointing at the <a href=\"/government.html\">federal administration</a>. OFCOM also appears in <a href=\"/statistics.html\">Statistics &amp; Registers</a> as the source of the radio coverage areas published as a shared territorial dimension." }}</p>
+
+{{ end }}
