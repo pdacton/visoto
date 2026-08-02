@@ -546,7 +546,12 @@ func metricHandler(c *gin.Context) {
 		endpoint = activeEndpointURL(c)
 	}
 
-	html, renderErr := templates.RenderSparqlMetricValue(activeLang(c), map[string]any{
+	// dataLang, not activeLang: this route runs langFromURL rather than
+	// resolveLang, so the cookie is never read here and activeLang would always
+	// report the configured default. The rendered fragment's only language-
+	// dependent output is the count's thousands separator, which must follow the
+	// ?lang= the caller asked for — otherwise a German page shows 781,462.
+	html, renderErr := templates.RenderSparqlMetricValue(dataLang, map[string]any{
 		"queryId":  id,
 		"count":    count,
 		"query":    finalQuery,
@@ -687,7 +692,11 @@ func asyncTableHandler(c *gin.Context) {
 // wants this response cached (false for transient query errors, which must
 // never be served stale for hours).
 func renderTableFragment(c *gin.Context, params map[string]any, cacheable bool) {
-	html, err := templates.RenderSparqlTable(activeLang(c), params)
+	// queryLang, not activeLang: these fragment routes run langFromURL, so the
+	// cookie is never read and activeLang would always be the default. The
+	// partial's own UI strings ("Showing N rows", the column menu) have to follow
+	// the ?lang= the page asked for.
+	html, err := templates.RenderSparqlTable(queryLang(c), params)
 	if err != nil {
 		c.String(http.StatusInternalServerError, "failed to render table")
 		return
