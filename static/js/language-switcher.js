@@ -103,6 +103,19 @@ function boot() {
         setSiteLangCookie(rendered);
     }
 
+    // The visible control is a Tabler dropdown; the <select> is its hidden state
+    // holder (see topbar.html). Clicking an item is what a change event would
+    // have been, so it goes through the same switchSiteLang path.
+    document.querySelectorAll('.site-lang-item').forEach(function (item) {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            switchSiteLang(item.getAttribute('data-lang-code'));
+        });
+    });
+
+    // Kept for the hidden <select>: nothing in the UI fires it today, but
+    // activeSiteLang() treats the select as the source of truth, so anything that
+    // sets its value programmatically should still take effect.
     sel.addEventListener('change', function (e) {
         switchSiteLang(e.target.value);
     });

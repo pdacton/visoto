@@ -68,12 +68,32 @@
       {{ end }}
       <!-- UI language selector -->
       {{ with siteLanguages }}
-      <div class="nav-item me-2 d-flex align-items-center">
+      <div class="nav-item dropdown me-2 d-flex align-items-center">
+        <!-- A Tabler dropdown rather than a styled <select>: a select's closed
+             width is set by its widest option, which left a gap next to a
+             two-letter code. This sizes to the active label instead.
+
+             The <select> below is kept, hidden: it is the language's state
+             holder, which activeSiteLang() reads to put ?lang= on every /api
+             request and knownSiteLang() reads to validate a stored cookie. The
+             menu items drive it, exactly as the mobile endpoint list drives the
+             endpoint <select>. -->
+        <a href="#" class="nav-link px-2 py-1 d-flex align-items-center gap-1" id="site-lang-toggle" data-bs-toggle="dropdown" data-bs-auto-close="true" role="button" aria-expanded="false" aria-label="{{ t "topbar.selectLanguage" "Select language" }}">
+          <span id="site-lang-current">{{ range . }}{{ if .Selected }}{{ .Label }}{{ end }}{{ end }}</span>
+          <i data-lucide="chevron-down" style="width: 1rem; height: 1rem;" aria-hidden="true"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end">
+          {{ range . }}
+          <a class="dropdown-item site-lang-item{{ if .Selected }} active{{ end }}" href="#" data-lang-code="{{ .Code }}">
+            <i data-lucide="{{ if .Selected }}check{{ else }}languages{{ end }}" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ .Label }}
+          </a>
+          {{ end }}
+        </div>
         <!-- Option values are the site-lang cookie values; "" is the deliberate
              "no language" choice, not a missing option. The selection is rendered
              server-side from the resolved language — language-switcher.js only
              writes the cookie, it never fixes up the selection. -->
-        <select class="form-select form-select-sm" id="site-lang-selector" name="site-lang" style="width: auto;" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "topbar.selectLanguage" "Select language" }}" data-bs-original-title="{{ t "topbar.selectLanguage" "Select language" }}">
+        <select class="d-none" id="site-lang-selector" name="site-lang" aria-hidden="true" tabindex="-1">
           {{ range . }}
             <option value="{{ .Code }}"{{ if .Selected }} selected{{ end }}>{{ .Label }}</option>
           {{ end }}
