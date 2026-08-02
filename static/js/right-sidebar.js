@@ -167,8 +167,10 @@ document.addEventListener('DOMContentLoaded', function () {
     pageWrapper.style.transition = PAGE_WRAPPER_TRANSITION;
   }, TRANSITION_DELAY);
 
-  // Toggle handler
-  rightSidebarToggle.addEventListener('click', function (e) {
+  // Toggle handler. Bound to both entry points: the topbar button, and the
+  // settings-menu item that stands in for it on narrow screens where the
+  // button itself is hidden.
+  function toggleRightSidebar(e) {
     e.preventDefault();
     if (isMobile()) {
       if (rightSidebarOpen) {
@@ -183,7 +185,11 @@ document.addEventListener('DOMContentLoaded', function () {
         openRightSidebarDesktop();
       }
     }
-  });
+  }
+
+  rightSidebarToggle.addEventListener('click', toggleRightSidebar);
+  document.getElementById('right-sidebar-toggle-menu')
+    ?.addEventListener('click', toggleRightSidebar);
 
   // Close button handler (inside sidebar)
   const rightSidebarClose = document.getElementById('right-sidebar-close');

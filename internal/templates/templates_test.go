@@ -3,6 +3,7 @@ package templates
 import (
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestLoad(t *testing.T) {
@@ -32,5 +33,13 @@ func TestLoad(t *testing.T) {
 		if len(files) == 0 {
 			t.Errorf("expected at least one %s template, got none", group.name)
 		}
+	}
+}
+
+// TestCurrentYear guards the footer's copyright against going stale again by
+// checking it tracks the clock rather than returning a baked-in year.
+func TestCurrentYear(t *testing.T) {
+	if got, want := currentYear(), time.Now().Year(); got != want {
+		t.Errorf("currentYear() = %d, want %d", got, want)
 	}
 }

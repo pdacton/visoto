@@ -150,6 +150,20 @@ document.addEventListener('DOMContentLoaded', function () {
         setEndpointCookie('');
     }
 
+    // Narrow screens hide the <select> and show the same endpoints as entries in
+    // the settings menu. Those entries are triggers only — they drive the select
+    // and let its change handler below do the actual switching, so the select
+    // stays the single source of truth for the active slug.
+    document.querySelectorAll('.endpoint-menu-item').forEach(function (item) {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+            const slug = knownEndpointSlug(item.dataset.endpointSlug);
+            if (!slug || slug === endpointSelect.value) return;
+            endpointSelect.value = slug;
+            endpointSelect.dispatchEvent(new Event('change'));
+        });
+    });
+
     endpointSelect.addEventListener('change', function (e) {
         // Sync the URL to the new selection *before* reloading: otherwise the
         // reload re-requests the pre-switch ?endpoint= (still in the address bar

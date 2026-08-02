@@ -24,6 +24,23 @@ document.addEventListener('DOMContentLoaded', function() {
         }
       }
     });
+
+    // "/" focuses search from anywhere on the page, Escape gives focus back.
+    // Ignored while the user is already typing into a field (including
+    // contenteditable, e.g. the assistant), or while a modifier is held, so it
+    // never swallows a literal slash — SPARQL and IRIs are full of them.
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
+      const el = document.activeElement;
+      if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+      e.preventDefault();
+      topbarInput.focus();
+      topbarInput.select();
+    });
+
+    topbarInput.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') topbarInput.blur();
+    });
   }
 
   // Search page - auto-expand advanced filters if any filter is selected

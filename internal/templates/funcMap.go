@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"sort"
 	"strings"
+	"time"
 
 	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/sparql"
@@ -26,7 +27,13 @@ var funcMap = template.FuncMap{
 	"lastPathSegment": lastPathSegment,
 	"groupByValue":    groupByValue,
 	"safeURL":         safeURL,
+	"currentYear":     currentYear,
 }
+
+// currentYear returns the current year, so the footer's copyright notice does
+// not go stale.
+// Usage in templates: {{ currentYear }}
+func currentYear() int { return time.Now().Year() }
 
 // safeURL marks an http(s) URL as safe for use in a URL attribute context
 // (e.g. an <img src> or <a href>), bypassing html/template's URL sanitizer

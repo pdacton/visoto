@@ -55,17 +55,24 @@ type ApplicationConfig struct {
 
 // SparqlEndpoint represents a named SPARQL endpoint configuration
 type SparqlEndpoint struct {
-	Name           string `toml:"name"`            // Display name (e.g., "LINDAS", "Wikidata")
-	URL            string `toml:"url"`             // Full endpoint URL
-	Default        bool   `toml:"default"`         // Optional: mark as default
-	Monitor        bool   `toml:"monitor"`         // Enable health monitoring for this endpoint
-	Tag            string `toml:"tag"`             // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
-	Slug           string `toml:"slug"`            // Unique URL-safe identifier for the ?endpoint= query param (shareable links)
-	Username       string `toml:"username"`        // Optional basic auth username for write operations
-	Password       string `toml:"password"`        // Optional basic auth password for write operations
-	AccessToken    string `toml:"access_token"`    // Optional Bearer token for write operations (takes precedence over username/password)
-	SearchProvider string `toml:"search_provider"` // FTS provider: "stardog" (default), "graphdb", "fuseki"
-	ExportProvider string `toml:"export_provider"` // optional export provider override: "graphdb", "gsp", "construct"
+	Name    string `toml:"name"`    // Display name (e.g., "LINDAS", "Wikidata")
+	URL     string `toml:"url"`     // Full endpoint URL
+	Default bool   `toml:"default"` // Optional: mark as default
+	Monitor bool   `toml:"monitor"` // Enable health monitoring for this endpoint
+	Tag     string `toml:"tag"`     // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
+	Slug    string `toml:"slug"`    // Unique URL-safe identifier for the ?endpoint= query param (shareable links)
+	// Write credentials. json:"-" is load-bearing, not cosmetic: this struct
+	// reaches templates as TemplateData.SparqlEndpoints, which is serialised
+	// wholesale by the footer's raw-data dump and by the chat resource-data
+	// embed. Without these tags encoding/json exports the field names and
+	// these secrets end up in the HTML of every page. They are only ever read
+	// server-side (internal/upload, internal/export) to set an Authorization
+	// header, so nothing needs them on the wire.
+	Username       string `toml:"username"     json:"-"` // Optional basic auth username for write operations
+	Password       string `toml:"password"     json:"-"` // Optional basic auth password for write operations
+	AccessToken    string `toml:"access_token" json:"-"` // Optional Bearer token for write operations (takes precedence over username/password)
+	SearchProvider string `toml:"search_provider"`       // FTS provider: "stardog" (default), "graphdb", "fuseki"
+	ExportProvider string `toml:"export_provider"`       // optional export provider override: "graphdb", "gsp", "construct"
 }
 
 // RDFConfig holds RDF-related settings

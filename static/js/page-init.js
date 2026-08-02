@@ -41,6 +41,23 @@
     lucide.createIcons();
   }
 
+  // --- Sticky topbar elevation --------------------------------------------
+  // The topbar is flush with the page surface, so once content scrolls under it
+  // there is nothing to separate the two. Add a shadow only while scrolled, so
+  // the chrome stays flat at rest.
+  var topbar = document.getElementById('topbar');
+  if (topbar) {
+    var scrolled = null; // null so the first pass always applies a state
+    var syncTopbar = function () {
+      var isScrolled = window.scrollY > 4;
+      if (isScrolled === scrolled) return;
+      scrolled = isScrolled;
+      topbar.classList.toggle('is-scrolled', isScrolled);
+    };
+    syncTopbar();
+    window.addEventListener('scroll', syncTopbar, { passive: true });
+  }
+
   // --- "Copy IRI" buttons (was inline in layout/header.html) ---------------
   // Delegated from the document, so it covers buttons that arrive later in
   // HTMX-swapped fragments as well as those present at load.
