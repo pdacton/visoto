@@ -6,11 +6,14 @@
 
 {{ define "pageContent" }}
 
+<div class="vs-prose">
 <h2>{{ t "page.plazi.aboutPlazi" "About Plazi" }}</h2>
 
 <p>{{ tHTML "page.plazi.plaziIsANotFor" "<a href=\"https://plazi.org/\" target=\"_blank\" rel=\"noopener\">Plazi</a> is a not-for-profit organisation that liberates taxonomic knowledge from the scientific literature. It converts descriptions of species — so-called <em>treatments</em> — from published articles into machine-readable, openly accessible data, and publishes them as linked data." }}</p>
 
 <p>{{ tHTML "page.plazi.everyOrganismDescribedInThe" "Every organism described in the literature is placed within a hierarchical <strong>classification</strong>. At its very top sit a handful of kingdoms that group all living things. Each kingdom below is represented by a <a href=\"/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FTaxonName\">TaxonName</a> resource that you can explore in Visoto to drill down through the tree of life." }}</p>
+
+</div>
 
 <div class="row row-deck row-cards mt-4">
 
@@ -56,84 +59,162 @@
 
   <!-- Animalia -->
   <div class="col-sm-6 col-lg-4">
-    <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FAnimalia">
+    <a class="card card-link h-100 vs-kingdom-card" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FAnimalia">
       <div class="card-body d-flex flex-column">
-        <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Animalia.svg" alt="{{ t "page.plazi.animalia" "Animalia" }}" width="40" height="40" class="me-3">
+        <div class="d-flex align-items-center mb-3">
+          <img src="/static/img/resource/Animalia.svg" alt="" aria-hidden="true" width="40" height="40" class="me-3">
           <h3 class="card-title m-0">{{ t "page.plazi.animalia" "Animalia" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">{{ t "page.plazi.animalsMulticellularOrganismsThatFeed" "Animals — multicellular organisms that feed on other organisms." }}</div>
-        <div class="mt-2">{{ tHTML "page.plazi.taxonNames" "<span class=\"h2 m-0\" hx-get=\"/api/metric/AnimaliaCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
+        <!-- The count leads: it is the reason to compare these cards. The
+             wrapper is what the share bar reads (see plazi.js), so the HTMX
+             target stays a bare number and never carries markup a translator
+             could edit. -->
+        <div class="vs-kingdom-figure" data-kingdom-figure>
+          <span class="vs-kingdom-count" data-kingdom-count
+                hx-get="/api/metric/AnimaliaCount" hx-trigger="load" hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="vs-kingdom-unit text-secondary">{{ t "page.plazi.taxonNamesUnit" "taxon names" }}</span>
+        </div>
+        <div class="progress progress-sm vs-kingdom-bar mt-2" data-kingdom-bar hidden>
+          <div class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="text-secondary mt-3">{{ t "page.plazi.animalsMulticellularOrganismsThatFeed" "Animals — multicellular organisms that feed on other organisms." }}</div>
       </div>
     </a>
   </div>
 
   <!-- Plantae -->
   <div class="col-sm-6 col-lg-4">
-    <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FPlantae">
+    <a class="card card-link h-100 vs-kingdom-card" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FPlantae">
       <div class="card-body d-flex flex-column">
-        <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Plantae.svg" alt="{{ t "page.plazi.plantae" "Plantae" }}" width="40" height="40" class="me-3">
+        <div class="d-flex align-items-center mb-3">
+          <img src="/static/img/resource/Plantae.svg" alt="" aria-hidden="true" width="40" height="40" class="me-3">
           <h3 class="card-title m-0">{{ t "page.plazi.plantae" "Plantae" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">{{ t "page.plazi.plantsMostlyPhotosyntheticOrganismsFrom" "Plants — mostly photosynthetic organisms, from mosses to flowering plants." }}</div>
-        <div class="mt-2">{{ tHTML "page.plazi.taxonNames2" "<span class=\"h2 m-0\" hx-get=\"/api/metric/PlantaeCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
+        <!-- The count leads: it is the reason to compare these cards. The
+             wrapper is what the share bar reads (see plazi.js), so the HTMX
+             target stays a bare number and never carries markup a translator
+             could edit. -->
+        <div class="vs-kingdom-figure" data-kingdom-figure>
+          <span class="vs-kingdom-count" data-kingdom-count
+                hx-get="/api/metric/PlantaeCount" hx-trigger="load" hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="vs-kingdom-unit text-secondary">{{ t "page.plazi.taxonNamesUnit" "taxon names" }}</span>
+        </div>
+        <div class="progress progress-sm vs-kingdom-bar mt-2" data-kingdom-bar hidden>
+          <div class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="text-secondary mt-3">{{ t "page.plazi.plantsMostlyPhotosyntheticOrganismsFrom" "Plants — mostly photosynthetic organisms, from mosses to flowering plants." }}</div>
       </div>
     </a>
   </div>
 
   <!-- Fungi -->
   <div class="col-sm-6 col-lg-4">
-    <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FFungi">
+    <a class="card card-link h-100 vs-kingdom-card" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FFungi">
       <div class="card-body d-flex flex-column">
-        <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Fungi.svg" alt="{{ t "page.plazi.fungi" "Fungi" }}" width="40" height="40" class="me-3">
+        <div class="d-flex align-items-center mb-3">
+          <img src="/static/img/resource/Fungi.svg" alt="" aria-hidden="true" width="40" height="40" class="me-3">
           <h3 class="card-title m-0">{{ t "page.plazi.fungi" "Fungi" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">{{ t "page.plazi.fungiMouldsYeastsAndMushrooms" "Fungi — moulds, yeasts and mushrooms that absorb nutrients from their surroundings." }}</div>
-        <div class="mt-2">{{ tHTML "page.plazi.taxonNames3" "<span class=\"h2 m-0\" hx-get=\"/api/metric/FungiCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
+        <!-- The count leads: it is the reason to compare these cards. The
+             wrapper is what the share bar reads (see plazi.js), so the HTMX
+             target stays a bare number and never carries markup a translator
+             could edit. -->
+        <div class="vs-kingdom-figure" data-kingdom-figure>
+          <span class="vs-kingdom-count" data-kingdom-count
+                hx-get="/api/metric/FungiCount" hx-trigger="load" hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="vs-kingdom-unit text-secondary">{{ t "page.plazi.taxonNamesUnit" "taxon names" }}</span>
+        </div>
+        <div class="progress progress-sm vs-kingdom-bar mt-2" data-kingdom-bar hidden>
+          <div class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="text-secondary mt-3">{{ t "page.plazi.fungiMouldsYeastsAndMushrooms" "Fungi — moulds, yeasts and mushrooms that absorb nutrients from their surroundings." }}</div>
       </div>
     </a>
   </div>
 
   <!-- Bacteria -->
   <div class="col-sm-6 col-lg-4">
-    <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FBacteria">
+    <a class="card card-link h-100 vs-kingdom-card" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FBacteria">
       <div class="card-body d-flex flex-column">
-        <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Bacteria.svg" alt="{{ t "page.plazi.bacteria" "Bacteria" }}" width="40" height="40" class="me-3">
+        <div class="d-flex align-items-center mb-3">
+          <img src="/static/img/resource/Bacteria.svg" alt="" aria-hidden="true" width="40" height="40" class="me-3">
           <h3 class="card-title m-0">{{ t "page.plazi.bacteria" "Bacteria" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">{{ t "page.plazi.bacteriaSingleCelledProkaryoticMicroorganisms" "Bacteria — single-celled prokaryotic microorganisms found in nearly every habitat." }}</div>
-        <div class="mt-2">{{ tHTML "page.plazi.taxonNames4" "<span class=\"h2 m-0\" hx-get=\"/api/metric/BacteriaCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
+        <!-- The count leads: it is the reason to compare these cards. The
+             wrapper is what the share bar reads (see plazi.js), so the HTMX
+             target stays a bare number and never carries markup a translator
+             could edit. -->
+        <div class="vs-kingdom-figure" data-kingdom-figure>
+          <span class="vs-kingdom-count" data-kingdom-count
+                hx-get="/api/metric/BacteriaCount" hx-trigger="load" hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="vs-kingdom-unit text-secondary">{{ t "page.plazi.taxonNamesUnit" "taxon names" }}</span>
+        </div>
+        <div class="progress progress-sm vs-kingdom-bar mt-2" data-kingdom-bar hidden>
+          <div class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="text-secondary mt-3">{{ t "page.plazi.bacteriaSingleCelledProkaryoticMicroorganisms" "Bacteria — single-celled prokaryotic microorganisms found in nearly every habitat." }}</div>
       </div>
     </a>
   </div>
 
   <!-- Chromista -->
   <div class="col-sm-6 col-lg-4">
-    <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FChromista">
+    <a class="card card-link h-100 vs-kingdom-card" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FChromista">
       <div class="card-body d-flex flex-column">
-        <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Chromista.svg" alt="{{ t "page.plazi.chromista" "Chromista" }}" width="40" height="40" class="me-3">
+        <div class="d-flex align-items-center mb-3">
+          <img src="/static/img/resource/Chromista.svg" alt="" aria-hidden="true" width="40" height="40" class="me-3">
           <h3 class="card-title m-0">{{ t "page.plazi.chromista" "Chromista" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">{{ t "page.plazi.chromistsAlgaeAndProtistsSuch" "Chromists — algae and protists such as diatoms, brown algae and water moulds." }}</div>
-        <div class="mt-2">{{ tHTML "page.plazi.taxonNames5" "<span class=\"h2 m-0\" hx-get=\"/api/metric/ChromistaCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
+        <!-- The count leads: it is the reason to compare these cards. The
+             wrapper is what the share bar reads (see plazi.js), so the HTMX
+             target stays a bare number and never carries markup a translator
+             could edit. -->
+        <div class="vs-kingdom-figure" data-kingdom-figure>
+          <span class="vs-kingdom-count" data-kingdom-count
+                hx-get="/api/metric/ChromistaCount" hx-trigger="load" hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="vs-kingdom-unit text-secondary">{{ t "page.plazi.taxonNamesUnit" "taxon names" }}</span>
+        </div>
+        <div class="progress progress-sm vs-kingdom-bar mt-2" data-kingdom-bar hidden>
+          <div class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="text-secondary mt-3">{{ t "page.plazi.chromistsAlgaeAndProtistsSuch" "Chromists — algae and protists such as diatoms, brown algae and water moulds." }}</div>
       </div>
     </a>
   </div>
 
   <!-- Protozoa -->
   <div class="col-sm-6 col-lg-4">
-    <a class="card card-link h-100" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FProtozoa">
+    <a class="card card-link h-100 vs-kingdom-card" href="/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FProtozoa">
       <div class="card-body d-flex flex-column">
-        <div class="d-flex align-items-center mb-2">
-          <img src="/static/img/resource/Protozoa.svg" alt="{{ t "page.plazi.protozoa" "Protozoa" }}" width="40" height="40" class="me-3">
+        <div class="d-flex align-items-center mb-3">
+          <img src="/static/img/resource/Protozoa.svg" alt="" aria-hidden="true" width="40" height="40" class="me-3">
           <h3 class="card-title m-0">{{ t "page.plazi.protozoa" "Protozoa" }}</h3>
         </div>
-        <div class="text-secondary mt-auto">{{ t "page.plazi.protozoaSingleCelledEukaryoticOrganisms" "Protozoa — single-celled eukaryotic organisms such as amoebae and flagellates." }}</div>
-        <div class="mt-2">{{ tHTML "page.plazi.taxonNames6" "<span class=\"h2 m-0\" hx-get=\"/api/metric/ProtozoaCount\" hx-trigger=\"load\" hx-swap=\"innerHTML\"> <span class=\"spinner-border spinner-border-sm text-muted\" role=\"status\"></span> </span> <span class=\"text-secondary\">taxon names</span>" }}</div>
+        <!-- The count leads: it is the reason to compare these cards. The
+             wrapper is what the share bar reads (see plazi.js), so the HTMX
+             target stays a bare number and never carries markup a translator
+             could edit. -->
+        <div class="vs-kingdom-figure" data-kingdom-figure>
+          <span class="vs-kingdom-count" data-kingdom-count
+                hx-get="/api/metric/ProtozoaCount" hx-trigger="load" hx-swap="innerHTML">
+            <span class="spinner-border spinner-border-sm text-muted" role="status"></span>
+          </span>
+          <span class="vs-kingdom-unit text-secondary">{{ t "page.plazi.taxonNamesUnit" "taxon names" }}</span>
+        </div>
+        <div class="progress progress-sm vs-kingdom-bar mt-2" data-kingdom-bar hidden>
+          <div class="progress-bar" style="width: 0%"></div>
+        </div>
+        <div class="text-secondary mt-3">{{ t "page.plazi.protozoaSingleCelledEukaryoticOrganisms" "Protozoa — single-celled eukaryotic organisms such as amoebae and flagellates." }}</div>
       </div>
     </a>
   </div>
@@ -144,11 +225,14 @@
 <!-- Dataset information                                            -->
 <!-- ============================================================= -->
 
+<div class="vs-prose">
 <h2 class="mt-5">{{ t "page.plazi.theDataset" "The dataset" }}</h2>
 
 <p>{{ tHTML "page.plazi.thePlaziClassificationShownAbove" "The Plazi classification shown above is backed by the <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fplazi\">Plazi Taxonomic Treatments</a> dataset, published on LINDAS in the named graph <code>https://lindas.admin.ch/foen/plazi</code>." }}</p>
 
 <p>{{ tHTML "page.plazi.plaziTreatmentBankDealsWithScientific" "Plazi TreatmentBank deals with scientific, published, biosystematic literature — the corpus documenting all of the world's ca. 1.9 million known species across an estimated 500 million published pages. Each <em>treatment</em> is a well-defined part of an article that fixes the usage of a scientific name by an author at a given time; like bibliographic references, treatments can be cited and build on earlier ones. Together they represent the current scientific consensus on biological taxonomy, fully reference the underlying literature, and link to specimens and images archived at Zenodo/CERN. The cited publications are available through the <a href=\"https://zenodo.org/communities/biosyslit/\" target=\"_blank\" rel=\"noopener\">Biodiversity Literature Repository</a>." }}</p>
+
+</div>
 
 <div class="card mb-4">
   <div class="card-body">
@@ -197,9 +281,12 @@
 <!-- Classes in the dataset                                         -->
 <!-- ============================================================= -->
 
+<div class="vs-prose">
 <h2 class="mt-5">{{ t "page.plazi.classesInTheDataset" "Classes in the dataset" }}</h2>
 
 <p>{{ tHTML "page.plazi.theClassesBelowAreEvery" "The classes below are every class either declared in the graph as an <code>rdfs:Class</code>/<code>owl:Class</code> or used as the object of an <code>rdf:type</code> statement, ordered by the number of instances of each. Where a class is defined in a vocabulary loaded in the store, its description is shown. The biodiversity content is carried by the first rows (material citations, taxon concepts and names, treatments, figures and articles); the single-instance rows describe the dataset itself." }}</p>
+
+</div>
 
 <div class="mb-3">
   <sparql-async id="plaziClasses" class="d-none">
@@ -229,5 +316,8 @@
       "iconVar" "class")
   }}
 </div>
+
+<!-- Share bars for the kingdom cards; markup above, behaviour here. -->
+<script src="/static/js/plazi.js"></script>
 
 {{ end }}

@@ -106,6 +106,53 @@ header.navbar.sticky-top.is-scrolled {
     }
 }
 
+/* --- Theme page prose --- */
+
+/* Cap the measure on explanatory paragraphs. Theme pages are the one place the
+   site renders long-form text, and the content column runs to ~1100px, which is
+   roughly twice a comfortable reading width.
+
+   Scoped to <p> deliberately: cards, tables and datagrids want the full column,
+   and only the running prose should be narrowed. */
+.vs-prose > p {
+    max-width: 68ch;
+}
+
+/* --- Kingdom cards (/plazi.html) --- */
+
+/* The count is the headline of each card, so it is set at display size and the
+   unit label rides beside it on the baseline. */
+.vs-kingdom-figure {
+    display: flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+}
+
+/* Sized to match the number in a sparqlMetric card (.h1), so counts read at one
+   size everywhere on the site even though these cards are bespoke. Inheriting
+   .h1 outright is avoided only because the class also carries heading margins;
+   the type itself is deliberately identical.
+
+   tabular-nums is the one addition: six counts sit side by side here, and lining
+   figures keep their digits in column. */
+.vs-kingdom-count {
+    font-size: var(--tblr-font-size-h1, 1.5rem);
+    font-weight: var(--tblr-font-weight-bold, 600);
+    line-height: 1.3333;
+    color: var(--tblr-heading-color, inherit);
+    font-variant-numeric: tabular-nums;
+}
+
+.vs-kingdom-unit {
+    font-size: 0.875rem;
+}
+
+/* The share bar is comparative, not a progress indicator — keep it quiet. */
+.vs-kingdom-card .vs-kingdom-bar {
+    background-color: var(--tblr-border-color, #e6e7e9);
+}
+
 /* --- Sidebar positioning --- */
 
 /* Make sidebar shorter by the height of the topbar on desktop, so they do not overlap */
