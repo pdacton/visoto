@@ -8,8 +8,17 @@
          network round trip during which the wrong theme would be visible. -->
     <script>
       (function() {
-        var savedTheme = localStorage.getItem('bs-theme') || 'auto';
-        document.documentElement.setAttribute('data-bs-theme', savedTheme);
+        // Resolve to a concrete theme: Bootstrap's CSS only recognises "light"
+        // and "dark", so the old "auto" fallback matched neither. Rules scoped
+        // to one specific theme then applied in neither direction — which is
+        // how a visitor with no stored preference ended up seeing both the
+        // light and the dark logo in the topbar at once.
+        // localStorage is deliberately left untouched: absent still means "no
+        // explicit preference", so it keeps following the OS on later visits.
+        var saved = localStorage.getItem('bs-theme');
+        var theme = (saved === 'light' || saved === 'dark') ? saved
+          : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-bs-theme', theme);
       })();
     </script>
 

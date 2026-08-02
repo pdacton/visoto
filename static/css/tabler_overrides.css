@@ -192,16 +192,20 @@ header.navbar.sticky-top.is-scrolled {
     filter: none !important;
 }
 
-/* Show light logo in light mode, hide dark logo */
-[data-bs-theme="light"] .logo-light {
+/* Both logos are always in the DOM and CSS picks one, so exactly one must be
+   visible for *any* data-bs-theme value — not just the two expected ones.
+   These rules previously keyed on ="light" and ="dark" symmetrically, so a
+   third value matched neither and both logos rendered side by side. Defaulting
+   to the light logo and overriding only in dark mode keeps a single logo even
+   if something unexpected ever lands in the attribute. */
+.logo-light {
     display: inline-block;
 }
 
-[data-bs-theme="light"] .logo-dark {
+.logo-dark {
     display: none;
 }
 
-/* Show dark logo in dark mode, hide light logo */
 [data-bs-theme="dark"] .logo-light {
     display: none;
 }
