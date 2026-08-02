@@ -6,6 +6,34 @@
    https://github.com/tabler/tabler/blob/dev/core/scss/_variables-dark.scss  
    */
 
+/* --- Skip to content --- */
+
+/* Off-screen until focused, then anchored over the topbar. Lets keyboard and
+   screen-reader users jump the sidebar's ~22 nav items on every page. */
+.skip-to-content {
+    position: fixed;
+    top: 0.5rem;
+    left: 0.5rem;
+    z-index: 1080; /* above the sticky topbar */
+    padding: 0.5rem 1rem;
+    border-radius: var(--tblr-border-radius);
+    background-color: var(--tblr-primary);
+    color: #fff;
+    text-decoration: none;
+    transform: translateY(-200%);
+}
+
+.skip-to-content:focus {
+    transform: translateY(0);
+    color: #fff;
+}
+
+/* The jump target should not draw a focus ring — it is a scroll anchor, not
+   an interactive control. */
+#main-content:focus {
+    outline: none;
+}
+
 /* --- Topbar adjustments --- */
 
 /* Remove default margins/padding from html and body to prevent gray space in topbar */
@@ -31,6 +59,53 @@ header.navbar .nav-link:hover {
     background-color: var(--tblr-bg-surface-secondary);
 }
 
+/* The topbar sits flush against the page surface, so scrolled content would
+   otherwise slide under it with no visible boundary. The shadow is applied by
+   page-init.js only while the page is scrolled, keeping the chrome flat at rest. */
+header.navbar.sticky-top {
+    transition: box-shadow 0.2s ease;
+}
+
+header.navbar.sticky-top.is-scrolled {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+[data-bs-theme="dark"] header.navbar.sticky-top.is-scrolled {
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Search box: grows with the topbar instead of a fixed 50% width, so the
+   endpoint selector and action buttons keep their space on mid-size screens. */
+.topbar-search {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 800px;
+}
+
+/* "/" shortcut hint. Tabler already right-aligns it as the last addon; this
+   only keeps it out of the way of clicks and fades it while the field is in use. */
+.topbar-search .topbar-search-hint {
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+}
+
+.topbar-search .topbar-search-hint kbd {
+    font-size: 0.7rem;
+    padding: 0.1rem 0.35rem;
+}
+
+.topbar-search .form-control:focus ~ .topbar-search-hint,
+.topbar-search .form-control:not(:placeholder-shown) ~ .topbar-search-hint {
+    opacity: 0;
+}
+
+/* No physical keyboard to press, so the hint would only be noise. */
+@media (hover: none) and (pointer: coarse) {
+    .topbar-search .topbar-search-hint {
+        display: none;
+    }
+}
+
 /* --- Sidebar positioning --- */
 
 /* Make sidebar shorter by the height of the topbar on desktop, so they do not overlap */
@@ -48,6 +123,29 @@ header.navbar .nav-link:hover {
         margin-top: 0;
         min-height: 0;
     }
+}
+
+/* The nav is longer than the viewport on most screens, and the sidebar is fixed,
+   so the list is clipped flush at the bottom edge with nothing to suggest it
+   scrolls. Pad the end of the list and fade the last few pixels out against the
+   sidebar surface so the cut reads as "more below" rather than "end of list". */
+.navbar-vertical .navbar-collapse {
+    position: relative;
+}
+
+.navbar-vertical #sidebar-panel-nav > .navbar-nav {
+    padding-bottom: 1.5rem;
+}
+
+.navbar-vertical .navbar-collapse::after {
+    content: "";
+    position: sticky;
+    bottom: 0;
+    display: block;
+    height: 1.5rem;
+    margin-top: -1.5rem;
+    pointer-events: none;
+    background: linear-gradient(to top, var(--tblr-bg-surface), transparent);
 }
 
 /* --- Card action buttons (.btn-actions / .btn-action) --- */

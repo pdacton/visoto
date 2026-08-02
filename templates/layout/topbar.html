@@ -1,47 +1,62 @@
 <!-- horizontal Topbar start -->
-<header class="navbar navbar-expand-md sticky-top d-print-none">
-  <div class="container-fluid d-flex align-items-center">
+<header class="navbar navbar-expand-md sticky-top d-print-none" id="topbar">
+  <div class="container-fluid d-flex align-items-center gap-2 flex-nowrap">
 
     <!-- hamburger button to toggle sidebar  -->
-    <div class="nav-item">
-        <button id="sidebar-toggle" class="nav-link px-0" type="button" aria-label="Toggle sidebar">
+    <div class="nav-item flex-shrink-0">
+        <button id="sidebar-toggle" class="nav-link" type="button" aria-label="Toggle sidebar">
           <i data-lucide="menu" style="width: 1.25rem; height: 1.25rem;"></i>
         </button>
     </div>
 
     <!-- logo and title -->
-    <a href="/" class="navbar-brand navbar-brand-autodark ms-3 mb-0 d-flex align-items-center text-decoration-none">
+    <a href="/" class="navbar-brand navbar-brand-autodark mb-0 me-0 d-flex align-items-center text-decoration-none flex-shrink-0">
       <img src="/static/img/visoto_light.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-1 logo-light">
       <img src="/static/img/visoto_dark.svg" alt="Logo" width="48" height="48" class="navbar-brand-image me-1 logo-dark">
       <span class="d-none d-md-inline">visoto</span>
     </a>
 
     <!-- search field -->
-    <div class="nav-item mx-auto" style="width: 50%; max-width: 800px;">
+    <div class="nav-item topbar-search mx-auto">
       <form action="/search" method="GET" id="topbar-search-form">
         {{ if .SelectedEndpointSlug }}
         <!-- Make /search URLs explicit and shareable instead of cookie-dependent -->
         <input type="hidden" name="endpoint" value="{{ .SelectedEndpointSlug }}">
         {{ end }}
+        <!-- Addon order matters: Tabler positions the last .input-icon-addon on
+             the right and any earlier one on the left, and pads the input from
+             its own position among the siblings. Leading icon, then input, then
+             the hint gives icon-left/hint-right with both paddings correct. -->
         <div class="input-icon">
+          <span class="input-icon-addon">
+            <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+          </span>
           <input
             type="text"
             name="q"
             id="topbar-search-input"
             class="form-control form-control-rounded"
             placeholder="Search..."
-            aria-label="Search">
-          <span class="input-icon-addon">
-            <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+            aria-label="Search"
+            aria-keyshortcuts="/">
+          <!-- Hint for the "/" focus shortcut wired up in static/js/search.js.
+               Hidden once the field is in use, and on touch/coarse pointers
+               where there is no physical key to press (see tabler_overrides). -->
+          <span class="input-icon-addon topbar-search-hint" aria-hidden="true">
+            <kbd>/</kbd>
           </span>
         </div>
       </form>
     </div>
 
-    <div class="d-none d-md-flex">
-      <!-- SPARQL Endpoint selector -->
+    <div class="d-flex align-items-center flex-shrink-0">
+      <!-- SPARQL Endpoint selector.
+           Desktop-only as a visible control, but the <select> stays in the DOM at
+           every width: endpoint-switcher.js treats it as the single source of
+           truth for the active slug. On narrow screens the same select is driven
+           by the endpoint entries in the settings menu below. -->
       {{ if .SparqlEndpoints }}
-      <div class="nav-item me-2 d-flex align-items-center">
+      <div class="nav-item me-2 d-none d-md-flex align-items-center">
         <!-- Option values are endpoint slugs — the only endpoint identifier used on
              the wire (?endpoint= param, selectedEndpoint cookie). -->
         <select class="form-select form-select-sm" id="endpoint-selector" name="endpoint" style="width: auto;" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Select SPARQL endpoint" data-bs-original-title="Select SPARQL endpoint">
@@ -58,7 +73,7 @@
         </a>
       </div>
       <!-- assistant button -->
-      <div class="nav-item">
+      <div class="nav-item d-none d-sm-flex">
         <a href="#" id="right-sidebar-toggle" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="Otto, the assistant" data-bs-original-title="Otto, the assistant">
           <i data-lucide="sparkle" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
@@ -69,6 +84,24 @@
           <i data-lucide="more-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-end">
+          <!-- Endpoint list, narrow screens only: stands in for the hidden
+               <select>, which these entries drive (see endpoint-switcher.js). -->
+          {{ if .SparqlEndpoints }}
+          <div class="d-md-none">
+            <h6 class="dropdown-header">SPARQL endpoint</h6>
+            {{ range .SparqlEndpoints }}
+            <a class="dropdown-item endpoint-menu-item{{ if eq .Slug $.SelectedEndpointSlug }} active{{ end }}" href="#" data-endpoint-slug="{{ .Slug }}">
+              <i data-lucide="{{ if eq .Slug $.SelectedEndpointSlug }}check{{ else }}database{{ end }}" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ .Name }}
+            </a>
+            {{ end }}
+            <div class="dropdown-divider"></div>
+          </div>
+          {{ end }}
+          <!-- Assistant, narrow screens only: its topbar button is hidden there. -->
+          <a class="dropdown-item d-sm-none" href="#" id="right-sidebar-toggle-menu">
+            <i data-lucide="sparkle" style="width: 1rem; height: 1rem;" class="me-2"></i>Otto, the assistant
+          </a>
+          <div class="dropdown-divider d-sm-none"></div>
           <h6 class="dropdown-header">Settings</h6>
           <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#uploadDataModal">
             <i data-lucide="upload" style="width: 1rem; height: 1rem;" class="me-2"></i>Upload data
@@ -86,7 +119,7 @@
         </div>
       </div>
     </div>
-    
+
   </div>
 
 </header>

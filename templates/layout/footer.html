@@ -1,23 +1,32 @@
 <!-- footer.html -->
-<div class="row align-items-center">
 
-    <!-- raw template data for debugging purposes -->
-    <div class="container py-4">
-        <a class="d-flex align-items-center text-decoration-none" data-bs-toggle="collapse" href="#rawDataCollapse" role="button" aria-expanded="false" aria-controls="rawDataCollapse">
-            <i class="bi bi-chevron-down me-2"></i>
-            <span>Raw data</span>
-        </a>
-        <div class="collapse mt-2" id="rawDataCollapse">
-            <pre class="bg-light p-3 rounded border" style="white-space: pre-wrap; word-wrap: break-word;"><code class="language-json">{{ toJSONPretty . }}</code></pre>
-        </div>
+<!-- Raw template data, for debugging. Only rendered when the configured log
+     level is DEBUG, so production instances do not ship a dump of every page's
+     template data (and the dead weight of serialising it) to visitors. -->
+{{ if debugMode }}
+<div class="py-3 border-bottom">
+    <a class="d-inline-flex align-items-center text-decoration-none link-secondary small" data-bs-toggle="collapse" href="#rawDataCollapse" role="button" aria-expanded="false" aria-controls="rawDataCollapse">
+        <i data-lucide="chevron-down" style="width: 1rem; height: 1rem;" class="me-2"></i>
+        <span>Raw data</span>
+    </a>
+    <div class="collapse mt-2" id="rawDataCollapse">
+        <pre class="p-3 rounded border bg-surface-secondary" style="white-space: pre-wrap; word-wrap: break-word;"><code class="language-json">{{ toJSONPretty . }}</code></pre>
     </div>
+</div>
+{{ end }}
 
-    <div class="col-12 col-lg-auto mt-3 mt-lg-0">
-        <p class="mb-0">&copy; 2025 Visoto. All rights reserved.</p>
-    </div>
-    <div class="col-12 col-lg-auto ms-lg-auto mt-3 mt-lg-0">
-        <ul class="list-inline mb-0">
+<div class="row align-items-center flex-row-reverse g-2 py-3">
+    <div class="col-12 col-lg-auto ms-lg-auto">
+        <ul class="list-inline list-inline-dots mb-0">
             <li class="list-inline-item"><a href="/about.html" class="link-secondary">About</a></li>
+            <li class="list-inline-item"><a href="/whatsnew.html" class="link-secondary">What's new</a></li>
+            <li class="list-inline-item"><a href="/connect.html" class="link-secondary">Connect your AI</a></li>
+        </ul>
+    </div>
+    <div class="col-12 col-lg-auto">
+        <ul class="list-inline list-inline-dots mb-0">
+            <li class="list-inline-item">&copy; {{ currentYear }} Visoto</li>
+            <li class="list-inline-item text-secondary">a visual SPARQL browser</li>
         </ul>
     </div>
 </div>

@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"sort"
 	"strings"
+	"time"
 
 	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/sparql"
@@ -26,7 +27,28 @@ var funcMap = template.FuncMap{
 	"lastPathSegment": lastPathSegment,
 	"groupByValue":    groupByValue,
 	"safeURL":         safeURL,
+	"debugMode":       DebugMode,
+	"currentYear":     currentYear,
 }
+
+// debugMode gates developer-only page furniture (currently the footer's raw
+// template-data dump). It is process-wide rather than a TemplateData field
+// because the layout is also rendered for handlers that pass an ad-hoc gin.H,
+// which would otherwise each have to remember to set the flag.
+var debugMode bool
+
+// SetDebugMode enables or disables developer-only page furniture. Call it
+// before Load; the templates read it at render time.
+func SetDebugMode(enabled bool) { debugMode = enabled }
+
+// DebugMode reports whether developer-only page furniture should be rendered.
+// Usage in templates: {{ if debugMode }}
+func DebugMode() bool { return debugMode }
+
+// currentYear returns the current year, so the footer's copyright notice does
+// not go stale.
+// Usage in templates: {{ currentYear }}
+func currentYear() int { return time.Now().Year() }
 
 // safeURL marks an http(s) URL as safe for use in a URL attribute context
 // (e.g. an <img src> or <a href>), bypassing html/template's URL sanitizer

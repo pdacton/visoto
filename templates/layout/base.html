@@ -43,6 +43,10 @@
   </head>
 
   <body>
+    <!-- Keyboard/screen-reader escape from the long sidebar nav; visually hidden
+         until focused (see tabler_overrides.css). -->
+    <a href="#main-content" class="skip-to-content">Skip to content</a>
+
     <div class="page">
 
       {{ template "topbar.html" . }}
@@ -64,7 +68,7 @@
         </div>
         
         <!-- Body -->
-        <div class="page-body">
+        <div class="page-body" id="main-content" tabindex="-1">
           <div class="container-fluid">
             <div id="resource-table-view">
               {{ block "pageContent" . }}<p>This is the base page</p>{{ end }}
