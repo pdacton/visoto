@@ -34,9 +34,10 @@ WORKDIR /app
 # Copy binary from builder
 COPY --from=builder /app/visoto .
 
-# Copy templates and static assets
+# Copy templates, static assets and translation catalogs
 COPY --from=builder /app/templates ./templates
 COPY --from=builder /app/static ./static
+COPY --from=builder /app/locales ./locales
 
 # Copy default config (can be overridden with volume mount)
 COPY --from=builder /app/visoto.config ./visoto.config

@@ -95,13 +95,14 @@ if [ "$WITH_QLEVER" = true ]; then
 fi
 
 # Remove source directories first to avoid stale files from previous deploys
-ssh ${SSH_OPTS} "${SSH_TARGET}" "rm -rf ${REMOTE_DIR}/cmd ${REMOTE_DIR}/internal ${REMOTE_DIR}/templates ${REMOTE_DIR}/static"
+ssh ${SSH_OPTS} "${SSH_TARGET}" "rm -rf ${REMOTE_DIR}/cmd ${REMOTE_DIR}/internal ${REMOTE_DIR}/templates ${REMOTE_DIR}/static ${REMOTE_DIR}/locales"
 
 # Copy source directories
 scp ${SCP_OPTS} -r "${SCRIPT_DIR}/cmd" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} -r "${SCRIPT_DIR}/internal" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} -r "${SCRIPT_DIR}/templates" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} -r "${SCRIPT_DIR}/static" "${SSH_TARGET}:${REMOTE_DIR}/"
+scp ${SCP_OPTS} -r "${SCRIPT_DIR}/locales" "${SSH_TARGET}:${REMOTE_DIR}/"
 
 echo "Files copied"
 
@@ -122,9 +123,13 @@ echo "Caddy restarted (fresh Caddyfile + empty cache)"
 
 # Step 6: Verify deployment
 echo -e "${YELLOW}[6/6] Verifying deployment...${NC}"
-sleep 3  # Wait for container to start
+# Poll the container's own healthcheck rather than curling the host: visoto uses
+# `expose: 8060`, not `ports:`, so port 8060 is reachable only on the container
+# network and a probe from the host always gets connection-refused. Polling also
+# rides out the ~3s the app spends loading config, locales, icons and templates.
+HEALTH_TIMEOUT=60
 
-if ssh ${SSH_OPTS} "${SSH_TARGET}" "curl -s http://localhost:8060/ping" | grep -q "pong"; then
+if ssh ${SSH_OPTS} "${SSH_TARGET}" "for i in \$(seq 1 ${HEALTH_TIMEOUT}); do [ \"\$(docker inspect -f '{{.State.Health.Status}}' visoto 2>/dev/null)\" = healthy ] && exit 0; sleep 1; done; exit 1"; then
     echo -e "${GREEN}✓ Deployment successful!${NC}"
     echo ""
     echo "Visoto is running at:"
@@ -143,7 +148,7 @@ if ssh ${SSH_OPTS} "${SSH_TARGET}" "curl -s http://localhost:8060/ping" | grep -
         echo "  WARNING: 'down -v' deletes ALL volumes incl. the monitoring database!"
     fi
 else
-    echo -e "${RED}Warning: Health check failed${NC}"
-    echo "Container may still be starting. Check logs with:"
+    echo -e "${RED}Warning: Health check failed after ${HEALTH_TIMEOUT}s${NC}"
+    echo "The container is not answering /ping. Check logs with:"
     echo "  ssh ${SSH_OPTS} ${SSH_TARGET} 'cd ${REMOTE_DIR} && docker compose logs'"
 fi
