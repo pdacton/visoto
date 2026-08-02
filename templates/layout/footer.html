@@ -1,9 +1,9 @@
 <!-- footer.html -->
 
-<!-- Raw template data, for debugging. Only rendered when the configured log
-     level is DEBUG, so production instances do not ship a dump of every page's
-     template data (and the dead weight of serialising it) to visitors. -->
-{{ if debugMode }}
+<!-- Raw template data, for debugging. Rendered on every page by design.
+     Anything added to TemplateData shows up here verbatim, so keep secrets out
+     of it at the source: credentials on config.SparqlEndpoint carry json:"-"
+     for exactly this reason. -->
 <div class="py-3 border-bottom">
     <a class="d-inline-flex align-items-center text-decoration-none link-secondary small" data-bs-toggle="collapse" href="#rawDataCollapse" role="button" aria-expanded="false" aria-controls="rawDataCollapse">
         <i data-lucide="chevron-down" style="width: 1rem; height: 1rem;" class="me-2"></i>
@@ -13,7 +13,6 @@
         <pre class="p-3 rounded border bg-surface-secondary" style="white-space: pre-wrap; word-wrap: break-word;"><code class="language-json">{{ toJSONPretty . }}</code></pre>
     </div>
 </div>
-{{ end }}
 
 <div class="row align-items-center flex-row-reverse g-2 py-3">
     <div class="col-12 col-lg-auto ms-lg-auto">

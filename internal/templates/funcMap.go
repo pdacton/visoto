@@ -27,23 +27,8 @@ var funcMap = template.FuncMap{
 	"lastPathSegment": lastPathSegment,
 	"groupByValue":    groupByValue,
 	"safeURL":         safeURL,
-	"debugMode":       DebugMode,
 	"currentYear":     currentYear,
 }
-
-// debugMode gates developer-only page furniture (currently the footer's raw
-// template-data dump). It is process-wide rather than a TemplateData field
-// because the layout is also rendered for handlers that pass an ad-hoc gin.H,
-// which would otherwise each have to remember to set the flag.
-var debugMode bool
-
-// SetDebugMode enables or disables developer-only page furniture. Call it
-// before Load; the templates read it at render time.
-func SetDebugMode(enabled bool) { debugMode = enabled }
-
-// DebugMode reports whether developer-only page furniture should be rendered.
-// Usage in templates: {{ if debugMode }}
-func DebugMode() bool { return debugMode }
 
 // currentYear returns the current year, so the footer's copyright notice does
 // not go stale.

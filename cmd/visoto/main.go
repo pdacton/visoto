@@ -684,10 +684,7 @@ func main() {
 	// Create router
 	router := gin.Default()
 
-	// Load templates and register with Gin. Developer-only page furniture (the
-	// footer's raw template-data dump) follows the configured log level, so a
-	// production instance running at INFO does not expose it.
-	templates.SetDebugMode(strings.EqualFold(cfg.Logging.Level, "DEBUG"))
+	// Load templates and register with Gin
 	router.HTMLRender = templates.Load("./templates")
 
 	// Define routing rules
