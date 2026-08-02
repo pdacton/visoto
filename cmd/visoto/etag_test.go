@@ -157,6 +157,113 @@ func TestNoStoreIsLeftAlone(t *testing.T) {
 	}
 }
 
+// ---- API tier (URL-pure routes) ----
+
+// urlPureHandler mimics an /api fragment handler: the route middleware declares
+// the response URL-pure, the handler marks it cacheable.
+func urlPureHandler(body string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		markURLPure(c)
+		markCacheable(c)
+		c.String(http.StatusOK, body)
+	}
+}
+
+func TestURLPureGetsNoETagOrVary(t *testing.T) {
+	// Both identities are on the URL, so there is nothing left to negotiate: an
+	// ETag would only buy a revalidation round-trip that cannot change anything.
+	w := do(newTestRouter(urlPureHandler("rows")), map[string]string{"Accept-Language": "fr"})
+	if got := w.Header().Get("ETag"); got != "" {
+		t.Errorf("URL-pure response carried ETag %q", got)
+	}
+	if got := w.Header().Get("Vary"); got != "" {
+		t.Errorf("URL-pure response carried Vary %q", got)
+	}
+	cc := w.Header().Get("Cache-Control")
+	if !strings.Contains(cc, "max-age=21600") || !strings.Contains(cc, "s-maxage=21600") {
+		t.Errorf("Cache-Control = %q, want max-age and s-maxage of 21600", cc)
+	}
+	if strings.Contains(cc, "must-revalidate") {
+		t.Errorf("Cache-Control = %q, want no must-revalidate on the API tier", cc)
+	}
+	if w.Body.String() != "rows" {
+		t.Errorf("body = %q", w.Body.String())
+	}
+}
+
+// A handler may set its own Vary when its body genuinely depends on a request
+// header — facetedTableHandler does, for Accept. The middleware must not erase it.
+func TestURLPureKeepsHandlerVary(t *testing.T) {
+	r := newTestRouter(func(c *gin.Context) {
+		markURLPure(c)
+		markCacheable(c)
+		c.Header("Vary", "Accept")
+		c.String(http.StatusOK, "{}")
+	})
+	if got := do(r, nil).Header().Get("Vary"); got != "Accept" {
+		t.Errorf("Vary = %q, want the handler's Accept", got)
+	}
+}
+
+// The no-store check sits above the URL-pure branch, so the ~14 transient-error
+// paths keep opting out. This is what keeps a failed SPARQL query from being
+// cached for six hours.
+func TestURLPureNoStoreStillWins(t *testing.T) {
+	r := newTestRouter(func(c *gin.Context) {
+		markURLPure(c)
+		c.Header("Cache-Control", "no-store")
+		c.String(http.StatusOK, "transient failure")
+	})
+	w := do(r, nil)
+	if got := w.Header().Get("Cache-Control"); got != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", got)
+	}
+	if w.Header().Get("ETag") != "" {
+		t.Error("a no-store URL-pure response was given an ETag")
+	}
+}
+
+func TestURLPureNotCacheableIsNoStore(t *testing.T) {
+	r := newTestRouter(func(c *gin.Context) {
+		markURLPure(c) // no markCacheable
+		c.String(http.StatusOK, "x")
+	})
+	if got := do(r, nil).Header().Get("Cache-Control"); got != "no-store" {
+		t.Errorf("Cache-Control = %q, want no-store", got)
+	}
+}
+
+func TestURLPureNonOKPassesThrough(t *testing.T) {
+	r := newTestRouter(func(c *gin.Context) {
+		markURLPure(c)
+		c.String(http.StatusBadRequest, "invalid iri")
+	})
+	w := do(r, nil)
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", w.Code)
+	}
+	if w.Header().Get("ETag") != "" {
+		t.Error("a 400 was given an ETag")
+	}
+	if w.Body.String() != "invalid iri" {
+		t.Errorf("body = %q, want it passed through", w.Body.String())
+	}
+}
+
+// Guards against the API branch leaking into the page tier.
+func TestPageTierStillETagged(t *testing.T) {
+	w := do(newTestRouter(okHandler("page")), map[string]string{"Accept-Language": "de"})
+	if w.Header().Get("ETag") == "" {
+		t.Error("page-tier response lost its ETag")
+	}
+	if w.Header().Get("Vary") == "" {
+		t.Error("page-tier response lost its Vary")
+	}
+	if cc := w.Header().Get("Cache-Control"); !strings.Contains(cc, "must-revalidate") {
+		t.Errorf("page-tier Cache-Control = %q, want must-revalidate", cc)
+	}
+}
+
 func TestNonOKIsNotETagged(t *testing.T) {
 	r := newTestRouter(func(c *gin.Context) { c.String(http.StatusNotFound, "nope") })
 	w := do(r, nil)

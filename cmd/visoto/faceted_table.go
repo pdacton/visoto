@@ -89,7 +89,7 @@ const facetValuesTTL = 5 * time.Minute
 func facetValuesHandler(c *gin.Context) {
 	id := c.Param("id")
 	varName := strings.TrimPrefix(c.Param("var"), "?")
-	acceptLanguage := c.GetHeader("Accept-Language")
+	dataLang := queryLang(c)
 
 	declared, found := findAsyncQuery(id)
 	if !found {
@@ -111,10 +111,12 @@ func facetValuesHandler(c *gin.Context) {
 	}
 
 	endpoint := activeEndpointURL(c)
-	// Value labels are resolved per Accept-Language (the response Varies on it),
-	// so the language must be part of the cache key — otherwise the first
-	// requester's language would be served to everyone for the TTL.
-	cacheKey := endpoint + "|" + id + "|" + varName + "|" + classIRI + "|" + acceptLanguage
+	// Value labels are resolved per language (?lang= on the request), so the
+	// language must be part of the cache key — otherwise the first requester's
+	// language would be served to everyone for the TTL. A bare code keeps this
+	// key space bounded to the configured languages; the raw Accept-Language it
+	// replaced was effectively unbounded.
+	cacheKey := endpoint + "|" + id + "|" + varName + "|" + classIRI + "|" + dataLang
 	facetValuesMu.Lock()
 	if e, ok := facetValuesCache[cacheKey]; ok && time.Now().Before(e.expires) {
 		facetValuesMu.Unlock()
@@ -133,7 +135,7 @@ func facetValuesHandler(c *gin.Context) {
 	preprocessor := prepareQueryInputs(c)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 	defer cancel()
-	result, err := preprocessor.ExecuteQueryWithContext(ctx, query, true, acceptLanguage, "")
+	result, err := preprocessor.ExecuteQueryWithContext(ctx, query, true, dataLang, "")
 	if err != nil {
 		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusOK, gin.H{"values": []facetValue{}, "error": err.Error()})
@@ -183,7 +185,14 @@ func writeFacetValues(c *gin.Context, values []facetValue) {
 // URL key space unbounded, so a response that applied one is not cached.
 func facetedTableHandler(c *gin.Context) {
 	id := c.Param("id")
-	acceptLanguage := c.GetHeader("Accept-Language")
+	dataLang := queryLang(c)
+
+	// The only /api route whose body depends on a request header: wantsJSON
+	// picks the JSON envelope or the HTML fragment off Accept, and both share one
+	// URL. Everything else on this tier is URL-pure and sends no Vary at all (see
+	// etag.go), so this must be declared explicitly or a shared cache could hand
+	// the JSON envelope to an HTML caller. Set before any return path.
+	c.Header("Vary", "Accept")
 
 	declared, found := findAsyncQuery(id)
 	if !found {
@@ -217,6 +226,9 @@ func facetedTableHandler(c *gin.Context) {
 		"iconVar":  c.Query("iconVar"),
 		"badgeVar": c.Query("badgeVar"),
 		"groupBy":  c.Query("groupBy"),
+		// See asyncTableHandler: carried into the fragment so the second-stage
+		// fetches can pass ?lang= on. Unconditional — "" is a real code.
+		"lang": dataLang,
 	}
 	if err != nil {
 		// Invalid selection (e.g. injection attempt) — surface it, never cache.
@@ -242,7 +254,7 @@ func facetedTableHandler(c *gin.Context) {
 	preprocessor := prepareQueryInputs(c)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 	defer cancel()
-	result, execErr := preprocessor.ExecuteQueryWithContext(ctx, faceted, true, acceptLanguage, "")
+	result, execErr := preprocessor.ExecuteQueryWithContext(ctx, faceted, true, dataLang, "")
 	if execErr != nil {
 		result.Error = execErr.Error()
 	}

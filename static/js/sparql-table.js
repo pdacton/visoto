@@ -333,16 +333,24 @@
     })();
 
     // ================= WORKING-SET data loading =================
-    // The endpoint slug travels in the config rather than being resolved here:
-    // these plain fetch()es aren't covered by the htmx:configRequest hook, and
-    // the fragment is cached keyed by its own ?endpoint=, so reusing the same
-    // slug keeps the data requests cache-keyed per endpoint.
+    // The endpoint slug and the language travel in the config rather than being
+    // resolved here: these plain fetch()es aren't covered by the
+    // htmx:configRequest hook, and the fragment is cached keyed by its own
+    // ?endpoint=&lang=, so reusing the same values keeps the data requests
+    // cache-keyed identically.
     var wsBaseUrl = "/api/async-table-data/" + encodeURIComponent(ID) +
       "?iri=" + encodeURIComponent(CFG.iri || "") +
       "&keyVar=" + encodeURIComponent(CFG.keyVar || "") +
       "&max=" + encodeURIComponent(CFG.max || "");
     if (CFG.searchProp) wsBaseUrl += "&searchProp=" + encodeURIComponent(CFG.searchProp);
     if (CFG.endpointSlug) wsBaseUrl += "&endpoint=" + encodeURIComponent(CFG.endpointSlug);
+    // Explicit null/undefined test, not truthiness: "" is the real "no language"
+    // code and must still be sent, since an absent lang= means "server default".
+    // It is null on fragments rendered by a path that sets no language (the sync
+    // sparqlTable partial), where falling back to the default is right.
+    if (CFG.lang !== undefined && CFG.lang !== null) {
+      wsBaseUrl += "&lang=" + encodeURIComponent(CFG.lang);
+    }
     var wsColumnsSet = false;
     var wsSearchTerm = "";           // active backend search ("" = browse)
     var wsFaceted = false;           // whether the loaded set came from a backend facet query

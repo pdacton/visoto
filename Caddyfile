@@ -99,15 +99,18 @@ visoto.hutzli.org {
     # (images, woff2, etc.) on its own.
     encode zstd gzip
 
-    @cacheable {
+    # Two cache tiers, because the two kinds of route learn their language
+    # differently. Both resolve their endpoint from ?endpoint= only (never the
+    # client-managed selectedEndpoint cookie, which uncached entry pages honor)
+    # and never emit Set-Cookie, so neither needs cookie handling here.
+
+    # Page tier. The language comes from the site-lang cookie, normalized into
+    # X-Site-Lang above, so it must be part of the key.
+    @cacheablePages {
         method GET
-        path /api/metric/* /api/async-table/* /api/async-table-data/* /resource
+        path /resource
     }
-    # Cacheable responses are a pure function of the URL: the server resolves the
-    # endpoint from ?endpoint= only on these routes (never the selectedEndpoint
-    # cookie, which is client-managed and only honored on uncached entry pages),
-    # and never emits Set-Cookie — so no cookie handling is needed here.
-    cache @cacheable {
+    cache @cacheablePages {
         # The origin sends `public, max-age=0, must-revalidate, s-maxage=21600`.
         # max-age=0 forces *browsers* to revalidate — necessary because a browser
         # cannot see X-Site-Lang, so `Vary: X-Site-Lang` means nothing to its
@@ -134,6 +137,37 @@ visoto.hutzli.org {
         # fragmenting the cache far less.
         key {
             headers Accept-Encoding X-Site-Lang
+        }
+    }
+
+    # API tier. The fragment routes take BOTH identities from the URL — the
+    # endpoint as ?endpoint= and the language as ?lang= (see resolveQueryLang in
+    # cmd/visoto/main.go) — so the response is a complete function of the URL and
+    # the origin sends no ETag and no Vary. Those responses carry
+    # `public, max-age=21600, s-maxage=21600`, which browsers and Souin both
+    # serve from directly: no revalidation round-trip at all.
+    #
+    # Keying on X-Site-Lang here would be strictly harmful: it would split one URL
+    # into up to six identical entries. The language is already in the URL.
+    #
+    # The matcher is deliberately broad, so API routes added later are covered
+    # without editing it. That is safe because the ORIGIN's Cache-Control decides
+    # what Souin actually stores, not this matcher — it only grants eligibility.
+    # The non-URL-pure GET routes it sweeps in (/api/monitoring/*,
+    # /api/named-graphs, /api/ontologies, /api/export-graphs) never call
+    # markCacheable, so they keep sending `max-age=0, must-revalidate` with an
+    # ETag and are not stored for a TTL. POST/DELETE never match.
+    #
+    # /api/faceted-table/* is the one route here whose body depends on a request
+    # header (Accept picks JSON vs HTML); it declares `Vary: Accept` itself.
+    @cacheableApi {
+        method GET
+        path /api/*
+    }
+    cache @cacheableApi {
+        ttl 6h
+        key {
+            headers Accept-Encoding
         }
     }
 

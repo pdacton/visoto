@@ -41,7 +41,7 @@ const defaultMaxWorkingSet = 20000
 //	searchProp optional name property IRI to search (default rdfs:label)
 func asyncTableDataHandler(c *gin.Context) {
 	id := c.Param("id")
-	acceptLanguage := c.GetHeader("Accept-Language")
+	dataLang := queryLang(c)
 
 	declared, found := findAsyncQuery(id)
 	if !found {
@@ -87,7 +87,7 @@ func asyncTableDataHandler(c *gin.Context) {
 			"error": err.Error()})
 		return
 	}
-	result, err := preprocessor.ExecuteQueryWithContext(ctx, wsQuery, true, acceptLanguage, "")
+	result, err := preprocessor.ExecuteQueryWithContext(ctx, wsQuery, true, dataLang, "")
 	if err != nil {
 		// A transient SPARQL failure must never be cached as if it were real data.
 		c.Header("Cache-Control", "no-store")
@@ -105,7 +105,7 @@ func asyncTableDataHandler(c *gin.Context) {
 	var total int
 	var complete bool
 	if term == "" {
-		total = cachedInstanceCount(ctx, preprocessor, id, endpoint, classIRI, keyVar, "", searchProp, acceptLanguage)
+		total = cachedInstanceCount(ctx, preprocessor, id, endpoint, classIRI, keyVar, "", searchProp, dataLang)
 		complete = distinct < max
 		if complete {
 			total = distinct // COUNT and load agree when uncapped; prefer the loaded count
@@ -147,13 +147,21 @@ var (
 
 const countCacheTTL = 5 * time.Minute
 
+// instanceCountKey builds the count cache key. Extracted so the "two languages
+// must not collide" property is unit-testable without a live preprocessor.
+func instanceCountKey(endpoint, id, classIRI, term, dataLang string) string {
+	return endpoint + "|" + id + "|" + classIRI + "|" + term + "|" + dataLang
+}
+
 // cachedInstanceCount returns the number of instances in scope — the whole class
 // in browse mode, or just the search matches when a term is given. Computed from
 // the membership scope alone (no OPTIONALs, cheap: ~1s class-only). Cached per
-// (endpoint+id+class+term) for a short TTL. The endpoint is part of the key so
-// the LINDAS prod/int/test switcher never serves a stale cross-endpoint count.
-func cachedInstanceCount(ctx context.Context, preprocessor *parser.Preprocessor, id, endpoint, classIRI, keyVar, term, searchProp, acceptLanguage string) int {
-	key := endpoint + "|" + id + "|" + classIRI + "|" + term
+// (endpoint+id+class+term+lang) for a short TTL. The endpoint is part of the key
+// so the LINDAS prod/int/test switcher never serves a stale cross-endpoint count;
+// the language is part of it because a membership pattern may use
+// visoto:dispLang, which resolves into the query being counted.
+func cachedInstanceCount(ctx context.Context, preprocessor *parser.Preprocessor, id, endpoint, classIRI, keyVar, term, searchProp, dataLang string) int {
+	key := instanceCountKey(endpoint, id, classIRI, term, dataLang)
 	countCacheMu.Lock()
 	if e, ok := countCache[key]; ok && time.Now().Before(e.expires) {
 		countCacheMu.Unlock()
@@ -168,7 +176,7 @@ func cachedInstanceCount(ctx context.Context, preprocessor *parser.Preprocessor,
 		return 0
 	}
 	countQuery := fmt.Sprintf("SELECT (COUNT(*) AS ?count) WHERE { %s }", body)
-	result, err := preprocessor.ExecuteQueryWithContext(ctx, countQuery, false, acceptLanguage, "")
+	result, err := preprocessor.ExecuteQueryWithContext(ctx, countQuery, false, dataLang, "")
 	if err != nil {
 		return 0 // don't cache errors; caller falls back to inline-local
 	}

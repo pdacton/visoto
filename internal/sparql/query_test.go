@@ -230,6 +230,38 @@ func TestFinalizeQuery(t *testing.T) {
 	}
 }
 
+// The /api tier passes a bare language code where this parameter used to get a
+// full Accept-Language header. Both forms must resolve visoto:dispLang the same
+// way, and the empty code must keep its documented "en" neutral.
+func TestFinalizeQueryDispLangAcceptsBareCode(t *testing.T) {
+	preproc := New(QueryInput{EndpointURL: "http://example.com/sparql"})
+	const query = `SELECT ?d WHERE { ?s rdfs:label ?d . FILTER (lang(?d) = visoto:dispLang) }`
+
+	tests := []struct {
+		name string
+		lang string
+		want string
+	}{
+		{"bare code (the /api tier)", "de", `"de"`},
+		{"full header (the page tier)", "de-CH,de;q=0.9,en;q=0.8", `"de"`},
+		{"region-tagged bare code", "de-CH", `"de"`},
+		// "" is the no-language choice; it resolves to the neutral "en" rather
+		// than the configured default, which internal/sparql cannot see.
+		{"empty code is the en neutral", "", `"en"`},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := preproc.finalizeQuery(query, tt.lang)
+			if !strings.Contains(got, "lang(?d) = "+tt.want) {
+				t.Errorf("finalizeQuery(%q) should resolve dispLang to %s, got:\n%s", tt.lang, tt.want, got)
+			}
+			if strings.Contains(got, "visoto:dispLang") {
+				t.Errorf("finalizeQuery(%q) left visoto:dispLang unresolved:\n%s", tt.lang, got)
+			}
+		})
+	}
+}
+
 func TestFinalizeQueryMagicProperties(t *testing.T) {
 	prefixes := []config.Prefix{
 		{Name: "rdfs", URI: "http://www.w3.org/2000/01/rdf-schema#"},

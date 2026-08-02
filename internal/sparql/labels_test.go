@@ -2,6 +2,7 @@ package sparql
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 )
@@ -178,6 +179,31 @@ func TestExtractIRIs(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// The /api tier feeds these functions a single bare code instead of a parsed
+// Accept-Language header. A one-entry preference list is the well-behaved case:
+// it cannot trip the single-character priority concatenation in buildLabelQuery,
+// and it cannot collide in labelCacheKey (which sorts, discarding order).
+func TestBareCodeLanguageHandling(t *testing.T) {
+	if got := parseAcceptLanguage("fr"); len(got) != 1 || got[0] != "fr" {
+		t.Errorf("parseAcceptLanguage(\"fr\") = %v, want [fr]", got)
+	}
+
+	q := buildLabelQuery([]string{"http://example.com/Person"}, []string{"fr"})
+	if !containsString(q, "IF(?lang = 'fr', '1', 1/0)") {
+		t.Errorf("buildLabelQuery did not rank the bare code first:\n%s", q)
+	}
+	// Exactly one caller-supplied rung ahead of the hardcoded de/fr/it/en/rm
+	// ladder — more would risk two-digit priorities in the CONCAT below it.
+	// Caller rungs use single quotes; the hardcoded ones use double.
+	if n := strings.Count(q, "IF(?lang = '"); n != 1 {
+		t.Errorf("buildLabelQuery emitted %d caller priority rungs, want 1:\n%s", n, q)
+	}
+
+	if labelCacheKey("http://x", []string{"de"}) == labelCacheKey("http://x", []string{"fr"}) {
+		t.Error("labelCacheKey collides across single-code languages")
 	}
 }
 

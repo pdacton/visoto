@@ -37,6 +37,20 @@
     return slug ? 'endpoint=' + encodeURIComponent(slug) : '';
   }
 
+  // The active site language, so these routes return labels in the picked
+  // language (they read only the URL — shared resolver from
+  // language-switcher.js).
+  //
+  // Note the deliberate asymmetry with endpointParam: an empty slug means "none
+  // selected", so dropping the pair and letting the server default is right. An
+  // empty language is a *choice* ("no language"), so this returns a bare "lang="
+  // rather than dropping it — an absent param would mean the server default,
+  // which is a different language.
+  function langParam() {
+    var code = (typeof activeSiteLang === 'function') ? activeSiteLang() : null;
+    return code === null ? '' : 'lang=' + encodeURIComponent(code);
+  }
+
   // Join non-empty query-param pairs into a query string.
   function joinParams(parts) {
     return parts.filter(function (p) { return !!p; }).join('&');
@@ -192,7 +206,7 @@
     menu.dataset.loaded = 'loading';
     var list = wrap.querySelector('.vs-select-list');
     var url = '/api/facet-values/' + encodeURIComponent(ctx.id) + '/' + encodeURIComponent(name) +
-      '?' + joinParams(['iri=' + encodeURIComponent(ctx.iri || ''), endpointParam()]);
+      '?' + joinParams(['iri=' + encodeURIComponent(ctx.iri || ''), endpointParam(), langParam()]);
     fetch(url, fetchOptions({ headers: { 'Accept': 'application/json' } }))
       .then(function (r) { return r.json(); })
       .then(function (data) {
@@ -388,6 +402,7 @@
       }
     });
     parts.push(endpointParam());
+    parts.push(langParam());
     return '/api/faceted-table/' + encodeURIComponent(id) + '?' + joinParams(parts);
   }
 

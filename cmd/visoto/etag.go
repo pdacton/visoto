@@ -2,18 +2,27 @@ package main
 
 // Response caching: ETag, Vary and Cache-Control for every rendered route.
 //
-// The site language now comes from a cookie, not the URL — which means a browser
-// that cached a page cannot tell that a language switch invalidated it. Vary:
-// X-Site-Lang separates the variants in the *shared* cache (Caddy/Souin, whose
-// key includes that header), but a browser never sends X-Site-Lang, so to a
-// private cache every variant looks identical. Left alone, switching to French
-// and reloading would re-serve the cached English page.
+// There are two tiers, because the two kinds of route learn their language
+// differently.
 //
-// The fix is to make browsers always revalidate and to make revalidation cheap:
-// every response carries an ETag, and Cache-Control tells private caches to
+// Page tier (/, /:page, /search, /resource) — the language comes from a cookie,
+// not the URL, which means a browser that cached a page cannot tell that a
+// language switch invalidated it. Vary: X-Site-Lang separates the variants in the
+// *shared* cache (Caddy/Souin, whose key includes that header), but a browser
+// never sends X-Site-Lang, so to a private cache every variant looks identical.
+// Left alone, switching to French and reloading would re-serve the cached English
+// page. The fix is to make browsers always revalidate and to make revalidation
+// cheap: every response carries an ETag, and Cache-Control tells private caches to
 // revalidate while still letting Souin serve for hours. In production those
 // revalidations are answered by Souin from its own store, so the origin does not
 // re-run the SPARQL query.
+//
+// API tier (the /api/* fragment routes, marked by markURLPure) — both identities
+// are on the URL: the endpoint as ?endpoint= and the language as ?lang= (see
+// resolveQueryLang). That makes the response a complete function of its URL, so
+// there is nothing left to negotiate: no ETag, no Vary, and a long max-age that
+// browsers and Souin can both serve from directly. A language switch changes the
+// URL, so a stale entry becomes unreachable rather than merely revalidated away.
 
 import (
 	"bufio"
@@ -52,6 +61,53 @@ func isCacheable(c *gin.Context) bool {
 	}
 	b, _ := v.(bool)
 	return b
+}
+
+// urlPureKey marks a route whose response is a complete function of its URL:
+// both the endpoint and the language arrive as query params, and no cookie or
+// content-negotiation header is read. Set by resolveQueryLang, so the route
+// table is the single place that decides which routes qualify — a route added
+// without that middleware fails safe into the page tier.
+const urlPureKey = "urlPure"
+
+// markURLPure records that this response depends on nothing but its URL, so it
+// needs no ETag and no Vary — see the API tier note in this file's header.
+func markURLPure(c *gin.Context) {
+	c.Set(urlPureKey, true)
+}
+
+// isURLPure reports whether the route declared itself URL-pure.
+func isURLPure(c *gin.Context) bool {
+	v, ok := c.Get(urlPureKey)
+	if !ok {
+		return false
+	}
+	b, _ := v.(bool)
+	return b
+}
+
+// apiMaxAge is how long a URL-pure /api fragment may be served without asking the
+// origin, in seconds (6h, matching the page tier's shared TTL).
+const apiMaxAge = "21600"
+
+// apiCacheControl builds the Cache-Control for a URL-pure /api response.
+//
+// Unlike the page tier this max-age applies to the *browser* too, which is the
+// point: with the language on the URL there is nothing a revalidation could
+// discover that a plain cache hit would get wrong, so the conditional round-trip
+// every fragment costs today disappears.
+//
+// Deliberately no "immutable": the underlying SPARQL data does change, and
+// immutable would defeat the force-reload escape hatch the table JS relies on
+// (fetchOptions sets cache: "reload" on a reload navigation).
+func apiCacheControl(cacheable bool) string {
+	if cacheable {
+		return "public, max-age=" + apiMaxAge + ", s-maxage=" + apiMaxAge
+	}
+	// On this tier "not cacheable" only ever means a transient or error
+	// response, and there is no revalidation machinery left to make max-age=0
+	// useful — so say no-store outright.
+	return "no-store"
 }
 
 // cacheControlFor builds the Cache-Control value.
@@ -108,8 +164,19 @@ func etagMiddleware() gin.HandlerFunc {
 			return
 		}
 
-		etag := etagFor(activeLang(c), body)
 		h := bw.ResponseWriter.Header()
+
+		// API tier: nothing about the response depends on a request header, so
+		// it gets neither an ETag nor a Vary — just a TTL keyed by the URL.
+		// Note this sits *below* the no-store check above, so the handlers that
+		// opt a transient failure out of caching still win.
+		if isURLPure(c) {
+			h.Set("Cache-Control", apiCacheControl(isCacheable(c)))
+			bw.flush(body)
+			return
+		}
+
+		etag := etagFor(activeLang(c), body)
 		h.Set("ETag", etag)
 		h.Set("Vary", varyFor(c))
 		// A handler that already chose no-store took the early return above, so

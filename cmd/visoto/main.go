@@ -178,6 +178,68 @@ func activeEndpointURL(c *gin.Context) string {
 	return cfg.Application.SparqlEndpoint
 }
 
+// queryLangKey is the gin-context key under which resolveQueryLang stores the
+// request's SPARQL data language.
+const queryLangKey = "queryLang"
+
+// resolveQueryLang resolves the language the SPARQL data is fetched in for the
+// /api/* fragment routes, from ?lang=<code> alone — never the site-lang cookie,
+// never Accept-Language.
+//
+// This is the language twin of resolveEndpoint(false), and exists for the same
+// reason: these routes sit in the shared Caddy/Souin cache, so the response must
+// be a pure function of the URL. Reading the cookie here would serve one user's
+// language to everyone. The frontend puts the code on the URL instead
+// (activeSiteLang in language-switcher.js), so a language switch produces a
+// different URL rather than a differently-negotiated response — which is also
+// what lets the /api tier drop its ETag entirely (see markURLPure in etag.go).
+//
+// An unknown code warns and falls back to the configured default rather than
+// erroring, mirroring an unknown endpoint slug: a stale link degrades instead of
+// breaking. siteLangs.Clean is the whole validator — it lowercases, strips the
+// region subtag ("de-CH" → "de") and membership-checks against visoto.config —
+// which bounds the cache key space the same way the Caddyfile's unprefixed
+// `request_header X-Site-Lang` bounds it for the header path.
+func resolveQueryLang() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// The routes that take this middleware are exactly the routes whose
+		// response is a complete function of the URL, so it asserts both facts.
+		markURLPure(c)
+
+		// GetQuery, not Query: "" is a configured code (the "no language"
+		// choice), and c.Query cannot tell it from an absent param. The two mean
+		// different things — an absent param is "no opinion, use the default".
+		raw, present := c.GetQuery("lang")
+		if !present {
+			c.Set(queryLangKey, siteLangs.Default())
+			return
+		}
+		code, ok := siteLangs.Clean(raw)
+		if !ok {
+			logger.Get().Warn("unknown lang code in URL", slog.String("lang", raw))
+			code = siteLangs.Default()
+		}
+		c.Set(queryLangKey, code)
+	}
+}
+
+// queryLang returns the SPARQL data language resolved by resolveQueryLang,
+// falling back to the configured default when the middleware has not run.
+//
+// The returned value is a bare code ("de", "fr", or "" for the no-language
+// choice), which the internal/sparql layer accepts wherever it takes an
+// Accept-Language string: a bare code parses as a one-entry preference list.
+// The empty code resolves to "en" there (see topLanguage) — a deliberate neutral
+// for "no language preference", not a bug.
+func queryLang(c *gin.Context) string {
+	if v, ok := c.Get(queryLangKey); ok {
+		if code, ok := v.(string); ok {
+			return code
+		}
+	}
+	return siteLangs.Default()
+}
+
 // stampEndpointData fills the endpoint-related template fields shared by every
 // server-rendered page from the request's resolved endpoint.
 func stampEndpointData(c *gin.Context, data *parser.TemplateData) {
@@ -439,7 +501,7 @@ func findAsyncQuery(id string) (string, bool) {
 // It reads the sparql-async element with the matching id, executes its query, and returns the count.
 func metricHandler(c *gin.Context) {
 	id := c.Param("id")
-	acceptLanguage := c.GetHeader("Accept-Language")
+	dataLang := queryLang(c)
 
 	query, found := findAsyncQuery(id)
 	if !found {
@@ -461,7 +523,7 @@ func metricHandler(c *gin.Context) {
 	}
 
 	preprocessor := prepareQueryInputs(c)
-	result, err := preprocessor.ExecuteQuery(query, false, acceptLanguage, "")
+	result, err := preprocessor.ExecuteQuery(query, false, dataLang, "")
 
 	count := "0"
 	if err == nil && len(result.Bindings) > 0 {
@@ -478,7 +540,7 @@ func metricHandler(c *gin.Context) {
 	// action off the card rather than the rows.
 	finalQuery, endpoint := result.Query, result.Endpoint
 	if finalQuery == "" {
-		finalQuery = preprocessor.FinalizeQuery(query, acceptLanguage)
+		finalQuery = preprocessor.FinalizeQuery(query, dataLang)
 	}
 	if endpoint == "" {
 		endpoint = activeEndpointURL(c)
@@ -517,7 +579,7 @@ func metricHandler(c *gin.Context) {
 // can serve many tables: title, icon, iconVar, badgeVar.
 func asyncTableHandler(c *gin.Context) {
 	id := c.Param("id")
-	acceptLanguage := c.GetHeader("Accept-Language")
+	dataLang := queryLang(c)
 
 	query, found := findAsyncQuery(id)
 	if !found {
@@ -540,6 +602,12 @@ func asyncTableHandler(c *gin.Context) {
 		// absent param yields "" (falsy). The template may still force-collapse an
 		// empty or errored result regardless of this hint.
 		"collapsed": c.Query("collapsed"),
+		// The language this fragment's data was fetched in, so the second-stage
+		// Tabulator fetches (/api/async-table-data, /api/faceted-table) can carry
+		// it too — those plain fetch()es are not covered by the htmx hook that
+		// adds ?lang= to fragment requests. Set unconditionally: "" is a real
+		// code (the no-language choice), so an absent field would be ambiguous.
+		"lang": dataLang,
 	}
 
 	// Auto-detect the working-set mode: a class-instance query has a "?key a ??"
@@ -572,7 +640,7 @@ func asyncTableHandler(c *gin.Context) {
 		endpoint := activeEndpointURL(c)
 		ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 		searchProp := c.DefaultQuery("searchProp", "http://www.w3.org/2000/01/rdf-schema#label")
-		total := cachedInstanceCount(ctx, preprocessor, id, endpoint, iri, keyVar, "", searchProp, acceptLanguage)
+		total := cachedInstanceCount(ctx, preprocessor, id, endpoint, iri, keyVar, "", searchProp, dataLang)
 		cancel()
 		if total > defaultMaxWorkingSet {
 			params["workingSet"] = true
@@ -595,7 +663,7 @@ func asyncTableHandler(c *gin.Context) {
 			// and lazily from /api/async-table-data/:id — this query is NOT executed
 			// here, so query cost stays flat.
 			params["result"] = sparql.QueryResult{
-				Query:    preprocessor.FinalizeQuery(fullQuery, acceptLanguage),
+				Query:    preprocessor.FinalizeQuery(fullQuery, dataLang),
 				Endpoint: endpoint,
 			}
 			// Never executes the class query itself, so always cheap and safe to cache.
@@ -605,7 +673,7 @@ func asyncTableHandler(c *gin.Context) {
 	}
 
 	// Inline path: execute the full query and embed the whole result set.
-	result, err := preprocessor.ExecuteQuery(fullQuery, true, acceptLanguage, "")
+	result, err := preprocessor.ExecuteQuery(fullQuery, true, dataLang, "")
 	if err != nil {
 		// Surface the error inside the table card (sparqlTable renders result.Error).
 		result.Error = err.Error()
@@ -790,6 +858,9 @@ func main() {
 	// honor the selectedEndpoint cookie. See resolveEndpoint.
 	epFromURL := resolveEndpoint(false)
 	epFromURLOrCookie := resolveEndpoint(true)
+	// The /api fragment routes take their language from ?lang= too, which makes
+	// them pure functions of their URL. See resolveQueryLang.
+	langFromURL := resolveQueryLang()
 	router.GET("/", epFromURLOrCookie, func(c *gin.Context) {
 		c.Params = append(c.Params, gin.Param{Key: "page", Value: "home.html"})
 		staticPageHandler(c)
@@ -808,11 +879,11 @@ func main() {
 	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
 	router.GET("/api/monitoring/data", monitoringDataHandler)
 	router.POST("/api/cache/purge", cachePurgeHandler)
-	router.GET("/api/metric/:id", epFromURL, metricHandler)
-	router.GET("/api/async-table/:id", epFromURL, asyncTableHandler)
-	router.GET("/api/async-table-data/:id", epFromURL, asyncTableDataHandler)
-	router.GET("/api/faceted-table/:id", epFromURL, facetedTableHandler)
-	router.GET("/api/facet-values/:id/:var", epFromURL, facetValuesHandler)
+	router.GET("/api/metric/:id", epFromURL, langFromURL, metricHandler)
+	router.GET("/api/async-table/:id", epFromURL, langFromURL, asyncTableHandler)
+	router.GET("/api/async-table-data/:id", epFromURL, langFromURL, asyncTableDataHandler)
+	router.GET("/api/faceted-table/:id", epFromURL, langFromURL, facetedTableHandler)
+	router.GET("/api/facet-values/:id/:var", epFromURL, langFromURL, facetValuesHandler)
 	router.GET("/resource", epFromURL, resourcePageHandler)
 	router.GET("/resource/*path", legacyResourceRedirectHandler)
 	router.Any("/mcp", gin.WrapH(mcpHandler))
