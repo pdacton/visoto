@@ -12,6 +12,7 @@ package templates
 // its i18n functions overridden, so the extra languages cost clones, not parses.
 
 import (
+	"fmt"
 	"html/template"
 	"log/slog"
 	"os"
@@ -202,6 +203,9 @@ func placeholderI18nFuncs() template.FuncMap {
 		"tHTML": func(id string, args ...any) template.HTML { return template.HTML(placeholderText(id, args)) },
 		"tn":    func(id string, _ any, args ...any) string { return placeholderText(id, args) },
 
+		// Must return the value unchanged rather than "": if this ever fires, a
+		// count should still render, just ungrouped.
+		"formatNum":     func(v any) string { return fmt.Sprint(v) },
 		"siteLang":      func() string { return i18n.BaseCode },
 		"siteLanguages": func() []lang.Option { return nil },
 		"jsStrings":     func() map[string]string { return nil },

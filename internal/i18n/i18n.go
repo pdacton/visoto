@@ -21,12 +21,14 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/BurntSushi/toml"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
 	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 	"hutzli.org/visoto/internal/logger"
 )
 
@@ -344,11 +346,66 @@ func (c *Catalogs) logOnce(code, id string, level slog.Level, msg string) {
 		slog.String("language", code), slog.String("key", id))
 }
 
+// formatNum groups a number for display in one language's convention: 781'462
+// in de-CH, 781 462 in fr, 781,462 in en.
+//
+// It takes `any` because the values it formats arrive as whatever the caller
+// has: SPARQL counts reach templates as strings (metricHandler pulls
+// Binding.Value), while Go-side counts are ints. Anything it cannot read as a
+// whole number is returned unchanged rather than replaced or zeroed — a metric
+// that failed and rendered "0", or a non-numeric literal, must still show what
+// it actually is.
+//
+// The empty language code means "no language" (the deliberate None choice). It
+// formats against the root locale, which groups like English — there is no
+// "ungrouped" locale to reach for, and a bare 781462 reads worse than 781,462.
+func formatNum(code string, v any) string {
+	var raw string
+	switch n := v.(type) {
+	case string:
+		raw = n
+	case int:
+		return message.NewPrinter(numTag(code)).Sprintf("%d", n)
+	case int64:
+		return message.NewPrinter(numTag(code)).Sprintf("%d", n)
+	case template.HTML:
+		raw = string(n)
+	default:
+		raw = fmt.Sprint(v)
+	}
+
+	trimmed := strings.TrimSpace(raw)
+	parsed, err := strconv.ParseInt(trimmed, 10, 64)
+	if err != nil {
+		return raw // not a plain integer (an error string, a decimal, a label)
+	}
+	return message.NewPrinter(numTag(code)).Sprintf("%d", parsed)
+}
+
+// numTag maps a UI language code to the tag whose number format we want. The
+// German UI is Swiss German by convention here — de-CH groups with an
+// apostrophe (781'462), which is the federal standard and what the rest of the
+// site's Swiss context implies; plain "de" would give 781.462.
+func numTag(code string) language.Tag {
+	switch code {
+	case "":
+		return language.Und
+	case "de":
+		return language.MustParse("de-CH")
+	}
+	tag, err := language.Parse(code)
+	if err != nil {
+		return language.Und
+	}
+	return tag
+}
+
 // FuncMap returns the template functions bound to one language:
 //
 //	t    "key" [fallback] [data]        translated string
 //	tHTML "key" [fallback] [data]       same, trusted as markup (inline tags)
 //	tn   "key" count [fallback] [data]  plural form, with {{.Count}} pre-seeded
+//	formatNum value                     number grouped for the active locale
 //
 // fallback is the English text written inline at the call site. It keeps the
 // template readable on its own and lets a string ship before its catalog entry
@@ -376,6 +433,10 @@ func (c *Catalogs) FuncMap(code string) template.FuncMap {
 			fallback, data := splitArgs(args)
 			return c.translateCount(code, id, fallback, count, data)
 		},
+		// Group a number for display: 781462 becomes 781'462 in de, 781,462 in en.
+		// Bound per language for the same reason t is — the template just calls
+		// {{ formatNum .count }} and gets the active locale's convention.
+		"formatNum": func(v any) string { return formatNum(code, v) },
 		// The active language code, for <html lang> and the topbar picker.
 		"siteLang": func() string { return code },
 		// The js.* subset, for the JSON island base.html hands to window.vsT.

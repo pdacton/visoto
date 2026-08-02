@@ -37,11 +37,11 @@ func TestTranslateFallsBackToBase(t *testing.T) {
 		code, key, want string
 	}{
 		{"de", "a.hello", "Hallo"},
-		{"de", "a.bye", "Bye"},   // per-key fallback to the base catalog
+		{"de", "a.bye", "Bye"}, // per-key fallback to the base catalog
 		{"en", "a.hello", "Hello"},
-		{"", "a.hello", "Hello"}, // the "no language" choice renders the base catalog
+		{"", "a.hello", "Hello"},                        // the "no language" choice renders the base catalog
 		{"de", "a.missing", missingMarker("a.missing")}, // no entry, no inline fallback
-		{"zz", "a.hello", "Hello"}, // unconfigured code degrades to base, never panics
+		{"zz", "a.hello", "Hello"},                      // unconfigured code degrades to base, never panics
 	}
 	for _, tt := range tests {
 		if got := c.translate(tt.code, tt.key, "", nil); got != tt.want {
@@ -335,6 +335,70 @@ func TestTranslationsDefineNoUnknownKeys(t *testing.T) {
 			if !used[key] && !keysReadFromGo[key] {
 				t.Errorf("%s.toml defines %q, which no template or script uses", code, key)
 			}
+		}
+	}
+}
+
+// TestFormatNum covers the grouping conventions the metric cards depend on. The
+// Swiss apostrophe for German is the point of numTag's special case, so it is
+// asserted explicitly rather than left to whatever CLDR ships for plain "de".
+func TestFormatNum(t *testing.T) {
+	// U+2019 RIGHT SINGLE QUOTATION MARK is what CLDR uses for de-CH/rm, not an
+	// ASCII apostrophe — spelled out here so a mismatch reads clearly on failure.
+	const apos = "’"
+	// French groups with a no-break space (U+00A0), not a plain space.
+	const nbsp = "\u00a0"
+
+	tests := []struct {
+		code string
+		in   any
+		want string
+	}{
+		{"en", "781462", "781,462"},
+		{"de", "781462", "781" + apos + "462"},
+		{"it", "781462", "781.462"},
+		{"rm", "781462", "781" + apos + "462"},
+		{"fr", "781462", "781" + nbsp + "462"},
+
+		// Small numbers are left alone; no separator below the grouping width.
+		{"de", "0", "0"},
+		{"en", "999", "999"},
+
+		// Ints, because Go-side counts are not strings.
+		{"de", 456536, "456" + apos + "536"},
+
+		// Anything that is not a whole number passes through untouched: a failed
+		// metric, a decimal, or a label must never be mangled or zeroed.
+		{"de", "n/a", "n/a"},
+		{"de", "", ""},
+		{"de", "3.14", "3.14"},
+		{"en", "abc", "abc"},
+	}
+
+	for _, tt := range tests {
+		if got := formatNum(tt.code, tt.in); got != tt.want {
+			t.Errorf("formatNum(%q, %v) = %q, want %q", tt.code, tt.in, got, tt.want)
+		}
+	}
+}
+
+// The func map must expose formatNum bound to its own language, for the same
+// reason t is — a clone renders with the language it was bound to.
+func TestFuncMapBindsFormatNum(t *testing.T) {
+	c := writeCatalogs(t, map[string]string{
+		"en.toml": `"probe" = "x"`,
+		"de.toml": `"probe" = "x"`,
+	}, []string{"en", "de"})
+	for _, tt := range []struct{ code, want string }{
+		{"de", "1" + "’" + "000"},
+		{"en", "1,000"},
+	} {
+		fn, ok := c.FuncMap(tt.code)["formatNum"].(func(any) string)
+		if !ok {
+			t.Fatalf("FuncMap(%q) has no formatNum of the expected type", tt.code)
+		}
+		if got := fn("1000"); got != tt.want {
+			t.Errorf("formatNum bound to %q = %q, want %q", tt.code, got, tt.want)
 		}
 	}
 }

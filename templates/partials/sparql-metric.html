@@ -100,7 +100,7 @@
      Written with toJSON (not toJSONRaw): a <template> re-encodes entities when
      read back via innerHTML, and toJSON escapes < > & to backslash-u sequences
      so the angle-bracketed IRIs in the query survive the round trip intact. */}}
-{{ define "sparqlMetricValue" }}{{ .count }}<template id="{{ .queryId }}-metric-config">{{ toJSON (dict
+{{ define "sparqlMetricValue" }}{{ formatNum .count }}<template id="{{ .queryId }}-metric-config">{{ toJSON (dict
   "id"       .queryId
   "query"    .query
   "endpoint" .endpoint
