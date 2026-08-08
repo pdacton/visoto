@@ -446,3 +446,18 @@
     }
     .vs-ws-progress-bar { width: 100%; }
 }
+
+/* Facet dropdown stacking.
+   The menu is portaled to <body> (Tabulator clips its header with
+   overflow:hidden, so a menu inside the header cell would be cut off) and
+   positioned fixed by faceted-table.js. That leaves it with no stacking
+   ancestor, so it competes directly with the page chrome — and Bootstrap's
+   .dropdown-menu z-index of 1000 loses to Tabler's fixed sidebar at 1030,
+   which drew over the open menu.
+
+   1035 clears the sidebar while staying UNDER the offcanvas backdrop (1040)
+   and modals (1050+), so a facet menu left open can never float above a
+   dialog or the mobile offcanvas nav. */
+.vs-facet-menu {
+    z-index: 1035;
+}

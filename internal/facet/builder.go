@@ -43,39 +43,183 @@ func BuildFacetValuesQuery(classIRI, keyVar string, spec FacetSpec, limit int) (
 	), nil
 }
 
-// BuildFacetedQuery rewrites the declared instance query (with the class IRI
-// already substituted for ??) by injecting one FILTER EXISTS block per active
-// constraint immediately after the class-membership triple. This preserves the
-// "don't wrap the base query as a subquery" performance rule from
-// internal/sparql/paging.go: the store still drives the query from the membership
-// triple and prunes members with the existential filters before the OPTIONALs run.
+// anchorVar resolves the variable a constraint filters through, or "" when the
+// constraint filters its projected column directly.
+//
+// CLASS mode returns the anchor variable: an explicit Root, or the sniffed key var
+// when Root is empty (so declarations written before Root existed keep working).
+// COLUMN mode (no path) and INSTANCE mode (a fixed root IRI) both return "": a
+// pattern anchored on a constant is identical for every row and so cannot filter
+// one, which leaves the projected column as the only thing to constrain.
+func anchorVar(spec FacetSpec, keyVar string) string {
+	if strings.TrimSpace(spec.Path) == "" {
+		return "" // column mode
+	}
+	root := strings.TrimSpace(spec.Root)
+	switch root {
+	case "":
+		return keyVar // backwards compatible: today's sniffed key var
+	case InstanceRoot:
+		return "" // instance mode filters the column; only enumeration differs
+	default:
+		return strings.TrimPrefix(root, "?")
+	}
+}
+
+// BuildColumnValuesQuery builds the COLUMN-mode enumeration: the declared query
+// (?? already substituted) wrapped as a subquery, grouped by the facet variable.
+//
+// This is the expensive shape — it runs the whole base query — and it is the only
+// correct one when nothing links the value to a cheap anchor: a variable produced
+// by a BIND inside a UNION branch has no property path to enumerate from. Callers
+// gate it on the loaded set being incomplete; a complete set enumerates client-side
+// from the rows it already holds, without a request.
+//
+// Keeping the inner query's own LIMIT is deliberate: it bounds the cost AND keeps
+// the offered values consistent with the rows the table actually shows.
+func BuildColumnValuesQuery(fullQuery string, spec FacetSpec, limit int) (string, error) {
+	if err := sparql.ValidateVarName(spec.Var); err != nil {
+		return "", fmt.Errorf("facet %q: var: %w", spec.Var, err)
+	}
+	// The outer aggregate alias would collide with an inner projection of the same
+	// name ("alias already used"), so reject that rather than emit a broken query.
+	if countProjectionRe.MatchString(fullQuery) {
+		return "", fmt.Errorf("facet %q: the query already projects ?count, which collides with the facet count alias — rename it", spec.Var)
+	}
+	if limit <= 0 {
+		limit = DefaultEnumerateLimit
+	}
+	v := "?" + spec.Var
+	return fmt.Sprintf(
+		"SELECT %s (COUNT(*) AS ?count) WHERE {\n{\n%s\n}\n} GROUP BY %s ORDER BY DESC(?count) LIMIT %d",
+		v, fullQuery, v, limit,
+	), nil
+}
+
+// countProjectionRe matches a ?count variable bound in the declared query, whether
+// projected directly or produced by an aggregate alias.
+var countProjectionRe = regexp.MustCompile(`(?i)(\?count\b|\bAS\s+\?count\b)`)
+
+// aggregateAliasRe reports whether varName is produced by an aggregate alias, e.g.
+// "(GROUP_CONCAT(?postalCode; separator=\", \") AS ?postalCodes)".
+func aggregateAliasRe(varName string) *regexp.Regexp {
+	return regexp.MustCompile(`(?i)\b(COUNT|SUM|AVG|MIN|MAX|SAMPLE|GROUP_CONCAT)\s*\([^)]*\)\s+AS\s+\?` +
+		regexp.QuoteMeta(varName) + `\b`)
+}
+
+// checkFilterable rejects a COLUMN-mode constraint on an aggregate alias.
+//
+// This is the one failure in faceted search that is otherwise SILENT: an aggregate
+// alias exists only in the projection, so a WHERE-level FILTER naming it raises a
+// per-row evaluation error, every row is excluded, and the store answers 200 with
+// an empty result. Nothing distinguishes that from "no matches" (verified against
+// LINDAS). Restricting an aggregate needs HAVING, which the injector does not emit.
+//
+// The fix an author wants is almost always root+path: filter the underlying
+// property existentially instead of the concatenated value, which is both correct
+// and better semantics on a multi-valued path. So the error says that.
+func checkFilterable(fullQuery string, spec FacetSpec) error {
+	if strings.TrimSpace(spec.Path) != "" {
+		return nil // routed through a property path — the alias is never named
+	}
+	if aggregateAliasRe(spec.Var).MatchString(fullQuery) {
+		return fmt.Errorf("facet %q: cannot filter an aggregate alias — it exists only in the projection, "+
+			"so a FILTER on it silently matches nothing; add root=\"?key\" path=\"<property>\" to filter the "+
+			"underlying property instead", spec.Var)
+	}
+	return nil
+}
+
+// BuildInstanceValuesQuery builds the INSTANCE-mode enumeration: the values
+// reachable from one fixed resource over the facet path. Cheap, because it skips
+// the base query entirely.
+//
+// Caveat for callers: it is NOT bounded by the declared query's LIMIT, so on a
+// resource with far more triples than the table loads it can offer values that
+// match no visible row.
+func BuildInstanceValuesQuery(resourceIRI string, spec FacetSpec, limit int) (string, error) {
+	resTerm, err := IRITerm(resourceIRI)
+	if err != nil {
+		return "", fmt.Errorf("resource IRI: %w", err)
+	}
+	if err := sparql.ValidateVarName(spec.Var); err != nil {
+		return "", fmt.Errorf("facet %q: var: %w", spec.Var, err)
+	}
+	if limit <= 0 {
+		limit = DefaultEnumerateLimit
+	}
+	v := "?" + spec.Var
+	return fmt.Sprintf(
+		"SELECT %s (COUNT(*) AS ?count) WHERE {\n  %s %s %s .\n} GROUP BY %s ORDER BY DESC(?count) LIMIT %d",
+		v, resTerm, spec.Path, v, v, limit,
+	), nil
+}
+
+// BuildFacetedQuery rewrites the declared query (with the IRI already substituted
+// for ??) by injecting one block per active constraint.
+//
+// Class-mode constraints inject a FILTER EXISTS immediately after the membership
+// triple, preserving the "don't wrap the base query as a subquery" performance rule
+// from internal/sparql/paging.go: the store still drives from the membership triple
+// and prunes with the existential filters before the OPTIONALs run.
+//
+// Column- and instance-mode constraints inject a plain FILTER on the projected
+// variable before the closing brace, which works whatever bound the variable — a
+// BIND inside a UNION branch, a nested OPTIONAL — because a group-level FILTER is
+// evaluated over the group's solutions after they are built.
 //
 // The provider supplies only the text leg (TextMatchClause); enum and range legs
 // are portable and built here. Constraints with no usable value are skipped.
 func BuildFacetedQuery(fullQuery, keyVar string, constraints []FacetConstraint, p FacetProvider) (string, error) {
-	var blocks []string
+	anchored := map[string][]string{} // anchor var → its existential blocks
+	var anchorOrder []string          // stable injection order
+	var columnBlocks []string
+
 	for _, con := range constraints {
-		block, err := facetBlock(keyVar, con, p)
+		if err := con.Spec.Validate(); err != nil {
+			return "", err
+		}
+		if err := checkFilterable(fullQuery, con.Spec); err != nil {
+			return "", err
+		}
+		root := anchorVar(con.Spec, keyVar)
+		block, err := facetBlock(root, con, p)
 		if err != nil {
 			return "", err
 		}
-		if block != "" {
-			blocks = append(blocks, block)
+		if block == "" {
+			continue
 		}
+		if root == "" {
+			columnBlocks = append(columnBlocks, block)
+			continue
+		}
+		if _, seen := anchored[root]; !seen {
+			anchorOrder = append(anchorOrder, root)
+		}
+		anchored[root] = append(anchored[root], block)
 	}
-	if len(blocks) == 0 {
-		return fullQuery, nil
-	}
-	injection := "\n  " + strings.Join(blocks, "\n  ")
 
-	// Anchor on the membership triple "?key a <iri>" and append the blocks right
-	// after it. Falls back to inserting before the final closing brace when no
-	// recognizable membership triple is present.
-	re := sparql.MembershipTriplePattern(keyVar)
-	if loc := re.FindStringIndex(fullQuery); loc != nil {
-		return fullQuery[:loc[1]] + injection + fullQuery[loc[1]:], nil
+	out := fullQuery
+
+	// Class mode: anchor on the membership triple "?root a <iri>" and append the
+	// blocks right after it, so the store prunes before the OPTIONALs run. Falls
+	// back to the closing brace when no recognizable membership triple is present.
+	for _, root := range anchorOrder {
+		injection := "\n  " + strings.Join(anchored[root], "\n  ")
+		if loc := sparql.MembershipTriplePattern(root).FindStringIndex(out); loc != nil {
+			out = out[:loc[1]] + injection + out[loc[1]:]
+			continue
+		}
+		out = insertBeforeLastBrace(out, injection)
 	}
-	return insertBeforeLastBrace(fullQuery, injection), nil
+
+	// Column/instance mode: a group-level FILTER, so it must sit in the outermost
+	// group where every projected variable is in scope.
+	if len(columnBlocks) > 0 {
+		out = insertBeforeLastBrace(out, "\n  "+strings.Join(columnBlocks, "\n  ")+"\n")
+	}
+	return out, nil
 }
 
 var lastBraceRe = regexp.MustCompile(`}[^}]*$`)
@@ -103,7 +247,15 @@ func insertBeforeLastBrace(query, injection string) string {
 //   - concrete values only → FILTER EXISTS { ?key <path> ?fv . <value clause> }
 //   - "(no value)" only     → FILTER NOT EXISTS { ?key <path> ?fv }
 //   - both (OR within facet) → { <exists> } UNION { <not-exists> }
-func facetBlock(keyVar string, con FacetConstraint, p FacetProvider) (string, error) {
+// root is the anchor variable, or "" to filter the projected column directly.
+func facetBlock(root string, con FacetConstraint, p FacetProvider) (string, error) {
+	if root == "" {
+		return columnBlock(con, p)
+	}
+	if err := sparql.ValidateVarName(root); err != nil {
+		return "", fmt.Errorf("facet %q: root: %w", con.Spec.Var, err)
+	}
+	keyVar := root
 	fv := facetValueVar(con.Spec)
 
 	if con.HasNoValue() {
@@ -136,6 +288,58 @@ func existsBlock(keyVar string, con FacetConstraint, fv string, p FacetProvider)
 	return fmt.Sprintf("FILTER EXISTS { ?%s %s %s . %s }", keyVar, con.Spec.Path, fv, value), nil
 }
 
+// columnBlock builds the block for a COLUMN/INSTANCE-mode constraint: a plain
+// group-level FILTER on the projected variable itself. Returns "" when the
+// constraint carries no usable value.
+//
+// The three shapes mirror facetBlock's existential ones, but compose as a boolean
+// expression rather than as graph patterns — "(no value)" is `!BOUND(?var)` rather
+// than FILTER NOT EXISTS, and OR-ing it with a concrete match is `||` rather than
+// UNION. (A UNION of two filter-only groups would not work here: its branches are
+// evaluated against the empty solution, where the projected variable is unbound.)
+//
+// NOTE the deliberate asymmetry with existsBlock: the text leg uses the portable
+// CONTAINS expression rather than the provider's TextMatchClause. A provider may
+// return a graph pattern (a native FTS SERVICE), and there is no pattern context
+// here to host one — column mode has only an expression slot.
+func columnBlock(con FacetConstraint, p FacetProvider) (string, error) {
+	if err := sparql.ValidateVarName(con.Spec.Var); err != nil {
+		return "", fmt.Errorf("facet %q: var: %w", con.Spec.Var, err)
+	}
+	v := "?" + con.Spec.Var
+	expr, err := valueExpr(v, con)
+	if err != nil {
+		return "", err
+	}
+	notBound := "!BOUND(" + v + ")"
+	switch {
+	case con.HasNoValue() && expr != "":
+		return fmt.Sprintf("FILTER((%s) || %s)", expr, notBound), nil
+	case con.HasNoValue():
+		return fmt.Sprintf("FILTER(%s)", notBound), nil
+	case expr != "":
+		return fmt.Sprintf("FILTER(%s)", expr), nil
+	default:
+		return "", nil
+	}
+}
+
+// valueExpr builds the bare boolean expression restricting variable v, for
+// composition inside a single FILTER. The clause-returning counterpart used by
+// class mode is valueClause.
+func valueExpr(v string, con FacetConstraint) (string, error) {
+	switch con.Spec.Control {
+	case ControlSelect:
+		return enumExpr(v, con)
+	case ControlText:
+		return textExpr(v, con), nil
+	case ControlRange:
+		return rangeExpr(v, con)
+	default:
+		return "", fmt.Errorf("unknown facet control %q", con.Spec.Control)
+	}
+}
+
 // valueClause builds the inner FILTER that restricts the facet value variable fv,
 // dispatching on the facet's control type. Returns "" when there is nothing to
 // constrain (e.g. an empty selection or an all-empty range).
@@ -157,6 +361,15 @@ func valueClause(fv string, con FacetConstraint, p FacetProvider) (string, error
 // sentinel is excluded here (ConcreteValues); it is handled as a NOT EXISTS block in
 // facetBlock and must never reach EnumTerm.
 func enumClause(fv string, con FacetConstraint) (string, error) {
+	expr, err := enumExpr(fv, con)
+	if err != nil || expr == "" {
+		return "", err
+	}
+	return fmt.Sprintf("FILTER(%s)", expr), nil
+}
+
+// enumExpr is the bare "fv IN (t1, t2, …)" expression behind enumClause.
+func enumExpr(fv string, con FacetConstraint) (string, error) {
 	var terms []string
 	for _, val := range con.ConcreteValues() {
 		if strings.TrimSpace(val) == "" {
@@ -171,7 +384,7 @@ func enumClause(fv string, con FacetConstraint) (string, error) {
 	if len(terms) == 0 {
 		return "", nil
 	}
-	return fmt.Sprintf("FILTER(%s IN (%s))", fv, strings.Join(terms, ", ")), nil
+	return fmt.Sprintf("%s IN (%s)", fv, strings.Join(terms, ", ")), nil
 }
 
 // textClause delegates to the provider's TextMatchClause (portable CONTAINS in
@@ -187,9 +400,31 @@ func textClause(fv string, con FacetConstraint, p FacetProvider) (string, error)
 	return p.TextMatchClause(fv, term)
 }
 
+// textExpr is the portable CONTAINS expression for column mode (see columnBlock on
+// why the provider seam is bypassed here). Returns "" when there is no term.
+func textExpr(v string, con FacetConstraint) string {
+	term := ""
+	if len(con.Values) > 0 {
+		term = strings.TrimSpace(con.Values[0])
+	}
+	if term == "" {
+		return ""
+	}
+	return PortableTextExpr(v, term)
+}
+
 // rangeClause builds a typed numeric/date range FILTER from [min, max]. Either
 // bound may be empty for a one-sided range.
 func rangeClause(fv string, con FacetConstraint) (string, error) {
+	expr, err := rangeExpr(fv, con)
+	if err != nil || expr == "" {
+		return "", err
+	}
+	return fmt.Sprintf("FILTER(%s)", expr), nil
+}
+
+// rangeExpr is the bare coerced comparison behind rangeClause.
+func rangeExpr(fv string, con FacetConstraint) (string, error) {
 	var lo, hi string
 	if len(con.Values) > 0 {
 		lo = con.Values[0]
@@ -222,7 +457,7 @@ func rangeClause(fv string, con FacetConstraint) (string, error) {
 	if len(parts) == 0 {
 		return "", nil
 	}
-	return fmt.Sprintf("FILTER(%s)", strings.Join(parts, " && ")), nil
+	return strings.Join(parts, " && "), nil
 }
 
 // coerce wraps a facet value variable in the xsd constructor for its range type,
@@ -248,5 +483,11 @@ func coerce(fv, facetType string) string {
 // match on the facet value's lexical form. Exposed so BaseFacetProvider (and
 // tests) share one definition.
 func PortableTextMatch(fv, term string) string {
-	return fmt.Sprintf("FILTER(CONTAINS(LCASE(STR(%s)), %s))", fv, StringLiteralTerm(strings.ToLower(term)))
+	return fmt.Sprintf("FILTER(%s)", PortableTextExpr(fv, term))
+}
+
+// PortableTextExpr is PortableTextMatch's bare expression, for composition inside a
+// larger FILTER (column mode ORs it with !BOUND).
+func PortableTextExpr(fv, term string) string {
+	return fmt.Sprintf("CONTAINS(LCASE(STR(%s)), %s)", fv, StringLiteralTerm(strings.ToLower(term)))
 }

@@ -199,26 +199,53 @@
     return wrap;
   }
 
+  // Render an enumerated value list ({value,label,count}) into a .vs-select-list.
+  function renderValues(list, values, onToggle) {
+    if (!list) return;
+    list.innerHTML = '';
+    if (!values.length) {
+      var none = el('div', 'text-secondary small px-1'); none.textContent = vsT('js.facet.noValues', 'No values');
+      list.appendChild(none);
+      return;
+    }
+    values.forEach(function (v) {
+      list.appendChild(checkRow(v.value, v.label, v.count, false, onToggle));
+    });
+  }
+
   // Lazy-load the enumerated values for a select facet into its .vs-select-list.
+  //
+  // ctx.localValues, when supplied, offers the options the loaded rows already
+  // imply, so a table holding the complete population never calls the backend —
+  // the point of the completeness gate, since column-mode enumeration costs a full
+  // re-run of the base query. Its three answers:
+  //
+  //   array  — use these
+  //   null   — rows have not landed yet (this also runs eagerly at header render);
+  //            leave the menu unloaded so the next open retries, and do NOT fetch
+  //   false  — only the backend can answer (an incomplete working set); fall through
   function loadFacetValues(wrap, name, ctx, onToggle) {
     var menu = wrap.querySelector('.vs-select-menu');
     if (!menu || menu.dataset.loaded === '1' || menu.dataset.loaded === 'loading') return;
-    menu.dataset.loaded = 'loading';
     var list = wrap.querySelector('.vs-select-list');
+
+    if (typeof ctx.localValues === 'function') {
+      var local = ctx.localValues(name);
+      if (local) {
+        renderValues(list, local, onToggle);
+        menu.dataset.loaded = '1';
+        return;
+      }
+      if (local === null) return;
+    }
+
+    menu.dataset.loaded = 'loading';
     var url = '/api/facet-values/' + encodeURIComponent(ctx.id) + '/' + encodeURIComponent(name) +
       '?' + joinParams(['iri=' + encodeURIComponent(ctx.iri || ''), endpointParam(), langParam()]);
     fetch(url, fetchOptions({ headers: { 'Accept': 'application/json' } }))
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        if (list) list.innerHTML = '';
-        var values = data.values || [];
-        if (!values.length && list) {
-          var none = el('div', 'text-secondary small px-1'); none.textContent = vsT('js.facet.noValues', 'No values');
-          list.appendChild(none);
-        }
-        values.forEach(function (v) {
-          if (list) list.appendChild(checkRow(v.value, v.label, v.count, false, onToggle));
-        });
+        renderValues(list, data.values || [], onToggle);
         menu.dataset.loaded = '1';
       })
       .catch(function () {
@@ -263,6 +290,7 @@
       var control = buildControl(spec, {
         id: ctx.facetFor,
         iri: ctx.iri,
+        localValues: ctx.localValues,
         onChange: ctx.onChange
       });
       // Tag the control so the table's liveFacetControls() finds it even while the
@@ -419,15 +447,20 @@
     if (sel.control === 'range') {
       if (!sel.min && !sel.max) {
         concrete = false; // no bounds → only the no-value leg (if any) constrains
+      } else if (sel.type === 'date') {
+        // Dispatch on the DECLARED type, never on whether parseFloat succeeds:
+        // parseFloat("2015-01-01") is 2015, not NaN, so a numeric-first branch
+        // silently reduces every date comparison to its year (2015-01-01 would
+        // match min=2015-06-30). ISO-8601 dates are lexicographically ordered,
+        // so a plain string compare is both correct and granularity-preserving.
+        concrete = present &&
+          (!sel.min || display >= sel.min) &&
+          (!sel.max || display <= sel.max);
       } else {
         var n = parseFloat(display);
         concrete = present && !isNaN(n) &&
           (!sel.min || n >= parseFloat(sel.min)) &&
           (!sel.max || n <= parseFloat(sel.max));
-        // date range: fall back to string compare when not numeric
-        if (isNaN(n) && present && sel.type === 'date') {
-          concrete = (!sel.min || display >= sel.min) && (!sel.max || display <= sel.max);
-        }
       }
     } else if (sel.control === 'text') {
       concrete = sel.term

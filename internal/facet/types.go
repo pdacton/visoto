@@ -17,6 +17,11 @@
 // or endpoint access), so it is unit-testable in isolation.
 package facet
 
+import (
+	"fmt"
+	"strings"
+)
+
 // Control types (the "control" attribute on a <sparql-facet> element).
 const (
 	ControlSelect = "select" // dropdown of enumerated values → VALUES / IN
@@ -33,16 +38,49 @@ const (
 	TypeDate   = "date"   // range bounds are xsd:date literals
 )
 
-// FacetSpec is a declared facet: how to reach a value from the class-membership
-// key variable and how to expose/constrain it. Parsed from a <sparql-facet>
-// element's attributes. All fields are author-supplied (trusted template input),
-// never end-user input.
+// InstanceRoot is the Root value meaning "the page resource itself" — the rows
+// hang off one fixed IRI rather than one entity per row. Written as "??" in the
+// template, mirroring the placeholder the declared query uses for the same IRI.
+const InstanceRoot = "??"
+
+// FacetSpec is a declared facet: what it hangs off, how to reach a value, and how
+// to expose/constrain it. Parsed from a <sparql-facet> element's attributes. All
+// fields are author-supplied (trusted template input), never end-user input.
+//
+// Root selects one of three modes:
+//
+//   - Root == "" and Path == "" — COLUMN mode. The facet filters the projected
+//     variable directly, so it works on any query regardless of shape. Values are
+//     enumerated by re-running the declared query (BuildColumnValuesQuery).
+//   - Path != "" — CLASS mode. The facet anchors on one entity per row (Root, or
+//     the sniffed key var when Root is empty, for backwards compatibility) and
+//     filters existentially, so a multi-valued path keeps the whole entity.
+//     Values enumerate cheaply from the membership triple (BuildFacetValuesQuery).
+//   - Root == InstanceRoot — INSTANCE mode. Rows hang off one fixed resource.
+//     Filtering is identical to COLUMN mode (a constant pattern cannot discriminate
+//     between rows); only enumeration differs (BuildInstanceValuesQuery).
+//
+// Root without Path is rejected: there is nothing to walk from the root to a value.
 type FacetSpec struct {
 	Var     string // SPARQL variable name bound to the facet value (e.g. "rank")
-	Path    string // property path from the key var to the value (e.g. "dwc:taxonRank")
+	Root    string // what the facet hangs off: "" | "?var" | InstanceRoot
+	Path    string // property path from the root to the value (e.g. "dwc:taxonRank")
 	Type    string // term type: iri | string | number | date
 	Control string // UI control: select | text | range
 	Label   string // display label
+}
+
+// Validate reports whether the declared attribute combination is coherent. Called
+// where specs are read so a malformed declaration fails loudly instead of silently
+// degrading to a mode the author did not ask for.
+func (s FacetSpec) Validate() error {
+	if strings.TrimSpace(s.Var) == "" {
+		return fmt.Errorf("facet: var is required")
+	}
+	if strings.TrimSpace(s.Root) != "" && strings.TrimSpace(s.Path) == "" {
+		return fmt.Errorf("facet %q: root=%q needs a path — there is nothing to walk from the root to a value", s.Var, s.Root)
+	}
+	return nil
 }
 
 // NoValueSentinel is the reserved value a select facet sends to mean "members that

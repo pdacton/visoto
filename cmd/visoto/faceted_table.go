@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,6 +41,7 @@ func findFacetSpecs(baseID string) []facet.FacetSpec {
 		}
 		specs = append(specs, facet.FacetSpec{
 			Var:     strings.TrimPrefix(el.Attributes["var"], "?"),
+			Root:    el.Attributes["root"],
 			Path:    el.Attributes["path"],
 			Type:    el.Attributes["type"],
 			Control: el.Attributes["control"],
@@ -101,12 +103,14 @@ func facetValuesHandler(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"values": []facetValue{}})
 		return
 	}
+	// Every mode needs the IRI (the declared query's ?? placeholder must be
+	// resolved, and class/instance mode anchor on it). A class-membership key is
+	// required only by class mode — see enumerationQuery.
 	classIRI := c.Query("iri")
-	keyVar := sparql.DeriveKeyVar(declared)
-	if classIRI == "" || keyVar == "" {
+	if classIRI == "" {
 		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusBadRequest, gin.H{"values": []facetValue{},
-			"error": "iri and a class-membership key are required to enumerate facet values"})
+			"error": "iri is required to enumerate facet values"})
 		return
 	}
 
@@ -125,7 +129,7 @@ func facetValuesHandler(c *gin.Context) {
 	}
 	facetValuesMu.Unlock()
 
-	query, err := facet.Default().EnumerateQuery(classIRI, keyVar, spec, facet.DefaultEnumerateLimit)
+	query, err := enumerationQuery(declared, classIRI, spec)
 	if err != nil {
 		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusOK, gin.H{"values": []facetValue{}, "error": err.Error()})
@@ -170,6 +174,43 @@ func facetValuesHandler(c *gin.Context) {
 	facetValuesMu.Unlock()
 
 	writeFacetValues(c, values)
+}
+
+// enumerationQuery builds the value-enumeration query for a spec, dispatching on
+// its declared mode (see facet.FacetSpec):
+//
+//	column   — wrap the declared query and group by the projected variable
+//	instance — walk the path from the one fixed resource
+//	class    — walk the path from each member of the class (the cheap shape)
+//
+// declared still carries the ?? placeholder; classIRI is the resolved page IRI.
+func enumerationQuery(declared, classIRI string, spec facet.FacetSpec) (string, error) {
+	if err := spec.Validate(); err != nil {
+		return "", err
+	}
+	root := strings.TrimSpace(spec.Root)
+
+	if strings.TrimSpace(spec.Path) == "" {
+		full, err := sparql.SubstituteEntity(declared, classIRI)
+		if err != nil {
+			return "", err
+		}
+		return facet.BuildColumnValuesQuery(full, spec, facet.DefaultEnumerateLimit)
+	}
+	if root == facet.InstanceRoot {
+		return facet.BuildInstanceValuesQuery(classIRI, spec, facet.DefaultEnumerateLimit)
+	}
+
+	// Class mode: an explicit root wins over the sniffed key var, which is what
+	// lets a query hide its membership triple behind a BIND and still enumerate.
+	keyVar := strings.TrimPrefix(root, "?")
+	if keyVar == "" {
+		keyVar = sparql.DeriveKeyVar(declared)
+	}
+	if keyVar == "" {
+		return "", fmt.Errorf("facet %q: a class-membership key is required — add root=\"?var\" naming the entity variable, or drop path to filter the column directly", spec.Var)
+	}
+	return facet.Default().EnumerateQuery(classIRI, keyVar, spec, facet.DefaultEnumerateLimit)
 }
 
 func writeFacetValues(c *gin.Context, values []facetValue) {
@@ -269,7 +310,12 @@ func facetedTableHandler(c *gin.Context) {
 	// frontend can reuse its banner/completeness logic. `complete` is true iff the
 	// filtered result wasn't capped — mirrors asyncTableDataHandler's search branch.
 	if wantsJSON(c) {
+		// Without a key variable there is no entity to count distinctly — the row
+		// IS the unit — so fall back to the row count rather than reporting 0.
 		distinct := sparql.DistinctKeyCount(result, keyVar)
+		if keyVar == "" {
+			distinct = len(result.Bindings)
+		}
 		writeFacetedEnvelope(c, result, distinct, distinct < limit, cacheable)
 		return
 	}

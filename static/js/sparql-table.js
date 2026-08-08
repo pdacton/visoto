@@ -61,6 +61,53 @@
     var facetByVar = {};
     facetSpecs.forEach(function (s) { facetByVar[s.name] = s; });
 
+    // Enumerate a select facet's options from the rows already loaded, so a table
+    // holding the complete population never calls /api/facet-values. That request
+    // is the expensive half of faceted search — for a facet with no property path
+    // the server can only enumerate by re-running the whole base query — and it is
+    // pure waste when every candidate value is already on the client.
+    //
+    // Returns false when only the backend can answer (an incomplete working set,
+    // where local values would be a subset of the truth), and null when the rows
+    // simply have not landed yet — this is also called eagerly at header render,
+    // and that case must retry rather than fall back to a needless fetch.
+    function localFacetValues(name) {
+      if (WORKING_SET && !wsBrowseComplete) return false;
+      if (!table) return null;
+      var rows;
+      // getData() is the full loaded set, not the locally filtered view, so the
+      // option list stays stable while facets narrow the table.
+      try { rows = table.getData(); } catch (e) { return null; }
+      if (!rows || !rows.length) return null;
+
+      // Key by whatever matchesLocally() will compare against, or a selection made
+      // here would never match a row: iri-typed enums compare the raw IRI, every
+      // other type compares the displayed text.
+      var useRaw = (facetByVar[name] || {}).type === "iri";
+      var byValue = {}, order = [];
+      rows.forEach(function (row) {
+        var b = row[name];
+        if (!b) return;
+        var value = String((useRaw ? (b.Value || b.DisplayText) : (b.DisplayText || b.Value)) || "");
+        if (!value) return;
+        if (!byValue[value]) {
+          byValue[value] = { value: value, label: String(b.DisplayText || b.Value || value), count: 0 };
+          order.push(value);
+        }
+        byValue[value].count++;
+      });
+      // Most-frequent first, so a truncated list keeps the values that matter.
+      //
+      // The cap is deliberately looser than the server's 200
+      // (facet.DefaultEnumerateLimit): that one bounds the cost of a DISTINCT scan
+      // over the whole store, a cost this path does not pay — every value is already
+      // in memory, so the only thing being bounded is checkbox rows in the DOM.
+      // Holding both at 200 would silently drop values from lists that are merely
+      // awkward rather than expensive (Municipality has 204 districts).
+      order.sort(function (a, b) { return byValue[b].count - byValue[a].count; });
+      return order.slice(0, 500).map(function (v) { return byValue[v]; });
+    }
+
     // Reload-aware fetch init for the cacheable data routes below. A hard
     // reload only bypasses the HTTP cache for browser-initiated requests, so
     // JS fetches would otherwise keep serving data cached for up to 6h (see
@@ -207,6 +254,7 @@
             tableId: ID,
             facetFor: FACET_FOR,
             iri: CFG.iri,
+            localValues: localFacetValues,
             onChange: scheduleApplyFacets
           });
           // headerSort stays enabled (default): a title click sorts, a funnel

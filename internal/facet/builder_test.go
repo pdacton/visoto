@@ -184,6 +184,238 @@ func TestBuildFacetedQueryTextNoValue(t *testing.T) {
 	}
 }
 
+// ---- column mode (no path): filter the projected variable directly ----
+
+func TestBuildFacetedQueryColumnMode(t *testing.T) {
+	cases := []struct {
+		name string
+		con  FacetConstraint
+		want string
+	}{
+		{
+			"enum",
+			FacetConstraint{
+				Spec:   FacetSpec{Var: "kind", Type: TypeString, Control: ControlSelect},
+				Values: []string{"incoming"},
+			},
+			`FILTER(?kind IN ("incoming"))`,
+		},
+		{
+			"text",
+			FacetConstraint{
+				Spec:   FacetSpec{Var: "name", Type: TypeString, Control: ControlText},
+				Values: []string{"Rosa"},
+			},
+			`FILTER(CONTAINS(LCASE(STR(?name)), "rosa"))`,
+		},
+		{
+			"range",
+			FacetConstraint{
+				Spec:   FacetSpec{Var: "year", Type: TypeNumber, Control: ControlRange},
+				Values: []string{"1900", "2000"},
+			},
+			"FILTER(<http://www.w3.org/2001/XMLSchema#decimal>(?year) >= 1900 && <http://www.w3.org/2001/XMLSchema#decimal>(?year) <= 2000)",
+		},
+		{
+			// "(no value)" alone → !BOUND, the expression counterpart of NOT EXISTS.
+			"no value only",
+			FacetConstraint{
+				Spec:   FacetSpec{Var: "graph", Type: TypeIRI, Control: ControlSelect},
+				Values: []string{NoValueSentinel},
+			},
+			"FILTER(!BOUND(?graph))",
+		},
+		{
+			// Concrete OR no-value: a single FILTER, never a UNION — a UNION of two
+			// filter-only groups evaluates against the empty solution, where the
+			// projected variable is unbound.
+			"no value mixed",
+			FacetConstraint{
+				Spec:   FacetSpec{Var: "kind", Type: TypeString, Control: ControlSelect},
+				Values: []string{"incoming", NoValueSentinel},
+			},
+			`FILTER((?kind IN ("incoming")) || !BOUND(?kind))`,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			q, err := BuildFacetedQuery(baseQuery, "taxon", []FacetConstraint{tc.con}, BaseFacetProvider{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if !strings.Contains(q, tc.want) {
+				t.Errorf("missing %q in:\n%s", tc.want, q)
+			}
+			if strings.Contains(q, "FILTER EXISTS") || strings.Contains(q, "UNION") {
+				t.Errorf("column mode must not emit an existential block:\n%s", q)
+			}
+			if strings.Contains(q, NoValueSentinel) {
+				t.Errorf("sentinel leaked into query:\n%s", q)
+			}
+		})
+	}
+}
+
+// A column-mode FILTER must land in the outermost group, where every projected
+// variable is in scope — not inside the OPTIONAL that happens to precede it.
+func TestBuildFacetedQueryColumnModePlacement(t *testing.T) {
+	con := FacetConstraint{
+		Spec:   FacetSpec{Var: "name", Type: TypeString, Control: ControlSelect},
+		Values: []string{"Rosa"},
+	}
+	q, err := BuildFacetedQuery(baseQuery, "taxon", []FacetConstraint{con}, BaseFacetProvider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Index(q, "FILTER(") < strings.LastIndex(q, "OPTIONAL") {
+		t.Errorf("filter injected before the OPTIONAL closed:\n%s", q)
+	}
+	if !strings.HasSuffix(strings.TrimSpace(q), "}") {
+		t.Errorf("filter injected outside the WHERE group:\n%s", q)
+	}
+}
+
+// ---- root ----
+
+// An explicit root anchors the existential filter, so a query whose membership
+// triple is hidden behind a BIND (DeriveKeyVar returns "") still gets class-mode
+// semantics.
+func TestBuildFacetedQueryExplicitRoot(t *testing.T) {
+	bindQuery := `SELECT ?type ?municipality ?canton WHERE { BIND (<http://example.org/M> AS ?type) ?municipality rdf:type ?type . }`
+	con := FacetConstraint{
+		Spec:   FacetSpec{Var: "canton", Root: "?municipality", Path: "schema:containedInPlace", Type: TypeIRI, Control: ControlSelect},
+		Values: []string{"http://ex/zh"},
+	}
+	q, err := BuildFacetedQuery(bindQuery, "", []FacetConstraint{con}, BaseFacetProvider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "FILTER EXISTS { ?municipality schema:containedInPlace ?__facet_canton . FILTER(?__facet_canton IN (<http://ex/zh>)) }"
+	if !strings.Contains(q, want) {
+		t.Errorf("missing rooted existential block:\n%s", q)
+	}
+}
+
+// InstanceRoot filters the projected column: a pattern anchored on a constant is
+// identical for every row and so cannot discriminate between rows.
+func TestBuildFacetedQueryInstanceRootFiltersColumn(t *testing.T) {
+	con := FacetConstraint{
+		Spec:   FacetSpec{Var: "property", Root: InstanceRoot, Path: "?property", Type: TypeIRI, Control: ControlSelect},
+		Values: []string{"http://schema.org/name"},
+	}
+	q, err := BuildFacetedQuery(baseQuery, "taxon", []FacetConstraint{con}, BaseFacetProvider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(q, "FILTER(?property IN (<http://schema.org/name>))") {
+		t.Errorf("instance root should filter the column:\n%s", q)
+	}
+	if strings.Contains(q, "FILTER EXISTS") {
+		t.Errorf("instance root must not emit an existential block:\n%s", q)
+	}
+}
+
+// Filtering an aggregate alias fails silently at the store (200 + zero rows), so
+// it must be rejected here instead — unless the facet routes through a property
+// path, which never names the alias.
+func TestBuildFacetedQueryRejectsAggregateAlias(t *testing.T) {
+	aggQuery := `SELECT ?municipality (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes) WHERE {
+	  ?municipality a <http://example.org/M> .
+	  OPTIONAL { ?municipality schema:postalCode ?postalCode }
+	} GROUP BY ?municipality`
+
+	column := FacetConstraint{
+		Spec:   FacetSpec{Var: "postalCodes", Type: TypeString, Control: ControlText},
+		Values: []string{"8001"},
+	}
+	_, err := BuildFacetedQuery(aggQuery, "municipality", []FacetConstraint{column}, BaseFacetProvider{})
+	if err == nil {
+		t.Fatal("expected a column facet on an aggregate alias to be rejected")
+	}
+	if !strings.Contains(err.Error(), "root=") {
+		t.Errorf("error should point at the root/path fix, got: %v", err)
+	}
+
+	// Same var, routed through the property: allowed, and existential.
+	routed := FacetConstraint{
+		Spec:   FacetSpec{Var: "postalCodes", Root: "?municipality", Path: "schema:postalCode", Type: TypeString, Control: ControlText},
+		Values: []string{"8001"},
+	}
+	q, err := BuildFacetedQuery(aggQuery, "municipality", []FacetConstraint{routed}, BaseFacetProvider{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `FILTER EXISTS { ?municipality schema:postalCode ?__facet_postalCodes . FILTER(CONTAINS(LCASE(STR(?__facet_postalCodes)), "8001")) }`
+	if !strings.Contains(q, want) {
+		t.Errorf("missing existential postal-code block:\n%s", q)
+	}
+
+	// A non-aggregate column of the same query stays filterable in column mode.
+	plain := FacetConstraint{
+		Spec:   FacetSpec{Var: "municipality", Type: TypeString, Control: ControlText},
+		Values: []string{"Zug"},
+	}
+	if _, err := BuildFacetedQuery(aggQuery, "municipality", []FacetConstraint{plain}, BaseFacetProvider{}); err != nil {
+		t.Errorf("non-aggregate column should stay filterable: %v", err)
+	}
+}
+
+func TestFacetSpecValidate(t *testing.T) {
+	if err := (FacetSpec{Var: "x", Root: "?y"}).Validate(); err == nil {
+		t.Error("root without path should be rejected")
+	}
+	if err := (FacetSpec{Var: "x"}).Validate(); err != nil {
+		t.Errorf("column mode should validate: %v", err)
+	}
+	if err := (FacetSpec{Var: "", Path: "a:b"}).Validate(); err == nil {
+		t.Error("missing var should be rejected")
+	}
+}
+
+// ---- enumeration shapes ----
+
+func TestBuildColumnValuesQuery(t *testing.T) {
+	spec := FacetSpec{Var: "kind", Type: TypeString, Control: ControlSelect}
+	q, err := BuildColumnValuesQuery(baseQuery, spec, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"SELECT ?kind (COUNT(*) AS ?count) WHERE {",
+		baseQuery, // the declared query is wrapped verbatim, LIMIT included
+		"GROUP BY ?kind ORDER BY DESC(?count) LIMIT 200",
+	} {
+		if !strings.Contains(q, want) {
+			t.Errorf("missing %q in:\n%s", want, q)
+		}
+	}
+
+	// An inner ?count would collide with the outer aggregate alias.
+	if _, err := BuildColumnValuesQuery(`SELECT ?x (COUNT(?y) AS ?count) WHERE { ?x ?p ?y }`, spec, 0); err == nil {
+		t.Error("expected a ?count collision to be rejected")
+	}
+}
+
+func TestBuildInstanceValuesQuery(t *testing.T) {
+	spec := FacetSpec{Var: "property", Root: InstanceRoot, Path: "?property", Type: TypeIRI, Control: ControlSelect}
+	q, err := BuildInstanceValuesQuery("https://ld.admin.ch/canton/1", spec, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"SELECT ?property (COUNT(*) AS ?count)",
+		"<https://ld.admin.ch/canton/1> ?property ?property .",
+		"GROUP BY ?property ORDER BY DESC(?count) LIMIT 200",
+	} {
+		if !strings.Contains(q, want) {
+			t.Errorf("missing %q in:\n%s", want, q)
+		}
+	}
+	if _, err := BuildInstanceValuesQuery("not-an-iri", spec, 0); err == nil {
+		t.Error("expected error for invalid resource IRI")
+	}
+}
+
 func TestBuildFacetedQueryRejectsInjection(t *testing.T) {
 	con := FacetConstraint{
 		Spec:   FacetSpec{Var: "rank", Path: "dwc:taxonRank", Type: TypeIRI, Control: ControlSelect},
