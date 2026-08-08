@@ -158,55 +158,55 @@
     <div class="row row-deck row-cards mb-3">
 
       <!-- cubes card -->
-      <sparql-async id="cubeCount" class="d-none">
+      <sparql-async id="cubeCountStadtzuerich" class="d-none">
         SELECT (COUNT(DISTINCT ?cube) AS ?count) WHERE {
           ?cube a cube:Cube .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "cubeCount" "title" (t "card.cubes" "Cubes") "href" "/resource?iri=cube:Cube" "icon" "/static/img/resource/Cube.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "cubeCountStadtzuerich" "title" (t "card.cubes" "Cubes") "href" "/resource?iri=cube:Cube" "icon" "/static/img/resource/Cube.svg") }}
 
       <!-- observation sets card -->
-      <sparql-async id="observationSetCount" class="d-none">
+      <sparql-async id="observationSetCountStadtzuerich" class="d-none">
         SELECT (COUNT(DISTINCT ?set) AS ?count) WHERE {
           ?set a cube:ObservationSet .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "observationSetCount" "title" (t "card.observationSets" "Observation Sets") "href" "/resource?iri=cube:ObservationSet" "icon" "/static/img/resource/ObservationSet.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "observationSetCountStadtzuerich" "title" (t "card.observationSets" "Observation Sets") "href" "/resource?iri=cube:ObservationSet" "icon" "/static/img/resource/ObservationSet.svg") }}
 
       <!-- key dimensions card -->
-      <sparql-async id="keyDimensionCount" class="d-none">
+      <sparql-async id="keyDimensionCountStadtzuerich" class="d-none">
         SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
           ?dim a cube:KeyDimension .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "keyDimensionCount" "title" (t "card.keyDimensions" "Key Dimensions") "href" "/resource?iri=cube:KeyDimension" "icon" "/static/img/resource/KeyDimension.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "keyDimensionCountStadtzuerich" "title" (t "card.keyDimensions" "Key Dimensions") "href" "/resource?iri=cube:KeyDimension" "icon" "/static/img/resource/KeyDimension.svg") }}
 
       <!-- measure dimensions card -->
-      <sparql-async id="measureDimensionCount" class="d-none">
+      <sparql-async id="measureDimensionCountStadtzuerich" class="d-none">
         SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
           ?dim a cube:MeasureDimension .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "measureDimensionCount" "title" (t "card.measureDimensions" "Measure Dimensions") "href" "/resource?iri=cube:MeasureDimension" "icon" "/static/img/resource/MeasureDimension.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "measureDimensionCountStadtzuerich" "title" (t "card.measureDimensions" "Measure Dimensions") "href" "/resource?iri=cube:MeasureDimension" "icon" "/static/img/resource/MeasureDimension.svg") }}
 
     </div>
     <div class="row row-deck row-cards mb-3">
 
       <!-- defined term sets card -->
-      <sparql-async id="termSetCount" class="d-none">
+      <sparql-async id="termSetCountStadtzuerich" class="d-none">
         SELECT (COUNT(DISTINCT ?termSet) AS ?count) WHERE {
           ?termSet a schema2:DefinedTermSet .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "termSetCount" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "termSetCountStadtzuerich" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
 
       <!-- defined terms card -->
-      <sparql-async id="termCount" class="d-none">
+      <sparql-async id="termCountStadtzuerich" class="d-none">
         SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
           ?term a schema2:DefinedTerm .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "termCount" "title" (t "card.definedTerms" "Defined Terms") "href" "/resource?iri=schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "termCountStadtzuerich" "title" (t "card.definedTerms" "Defined Terms") "href" "/resource?iri=schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
 
       <!-- places card -->
       <sparql-async id="placeCount" class="d-none">
@@ -223,20 +223,20 @@
     <div class="row row-deck row-cards mb-3">
 
       <!-- defined term sets card -->
-      <sparql-async id="termSetCount" class="d-none">
+      <sparql-async id="termSetCountLindas" class="d-none">
         SELECT (COUNT(DISTINCT ?termSet) AS ?count) WHERE {
           ?termSet a schema:DefinedTermSet .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "termSetCount" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "termSetCountLindas" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
 
       <!-- defined terms card -->
-      <sparql-async id="termCount" class="d-none">
+      <sparql-async id="termCountLindas" class="d-none">
         SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
           ?term a schema:DefinedTerm .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "termCount" "title" (t "card.definedTerms" "Defined Terms") "href" "/resource?iri=schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "termCountLindas" "title" (t "card.definedTerms" "Defined Terms") "href" "/resource?iri=schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
 
       <!-- terminology collections card -->
       <sparql-async id="terminologyCollectionCount" class="d-none">
@@ -253,20 +253,20 @@
     <div class="row row-deck row-cards mb-3">
 
       <!-- cubes card -->
-      <sparql-async id="cubeCount" class="d-none">
+      <sparql-async id="cubeCountLindas" class="d-none">
         SELECT (COUNT(DISTINCT ?cube) AS ?count) WHERE {
           ?cube a cube:Cube .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "cubeCount" "title" (t "card.cubes" "Cubes") "href" "/resource?iri=cube:Cube" "icon" "/static/img/resource/Cube.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "cubeCountLindas" "title" (t "card.cubes" "Cubes") "href" "/resource?iri=cube:Cube" "icon" "/static/img/resource/Cube.svg") }}
 
       <!-- observation sets card -->
-      <sparql-async id="observationSetCount" class="d-none">
+      <sparql-async id="observationSetCountLindas" class="d-none">
         SELECT (COUNT(DISTINCT ?set) AS ?count) WHERE {
           ?set a cube:ObservationSet .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "observationSetCount" "title" (t "card.observationSets" "Observation Sets") "href" "/resource?iri=cube:ObservationSet" "icon" "/static/img/resource/ObservationSet.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "observationSetCountLindas" "title" (t "card.observationSets" "Observation Sets") "href" "/resource?iri=cube:ObservationSet" "icon" "/static/img/resource/ObservationSet.svg") }}
 
       <!-- observations card -->
       <sparql-async id="observationCount" class="d-none">
@@ -277,20 +277,20 @@
       {{ template "sparqlMetric" (dict "queryId" "observationCount" "title" (t "card.observations" "Observations") "href" "/resource?iri=cube:Observation" "icon" "/static/img/resource/Observation.svg") }}
 
       <!-- key dimensions card -->
-      <sparql-async id="keyDimensionCount" class="d-none">
+      <sparql-async id="keyDimensionCountLindas" class="d-none">
         SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
           ?dim a cube:KeyDimension .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "keyDimensionCount" "title" (t "card.keyDimensions" "Key Dimensions") "href" "/resource?iri=cube:KeyDimension" "icon" "/static/img/resource/KeyDimension.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "keyDimensionCountLindas" "title" (t "card.keyDimensions" "Key Dimensions") "href" "/resource?iri=cube:KeyDimension" "icon" "/static/img/resource/KeyDimension.svg") }}
 
       <!-- measure dimensions card -->
-      <sparql-async id="measureDimensionCount" class="d-none">
+      <sparql-async id="measureDimensionCountLindas" class="d-none">
         SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
           ?dim a cube:MeasureDimension .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "measureDimensionCount" "title" (t "card.measureDimensions" "Measure Dimensions") "href" "/resource?iri=cube:MeasureDimension" "icon" "/static/img/resource/MeasureDimension.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "measureDimensionCountLindas" "title" (t "card.measureDimensions" "Measure Dimensions") "href" "/resource?iri=cube:MeasureDimension" "icon" "/static/img/resource/MeasureDimension.svg") }}
 
       <!-- shared dimensions card -->
       <sparql-async id="sharedDimensionCount" class="d-none">
