@@ -37,8 +37,51 @@
       ORDER BY ?identifier
       LIMIT 10000
     </sparql-async>
+    <!-- Column facets (no root=/path=) on every column. This table is inline, not
+         working-set — 26 rows, no membership triple to paginate from — so options
+         are built from the loaded rows and nothing here reaches the backend.
+
+         The name_* columns deliberately stay in column mode rather than declaring
+         path="schema:name": that path would match a canton's name in ANY language
+         and collapse the five columns into one filter. Each column is already the
+         lang-filtered value, which is exactly what should be matched. -->
+
+    <!-- Constant (BIND(?? AS ?type)) — declared as a readout, not a filter:
+         "Canton (26)" states the whole table is one type. -->
+    <sparql-facet for="cantonInstances" var="type"
+                  control="select" type="iri"
+                  label="{{ t "facet.type" "Type" }}" class="d-none"></sparql-facet>
+    <!-- The identity column, but only 26 of them — small enough to enumerate, so
+         select beats the text control used for Municipality's 3297 names. -->
+    <sparql-facet for="cantonInstances" var="canton"
+                  control="select" type="iri"
+                  label="{{ t "facet.canton" "Canton" }}" class="d-none"></sparql-facet>
+    <!-- text, not range: the values are labels that happen to be digits. -->
+    <sparql-facet for="cantonInstances" var="identifier"
+                  control="text" type="string"
+                  label="{{ t "facet.identifier" "Identifier" }}" class="d-none"></sparql-facet>
+    <sparql-facet for="cantonInstances" var="name_de"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (de)" class="d-none"></sparql-facet>
+    <sparql-facet for="cantonInstances" var="name_fr"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (fr)" class="d-none"></sparql-facet>
+    <sparql-facet for="cantonInstances" var="name_it"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (it)" class="d-none"></sparql-facet>
+    <!-- Bound on 1 of 26 rows (only Grischun carries a Romansh name), so this
+         facet's "(no value)" checkbox is the useful half: it isolates the 25
+         cantons that have none. -->
+    <sparql-facet for="cantonInstances" var="name_rm"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (rm)" class="d-none"></sparql-facet>
+    <sparql-facet for="cantonInstances" var="name_en"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (en)" class="d-none"></sparql-facet>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "cantonInstances"
+        "facetFor" "cantonInstances"
         "iri" .ResourceIRI
         "title" (t "card.cantons" "Cantons")
         "icon" "circle-dot"

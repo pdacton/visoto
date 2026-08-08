@@ -32,8 +32,46 @@
       ORDER BY ?identifier
       LIMIT 10000
     </sparql-async>
+    <!-- Column facets (no root=/path=) on every column. Inline table (284 rows, no
+         membership triple to paginate from), so options come from the loaded rows
+         and nothing here reaches the backend.
+
+         As on the Canton page, the name_* columns stay in column mode rather than
+         taking path="schema:name": that path matches a country's name in ANY
+         language and would collapse four independent columns into one filter. -->
+
+    <!-- Constant (BIND(?? AS ?type)) — a readout, not a filter: "Country (284)". -->
+    <sparql-facet for="countryInstances" var="type"
+                  control="select" type="iri"
+                  label="{{ t "facet.type" "Type" }}" class="d-none"></sparql-facet>
+    <!-- text, not select — the opposite call from the Canton page's 26 entries.
+         284 distinct values make a checkbox list a scroll rather than a choice,
+         and they are past the server's 200-value enumeration cap, so a select
+         would silently truncate if this table ever went working-set. -->
+    <sparql-facet for="countryInstances" var="country"
+                  control="text" type="string"
+                  label="{{ t "facet.country" "Country" }}" class="d-none"></sparql-facet>
+    <!-- Codes like "1A0" — alphanumeric, so not even numeric-looking enough to
+         tempt a range control. -->
+    <sparql-facet for="countryInstances" var="identifier"
+                  control="text" type="string"
+                  label="{{ t "facet.identifier" "Identifier" }}" class="d-none"></sparql-facet>
+    <sparql-facet for="countryInstances" var="name_de"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (de)" class="d-none"></sparql-facet>
+    <sparql-facet for="countryInstances" var="name_fr"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (fr)" class="d-none"></sparql-facet>
+    <sparql-facet for="countryInstances" var="name_it"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (it)" class="d-none"></sparql-facet>
+    <sparql-facet for="countryInstances" var="name_en"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }} (en)" class="d-none"></sparql-facet>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "countryInstances"
+        "facetFor" "countryInstances"
         "iri" .ResourceIRI
         "title" (t "card.countries" "Countries")
         "icon" "circle-dot"

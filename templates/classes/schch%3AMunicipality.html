@@ -21,17 +21,22 @@
 
 {{ define "pageContent" }}
 <div>
+
   <!-- instances of this class -->
+
   <div class="mt-0">
+
     <sparql-async id="municipalityInstances" class="d-none">
       SELECT ?type ?municipality ?identifier ?district ?canton ?validFrom ?validThrough (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
       WHERE {
         BIND (?? AS ?type)
         ?municipality rdf:type ?type .
         ?municipality schema:identifier ?identifier . # data issue LINDAS: there are many municipalities without identifier?
-        OPTIONAL { ?municipality schema:containedInPlace ?district . ?district a schch:District . }
-        OPTIONAL { ?canton schema:hasPart ?district . ?canton a schch:Canton . }
-        OPTIONAL { 
+        OPTIONAL {
+          ?municipality schema:containedInPlace ?district . ?district a schch:District .
+          OPTIONAL { ?canton schema:hasPart ?district . ?canton a schch:Canton . }
+        }
+        OPTIONAL {
           ?municipality vl:version ?version .
           ?version schema:validFrom ?validFrom .
           OPTIONAL { ?version schema:validThrough ?validThrough . }
@@ -41,8 +46,65 @@
       GROUP BY ?type ?municipality ?district ?canton ?identifier ?validFrom ?validThrough
       LIMIT 20000
     </sparql-async>
+
+    <!-- Column facets (no root=/path=): this table is inline, not working-set, so
+         all rows are on the client — the option lists are built from them and no
+         facet ever reaches the backend.
+         -->
+    <!-- ?type is constant here — BIND(?? AS ?type) gives every row the same class
+         IRI — so this facet cannot filter anything. It is declared for what it
+         READS OUT rather than what it does: "Municipality (3297)" states that the
+         whole table is one type, which otherwise takes scrolling to establish. -->
+    <sparql-facet for="municipalityInstances" var="type"
+                  control="select" type="iri"
+                  label="{{ t "facet.type" "Type" }}" class="d-none"></sparql-facet>
+    <sparql-facet for="municipalityInstances" var="canton"
+                  control="select" type="iri"
+                  label="{{ t "facet.canton" "Canton" }}" class="d-none"></sparql-facet>
+    <sparql-facet for="municipalityInstances" var="district"
+                  control="select" type="iri"
+                  label="{{ t "facet.district" "District" }}" class="d-none"></sparql-facet>
+    <!-- Name search on the key column: 3297 distinct values make a dropdown useless.
+         type="string" (not "iri") though ?municipality is IRI-typed — the local
+         matcher compares display text for string facets, which is the name shown. -->
+    <sparql-facet for="municipalityInstances" var="municipality"
+                  control="text" type="string"
+                  label="{{ t "facet.name" "Name" }}" class="d-none"></sparql-facet>
+    <!-- BFS number lookup. text, NOT range: the values are canton-grouped labels
+         that happen to be digits, and a min/max control would frame them as a
+         quantity worth bracketing. Duplicates what the card's search box finds,
+         but scoped to this one column instead of every column at once. -->
+    <sparql-facet for="municipalityInstances" var="identifier"
+                  control="text" type="string"
+                  label="{{ t "facet.identifier" "Identifier" }}" class="d-none"></sparql-facet>
+    <sparql-facet for="municipalityInstances" var="validFrom"
+                  control="range" type="date"
+                  label="{{ t "facet.validFrom" "Valid from" }}" class="d-none"></sparql-facet>
+    <!-- Bound on only 1143 of 3297 rows, so this facet's "(no value)" checkbox is
+         the useful half of it: no end date = the municipality still exists. The
+         range itself brackets when a municipality was dissolved or merged. -->
+    <sparql-facet for="municipalityInstances" var="validThrough"
+                  control="range" type="date"
+                  label="{{ t "facet.validThrough" "Valid through" }}" class="d-none"></sparql-facet>
+    <!-- ?postalCodes is the one facet here that declares root/path, and it must.
+         It is a GROUP_CONCAT alias: a column-mode FILTER would target the alias,
+         which does not exist in WHERE scope, so the backend would error per row
+         and return zero rows with no error at all. Routing through the property
+         instead filters existentially on the underlying schema:postalCode, which
+         is also the semantics you want on a multi-valued path — matching "8001"
+         keeps Zürich with all 30 of its codes rather than narrowing it to one.
+         Inert today (this inline table filters locally, over the concatenated
+         cell text, so "10, 89" would match across the separator); it is what
+         makes the backend leg correct if this table ever grows a membership
+         triple and goes working-set. -->
+    <sparql-facet for="municipalityInstances" var="postalCodes"
+                  root="?municipality" path="schema:postalCode" type="string"
+                  control="text" label="{{ t "facet.postalCode" "Postal code" }}"
+                  class="d-none"></sparql-facet>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "municipalityInstances"
+        "facetFor" "municipalityInstances"
         "iri" .ResourceIRI
         "title" (t "card.municipalities" "Municipalities")
         "icon" "circle-dot"
