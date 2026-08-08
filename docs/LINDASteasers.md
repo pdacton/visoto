@@ -10,4 +10,4 @@
 - ever wondered how much Migros or Coop pay for their milk?
 - did you want to know more about egg prices?
 - did you know that Blauzungenkrankheit is the most prevalent disease and present in all 27 cantons?
-
+- which town is "Schweizermeister" in merging?

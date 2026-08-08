@@ -6,14 +6,11 @@
 
 {{ define "pageContent" }}
 
-<div class="vs-prose">
 <h2>{{ t "page.plazi.aboutPlazi" "About Plazi" }}</h2>
 
 <p>{{ tHTML "page.plazi.plaziIsANotFor" "<a href=\"https://plazi.org/\" target=\"_blank\" rel=\"noopener\">Plazi</a> is a not-for-profit organisation that liberates taxonomic knowledge from the scientific literature. It converts descriptions of species — so-called <em>treatments</em> — from published articles into machine-readable, openly accessible data, and publishes them as linked data." }}</p>
 
 <p>{{ tHTML "page.plazi.everyOrganismDescribedInThe" "Every organism described in the literature is placed within a hierarchical <strong>classification</strong>. At its very top sit a handful of kingdoms that group all living things. Each kingdom below is represented by a <a href=\"/resource?iri=http%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FTaxonName\">TaxonName</a> resource that you can explore in Visoto to drill down through the tree of life." }}</p>
-
-</div>
 
 <div class="row row-deck row-cards mt-4">
 
@@ -225,14 +222,11 @@
 <!-- Dataset information                                            -->
 <!-- ============================================================= -->
 
-<div class="vs-prose">
 <h2 class="mt-5">{{ t "page.plazi.theDataset" "The dataset" }}</h2>
 
 <p>{{ tHTML "page.plazi.thePlaziClassificationShownAbove" "The Plazi classification shown above is backed by the <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoen%2Fplazi\">Plazi Taxonomic Treatments</a> dataset, published on LINDAS in the named graph <code>https://lindas.admin.ch/foen/plazi</code>." }}</p>
 
 <p>{{ tHTML "page.plazi.plaziTreatmentBankDealsWithScientific" "Plazi TreatmentBank deals with scientific, published, biosystematic literature — the corpus documenting all of the world's ca. 1.9 million known species across an estimated 500 million published pages. Each <em>treatment</em> is a well-defined part of an article that fixes the usage of a scientific name by an author at a given time; like bibliographic references, treatments can be cited and build on earlier ones. Together they represent the current scientific consensus on biological taxonomy, fully reference the underlying literature, and link to specimens and images archived at Zenodo/CERN. The cited publications are available through the <a href=\"https://zenodo.org/communities/biosyslit/\" target=\"_blank\" rel=\"noopener\">Biodiversity Literature Repository</a>." }}</p>
-
-</div>
 
 <div class="card mb-4">
   <div class="card-body">
@@ -281,12 +275,9 @@
 <!-- Classes in the dataset                                         -->
 <!-- ============================================================= -->
 
-<div class="vs-prose">
 <h2 class="mt-5">{{ t "page.plazi.classesInTheDataset" "Classes in the dataset" }}</h2>
 
 <p>{{ tHTML "page.plazi.theClassesBelowAreEvery" "The classes below are every class either declared in the graph as an <code>rdfs:Class</code>/<code>owl:Class</code> or used as the object of an <code>rdf:type</code> statement, ordered by the number of instances of each. Where a class is defined in a vocabulary loaded in the store, its description is shown. The biodiversity content is carried by the first rows (material citations, taxon concepts and names, treatments, figures and articles); the single-instance rows describe the dataset itself." }}</p>
-
-</div>
 
 <div class="mb-3">
   <sparql-async id="plaziClasses" class="d-none">

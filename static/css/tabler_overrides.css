@@ -106,18 +106,6 @@ header.navbar.sticky-top.is-scrolled {
     }
 }
 
-/* --- Theme page prose --- */
-
-/* Cap the measure on explanatory paragraphs. Theme pages are the one place the
-   site renders long-form text, and the content column runs to ~1100px, which is
-   roughly twice a comfortable reading width.
-
-   Scoped to <p> deliberately: cards, tables and datagrids want the full column,
-   and only the running prose should be narrowed. */
-.vs-prose > p {
-    max-width: 68ch;
-}
-
 /* --- Kingdom cards (/plazi.html) --- */
 
 /* The count is the headline of each card, so it is set at display size and the
