@@ -1335,3 +1335,17 @@
 "page.statistics.zefixJoinIntro" = "Comme chaque entreprise indique sa commune de siège sous forme d'IRI issue du registre décrit plus haut, les deux jeux de données se joignent directement — et compter les entreprises par canton révèle ce que les chiffres de population ne montrent pas. Zurich domine sans surprise, mais <strong>Zoug</strong> figure bien plus haut que sa taille ne le laisserait supposer : un canton d'environ 130 000 habitants qui héberge des dizaines de milliers d'entités inscrites, soit sa politique fiscale de domiciliation rendue visible dans les données."
 "page.statistics.zefixSize" = "~791 000 entités inscrites, chacune avec un IDE, une forme juridique, une adresse et une commune de siège"
 "page.statistics.zefixUid" = "Sa caractéristique porteuse est l'<strong>IDE</strong>, le numéro d'identification des entreprises, que porte chaque entité. Cet identifiant unique permet de reconnaître une entreprise à travers des jeux de données par ailleurs sans lien — les gestionnaires de réseau électrique du thème <a href=\"/energy.html\">énergie</a> portent leur IDE, qui se résout ici vers la personne morale. Chaque inscription contient également une forme juridique issue de la norme <code>eCH-0097</code>, une adresse inscrite, la commune de siège et, dans la plupart des cas, le but social de l'entreprise rédigé en toutes lettres."
+
+# ── Facet labels ──────────────────────────────────────────────────
+"facet.graph" = "Graphe"
+"facet.kind" = "Type"
+"facet.property" = "Propriété"
+"facet.canton" = "Canton"
+"facet.district" = "District"
+"facet.name" = "Nom"
+"facet.validFrom" = "Valable dès"
+"facet.type" = "Type"
+"facet.identifier" = "Identifiant"
+"facet.validThrough" = "Valable jusqu'au"
+"facet.postalCode" = "Code postal"
+"facet.country" = "Pays"

@@ -1335,3 +1335,17 @@
 "page.statistics.zefixJoinIntro" = "Poiché ogni impresa indica il comune di sede come IRI tratta dal registro descritto sopra, i due set di dati si uniscono direttamente — e contare le imprese per cantone mostra qualcosa che i dati sulla popolazione non rivelano. Zurigo è in testa come prevedibile, ma <strong>Zugo</strong> compare assai più in alto di quanto la sua dimensione lasci supporre: un cantone di circa 130 000 abitanti che ospita decine di migliaia di enti iscritti, ossia la sua politica fiscale di domiciliazione resa visibile nei dati."
 "page.statistics.zefixSize" = "~791 000 enti iscritti, ciascuno con IDI, forma giuridica, indirizzo e comune di sede"
 "page.statistics.zefixUid" = "La sua caratteristica portante è l'<strong>IDI</strong>, il numero d'identificazione delle imprese, che ogni ente possiede. Questo unico identificatore permette di riconoscere un'impresa attraverso set di dati altrimenti scollegati — i gestori della rete elettrica nel tema <a href=\"/energy.html\">energia</a> portano il proprio IDI, che si risolve qui, nella persona giuridica. Ogni iscrizione contiene inoltre una forma giuridica secondo lo standard <code>eCH-0097</code>, un indirizzo iscritto, il comune di sede e, nella maggior parte dei casi, lo scopo sociale dell'impresa per esteso."
+
+# ── Facet labels ──────────────────────────────────────────────────
+"facet.graph" = "Grafo"
+"facet.kind" = "Tipo"
+"facet.property" = "Proprietà"
+"facet.canton" = "Cantone"
+"facet.district" = "Distretto"
+"facet.name" = "Nome"
+"facet.validFrom" = "Valido dal"
+"facet.type" = "Tipo"
+"facet.identifier" = "Identificatore"
+"facet.validThrough" = "Valido fino al"
+"facet.postalCode" = "Codice postale"
+"facet.country" = "Paese"

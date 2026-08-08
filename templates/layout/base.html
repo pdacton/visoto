@@ -107,21 +107,62 @@
                  loaded lazily (hx-trigger="showData") — the toggle JS fires the event
                  the first time the user opens the Data tab. The <sparql-async> element
                  is inert at page render (only findAsyncQuery consumes it); ?? is
-                 substituted with the resource IRI by asyncTableHandler. -->
+                 substituted with the resource IRI by asyncTableHandler.
+
+                 Each branch is doubled: a GRAPH ?graph { } form that reports the
+                 named graph, plus a bare form for triples that live in the DEFAULT
+                 graph (Stadt Zürich and RINF have those; LINDAS does not) and would
+                 otherwise be missing from this view entirely. The default-graph forms
+                 carry MINUS { GRAPH ?g { } } because on stores whose default graph is
+                 the union of all named graphs (LINDAS/Fuseki) the bare pattern re-matches
+                 every named-graph triple — without the MINUS every row would appear
+                 twice, once with a graph and once without. ?graph stays unbound there,
+                 so the column renders empty for genuine default-graph triples. -->
             <div id="resource-data-view" class="d-none">
               <sparql-async id="resourceTriples" class="d-none">
-                SELECT ?kind ?property ?value ?type WHERE {
-                  { ?? ?property ?value . FILTER(isLiteral(?value)) BIND("property" AS ?kind) }
+                SELECT ?kind ?property ?value ?type ?datatype ?language ?graph WHERE {
+                  { GRAPH ?graph { ?? ?property ?value . } FILTER(isLiteral(?value)) BIND("property" AS ?kind)
+                    BIND(datatype(?value) AS ?datatype)
+                    BIND(IF(lang(?value) = "", ?unbound, lang(?value)) AS ?language) }
                   UNION
-                  { ?? ?property ?value . FILTER(isIRI(?value)) BIND("outgoing" AS ?kind)
+                  { ?? ?property ?value . MINUS { GRAPH ?g { ?? ?property ?value . } }
+                    FILTER(isLiteral(?value)) BIND("property" AS ?kind)
+                    BIND(datatype(?value) AS ?datatype)
+                    BIND(IF(lang(?value) = "", ?unbound, lang(?value)) AS ?language) }
+                  UNION
+                  { GRAPH ?graph { ?? ?property ?value . } FILTER(isIRI(?value)) BIND("outgoing" AS ?kind)
                     OPTIONAL { ?value a ?type . } }
                   UNION
-                  { ?value ?property ?? . BIND("incoming" AS ?kind)
+                  { ?? ?property ?value . MINUS { GRAPH ?g { ?? ?property ?value . } }
+                    FILTER(isIRI(?value)) BIND("outgoing" AS ?kind)
+                    OPTIONAL { ?value a ?type . } }
+                  UNION
+                  { GRAPH ?graph { ?value ?property ?? . } BIND("incoming" AS ?kind)
+                    OPTIONAL { ?value a ?type . } }
+                  UNION
+                  { ?value ?property ?? . MINUS { GRAPH ?g { ?value ?property ?? . } }
+                    BIND("incoming" AS ?kind)
                     OPTIONAL { ?value a ?type . } }
                 } LIMIT 5000
               </sparql-async>
+              <!-- Column-mode facets: no path=, because none of these variables is
+                   reachable by a property path from a root — ?kind is produced by a
+                   BIND inside each UNION branch, ?graph only exists in the GRAPH
+                   ones. They filter the projected column directly instead.
+                   The table is complete at LIMIT 5000, so the option lists are built
+                   from the loaded rows and neither facet ever calls the backend. -->
+              <sparql-facet for="resourceTriples" var="kind"
+                            control="select" type="string"
+                            label="{{ t "facet.kind" "Kind" }}" class="d-none"></sparql-facet>
+              <sparql-facet for="resourceTriples" var="property"
+                            control="select" type="iri"
+                            label="{{ t "facet.property" "Property" }}" class="d-none"></sparql-facet>
+              <sparql-facet for="resourceTriples" var="graph"
+                            control="select" type="iri"
+                            label="{{ t "facet.graph" "Graph" }}" class="d-none"></sparql-facet>
               {{ template "sparqlAsyncTable" (dict
                     "queryId" "resourceTriples"
+                    "facetFor" "resourceTriples"
                     "iri" .ResourceIRI
                     "title" (t "card.allTriples" "All Triples")
                     "icon" "database"

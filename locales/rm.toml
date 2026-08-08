@@ -10,3 +10,17 @@
 # needed, the fallback simply stops applying to each key you fill in.
 
 # ── Language names ───────────────────────────────────────────────────────────
+
+# ── Facet labels ──────────────────────────────────────────────────
+"facet.graph" = "Graf"
+"facet.kind" = "Tip"
+"facet.property" = "Caracteristica"
+"facet.canton" = "Chantun"
+"facet.district" = "District"
+"facet.name" = "Num"
+"facet.validFrom" = "Valaivel a partir da"
+"facet.type" = "Tip"
+"facet.identifier" = "Identificatur"
+"facet.validThrough" = "Valaivel fin"
+"facet.postalCode" = "Numer postal"
+"facet.country" = "Pajais"

@@ -1335,3 +1335,17 @@
 "page.statistics.zefixJoinIntro" = "Weil jedes Unternehmen seine Sitzgemeinde als IRI aus dem oben beschriebenen Register führt, lassen sich die beiden Datensätze direkt verknüpfen — und die Zahl der Unternehmen pro Kanton zeigt etwas, das die Bevölkerungszahlen nicht hergeben. Zürich führt erwartungsgemäss, doch <strong>Zug</strong> steht weit höher, als seine Grösse vermuten liesse: ein Kanton mit rund 130'000 Einwohnern beherbergt Zehntausende eingetragener Rechtseinheiten — seine Steuerpolitik als Unternehmenssitz, sichtbar gemacht in den Daten."
 "page.statistics.zefixSize" = "~791'000 eingetragene Rechtseinheiten, jede mit UID, Rechtsform, Adresse und Sitzgemeinde"
 "page.statistics.zefixUid" = "Sein tragendes Merkmal ist die <strong>UID</strong>, die Unternehmens-Identifikationsnummer, die jede Einheit führt. Dieser eine Identifikator erlaubt es, ein Unternehmen über ansonsten unverbundene Datensätze hinweg wiederzuerkennen — die Stromnetzbetreiber im Thema <a href=\"/energy.html\">Energie</a> tragen ihre UID, und sie löst hierhin auf, zur juristischen Person. Jeder Eintrag enthält zudem eine Rechtsform nach dem Standard <code>eCH-0097</code>, eine eingetragene Adresse, die Sitzgemeinde und in den meisten Fällen den Gesellschaftszweck in ausformulierter Prosa."
+
+# ── Facet labels ──────────────────────────────────────────────────
+"facet.graph" = "Graph"
+"facet.kind" = "Art"
+"facet.property" = "Eigenschaft"
+"facet.canton" = "Kanton"
+"facet.district" = "Bezirk"
+"facet.name" = "Name"
+"facet.validFrom" = "Gültig ab"
+"facet.type" = "Typ"
+"facet.identifier" = "Kennung"
+"facet.validThrough" = "Gültig bis"
+"facet.postalCode" = "Postleitzahl"
+"facet.country" = "Land"
