@@ -4,7 +4,7 @@
 {{ define "metaTitle" }}{{ t "type.property.metaTitle" "RDF Property" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
@@ -21,7 +21,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-async id="rdfPropertyInstances" class="d-none">
+        <sparql-async id="rdfPropertyInstances">
           SELECT DISTINCT ?type ?property ?comment ?domain ?range WHERE {
             {
               SELECT DISTINCT ?property { ?s ?property ?o .}
@@ -49,7 +49,7 @@
   <div class="row">
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="subclasses" class="d-none">
+        <sparql-query id="subclasses">
           SELECT DISTINCT ?subclass ?count WHERE {
             VALUES ?subclass {
               owl:ObjectProperty
@@ -81,7 +81,7 @@
     <!-- superclasses -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="superclasses" class="d-none">
+        <sparql-query id="superclasses">
           SELECT DISTINCT ?superclass WHERE {
             BIND (rdf:Property AS ?class)
             ?class rdfs:subClassOf ?superclass .
@@ -106,7 +106,7 @@
     <!-- properties with domain info -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="ontology" class="d-none">
+        <sparql-query id="ontology">
           SELECT DISTINCT ?property ?domain ?range WHERE {
             ?property a rdf:Property .
             { ?property rdfs:domain ?domain . } UNION { ?property rdfs:range ?range . }
@@ -127,7 +127,7 @@
     <!-- SHACL properties -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="shacl" class="d-none">
+        <sparql-query id="shacl">
           SELECT ?subject ?property ?object WHERE {
             BIND (?? AS ?object)
             ?subject ?property ?object .

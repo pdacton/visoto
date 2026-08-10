@@ -4,7 +4,7 @@
 {{ define "metaTitle" }}{{ t "type.conceptScheme.metaTitle" "SKOS Concept Scheme" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
@@ -21,7 +21,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-async id="skosConceptSchemeInstances" class="d-none">
+        <sparql-async id="skosConceptSchemeInstances">
           SELECT ?type ?scheme ?publisher ?status ?definition ?identifier ?conceptCount WHERE {
             BIND (?? AS ?type)
             ?scheme a ?type .
@@ -69,7 +69,7 @@
     <!-- incoming relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="incoming" class="d-none">
+        <sparql-query id="incoming">
           SELECT ?source ?property WHERE {
             BIND (?? AS ?o)
             ?source ?property ?o .
@@ -91,7 +91,7 @@
     <!-- outgoing relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="outgoing" class="d-none">
+        <sparql-query id="outgoing">
           SELECT ?property ?destination WHERE {
             BIND (?? AS ?s)
             ?s ?property ?destination .

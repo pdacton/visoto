@@ -13,7 +13,7 @@
   <div class="row">
     <div class="col">
       <div class="mb-3">
-        <sparql-query id="figureRepresentations" class="d-none">
+        <sparql-query id="figureRepresentations">
           SELECT ?representation WHERE {
             ?? fabio:hasRepresentation ?representation .
           } LIMIT 20
@@ -34,7 +34,7 @@
   <div class="row">
     <div class="col">
       <div class="mb-3">
-        <sparql-query id="citingTreatments" class="d-none">
+        <sparql-query id="citingTreatments">
           SELECT ?treatment ?title WHERE {
             ?treatment cito:cites ?? .
             OPTIONAL { ?treatment dc:title ?title . }

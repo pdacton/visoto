@@ -13,7 +13,7 @@
     <!-- outgoing relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-async id="outgoing" class="d-none">
+        <sparql-async id="outgoing">
           SELECT ?property ?destination ?type WHERE {
             ?? ?property ?destination .
             OPTIONAL { ?destination a ?type . }
@@ -35,7 +35,7 @@
     <!-- incoming relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-async id="incoming" class="d-none">
+        <sparql-async id="incoming">
           SELECT ?type ?source ?property WHERE {
             ?source ?property ?? .
             FILTER (?property NOT IN (

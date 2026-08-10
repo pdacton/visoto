@@ -8,23 +8,23 @@
   <p class="text-secondary">{{ tHTML "type.cube.aCubeIsAVersioned" "A <strong>Cube</strong> is a versioned statistical dataset described with the <a href=\"https://cube.link/\" target=\"_blank\" rel=\"noopener\">cube.link</a> vocabulary: a set of observations sharing the same dimensions, published with rich metadata (publisher, themes, status, versions). Superseded versions stay in the graph and are marked with an expiry date — the table below hides them by default." }}</p>
 
   <!-- Metric strip: counts are queried live (LINDAS counts drift). -->
-  <sparql-async id="cubeTotal" class="d-none">
+  <sparql-async id="cubeTotal">
     SELECT (COUNT(?cube) AS ?count) WHERE { ?cube a cube:Cube . }
   </sparql-async>
-  <sparql-async id="cubeCurrent" class="d-none">
+  <sparql-async id="cubeCurrent">
     SELECT (COUNT(?cube) AS ?count) WHERE {
       ?cube a cube:Cube .
       FILTER NOT EXISTS { ?cube schema:expires ?e }
     }
   </sparql-async>
-  <sparql-async id="cubePublishedCurrent" class="d-none">
+  <sparql-async id="cubePublishedCurrent">
     SELECT (COUNT(?cube) AS ?count) WHERE {
       ?cube a cube:Cube ;
             schema:creativeWorkStatus &lt;https://ld.admin.ch/vocabulary/CreativeWorkStatus/Published&gt; .
       FILTER NOT EXISTS { ?cube schema:expires ?e }
     }
   </sparql-async>
-  <sparql-async id="cubePublishers" class="d-none">
+  <sparql-async id="cubePublishers">
     SELECT (COUNT(DISTINCT ?creator) AS ?count) WHERE {
       ?cube a cube:Cube ; dct:creator ?creator .
     }
@@ -74,7 +74,7 @@
           </div>
         </div>
 
-        <sparql-async id="cubeCatalog" class="d-none">
+        <sparql-async id="cubeCatalog">
           SELECT ?cube ?name ?publisher ?themes ?status ?modified ?superseded WHERE {
             { SELECT ?cube (SAMPLE(?n) AS ?name) (SAMPLE(?creatorName) AS ?publisher)
                      (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes)

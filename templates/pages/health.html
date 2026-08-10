@@ -11,14 +11,14 @@
 <p>{{ tHTML "page.health.twoLINDASGraphsCoverPublic" "Two LINDAS graphs cover public health, and they could hardly be more different in temperament. The <strong>FOPH COVID-19 graph</strong> is a sealed archive: the complete daily record of the pandemic in Switzerland — cases, deaths, hospitalizations, vaccinations — frozen at 1 January 2023, when mandatory daily reporting ended. The <strong>FONES supply-disruptions graph</strong> is its opposite, a living feed: every day the Federal Office for National Economic Supply publishes a fresh snapshot of which vital medicines are currently unavailable, and when they are expected back." }}</p>
 
 <!-- Metric strip: one bounded query per headline figure. -->
-<sparql-async id="healthCovidObservations" class="d-none">
+<sparql-async id="healthCovidObservations">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
       ?obs a cube:Observation .
     }
   }
 </sparql-async>
-<sparql-async id="healthVaccinationRecords" class="d-none">
+<sparql-async id="healthVaccinationRecords">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
       &lt;https://health.ld.admin.ch/foph/covid19/vaccine-doses&gt; cube:observationSet/cube:observation ?obs .
@@ -28,7 +28,7 @@
 <!-- Open disruptions are counted in the latest daily snapshot of the main cube (not the
      daily-aggregate cube, which can lag a few days behind) so this figure always matches
      the "currently in short supply" table below. -->
-<sparql-async id="healthOpenDisruptions" class="d-none">
+<sparql-async id="healthOpenDisruptions">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; {
       {
@@ -43,7 +43,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="healthMedicinesTracked" class="d-none">
+<sparql-async id="healthMedicinesTracked">
   SELECT (COUNT(DISTINCT ?product) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; {
       ?product a schema:DefinedTerm .
@@ -81,7 +81,7 @@
 
 <h2 class="mt-5">{{ t "page.health.thePandemicRecord" "The pandemic record" }}</h2>
 
-<sparql-async id="healthReportingDays" class="d-none">
+<sparql-async id="healthReportingDays">
   SELECT (COUNT(DISTINCT ?date) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
       &lt;https://health.ld.admin.ch/foph/covid19/affected&gt; cube:observationSet/cube:observation ?obs .
@@ -136,7 +136,7 @@
 
 <p>{{ tHTML "page.health.sixVaccinesWereAdministeredIn" "Six vaccines were administered in Switzerland, and each is modelled as a <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FTherapeuticProcedure\">therapeutic procedure</a> linked to its manufacturer — the two bivalent variants are recorded separately from the original formulations. The vaccinated-population cube slices its counts by vaccination status, a small controlled vocabulary worth reading before querying that cube." }}</p>
 
-<sparql-async id="healthVaccines" class="d-none">
+<sparql-async id="healthVaccines">
   SELECT ?vaccine ?name WHERE {
     GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
       ?vaccine a schema:TherapeuticProcedure ;
@@ -154,7 +154,7 @@
       "collapsed" true) }}
 </div>
 
-<sparql-async id="healthVaccinationStatus" class="d-none">
+<sparql-async id="healthVaccinationStatus">
   SELECT ?status (SAMPLE(?n) AS ?name) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foph/covid19&gt; {
       ?status a schema:DefinedTerm ;
@@ -180,7 +180,7 @@
 
 <p>{{ tHTML "page.health.companiesThatMarketVitalMedicines" "Companies that market vital medicines for human use in Switzerland are legally required to report supply disruptions to the Federal Office for National Economic Supply. The graph turns those reports into a rolling series of daily snapshots: one observation is <em>one medicine on one day</em>, carrying its <abbr title=\"{{.atcTitle}}\">ATC code</abbr>, package identifier (GTIN), the date the disruption began, the expected end, and a recommendation for prescribers. To see the situation <em>today</em>, you read the latest snapshot &mdash; which is exactly what the tables below do. A companion cube tracks just the daily totals of open and closed disruptions over time." (dict "atcTitle" (t "page.health.anatomicalTherapeuticChemicalClassificationWHO" "Anatomical Therapeutic Chemical classification (WHO)")) }}</p>
 
-<sparql-async id="healthDisruptedMedicines" class="d-none">
+<sparql-async id="healthDisruptedMedicines">
   SELECT ?product (SAMPLE(?n) AS ?name) ?atc ?since ?until WHERE {
     GRAPH &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; {
       {
@@ -210,7 +210,7 @@
 
 <p>{{ tHTML "page.health.groupingTheOpenDisruptionsBy" "Grouping the open disruptions by the first letter of their ATC code — the anatomical main group — shows <em>which kinds</em> of medicines run short. It is rarely the everyday painkillers: cancer therapies and anti-infectives usually dominate the list, the categories with the most fragile supply chains." }}</p>
 
-<sparql-async id="healthAtcGroups" class="d-none">
+<sparql-async id="healthAtcGroups">
   SELECT ?group ?label (COUNT(?obs) AS ?disruptions) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fones/supply-disruptions&gt; {
       {

@@ -17,37 +17,37 @@
   <!-- Async instance-count queries, one per kingdom. Each is consumed by the
        inline hx-get count in its card below via /api/metric/:id. The handler
        matches these by their literal id, so they cannot be generated in a loop. -->
-  <sparql-async id="AnimaliaCount" class="d-none">
+  <sparql-async id="AnimaliaCount">
     SELECT (COUNT(?taxonName) AS ?count) WHERE {
       ?taxonName a dwcFP:TaxonName .
       ?taxonName dwc:kingdom "Animalia" .
     }
   </sparql-async>
-  <sparql-async id="PlantaeCount" class="d-none">
+  <sparql-async id="PlantaeCount">
     SELECT (COUNT(?taxonName) AS ?count) WHERE {
       ?taxonName a dwcFP:TaxonName .
       ?taxonName dwc:kingdom "Plantae" .
     }
   </sparql-async>
-  <sparql-async id="FungiCount" class="d-none">
+  <sparql-async id="FungiCount">
     SELECT (COUNT(?taxonName) AS ?count) WHERE {
       ?taxonName a dwcFP:TaxonName .
       ?taxonName dwc:kingdom "Fungi" .
     }
   </sparql-async>
-  <sparql-async id="BacteriaCount" class="d-none">
+  <sparql-async id="BacteriaCount">
     SELECT (COUNT(?taxonName) AS ?count) WHERE {
       ?taxonName a dwcFP:TaxonName .
       ?taxonName dwc:kingdom "Bacteria" .
     }
   </sparql-async>
-  <sparql-async id="ChromistaCount" class="d-none">
+  <sparql-async id="ChromistaCount">
     SELECT (COUNT(?taxonName) AS ?count) WHERE {
       ?taxonName a dwcFP:TaxonName .
       ?taxonName dwc:kingdom "Chromista" .
     }
   </sparql-async>
-  <sparql-async id="ProtozoaCount" class="d-none">
+  <sparql-async id="ProtozoaCount">
     SELECT (COUNT(?taxonName) AS ?count) WHERE {
       ?taxonName a dwcFP:TaxonName .
       ?taxonName dwc:kingdom "Protozoa" .
@@ -280,7 +280,7 @@
 <p>{{ tHTML "page.plazi.theClassesBelowAreEvery" "The classes below are every class either declared in the graph as an <code>rdfs:Class</code>/<code>owl:Class</code> or used as the object of an <code>rdf:type</code> statement, ordered by the number of instances of each. Where a class is defined in a vocabulary loaded in the store, its description is shown. The biodiversity content is carried by the first rows (material citations, taxon concepts and names, treatments, figures and articles); the single-instance rows describe the dataset itself." }}</p>
 
 <div class="mb-3">
-  <sparql-async id="plaziClasses" class="d-none">
+  <sparql-async id="plaziClasses">
     SELECT ?class ?description ?instances WHERE {
       {
         SELECT ?class (COUNT(?s) AS ?instances) WHERE {

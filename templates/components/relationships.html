@@ -4,7 +4,7 @@
      Note: use inline sparql-query elements instead if you need different FILTERs or collapsed=false.
 -->
 
-<sparql-query id="outgoing" class="d-none">
+<sparql-query id="outgoing">
   SELECT ?property ?destination ?type WHERE {
     BIND (?? AS ?s)
     ?s ?property ?destination .
@@ -17,7 +17,7 @@
   } LIMIT 1000
 </sparql-query>
 
-<sparql-query id="incoming" class="d-none">
+<sparql-query id="incoming">
   SELECT ?type ?source ?property WHERE {
     BIND (?? AS ?o)
     ?source ?property ?o .

@@ -14,28 +14,28 @@
 
 <!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
      reloads, so no figure here is repeated as a hard number in the prose. -->
-<sparql-async id="mediaCubes" class="d-none">
+<sparql-async id="mediaCubes">
   SELECT (COUNT(?c) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/ofcom/cube&gt; {
       ?c a cube:Cube .
     }
   }
 </sparql-async>
-<sparql-async id="mediaObservations" class="d-none">
+<sparql-async id="mediaObservations">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/ofcom/cube&gt; {
       ?obs a cube:Observation .
     }
   }
 </sparql-async>
-<sparql-async id="mediaNgaObservations" class="d-none">
+<sparql-async id="mediaNgaObservations">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/ofcom/nga&gt; {
       ?obs a cube:Observation .
     }
   }
 </sparql-async>
-<sparql-async id="mediaNgaMunicipalities" class="d-none">
+<sparql-async id="mediaNgaMunicipalities">
   SELECT (COUNT(DISTINCT ?m) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/ofcom/nga&gt; {
       ?obs &lt;https://communication.ld.admin.ch/ofcom/nga/gdenr&gt; ?m .
@@ -76,7 +76,7 @@
 
 <p>{{ tHTML "page.media.advertisingNuance" "The reason is that this cube measures advertising booked with <em>Swiss</em> media. The money leaving newspapers has not moved to Swiss news websites; it has largely left the domestic market altogether for global platforms that OFCOM does not survey. Read the online column as \"online advertising captured by Swiss publishers\", not as the size of digital advertising in Switzerland." }}</p>
 
-<sparql-async id="mediaAdvertisingRevenue" class="d-none">
+<sparql-async id="mediaAdvertisingRevenue">
   # ?genre stays an IRI so the backend resolves it to Press / Television / Online /
   # Radio in the visitor's language and links it.
   #
@@ -112,7 +112,7 @@
 
 <p>{{ tHTML "page.media.collectionSpread" "The families below span the whole media landscape: Mediapulse audience measurement for television, reach and programme structure for SRG and commercial radio, print readership by age, online media by topic and genre, and the revenue structure of the public broadcaster itself." }}</p>
 
-<sparql-async id="mediaCubeFamilies" class="d-none">
+<sparql-async id="mediaCubeFamilies">
   # Groups the 533 cubes into families by stripping the trailing version number.
   #
   # ?rowsPerCube is MAX rather than SUM on purpose: the versions of a family are
@@ -159,7 +159,7 @@
 
 <p>{{ tHTML "page.media.ngaConditions" "Coverage is not one number but thirteen, one per <strong>condition</strong>. Seven are download-speed thresholds from 10 Mbit/s up to a gigabit, four are upload thresholds, and three name the physical medium — fibre, coaxial cable or copper. Reading them as a ladder shows where the network thins out: near-universal at basic broadband, still strong at 100 Mbit/s, and dropping sharply once gigabit service is the requirement." }}</p>
 
-<sparql-async id="mediaBroadbandLadder" class="d-none">
+<sparql-async id="mediaBroadbandLadder">
   # One row per coverage condition, aggregated over all municipalities.
   #
   # ?avgCoverage is the mean of the per-municipality percentages — it weights a
@@ -193,7 +193,7 @@
 
 <p>{{ tHTML "page.media.ngaGap" "Note the disagreement between the two coverage columns. Averaged across municipalities, fibre reaches around forty-four per cent; counted by premises it reaches well over half. The gap is the rural–urban divide stated arithmetically — fibre is built where the buildings already are, so it covers many people in few places." }}</p>
 
-<sparql-async id="mediaBroadbandByCanton" class="d-none">
+<sparql-async id="mediaBroadbandByCanton">
   # ?canton stays an IRI so the backend resolves and links it.
   #
   # Restricted to ONE condition (gigabit download) because the cube holds thirteen

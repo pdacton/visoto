@@ -3,7 +3,7 @@
      Usage: {{ template "classHierarchy" . }}
 -->
 
-<sparql-query id="subclasses" class="d-none">
+<sparql-query id="subclasses">
   SELECT ?subclass ?description WHERE {
     ?subclass rdfs:subClassOf ?? .
     OPTIONAL { ?subclass visoto:description ?description .
@@ -11,7 +11,7 @@
   } LIMIT 5000
 </sparql-query>
 
-<sparql-query id="superclasses" class="d-none">
+<sparql-query id="superclasses">
   SELECT ?superclass ?description WHERE {
     ?? rdfs:subClassOf ?superclass .
     OPTIONAL { ?superclass visoto:description ?description .

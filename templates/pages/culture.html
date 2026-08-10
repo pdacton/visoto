@@ -14,28 +14,28 @@
 
 <!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
      reloads, so no figure here is repeated as a hard number in the prose. -->
-<sparql-async id="cultureRecordSets" class="d-none">
+<sparql-async id="cultureRecordSets">
   SELECT (COUNT(?rs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
       ?rs a &lt;https://www.ica.org/standards/RiC/ontology#RecordSet&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="cultureRecords" class="d-none">
+<sparql-async id="cultureRecords">
   SELECT (COUNT(?r) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
       ?r a &lt;https://www.ica.org/standards/RiC/ontology#Record&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="cultureIsil" class="d-none">
+<sparql-async id="cultureIsil">
   SELECT (COUNT(?i) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/nl/isil&gt; {
       ?i a &lt;https://schema.ld.admin.ch/Isil&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="cultureStapferSchools" class="d-none">
+<sparql-async id="cultureStapferSchools">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sfa/stapfer_enquete&gt; {
       ?obs a &lt;http://purl.org/linked-data/cube#Observation&gt; .
@@ -74,7 +74,7 @@
 
 <p>{{ tHTML "page.culture.hierarchyIntro" "Archival description is strictly hierarchical, and the levels have names archivists have used for a century. Everything nests downward from the archive itself through main departments and fonds to the individual dossier, and each level is a <code>RecordSet</code> carrying a <code>hasRecordSetType</code> that says which rung it occupies. Almost the entire volume sits at the bottom: dossiers outnumber every other level combined by roughly ten to one." }}</p>
 
-<sparql-async id="cultureRecordSetTypes" class="d-none">
+<sparql-async id="cultureRecordSetTypes">
   # ?type stays an IRI so the backend resolves and links it.
   #
   # SAMPLE on the name is REQUIRED, not cosmetic: ric:name is untagged and repeated
@@ -109,7 +109,7 @@
 
 <p>{{ tHTML "page.culture.divisionsIntro" "At the very top the archive divides into eight <strong>main departments</strong>, and they are periods of Swiss history rather than subjects. The <em>Archiv der Helvetik</em> covers the short-lived Helvetic Republic of 1798–1803, followed by the Mediation and the Tagsatzung; the bulk of everything sits under the <em>Archiv des Schweizerischen Bundesstaates</em>, the federal state from 1848 onward. Deposits and donations from private hands form their own division alongside them." }}</p>
 
-<sparql-async id="cultureTopDivisions" class="d-none">
+<sparql-async id="cultureTopDivisions">
   # ?division stays an IRI so the table links straight into the finding aid.
   # ?children counts only DIRECT members (one hop of isOrWasIncludedIn), not the
   # full subtree — a transitive count over 4.8M record sets would not return.
@@ -148,7 +148,7 @@
 
 <p>{{ tHTML "page.culture.accessIntro" "Every record also carries an <strong>access rule</strong> via <code>isAssociatedWithRule</code>. Archival access in Switzerland is governed by protective periods — normally thirty years, longer for files touching personal data — so this property is what separates a description you can read from a document you can actually request. The description is public even when the document is not yet." }}</p>
 
-<sparql-async id="cultureRecordFormats" class="d-none">
+<sparql-async id="cultureRecordFormats">
   # Which descriptive fields are actually populated across the 263k records.
   # Counting property usage rather than values: this is a profile of how completely
   # the archive is described, which is the useful thing to know before querying it.
@@ -233,7 +233,7 @@
 
 <p>{{ tHTML "page.culture.isilJoin" "The identifier is what makes the two archival graphs join. Every record in the Federal Archives points through <code>hasOrHadHolder</code> at an ISIL resource, so a description and the institution holding it are linked by a shared identifier rather than a name string — the same pattern the energy theme uses for company UIDs." }}</p>
 
-<sparql-async id="cultureIsilInstitutions" class="d-none">
+<sparql-async id="cultureIsilInstitutions">
   # ?isil stays an IRI so the backend resolves the institution and links it.
   #
   # libraryMaterials is a plain literal holding count, present on only a subset of
@@ -268,7 +268,7 @@
 
 <p>{{ tHTML "page.culture.stapferSeasons" "One detail in the structure tells you almost everything about rural life in 1799: attendance is recorded <strong>separately for winter and summer</strong>, and separately for boys and girls. Summer figures are routinely a fraction of winter ones, because in summer children worked the fields. The seasonal gap in this data is a measurement of agricultural labour, not of schooling." }}</p>
 
-<sparql-async id="cultureStapferAttendance" class="d-none">
+<sparql-async id="cultureStapferAttendance">
   # This graph uses the OLD W3C data cube vocabulary (qb:Observation from
   # purl.org/linked-data/cube), NOT cube.link like the rest of the platform —
   # a cube:Observation pattern here matches nothing at all.
@@ -307,7 +307,7 @@
 
 <p>{{ tHTML "page.culture.budgetVsAccounts" "Each row is tagged with a <strong>report type</strong>, and the distinction matters more than it first appears: <code>Voranschlag</code> is the budget as planned, <code>Rechnung</code> the accounts as they closed. Both are present for the same year and the same line, so the gap between what the Confederation intended to spend and what it actually spent is directly queryable across 175 years. The earliest years are recognisably a different state — in 1850 the largest items are the postal administration, customs duties and the military department." }}</p>
 
-<sparql-async id="cultureStateAccounts" class="d-none">
+<sparql-async id="cultureStateAccounts">
   # Rooted in ONE cube version on purpose: this family has 11 versioned cubes that
   # share dimension IRIs, so an unrooted pattern would sum the same 11,506 rows
   # eleven times over. Always take the highest-numbered cube unless comparing releases.

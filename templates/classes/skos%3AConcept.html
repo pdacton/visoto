@@ -4,14 +4,14 @@
 {{ define "metaTitle" }}{{ t "type.concept.metaTitle" "SKOS Concept" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description { ?? visoto:description ?description . }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
@@ -24,7 +24,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-async id="skosConceptInstances" class="d-none">
+        <sparql-async id="skosConceptInstances">
           SELECT ?instance ?description WHERE {
             BIND (?? AS ?class)
             ?instance (rdf:type|owl:type) ?class .

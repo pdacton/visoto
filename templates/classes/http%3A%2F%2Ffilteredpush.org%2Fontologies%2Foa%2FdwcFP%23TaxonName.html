@@ -4,11 +4,11 @@
   <li class="breadcrumb-item">{{ tHTML "type.taxonName.org%2Fontologies%2Foa%2FdwcFP%23TaxonName.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
 {{ end }}
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Name{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Name{{ end }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
@@ -24,7 +24,7 @@
 <div>
   <!-- instances of this class -->
   <div class="mt-0">
-    <sparql-async id="taxonNameInstances" class="d-none">
+    <sparql-async id="taxonNameInstances">
       SELECT ?taxonName ?rank ?kingdom ?phylum ?class ?order ?family ?genus ?species
       WHERE {
         ?taxonName rdf:type ?? .

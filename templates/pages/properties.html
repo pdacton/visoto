@@ -10,7 +10,7 @@
 
     <!-- properties (lazy-loaded so the page shell renders before the heavy discovery query) -->
     <div class="mb-3">
-      <sparql-async id="allProperties" class="d-none">
+      <sparql-async id="allProperties">
         SELECT DISTINCT ?property ?iri ?domain ?type WHERE {
           {
             # subquery to pick up all properties (declared and used)

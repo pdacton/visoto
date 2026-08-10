@@ -7,7 +7,7 @@
 {{ define "pageTitle" }}{{ t "type.canton.title" "Kantone" }}{{ end }}
 {{ define "metaTitle" }}{{ t "type.canton.metaTitle" "Kantone" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
@@ -21,7 +21,7 @@
 <div>
   <!-- instances of this class -->
   <div class="mt-0">
-    <sparql-async id="cantonInstances" class="d-none">
+    <sparql-async id="cantonInstances">
       SELECT ?type ?canton ?identifier ?name_de ?name_fr ?name_it ?name_rm ?name_en
       WHERE {
         BIND (?? AS ?type)

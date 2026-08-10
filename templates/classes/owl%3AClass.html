@@ -4,7 +4,7 @@
 {{ define "metaTitle" }}{{ t "type.class.metaTitle" "RDF Class" }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
@@ -21,7 +21,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-async id="owlClassInstances" class="d-none">
+        <sparql-async id="owlClassInstances">
           SELECT DISTINCT ?class ?description WHERE {
             ?class a ?? .
             OPTIONAL { ?class visoto:description ?description .
@@ -45,7 +45,7 @@
   <div class="row">
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="subclasses" class="d-none">
+        <sparql-query id="subclasses">
           SELECT DISTINCT ?subclass ?label WHERE {
             BIND (?? AS ?class)
             ?subclass rdfs:subClassOf ?class .
@@ -67,7 +67,7 @@
     <!-- superclasses -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="superclasses" class="d-none">
+        <sparql-query id="superclasses">
           SELECT DISTINCT ?superclass ?label WHERE {
             BIND (?? AS ?class)
             ?class rdfs:subClassOf ?superclass .

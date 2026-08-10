@@ -3,7 +3,7 @@
      Usage: {{ template "ontologyShacl" . }}
 -->
 
-<sparql-query id="ontology" class="d-none">
+<sparql-query id="ontology">
   SELECT ?subject ?property ?object WHERE {
 
     {
@@ -19,7 +19,7 @@
   } LIMIT 1000
 </sparql-query>
 
-<sparql-query id="shacl" class="d-none">
+<sparql-query id="shacl">
   SELECT ?subject ?property ?object WHERE {
 
     {

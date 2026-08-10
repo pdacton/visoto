@@ -14,7 +14,7 @@
   <div class="row">
     <div class="col">
       <div class="mb-3">
-        <sparql-query id="parts" class="d-none">
+        <sparql-query id="parts">
           SELECT ?part ?type WHERE {
             ?? fabio:hasPart ?part .
             OPTIONAL { ?part a ?type . }
@@ -35,7 +35,7 @@
   <div class="row">
     <div class="col">
       <div class="mb-3">
-        <sparql-query id="publishedTreatments" class="d-none">
+        <sparql-query id="publishedTreatments">
           SELECT ?treatment ?title ?date WHERE {
             ?treatment trt:publishedIn ?? .
             OPTIONAL { ?treatment dc:title ?title . }

@@ -1,6 +1,6 @@
 <!-- dcat:Distribution Instance Template -->
 
-<sparql-query id="breadcrumbs" class="d-none">
+<sparql-query id="breadcrumbs">
   SELECT ?dataset WHERE {
     ?dataset dcat:distribution ?? .
   } LIMIT 1
@@ -11,18 +11,18 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? dct:title ?title . } LIMIT 1</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? dct:title ?title . } LIMIT 1</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? dct:description ?description . } LIMIT 1</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? dct:description ?description . } LIMIT 1</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
@@ -34,7 +34,7 @@
   <div class="row">
     <div class="col">
       <div class="mb-3">
-        <sparql-query id="accessLinks" class="d-none">
+        <sparql-query id="accessLinks">
           SELECT ?property ?url WHERE {
             BIND (?? AS ?dist)
             {
@@ -60,7 +60,7 @@
   <div class="row">
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="parentDataset" class="d-none">
+        <sparql-query id="parentDataset">
           SELECT ?dataset ?title WHERE {
             ?dataset dcat:distribution ?? .
             OPTIONAL { ?dataset dct:title ?title . FILTER(LANG(?title) = "en" || LANG(?title) = "de" || LANG(?title) = "") }
@@ -78,7 +78,7 @@
     <!-- Format & Media Type -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="formatInfo" class="d-none">
+        <sparql-query id="formatInfo">
           SELECT ?property ?value WHERE {
             BIND (?? AS ?dist)
             {
@@ -107,7 +107,7 @@
   <div class="row">
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="licenseInfo" class="d-none">
+        <sparql-query id="licenseInfo">
           SELECT ?property ?value WHERE {
             BIND (?? AS ?dist)
             {
@@ -137,7 +137,7 @@
     <!-- Access Service -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="accessService" class="d-none">
+        <sparql-query id="accessService">
           SELECT ?service ?title WHERE {
             ?? dcat:accessService ?service .
             OPTIONAL { ?service dct:title ?title . FILTER(LANG(?title) = "en" || LANG(?title) = "de" || LANG(?title) = "") }
@@ -157,7 +157,7 @@
   <div class="row">
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="incoming" class="d-none">
+        <sparql-query id="incoming">
           SELECT ?type ?source ?property WHERE {
             BIND (?? AS ?o)
             ?source ?property ?o .
@@ -179,7 +179,7 @@
 
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="outgoing" class="d-none">
+        <sparql-query id="outgoing">
           SELECT ?property ?destination ?type WHERE {
             BIND (?? AS ?s)
             ?s ?property ?destination .

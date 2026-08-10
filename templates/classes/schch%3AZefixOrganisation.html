@@ -1,17 +1,17 @@
 <!-- Zefix Class Template, listing all instances of this class -->
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? rdfs:comment|skos:note ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? rdfs:comment|skos:note ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 {{ define "pageContent" }}
@@ -19,7 +19,7 @@
   
   <!-- instances of this class -->
   <div class="mb-3">
-    <sparql-async id="zefixOrganisationInstances" class="d-none">
+    <sparql-async id="zefixOrganisationInstances">
       SELECT ?organization ?companyUID ?rechtsform ?municipality ?description WHERE {
         ?organization a ?? .
         OPTIONAL {

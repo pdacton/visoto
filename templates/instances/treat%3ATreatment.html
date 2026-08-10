@@ -19,7 +19,7 @@
   <div class="row">
     <div class="col">
       <div class="mb-3">
-        <sparql-query id="citedResources" class="d-none">
+        <sparql-query id="citedResources">
           SELECT ?cited ?type WHERE {
             ?? (cito:cites|trt:citesMaterialCitation) ?cited .
             OPTIONAL { ?cited a ?type . }

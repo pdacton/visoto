@@ -11,7 +11,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-query id="datasets" class="d-none">
+        <sparql-query id="datasets">
           SELECT ?type ?dataset ?title ?identifier WHERE {
             BIND (?? AS ?catalog)
             ?catalog dcat:dataset ?dataset .
@@ -40,7 +40,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-query id="records" class="d-none">
+        <sparql-query id="records">
           SELECT ?type ?record ?identifier ?primaryTopic ?issued ?modified WHERE {
             BIND (?? AS ?catalog)
             ?catalog dcat:record ?record .

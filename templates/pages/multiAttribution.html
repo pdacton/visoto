@@ -11,7 +11,7 @@
 
     <!-- lazy-loaded so the page shell renders before the heavy grouping query -->
     <div class="mb-3">
-      <sparql-async id="multiAttribution" class="d-none">
+      <sparql-async id="multiAttribution">
         SELECT ?example ?type WHERE {
           {
             SELECT DISTINCT ?types (SAMPLE(?instance) AS ?example) WHERE {

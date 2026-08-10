@@ -13,7 +13,7 @@
 <div>
   <!-- instances of this class -->
   <div class="mt-0">
-    <sparql-async id="districtInstances" class="d-none">
+    <sparql-async id="districtInstances">
       SELECT ?type ?district ?identifier ?canton ?validFrom ?validThrough (COUNT(?municipality) AS ?municipalities)
       WHERE {
         BIND (?? AS ?type)

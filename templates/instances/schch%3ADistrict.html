@@ -1,6 +1,6 @@
 <!-- District Instance Template -->
 
-<sparql-query id="breadcrumbs" class="d-none">
+<sparql-query id="breadcrumbs">
   SELECT ?canton ?country WHERE
   {
     ?? schema:containedInPlace ?canton . ?canton a schch:Canton .
@@ -12,19 +12,19 @@
   <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "canton") }}</li>
 {{ end}}
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
-<sparql-query id="districtValidity" class="d-none">
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="districtValidity">
   SELECT * WHERE {
     ?? vl:version ?version .
     ?version schema:validFrom ?validFrom .
@@ -50,7 +50,7 @@
 
     <!-- Attributes -->
     <div class="col-lg mt-3">
-      <sparql-query id="attributes" class="d-none">
+      <sparql-query id="attributes">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
           ?s ?property ?value .
@@ -70,7 +70,7 @@
 
     <!-- Municipalities -->
     <div class="col-lg mt-3">
-      <sparql-query id="municipalities" class="d-none">
+      <sparql-query id="municipalities">
         SELECT ?type ?municipality ?identifier (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) (COUNT(DISTINCT ?station) AS ?stations) (COUNT(DISTINCT ?org) AS ?orgs) WHERE {
           ?? schema:hasPart ?municipality .
           ?municipality a ?type . FILTER (?type = schch:Municipality)
@@ -102,7 +102,7 @@
   <div class="row mb-3">
     <div class="col">
       <div class="mb-0">
-        <sparql-query id="versionflow" class="d-none">
+        <sparql-query id="versionflow">
           SELECT DISTINCT ?from ?predicate ?to ?fromType ?toType ?fromValidFrom ?toValidFrom WHERE {
             # District → version
             {

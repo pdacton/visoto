@@ -16,28 +16,28 @@
 
 <!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
      reloads, so no figure here is repeated as a hard number in the prose. -->
-<sparql-async id="statsMunicipalities" class="d-none">
+<sparql-async id="statsMunicipalities">
   SELECT (COUNT(?m) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fso/register&gt; {
       ?m a &lt;https://schema.ld.admin.ch/PoliticalMunicipality&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="statsChangeEvents" class="d-none">
+<sparql-async id="statsChangeEvents">
   SELECT (COUNT(?e) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fso/register&gt; {
       ?e a &lt;https://schema.ld.admin.ch/MunicipalityChangeEvent&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="statsI14yConcepts" class="d-none">
+<sparql-async id="statsI14yConcepts">
   SELECT (COUNT(?c) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fso/i14y&gt; {
       ?c a &lt;http://www.w3.org/2004/02/skos/core#Concept&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="statsZefixCompanies" class="d-none">
+<sparql-async id="statsZefixCompanies">
   SELECT (COUNT(?o) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foj/zefix&gt; {
       ?o a &lt;https://schema.ld.admin.ch/ZefixOrganisation&gt; .
@@ -76,7 +76,7 @@
 
 <p>{{ tHTML "page.statistics.municipalitiesIntro" "The municipality is the atom of Swiss statistics: almost every figure the Confederation publishes is either reported per municipality or aggregated up from them. The register defines the full three-level hierarchy — <strong>canton</strong>, <strong>district</strong>, <strong>municipality</strong> — and the shape is uneven in ways that reflect history rather than population. Bern and Vaud each carry hundreds of communes; Graubünden has more districts than Zurich has, for a fraction of the people." }}</p>
 
-<sparql-async id="statsMunicipalitiesPerCanton" class="d-none">
+<sparql-async id="statsMunicipalitiesPerCanton">
   # ?canton stays an IRI so the backend resolves the canton name and links it.
   #
   # The hierarchy is TWO hops: municipality -> district -> canton via schema:isPartOf.
@@ -118,7 +118,7 @@
 
 <p>{{ tHTML "page.statistics.mergersWaves" "Grouped by year, the mergers arrive in waves rather than a trickle. The cantons drive them — a canton offers financial incentives, and dozens of communes merge in a single January. <strong>2006</strong> and <strong>2010</strong> stand out sharply, each absorbing over four hundred municipalities into successors. Because every merger takes effect on 1 January, the whole map of Switzerland changes on one day each year." }}</p>
 
-<sparql-async id="statsMergersPerYear" class="d-none">
+<sparql-async id="statsMergersPerYear">
   # ?absorbed counts PREDECESSOR links, not events: one event can absorb several
   # municipalities at once, so the two columns diverge — and the gap between them is
   # itself informative (2009 shows 114 absorbed across only 32 events).
@@ -163,7 +163,7 @@
 
 <p>{{ tHTML "page.statistics.zefixUid" "Its load-bearing feature is the <strong>UID</strong>, the company identification number, which every entity carries. That single identifier is what lets a company be recognised across otherwise unrelated datasets — the electricity grid operators in the <a href=\"/energy.html\">energy</a> theme carry their UID, and it resolves to the legal entity here. Each entry also holds a legal form from the <code>eCH-0097</code> standard, a registered address, the municipality of domicile, and in most cases the company's stated purpose in full prose." }}</p>
 
-<sparql-async id="statsZefixLegalForms" class="d-none">
+<sparql-async id="statsZefixLegalForms">
   # ?legalForm stays an IRI so the backend resolves and links the eCH-0097 code.
   #
   # Legal forms are a SHARED vocabulary (ld.admin.ch/ech/97/legalforms/…), not strings
@@ -192,7 +192,7 @@
 
 <p>{{ tHTML "page.statistics.zefixJoinIntro" "Because every company records its municipality of domicile as an IRI from the register described above, the two datasets join directly — and counting companies per canton shows something the population figures do not. Zurich leads as expected, but <strong>Zug</strong> appears far higher than its size warrants: a canton of some 130,000 people hosting tens of thousands of registered entities, which is its low-tax corporate domicile policy made visible in the data." }}</p>
 
-<sparql-async id="statsZefixPerCanton" class="d-none">
+<sparql-async id="statsZefixPerCanton">
   # A genuine CROSS-GRAPH join: the company lives in foj/zefix, the municipality
   # hierarchy in fso/register, and they meet on the municipality IRI.
   #
@@ -234,7 +234,7 @@
 
 <p>{{ tHTML "page.statistics.i14yModel" "Everything is modelled in <strong>SKOS</strong>, the standard vocabulary for classification schemes, with <code>xkos:ClassificationLevel</code> layered on top to mark the rungs of a hierarchy — so a four-digit occupation code knows it sits beneath a three-digit group. Concepts carry their broader and narrower relations, which is what makes a classification usable for aggregation rather than just lookup." }}</p>
 
-<sparql-async id="statsI14yLargest" class="d-none">
+<sparql-async id="statsI14yLargest">
   # Restricted to version.link Identity schemes on purpose.
   #
   # Every scheme exists as an identity PLUS one row per published version (PROFESSIONS
@@ -282,7 +282,7 @@
 
 <p>{{ tHTML "page.statistics.sharedDimensionsWhy" "The point of publishing these centrally is that two offices measuring the same lake, or the same airfield, use the same IRI for it. When the <a href=\"/energy.html\">energy</a> theme lists a hydropower plant and the <a href=\"/environment.html\">environment</a> theme reports on the river it sits on, the shared dimension is what allows those to be related at all." }}</p>
 
-<sparql-async id="statsSharedDimensions" class="d-none">
+<sparql-async id="statsSharedDimensions">
   # ?dim stays an IRI so the backend resolves and links each dimension.
   #
   # The name is fetched in its own subquery with SAMPLE: these dimensions carry

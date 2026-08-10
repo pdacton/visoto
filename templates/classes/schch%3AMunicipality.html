@@ -5,18 +5,18 @@
   <li class="breadcrumb-item">{{ tHTML "type.municipality.canton" "<a href=\"/resource?iri=schch:Canton\">Canton</a>" }}</li>
 {{ end}}
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 {{ define "pageContent" }}
@@ -26,7 +26,7 @@
 
   <div class="mt-0">
 
-    <sparql-async id="municipalityInstances" class="d-none">
+    <sparql-async id="municipalityInstances">
       SELECT ?type ?municipality ?identifier ?district ?canton ?validFrom ?validThrough (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
       WHERE {
         BIND (?? AS ?type)
@@ -51,14 +51,14 @@
          so all rows are on the client — the option lists are built from them and no
          filter ever reaches the backend.
 
-         Every kind and type below is left to the data: IRI columns with few distinct
-         values become dropdowns, the 3297-value name column a text search, dates a
-         range. Only ?postalCodes needs saying more, and it says why. -->
-    <!-- ?type is constant here — BIND(?? AS ?type) gives every row the same class
-         IRI — so this filter cannot narrow anything. It is declared for what it
-         READS OUT rather than what it does: "Municipality (3297)" states that the
-         whole table is one type, which otherwise takes scrolling to establish. -->
+         Most kinds and types below are left to the data: IRI columns with few
+         distinct values become dropdowns, the 3297-value name column a text search,
+         dates a range. The three that override the inference each say why. -->
     <sparql-columns for="municipalityInstances">
+      <!-- ?type is constant here — BIND(?? AS ?type) gives every row the same class
+           IRI — so this filter cannot narrow anything. It is declared for what it
+           READS OUT rather than what it does: "Municipality (3297)" states that the
+           whole table is one type, which otherwise takes scrolling to establish. -->
       <sparql-column var="type" label="{{ t "facet.type" "Type" }}" filter icon></sparql-column>
       <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" filter></sparql-column>
       <!-- 204 districts — just past the 200-value enumeration cap that decides
@@ -76,17 +76,17 @@
            the useful half of it: no end date = the municipality still exists. The
            range itself brackets when a municipality was dissolved or merged. -->
       <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}" filter></sparql-column>
-    <!-- ?postalCodes is the one facet here that declares root/path, and it must.
-         It is a GROUP_CONCAT alias: a column-mode FILTER would target the alias,
-         which does not exist in WHERE scope, so the backend would error per row
-         and return zero rows with no error at all. Routing through the property
-         instead filters existentially on the underlying schema:postalCode, which
-         is also the semantics you want on a multi-valued path — matching "8001"
-         keeps Zürich with all 30 of its codes rather than narrowing it to one.
-         Inert today (this inline table filters locally, over the concatenated
-         cell text, so "10, 89" would match across the separator); it is what
-         makes the backend leg correct if this table ever grows a membership
-         triple and goes working-set. -->
+      <!-- ?postalCodes is the one column here that declares root/path, and it must.
+           It is a GROUP_CONCAT alias: a column-mode FILTER would target the alias,
+           which does not exist in WHERE scope, so the backend would error per row
+           and return zero rows with no error at all. Routing through the property
+           instead filters existentially on the underlying schema:postalCode, which
+           is also the semantics you want on a multi-valued path — matching "8001"
+           keeps Zürich with all 30 of its codes rather than narrowing it to one.
+           Inert today (this inline table filters locally, over the concatenated
+           cell text, so "10, 89" would match across the separator); it is what
+           makes the backend leg correct if this table ever grows a membership
+           triple and goes working-set. -->
       <sparql-column var="postalCodes" label="{{ t "facet.postalCode" "Postal code" }}"
                      root="?municipality" path="schema:postalCode" filter="text"></sparql-column>
     </sparql-columns>

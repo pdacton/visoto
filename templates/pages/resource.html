@@ -13,7 +13,7 @@
     <!-- outgoing relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="outgoing" class="d-none">
+        <sparql-query id="outgoing">
           SELECT ?property ?destination ?type WHERE {
             BIND (?? AS ?s)
             ?s ?property ?destination .
@@ -36,7 +36,7 @@
     <!-- incoming relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="incoming" class="d-none">
+        <sparql-query id="incoming">
           SELECT ?type ?source ?property WHERE {
             BIND (?? AS ?o)
             ?source ?property ?o .
@@ -72,7 +72,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-query id="instances" class="d-none">
+        <sparql-query id="instances">
           SELECT ?class ?instance ?description WHERE {
             BIND (?? AS ?class)
             ?instance (rdf:type|owl:type) ?class .

@@ -11,7 +11,7 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-async id="classInstances" class="d-none">
+        <sparql-async id="classInstances">
           SELECT ?instance ?description WHERE {
             ?instance a ?? .
             OPTIONAL { ?instance visoto:description ?description .
@@ -33,7 +33,7 @@
   <div class="row">
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="subclasses" class="d-none">
+        <sparql-query id="subclasses">
           SELECT DISTINCT ?subclass ?label WHERE {
             BIND (?? AS ?class)
             ?subclass rdfs:subClassOf ?class .
@@ -55,7 +55,7 @@
     <!-- superclasses -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="superclasses" class="d-none">
+        <sparql-query id="superclasses">
           SELECT DISTINCT ?superclass ?label WHERE {
             BIND (?? AS ?class)
             ?class rdfs:subClassOf ?superclass .

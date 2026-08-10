@@ -1,6 +1,6 @@
 <!-- Municipality instance template -->
 
-<sparql-query id="breadcrumbs" class="d-none">
+<sparql-query id="breadcrumbs">
   SELECT ?canton ?country ?district WHERE 
   { 
     ?? schema:containedInPlace ?district . ?district a schch:District .
@@ -14,19 +14,19 @@
   <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "district") }}</li>
 {{ end}}
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
-<sparql-query id="municipalityValidity" class="d-none">
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="municipalityValidity">
   SELECT * WHERE {
     ?? vl:version ?version .
     ?version schema:validFrom ?validFrom .
@@ -47,7 +47,7 @@
 
 
 {{ define "pageIcon" }}
-  <sparql-query id="pageIcon" class="d-none">
+  <sparql-query id="pageIcon">
     PREFIX schema: &lt;http://schema.org/&gt;
     PREFIX wdt: &lt;http://www.wikidata.org/prop/direct/&gt;
     SELECT ?flagURL WHERE {
@@ -83,7 +83,7 @@
     <!-- Attributes -->
 
     <div class="col-lg mt-3">
-      <sparql-query id="attributes" class="d-none">
+      <sparql-query id="attributes">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
           ?s ?property ?value .
@@ -105,7 +105,7 @@
 
     <!-- Postal Codes -->
     <div class="col-lg mt-3">
-      <sparql-query id="postals" class="d-none">
+      <sparql-query id="postals">
         SELECT ?postalCode WHERE {
           BIND (?? AS ?s)
           ?s schema:postalCode ?postalCode .
@@ -121,7 +121,7 @@
 
     <!-- Stationen -->
     <div class="col-lg mt-3">
-      <sparql-query id="stationen" class="d-none">
+      <sparql-query id="stationen">
         SELECT ?station ?provider WHERE {
           ?station ?property ?? .
           ?station a gtfs:Station .
@@ -138,7 +138,7 @@
 
     <!-- Zefix Organisationen -->
     <div class="col-lg mt-3">
-      <sparql-query id="Organisationen" class="d-none">
+      <sparql-query id="Organisationen">
         SELECT ?zefix_Organisation ?form WHERE {
           ?zefix_Organisation schch:municipality ?? .
           ?zefix_Organisation a schema:Organization .
@@ -159,7 +159,7 @@
   <div class="row mb-3">
     <div class="col">
       <div class="mb-0">
-        <sparql-query id="versionflow" class="d-none">
+        <sparql-query id="versionflow">
           SELECT DISTINCT ?from ?predicate ?to ?fromType ?toType ?fromValidFrom ?toValidFrom WHERE {
             # starting point: the municipalitys latest version
             {

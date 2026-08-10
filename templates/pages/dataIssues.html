@@ -12,7 +12,7 @@
     
     <!-- Municipalities without identifiers -->
     <div class="mb-3">
-      <sparql-query id="municipalitiesWithoutIdentifier" class="d-none">
+      <sparql-query id="municipalitiesWithoutIdentifier">
         SELECT ?municipality ?name ?graph WHERE {
           GRAPH ?graph {
             ?municipality a schch:Municipality .

@@ -4,18 +4,18 @@
   <li class="breadcrumb-item">{{ tHTML "type.conceptScheme.conceptScheme" "<a href=\"/resource?iri=skos:ConceptScheme\">Concept Scheme</a>" }}</li>
 {{ end }}
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
@@ -27,7 +27,7 @@
   <div class="row">
     <div class="col">
       <div class="mb-3">
-        <sparql-query id="conceptTree" class="d-none">
+        <sparql-query id="conceptTree">
           SELECT ?node ?parent ?code WHERE {
             BIND (?? AS ?conceptScheme)
             ?node skos:inScheme ?conceptScheme .
@@ -53,7 +53,7 @@
     <!-- incoming relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="incoming" class="d-none">
+        <sparql-query id="incoming">
           SELECT ?type ?source ?property WHERE {
             BIND (?? AS ?o)
             ?source ?property ?o .
@@ -77,7 +77,7 @@
     <!-- outgoing relationships -->
     <div class="col-lg-6">
       <div class="mb-3">
-        <sparql-query id="outgoing" class="d-none">
+        <sparql-query id="outgoing">
         SELECT ?property ?destination ?type WHERE {
           BIND (?? AS ?s)
           ?s ?property ?destination .

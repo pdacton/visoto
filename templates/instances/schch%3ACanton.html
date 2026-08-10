@@ -1,6 +1,6 @@
 <!-- Canton Instance Template -->
 
-<sparql-query id="breadcrumbs" class="d-none">
+<sparql-query id="breadcrumbs">
   SELECT ?country WHERE {
     ?? schema:containedInPlace ?country . ?country a schema:Country .
   }
@@ -9,23 +9,23 @@
   <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "country") }}</li>
 {{ end}}
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
 {{ define "pageIcon" }}
-  <sparql-query id="pageIcon" class="d-none">
+  <sparql-query id="pageIcon">
     PREFIX schema: &lt;http://schema.org/&gt;
     PREFIX wdt: &lt;http://www.wikidata.org/prop/direct/&gt;
     PREFIX wd: &lt;http://www.wikidata.org/entity/&gt;
@@ -60,7 +60,7 @@
 
     <!-- Attributes -->
     <div class="col-lg mt-3">
-      <sparql-query id="attributes" class="d-none">
+      <sparql-query id="attributes">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
           ?s ?property ?value .
@@ -80,7 +80,7 @@
 
     <!-- Districts -->
     <div class="col-lg mt-3">
-      <sparql-query id="districts" class="d-none">
+      <sparql-query id="districts">
         SELECT ?district ?identifier (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) (COUNT(DISTINCT ?municipality) AS ?municipalities) WHERE {
           ?? schema:hasPart ?district .
           ?district a schch:District .
@@ -106,7 +106,7 @@
 
     <!-- Municipalities -->
     <div class="col-lg mt-3">
-      <sparql-query id="municipalities" class="d-none">
+      <sparql-query id="municipalities">
         SELECT ?municipality ?identifier ?district (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) WHERE {
           ?municipality schema:containedInPlace ?? .
           ?municipality a schch:Municipality .

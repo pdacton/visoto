@@ -14,28 +14,28 @@
 
 <!-- Metric strip: one bounded query per headline figure. Counts drift as the Chancellery
      reloads its exports, so nothing here is written into the prose. -->
-<sparql-async id="politicsProposalCount" class="d-none">
+<sparql-async id="politicsProposalCount">
   SELECT (COUNT(DISTINCT ?t) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/popular-vote&gt; {
       ?obs &lt;https://politics.ld.admin.ch/political-rights/popular-vote/abstimmungstitel&gt; ?t .
     }
   }
 </sparql-async>
-<sparql-async id="politicsVotingDays" class="d-none">
+<sparql-async id="politicsVotingDays">
   SELECT (COUNT(DISTINCT ?d) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/popular-vote&gt; {
       ?obs &lt;https://politics.ld.admin.ch/political-rights/popular-vote/date&gt; ?d .
     }
   }
 </sparql-async>
-<sparql-async id="politicsParliamentarians" class="d-none">
+<sparql-async id="politicsParliamentarians">
   SELECT (COUNT(DISTINCT ?p) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
       ?p a schema:Person .
     }
   }
 </sparql-async>
-<sparql-async id="politicsLobbyOrgs" class="d-none">
+<sparql-async id="politicsLobbyOrgs">
   SELECT (COUNT(DISTINCT ?o) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/curia&gt; {
       ?o a schema:LobbyOrganization .
@@ -99,7 +99,7 @@
 
 <p>{{ tHTML "page.politics.bothRoutesEndAtThe" "Both routes end at the same place: a <strong>popular vote</strong>. That cube is the centrepiece of this theme — and the richest political dataset in LINDAS. It records not one row per vote but <em>one row per proposal per canton</em>, which is why a few hundred proposals become nearly twenty thousand observations. Each row carries yes and no counts <em>and</em> percentages, turnout, eligible voters, blank and invalid ballots, and the cantonal vote (<em>Standesstimme</em>) that constitutional amendments must also win." }}</p>
 
-<sparql-async id="politicsRecentVotes" class="d-none">
+<sparql-async id="politicsRecentVotes">
   # ?title and ?observation stay IRIs on purpose: the backend resolves each to a label in the
   # visitor's language, and the table renders resolved IRIs as links to their resource page.
   SELECT ?date ?title ?yesPercent ?turnout ?observation WHERE {
@@ -126,7 +126,7 @@
 
 <p>{{ t "page.politics.theQuietestInstrumentAndThe" "The quietest instrument, and the only one open to everyone — no signature threshold, no citizenship requirement, no minimum age. Anyone may petition the federal authorities, who are obliged to take note but not to act." }}</p>
 
-<sparql-async id="politicsPetitions" class="d-none">
+<sparql-async id="politicsPetitions">
   # ?title and ?observation stay IRIs on purpose: the backend resolves each to a label in the
   # visitor's language, and the table renders resolved IRIs as links to their resource page.
   SELECT ?date ?title ?author ?observation WHERE {
@@ -154,28 +154,28 @@
 
 <p>{{ tHTML "page.politics.everyFourYearsSwitzerlandElects" "Every four years Switzerland elects the 200 members of the National Council. LINDAS holds the results as five cube families per election year, and together they describe the whole proportional machinery: who stood, on which list, how many votes each list drew, and how seats were finally allocated — including the distribution <em>within</em> joined lists (<em>listes apparentées</em>), a Swiss speciality where small parties pool votes to clear the threshold together." }}</p>
 
-<sparql-async id="politicsElectionCandidates2023" class="d-none">
+<sparql-async id="politicsElectionCandidates2023">
   SELECT (COUNT(?o) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/national-council-election&gt; {
       &lt;https://politics.ld.admin.ch/national-council-election/candidates/2023&gt; cube:observationSet/cube:observation ?o .
     }
   }
 </sparql-async>
-<sparql-async id="politicsElectionCandidates2019" class="d-none">
+<sparql-async id="politicsElectionCandidates2019">
   SELECT (COUNT(?o) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/national-council-election&gt; {
       &lt;https://politics.ld.admin.ch/national-council-election/candidates/2019&gt; cube:observationSet/cube:observation ?o .
     }
   }
 </sparql-async>
-<sparql-async id="politicsElectionLists2023" class="d-none">
+<sparql-async id="politicsElectionLists2023">
   SELECT (COUNT(?o) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/national-council-election&gt; {
       &lt;https://politics.ld.admin.ch/national-council-election/list-results/2023&gt; cube:observationSet/cube:observation ?o .
     }
   }
 </sparql-async>
-<sparql-async id="politicsElectionSeats2023" class="d-none">
+<sparql-async id="politicsElectionSeats2023">
   SELECT (COUNT(?o) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fch/national-council-election&gt; {
       &lt;https://politics.ld.admin.ch/national-council-election/seats-per-list/2023&gt; cube:observationSet/cube:observation ?o .
@@ -224,7 +224,7 @@
 
 <p>{{ tHTML "page.politics.whereTheCubesAboveCount" "Where the cubes above count votes, this family of graphs names people. <strong>Curia Vista</strong> is the parliamentary register: every member of the Federal Assembly, living and dead, with their party, their parliamentary group, the committees they sat on and the exact dates of each mandate. Because memberships are modelled as dated <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FRole\">roles</a> rather than plain links, you can reconstruct the composition of parliament on any given day." }}</p>
 
-<sparql-async id="politicsGroups" class="d-none">
+<sparql-async id="politicsGroups">
   # ?parliamentaryGroup stays an IRI on purpose: the backend resolves it to a label in the
   # visitor's language, and the table renders resolved IRIs as links to their resource page.
   # The chamber split comes from each member's *council* role, not the group role, which
@@ -277,7 +277,7 @@
 
 <p>{{ tHTML "page.politics.membersOfParliamentMustDeclare" "Members of parliament must declare their outside mandates, and the declarations are published here as links between a person and a <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FLobbyOrganization\">lobby organization</a>. The useful detail is that each tie is flagged <strong>paid or unpaid</strong>, and records the <em>function</em> held — so the table below separates the seats a parliamentarian merely occupies from the ones they <strong>chair</strong>. The two can diverge sharply: of the twelve people with the most paid ties, some chair almost all of them and others chair one." }}</p>
 
-<sparql-async id="politicsPaidMandates" class="d-none">
+<sparql-async id="politicsPaidMandates">
   # ?person stays an IRI on purpose: the backend resolves it to the person's name and the
   # table renders it as a link, so no separate name column is needed.
   SELECT ?person ?party ?bornIn ?presidencies ?paidMandates ?unpaidMandates WHERE {
@@ -325,7 +325,7 @@
 
 <p>{{ tHTML "page.politics.threeFurtherRegistersDescribeThe" "Three further registers describe the executive side. The <strong>Federal Council</strong> graph covers the seven-member government since 1848 — councillors, chancellors, which department each held, who was president in which year, and a curiosity found in few national datasets: the people who were <em>elected and declined</em>. The <strong>Staatskalender</strong> is the government directory, listing offices with their postal addresses and staff. <strong>Extra-parliamentary commissions</strong> covers the expert bodies that advise the administration from outside it." }}</p>
 
-<sparql-async id="politicsPresidents" class="d-none">
+<sparql-async id="politicsPresidents">
   # ?president, ?vicePresident, ?party and ?canton stay IRIs on purpose: the backend resolves
   # each to a label and the table renders them as links to their resource page.
   SELECT ?year ?president ?party ?canton ?vicePresident WHERE {
@@ -351,7 +351,7 @@
       "collapsed" true) }}
 </div>
 
-<sparql-async id="politicsCommissions" class="d-none">
+<sparql-async id="politicsCommissions">
   # The 538 schema:GovernmentOrganization resources here are secretariats and data-protection
   # contact points, not the commissions themselves — the commissions are the 143 observations
   # of the apg/committee cube. All IRIs stay unresolved so the backend labels and links them.
@@ -410,7 +410,7 @@
 
 <p>{{ tHTML "page.politics.oneGraphInThisTheme" "One graph in this theme is modelled quite differently from the rest. <strong>Procedural requests</strong> — motions, postulates and interpellations through which members of parliament formally ask the government to act — use the <a href=\"https://ch.paf.link\" target=\"_blank\" rel=\"noopener\">PAF ontology</a>, an activity-and-entity model borrowed from provenance vocabularies rather than the cube or schema.org shapes used everywhere else. Each request is an entity; each step in its handling is an activity with its own status text from the administration." }}</p>
 
-<sparql-async id="politicsProceduralRequests" class="d-none">
+<sparql-async id="politicsProceduralRequests">
   # Each status text is published in de/fr/it, so without a language filter every request
   # appeared three times. ?request and ?office stay IRIs so the backend labels and links them;
   # the request IRI ends in /entity, so the affair number is pulled out as a separate literal.

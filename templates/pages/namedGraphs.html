@@ -11,7 +11,7 @@
 
     <!-- named graphs with any attributes the graph IRI itself carries -->
     <div class="mb-3">
-      <sparql-async id="namedGraphsList" class="d-none">
+      <sparql-async id="namedGraphsList">
         SELECT ?graph ?property ?value WHERE {
           {
             # enumerate graphs via their rdf:type triples — scanning all quads
@@ -34,7 +34,7 @@
 
     <!-- named graphs with their classes (lazy-loaded so the page shell renders before the heavy graph scan) -->
     <div class="mb-3">
-      <sparql-async id="namedGraphs" class="d-none">
+      <sparql-async id="namedGraphs">
         SELECT ?graph ?class (STR(?class) AS ?iri) WHERE {
           GRAPH ?graph {
             OPTIONAL { ?instance a ?class . }

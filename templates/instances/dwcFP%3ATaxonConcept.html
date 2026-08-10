@@ -19,7 +19,7 @@
   <div class="row">
     <div class="col">
       <div class="mb-3">
-        <sparql-query id="augmentingTreatments" class="d-none">
+        <sparql-query id="augmentingTreatments">
           SELECT ?treatment ?title ?date WHERE {
             ?treatment trt:augmentsTaxonConcept ?? .
             OPTIONAL { ?treatment dc:title ?title . }

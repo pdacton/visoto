@@ -11,28 +11,28 @@
 <p>{{ tHTML "page.mobility.fourLINDASGraphsDescribeHow" "Four LINDAS graphs describe how people move around Switzerland. They are not four independent datasets — they stack. The <strong>service point register (DiDok)</strong> holds the <em>places</em>: every stop, station, quay and cable-car terminal in the country. <strong>NOVA</strong> holds the <em>prices</em> between those places. The <strong>Open Transport Data schema</strong> is the <em>dictionary</em> that defines the terms both of them use. Alongside them, the <strong>Federal Office of Civil Aviation</strong> publishes aviation statistics, which stand on their own." }}</p>
 
 <!-- Metric strip: one bounded COUNT per headline figure. -->
-<sparql-async id="mobilityStopCount" class="d-none">
+<sparql-async id="mobilityStopCount">
   SELECT (COUNT(?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station .
     }
   }
 </sparql-async>
-<sparql-async id="mobilityOperatorCount" class="d-none">
+<sparql-async id="mobilityOperatorCount">
   SELECT (COUNT(?org) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?org a schema:Organization .
     }
   }
 </sparql-async>
-<sparql-async id="mobilityRelationCount" class="d-none">
+<sparql-async id="mobilityRelationCount">
   SELECT (COUNT(?rel) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/nova&gt; {
       ?rel a &lt;https://lod.opentransportdata.swiss/vocab/Relation&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="mobilityObservationCount" class="d-none">
+<sparql-async id="mobilityObservationCount">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foca/cube&gt; {
       ?obs a cube:Observation .
@@ -80,7 +80,7 @@
   One <sparql-async> per mode: the metric handler matches these by their literal id, so
   they cannot be generated from a loop over the cards.
 -->
-<sparql-async id="mobilityMode-bus" class="d-none">
+<sparql-async id="mobilityMode-bus">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -88,7 +88,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-train" class="d-none">
+<sparql-async id="mobilityMode-train">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -96,7 +96,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-tram" class="d-none">
+<sparql-async id="mobilityMode-tram">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -104,7 +104,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-metro" class="d-none">
+<sparql-async id="mobilityMode-metro">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -112,7 +112,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-cable-car" class="d-none">
+<sparql-async id="mobilityMode-cable-car">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -120,7 +120,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-chairlift" class="d-none">
+<sparql-async id="mobilityMode-chairlift">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -128,7 +128,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-cable-railway" class="d-none">
+<sparql-async id="mobilityMode-cable-railway">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -136,7 +136,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-rack-railway" class="d-none">
+<sparql-async id="mobilityMode-rack-railway">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -144,7 +144,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-boat" class="d-none">
+<sparql-async id="mobilityMode-boat">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -152,7 +152,7 @@
     }
   }
 </sparql-async>
-<sparql-async id="mobilityMode-elevator" class="d-none">
+<sparql-async id="mobilityMode-elevator">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -185,7 +185,7 @@
 
 <!-- Counted live rather than written into the prose: the register is reloaded periodically
      and the totals drift. -->
-<sparql-async id="mobilityMode-unknown" class="d-none">
+<sparql-async id="mobilityMode-unknown">
   SELECT (COUNT(DISTINCT ?stop) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/didok&gt; {
       ?stop a gtfs:Station ;
@@ -231,7 +231,7 @@
 
 <p>{{ tHTML "page.mobility.anAllianceVerbundIsA" "An <a href=\"/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FAlliance\">Alliance</a> (<em>Verbund</em>) is a regional fare union — the body whose zone plan applies where you are travelling. Most people in Switzerland hold a season ticket issued by one of these." }}</p>
 
-<sparql-async id="mobilityAlliances" class="d-none">
+<sparql-async id="mobilityAlliances">
   SELECT ?alliance ?label WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/nova&gt; {
       ?alliance a &lt;https://lod.opentransportdata.swiss/vocab/Alliance&gt; .
@@ -251,7 +251,7 @@
 
 <p>{{ tHTML "page.mobility.roughlyHalfOfThisVocabulary" "Roughly half of this vocabulary is untranslated German, so the descriptions below come from the Open Transport Data schema and are worth reading as a glossary: <em>Tarifwertpreisauspraegung</em> and <em>Relationsgebiet</em> are not self-explanatory to anyone." }}</p>
 
-<sparql-async id="mobilityNovaClasses" class="d-none">
+<sparql-async id="mobilityNovaClasses">
   SELECT ?class ?description ?instances WHERE {
     {
       SELECT ?class (COUNT(?s) AS ?instances) WHERE {
@@ -335,7 +335,7 @@
 
 <p>{{ t "page.mobility.theOpenTransportDataSchema" "The Open Transport Data schema is tiny — a few hundred triples — but it defines the terms that the seven million triples of NOVA are written in. It is the Rosetta Stone for everything above." }}</p>
 
-<sparql-async id="mobilityOtdClasses" class="d-none">
+<sparql-async id="mobilityOtdClasses">
   SELECT ?class ?label ?comment WHERE {
     GRAPH &lt;https://lindas.admin.ch/sbb/otd-schema&gt; {
       ?class a rdfs:Class .

@@ -14,28 +14,28 @@
 
 <!-- Metric strip: one bounded COUNT per headline figure. Counts drift as the offices
      reload their exports, so no figure here is repeated in the prose. -->
-<sparql-async id="energyPriceObservations" class="d-none">
+<sparql-async id="energyPriceObservations">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/elcom/electricityprice&gt; {
       ?obs a cube:Observation .
     }
   }
 </sparql-async>
-<sparql-async id="energyOperators" class="d-none">
+<sparql-async id="energyOperators">
   SELECT (COUNT(?org) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/elcom/electricityprice&gt; {
       ?org a schema:Organization .
     }
   }
 </sparql-async>
-<sparql-async id="energySfoeObservations" class="d-none">
+<sparql-async id="energySfoeObservations">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sfoe/cube&gt; {
       ?obs a cube:Observation .
     }
   }
 </sparql-async>
-<sparql-async id="energySfoeCubes" class="d-none">
+<sparql-async id="energySfoeCubes">
   SELECT (COUNT(?cube) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/sfoe/cube&gt; {
       ?cube a cube:Cube .
@@ -119,7 +119,7 @@
 
 <p>{{ tHTML "page.energy.cantonComparisonIntro" "Ranked by canton, the spread is wide enough that the cheapest and dearest are not in the same conversation — and the breakdown shows why they differ. Some cantons are expensive because of the energy component, others because of grid usage; the aid fee is constant everywhere, so it never explains a gap. Figures below are the <strong>H4 profile</strong> (a five-room flat with an electric cooker, about 4,500 kWh a year) on the standard product." }}</p>
 
-<sparql-async id="energyCantonPrices" class="d-none">
+<sparql-async id="energyCantonPrices">
   # ?canton stays an IRI on purpose: the backend resolves it to a label in the visitor's
   # language and the table renders it as a link to the resource page.
   #
@@ -157,7 +157,7 @@
 
 <p>{{ tHTML "page.energy.operatorTableIntro" "Below the cantonal medians sit the operators themselves. Each is a <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FOrganization\">schema.org organization</a> with a postal address, a website and — usefully — a <strong>company identification number</strong>, which is the same UID used by the <a href=\"/resource?iri=https%3A%2F%2Flindas.admin.ch%2Ffoj%2Fzefix\">Zefix</a> commercial register. That single shared identifier is what lets a tariff be joined to the legal entity behind it." }}</p>
 
-<sparql-async id="energyOperatorPrices" class="d-none">
+<sparql-async id="energyOperatorPrices">
   # ?operator stays an IRI so the backend resolves it to the utility's name and links it.
   # Municipality count shows the operator's reach; the price columns are its own tariff.
   #
@@ -206,7 +206,7 @@
 
 <p>{{ tHTML "page.energy.profilesDefinitions" "Each profile is a SKOS concept in its own right, and it carries its definition with it: a reference consumption in kilowatt-hours per year and a prose description of the household or business it stands for. That is what makes the comparison below meaningful — <strong>H4</strong> and <strong>H3</strong> both consume 4,500 kWh a year, but H3 is a four-room flat with an electric water heater while H4 is a five-room flat with a tumble dryer and none, so the two are priced against genuinely different customers rather than an arbitrary label." }}</p>
 
-<sparql-async id="energyProfileSpread" class="d-none">
+<sparql-async id="energyProfileSpread">
   # ?category stays an IRI so the backend resolves and links it. MIN/MAX/AVG across all
   # operators show how the spread itself changes between household and business profiles.
   # No ?observation column here: each row aggregates MIN/MAX/AVG over hundreds of
@@ -262,7 +262,7 @@
 
 <p>{{ tHTML "page.energy.energyBalanceIntro" "The <strong>Swiss energy balance</strong> runs from 1980 and reports consumption in terajoules per year, broken down by energy carrier. The carriers come from a shared LINDAS dimension rather than free text, and they nest: <em>renewable</em> splits into wood, hydro and other renewables, <em>non-renewable</em> into nuclear fuels, petrol products, gas, coal and waste. Because the hierarchy is in the data, totals and components can be queried from the same cube without double-counting — provided you pick one level." }}</p>
 
-<sparql-async id="energyBalanceCarriers" class="d-none">
+<sparql-async id="energyBalanceCarriers">
   # ?carrier stays an IRI so the backend resolves the carrier name and links it.
   # The cube holds one row per carrier PER YEAR, so ?year must be selected — without
   # it the same carrier appears dozens of times with no way to tell the rows apart.
@@ -304,7 +304,7 @@
 
 <p>{{ tHTML "page.energy.reservoirIntro" "Switzerland's alpine reservoirs are the country's battery, and the <strong>reservoir filling level</strong> cube is the only weekly series in this theme — a reading every Sunday at midnight of how many gigawatt-hours are stored against the maximum the basins can hold. It is a genuinely operational dataset: during the 2022 supply debate this was the number people watched. Two things about its shape are worth knowing before querying it. The regions are not a dimension but separate <em>columns</em> (<code>gr…</code> for Grisons, <code>ti…</code> for Ticino), and the <strong>reading date is not a property at all</strong> — it survives only inside the observation IRI, so it has to be parsed out of the string before the series can be sorted." }}</p>
 
-<sparql-async id="energyReservoirs" class="d-none">
+<sparql-async id="energyReservoirs">
   # Two quirks of this cube:
   #  1. The reading date is NOT a predicate — it exists only as the last path segment
   #     of the observation IRI (…/observation/2008-06-02), so it is parsed out here.
@@ -337,7 +337,7 @@
 
 <p>{{ tHTML "page.energy.solarIntro" "The <strong>one-off payment for photovoltaic installations</strong> (<em>Einmalvergütung</em>) is the federal subsidy for rooftop solar, and its cube is the most directly comparable dataset in this theme: per canton, per year, it records the number of installations, the capacity installed in kilowatts, the francs paid out — <em>and</em> the first two normalised per 100,000 inhabitants. That last pair is the reason a small canton can be compared with Zurich without doing the arithmetic yourself." }}</p>
 
-<sparql-async id="energySolarPerCanton" class="d-none">
+<sparql-async id="energySolarPerCanton">
   # ?canton stays an IRI so the backend resolves and links it. Summed across all years
   # in the cube; the per-100k columns are cumulative sums of yearly rates, so they are
   # deliberately left out here — use a single year on the resource page for those.

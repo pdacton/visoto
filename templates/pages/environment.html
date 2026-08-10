@@ -14,28 +14,28 @@
 
 <!-- Metric strip: one bounded COUNT per headline figure. Counts drift as FOEN
      reloads its exports, so no figure here is repeated in the prose. -->
-<sparql-async id="envHydroStations" class="d-none">
+<sparql-async id="envHydroStations">
   SELECT (COUNT(?s) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foen/hydro&gt; {
       ?s a &lt;http://example.com/HydroMeasuringStation&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="envFireRegions" class="d-none">
+<sparql-async id="envFireRegions">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foen/forest-fire-risk-warning&gt; {
       ?obs a cube:Observation .
     }
   }
 </sparql-async>
-<sparql-async id="envNfiObservations" class="d-none">
+<sparql-async id="envNfiObservations">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foen/national-forest-inventory&gt; {
       ?obs a cube:Observation .
     }
   }
 </sparql-async>
-<sparql-async id="envCubeObservations" class="d-none">
+<sparql-async id="envCubeObservations">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foen/cube&gt; {
       ?obs a cube:Observation .
@@ -78,7 +78,7 @@
 
 <p>{{ tHTML "page.environment.fireDangerIntro" "Switzerland is divided into 143 <strong>forest fire warning regions</strong>, each carrying a danger level from 1 (low) to 5 (very high). What makes this pair of graphs worth reading together is that danger and <em>response</em> are published separately: FOEN assesses the risk, and the cantons decide what to forbid. The table below joins them, so each region shows the hazard alongside the fire ban actually in force there — from a warning to take care, up to an absolute ban on fires in the open." }}</p>
 
-<sparql-async id="envFireDanger" class="d-none">
+<sparql-async id="envFireDanger">
   # ?region, ?canton, ?dangerLevel and ?measure all stay IRIs on purpose: the backend
   # resolves each to a label in the visitor's language and links it to its resource page.
   #
@@ -121,7 +121,7 @@
 
 <p>{{ tHTML "page.environment.hydroWhatIsMissing" "Note which columns are sparse. Every station reports a level, most report discharge, but only about a third measure temperature — and lake stations naturally report no discharge at all. Those gaps are in the data rather than in the query: the measures are <code>OPTIONAL</code> because a station simply does not carry the instruments it does not have." }}</p>
 
-<sparql-async id="envHydroLive" class="d-none">
+<sparql-async id="envHydroLive">
   # ?station and ?water stay IRIs so the backend resolves and links them; the station page
   # carries the coordinates and the water body page groups every station on that river.
   #
@@ -163,7 +163,7 @@
 
 <p>{{ tHTML "page.environment.nfiStandardError" "Because every figure is an <em>estimate from a sample</em> rather than a census, each measure ships with its own <strong>standard error</strong>: alongside topic <code>21</code> (growing stock) sits <code>SE21</code>, the error on that estimate as a percentage. This is genuinely unusual for open government data, and it changes how the table should be read — a cantonal figure with ±15% attached is not comparable to one with ±6% in the way the raw numbers suggest. Small cantons have fewer sample plots, so their estimates are correspondingly less certain." }}</p>
 
-<sparql-async id="envForestStock" class="d-none">
+<sparql-async id="envForestStock">
   # Growing stock per hectare, by canton, from the most recent completed inventory (NFI5).
   # ?canton stays an IRI so the backend resolves and links it to the standard canton page.
   #
@@ -217,7 +217,7 @@
 
 <p>{{ tHTML "page.environment.redListStructure" "Species are grouped by a FOEN classification that nests via <code>skos:broader</code> — <em>all organisms</em> contains <em>animals</em>, which contains <em>insects</em>, which contains <em>butterflies</em> — so the same cube answers both the national headline and the question of which group is faring worst. Pick one level when summing, or the totals will count the same species several times over. The <code>part</code> column is the share of that group's assessed species falling in the category, which is what makes small and large groups comparable." }}</p>
 
-<sparql-async id="envRedList" class="d-none">
+<sparql-async id="envRedList">
   # ?group and ?status stay IRIs so the backend resolves both to labels and links them —
   # the status page carries the IUCN definition and the Wikidata link.
   #
@@ -263,7 +263,7 @@
 
 <p>{{ tHTML "page.environment.ghgLandUse" "One part of the model deserves attention: <strong>land use is reported separately and excluded from the headline total</strong>, as is international aviation. Forest land in particular is usually a net <em>sink</em> — a negative number — because growing trees absorb more carbon than felling releases. Folding it into the national figure would understate emissions; keeping it out is the convention, and the cube marks it explicitly rather than leaving you to guess." }}</p>
 
-<sparql-async id="envGreenhouseGases" class="d-none">
+<sparql-async id="envGreenhouseGases">
   # ?sector stays an IRI so the backend resolves the sector name and links it.
   #
   # Three traps in this cube:

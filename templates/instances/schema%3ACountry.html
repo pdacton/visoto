@@ -3,23 +3,23 @@
 {{ define "breadcrumb" }}
 {{ end}}
 
-<sparql-query id="title" class="d-none">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageClasses" class="d-none">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
 {{ define "pageIcon" }}
-  <sparql-query id="pageIcon" class="d-none">
+  <sparql-query id="pageIcon">
     PREFIX wdt: &lt;http://www.wikidata.org/prop/direct/&gt;
     SELECT ?flagURL WHERE {
       ?? schema:sameAs ?wikidataEntity .
@@ -52,7 +52,7 @@
 
     <!-- Attributes -->
     <div class="col-lg mt-3">
-      <sparql-query id="attributes" class="d-none">
+      <sparql-query id="attributes">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
           ?s ?property ?value .
@@ -72,7 +72,7 @@
 
     <!-- Cantons -->
     <div class="col-lg mt-3">
-      <sparql-query id="cantons" class="d-none">
+      <sparql-query id="cantons">
         SELECT ?type ?canton ?identifier WHERE {
           ?? schema:containsPlace ?canton .
           ?canton a ?type . FILTER (?type = schch:Canton)

@@ -14,28 +14,28 @@
 
 <!-- Metric strip: one bounded COUNT per headline figure. LINDAS counts drift between
      reloads, so no figure here is repeated as a hard number in the prose. -->
-<sparql-async id="agriMarketObservations" class="d-none">
+<sparql-async id="agriMarketObservations">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foag/agricultural-market-data&gt; {
       ?obs a cube:Observation .
     }
   }
 </sparql-async>
-<sparql-async id="agriProducts" class="d-none">
+<sparql-async id="agriProducts">
   SELECT (COUNT(?p) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/foag/agricultural-market-data&gt; {
       ?p a &lt;https://agriculture.ld.admin.ch/foag/Product&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="agriPlantProtectionProducts" class="d-none">
+<sparql-async id="agriPlantProtectionProducts">
   SELECT (COUNT(?p) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fsvo/plant-protection-products&gt; {
       ?p a &lt;https://agriculture.ld.admin.ch/plant-protection/Product&gt; .
     }
   }
 </sparql-async>
-<sparql-async id="agriDiseaseCases" class="d-none">
+<sparql-async id="agriDiseaseCases">
   SELECT (COUNT(?obs) AS ?count) WHERE {
     GRAPH &lt;https://lindas.admin.ch/fsvo/animaldisease&gt; {
       ?obs a cube:Observation .
@@ -119,7 +119,7 @@
 
 <p>{{ tHTML "page.agriculture.groupStageIntro" "Crossing the product groups with those stages shows where the office concentrates its effort. Fruit and vegetables dominate, and they are measured overwhelmingly at the consumption end — a weekly shelf-price survey across a hundred-odd items. Milk is the mirror image: most of its rows sit at production, because the farm-gate milk price is a politically watched figure in its own right." }}</p>
 
-<sparql-async id="agriGroupByStage" class="d-none">
+<sparql-async id="agriGroupByStage">
   # ?group and ?stage stay IRIs on purpose: the backend resolves each to a label in
   # the visitor's language and the table renders them as links to the resource page.
   #
@@ -161,7 +161,7 @@
 
 <p>{{ tHTML "page.agriculture.milkSegments" "The Swiss rows are split by <strong>segment</strong> — A for milk sold into protected domestic markets, B for exposed export products, C for the residual sold at world prices. The three trade at genuinely different levels, and the gap between them is the point of the segmentation." }}</p>
 
-<sparql-async id="agriMilkPrices" class="d-none">
+<sparql-async id="agriMilkPrices">
   # ?product stays an IRI so the backend resolves and links each series.
   #
   # The date dimension is an IRI (…/time/month/2025-08), NOT a literal — so the month
@@ -196,7 +196,7 @@
 
 <p>{{ tHTML "page.agriculture.eggsIntro" "Eggs make the clearest case for the <strong>production system</strong> dimension. The same size of egg is priced separately for organic, free-range and barn husbandry, and the spread between them is large and stable — roughly double from the cheapest system to organic. Because husbandry is a coded dimension rather than part of the product name, the premium is a subtraction rather than a manual comparison of two labels." }}</p>
 
-<sparql-async id="agriEggPrices" class="d-none">
+<sparql-async id="agriEggPrices">
   # Same date-IRI parsing as the milk cube. Producer prices only: this is what the
   # farm receives, not the shelf price — the Consumption cube holds that separately.
   SELECT ?month ?product ?price ?observation WHERE {
@@ -229,7 +229,7 @@
 
 <p>{{ tHTML "page.agriculture.plantProtectionStructure" "The structure repays a moment's attention. A product carries <strong>indications</strong> — thousands of them — and each indication is a specific triple of crop, pest and dose, which is why the register holds several times more indications than products. Withdrawn products are not deleted but given a <code>soldOutDeadline</code> and an <code>exhaustionDeadline</code>: the dates by which stock must leave the shelves and by which remaining stock must be used up. That makes the register a record of the phase-out as well as the permission." }}</p>
 
-<sparql-async id="agriPesticideTypes" class="d-none">
+<sparql-async id="agriPesticideTypes">
   # ?type stays an IRI so the backend resolves and links each product category.
   # ?companies counts the distinct permission holders per category — a rough measure
   # of how competitive that corner of the market is.
@@ -268,7 +268,7 @@
 
 <p>{{ tHTML "page.agriculture.bluetongueStory" "Query it by disease and the recent history of Swiss livestock falls out of the data. The <strong>bluetongue</strong> epidemic that began in August 2024 dominates everything else by an order of magnitude and reached essentially every canton; <strong>foot rot</strong> follows, reflecting the national eradication programme that obliges holdings to report it. Further down sit the endemic background diseases that tick over at a few dozen cases a year." }}</p>
 
-<sparql-async id="agriDiseaseByEpidemic" class="d-none">
+<sparql-async id="agriDiseaseByEpidemic">
   # ?epidemic stays an IRI so the backend resolves the disease name and links it.
   #
   # diagnosis-date is typed xsd:date, NOT a plain string — a bare "2024-01-01" in the

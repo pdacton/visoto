@@ -13,10 +13,10 @@
 <p class="text-secondary">{{ t "page.facets.becauseTheClassIsLarge" "Because the class is large, the initial (unfiltered) view is capped for responsiveness — open a column's filter to narrow it." }}</p>
 
 <!-- Base class-instance query. ?? is the class IRI, substituted per request.
-     Every facet var below MUST be SELECTed as a column here — a header-attached
-     facet hangs off the column it filters, so ?legalForm is fetched even though a
+     Every var declared below MUST be SELECTed as a column here — a declaration hangs
+     off the header of the column it describes, so ?legalForm is fetched even though a
      path (schema:additionalType) produces its value. -->
-<sparql-async id="zefixFacets" class="d-none">
+<sparql-async id="zefixFacets">
   SELECT ?org ?name ?legalForm ?postalCode WHERE {
     ?org a ?? .
     OPTIONAL { ?org schema:name ?name }

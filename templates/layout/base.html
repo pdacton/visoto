@@ -127,7 +127,7 @@
                  twice, once with a graph and once without. ?graph stays unbound there,
                  so the column renders empty for genuine default-graph triples. -->
             <div id="resource-data-view" class="d-none">
-              <sparql-async id="resourceTriples" class="d-none">
+              <sparql-async id="resourceTriples">
                 SELECT ?kind ?property ?value ?type ?datatype ?language ?graph WHERE {
                   { GRAPH ?graph { ?? ?property ?value . } FILTER(isLiteral(?value)) BIND("property" AS ?kind)
                     BIND(datatype(?value) AS ?datatype)

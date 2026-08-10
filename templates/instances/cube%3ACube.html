@@ -3,7 +3,7 @@
 
 {{ template "pageHeader" . }}
 
-<sparql-query id="title" class="d-none">
+<sparql-query id="title">
   SELECT ?title WHERE {
     ?? schema:name ?title .
     FILTER(lang(?title) = visoto:dispLang || lang(?title) = "")
@@ -12,7 +12,7 @@
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
-<sparql-query id="pageSubtitle" class="d-none">
+<sparql-query id="pageSubtitle">
   SELECT ?description WHERE {
     ?? visoto:description ?description .
   } LIMIT 1
@@ -21,7 +21,7 @@
 
 <!-- Version check: expiry date of THIS cube plus the newest non-expired sibling
      (LINDAS convention: versions are numeric IRI tail segments, .../cube/N). -->
-<sparql-query id="cubeVersionCheck" class="d-none">
+<sparql-query id="cubeVersionCheck">
   SELECT ?expires ?newest ?newestVersion WHERE {
     OPTIONAL { ?? schema:expires ?expires }
     OPTIONAL {
@@ -37,7 +37,7 @@
 </sparql-query>
 
 <!-- Marker IRIs announcing which applications carry this cube. -->
-<sparql-query id="cubeApps" class="d-none">
+<sparql-query id="cubeApps">
   SELECT ?app WHERE {
     ?? schema:workExample ?app .
     FILTER(isIRI(?app))
@@ -81,19 +81,19 @@
   {{ end }}
 
   <!-- Headline figures for this cube -->
-  <sparql-async id="cubeObservationCount" class="d-none">
+  <sparql-async id="cubeObservationCount">
     SELECT (COUNT(?obs) AS ?count) WHERE {
       ?? cube:observationSet/cube:observation ?obs .
     }
   </sparql-async>
-  <sparql-async id="cubeDimensionCount" class="d-none">
+  <sparql-async id="cubeDimensionCount">
     SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
       ?? cube:observationConstraint/sh:property/sh:path ?dim .
       FILTER(?dim != rdf:type)
       FILTER(?dim != cube:observedBy)
     }
   </sparql-async>
-  <sparql-async id="cubeVersionMetric" class="d-none">
+  <sparql-async id="cubeVersionMetric">
     SELECT (COALESCE(SAMPLE(?v), "&ndash;") AS ?count) WHERE {
       OPTIONAL { ?? schema:version ?v }
     }
@@ -122,7 +122,7 @@
   <div class="row" id="dimensions">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-async id="cubeDimensions" class="d-none">
+        <sparql-async id="cubeDimensions">
           SELECT ?dimension ?name ?scaleType ?dataKind ?datatype ?values WHERE {
             { SELECT ?dim (SAMPLE(?n) AS ?name) (SAMPLE(?sc) AS ?scaleType)
                      (SAMPLE(?dk) AS ?dataKind) (SAMPLE(?dt) AS ?datatype)
@@ -159,7 +159,7 @@
   <div class="row" id="versions">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-async id="cubeVersions" class="d-none">
+        <sparql-async id="cubeVersions">
           SELECT ?cube ?version ?status ?modified ?expires WHERE {
             BIND(REPLACE(STR(??), "/[0-9]+$", "/") AS ?base)
             ?cube a cube:Cube .
