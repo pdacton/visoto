@@ -11,7 +11,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"hutzli.org/visoto/internal/facet"
-	"hutzli.org/visoto/internal/parser"
 	"hutzli.org/visoto/internal/sparql"
 )
 
@@ -22,44 +21,6 @@ import (
 // is a v2 follow-up; the current working-set loader rebuilds from the unfiltered
 // declared query and would ignore facet constraints.)
 const facetedResultCap = defaultMaxWorkingSet
-
-// findFacetSpecs collects the <sparql-facet for=baseID> declarations across the
-// async template directories, in document order. Mirrors findAsyncQuery.
-//
-// NOTE: "for" is a GLOBAL id namespace — specs are matched across every async
-// template dir, not just the page being rendered. Two pages that reuse one base
-// query id would therefore silently merge each other's facets. Keep base query
-// ids unique across templates.
-//
-// The scan is memoized (see templateScanCache) because both this and
-// collectConstraints call it per request on a cacheable hot path.
-func findFacetSpecs(baseID string) []facet.FacetSpec {
-	var specs []facet.FacetSpec
-	for _, el := range scanTemplateElements(parser.ExtractFacetElements, "facet") {
-		if el.Attributes["for"] != baseID {
-			continue
-		}
-		specs = append(specs, facet.FacetSpec{
-			Var:     strings.TrimPrefix(el.Attributes["var"], "?"),
-			Root:    el.Attributes["root"],
-			Path:    el.Attributes["path"],
-			Type:    el.Attributes["type"],
-			Control: el.Attributes["control"],
-			Label:   el.Attributes["label"],
-		})
-	}
-	return specs
-}
-
-// findFacetSpec returns the single facet declared as (baseID, varName), if any.
-func findFacetSpec(baseID, varName string) (facet.FacetSpec, bool) {
-	for _, s := range findFacetSpecs(baseID) {
-		if s.Var == varName {
-			return s, true
-		}
-	}
-	return facet.FacetSpec{}, false
-}
 
 // ---- Phase A: facet value enumeration ----
 
@@ -93,12 +54,13 @@ func facetValuesHandler(c *gin.Context) {
 	varName := strings.TrimPrefix(c.Param("var"), "?")
 	dataLang := queryLang(c)
 
-	declared, found := findAsyncQuery(id)
+	src := c.Query("src")
+	declared, found := findAsyncQuery(src, id)
 	if !found {
 		c.JSON(http.StatusNotFound, gin.H{"values": []facetValue{}})
 		return
 	}
-	spec, ok := findFacetSpec(id, varName)
+	spec, ok := findFacetSpec(src, id, varName)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"values": []facetValue{}})
 		return
@@ -235,7 +197,8 @@ func facetedTableHandler(c *gin.Context) {
 	// the JSON envelope to an HTML caller. Set before any return path.
 	c.Header("Vary", "Accept")
 
-	declared, found := findAsyncQuery(id)
+	src := c.Query("src")
+	declared, found := findAsyncQuery(src, id)
 	if !found {
 		c.String(http.StatusNotFound, "unknown async query id")
 		return
@@ -257,7 +220,7 @@ func facetedTableHandler(c *gin.Context) {
 	}
 
 	keyVar := sparql.DeriveKeyVar(declared)
-	constraints, hasText := collectConstraints(c, id)
+	constraints, hasText := collectConstraints(c, src, id)
 
 	faceted, err := facet.BuildFacetedQuery(fullQuery, keyVar, constraints, facet.Default())
 	params := map[string]any{
@@ -355,8 +318,8 @@ func writeFacetedEnvelope(c *gin.Context, result sparql.QueryResult, total int, 
 // f.<var> value (from the checkbox list), while range/text carry it out-of-band as
 // f.<var>.novalue=1 so their positional Values stay clean. Returns the constraints
 // with at least one active selection, and whether any active facet is free-text.
-func collectConstraints(c *gin.Context, id string) (constraints []facet.FacetConstraint, hasText bool) {
-	for _, spec := range findFacetSpecs(id) {
+func collectConstraints(c *gin.Context, src, id string) (constraints []facet.FacetConstraint, hasText bool) {
+	for _, spec := range findFacetSpecs(src, id) {
 		key := "f." + spec.Var
 		var values []string
 		noValue := false

@@ -66,10 +66,11 @@
   NOTE: <sparql-facet> is a custom (non-void) element — always give it an explicit
   closing </sparql-facet>, or the browser will nest everything after it inside it.
 
-  NOTE: the base query id (and hence for="...") is a GLOBAL namespace. The backend
-  matches <sparql-facet for="X"> across ALL async template directories, not just the
-  page being rendered, so two pages that reuse one base query id would silently
-  merge each other's facets. Keep <sparql-async> ids unique across templates.
+  NOTE: the base query id (and hence for="...") is scoped to the TEMPLATE SET — this
+  page plus the layouts, partials and components it is parsed with. Two pages may
+  reuse an id without interfering; within one set it must be unique, and a for="X"
+  naming no <sparql-async> in the same set fails at startup. See "Async query scope"
+  in docs/templating.md.
 
   Faceted usage:
     <sparql-async id="taxa" class="d-none">

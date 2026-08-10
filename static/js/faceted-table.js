@@ -51,6 +51,15 @@
     return code === null ? '' : 'lang=' + encodeURIComponent(code);
   }
 
+  // The template set the base query id is scoped to. Read live from the page
+  // rather than from the fragment config: unlike the endpoint and the language,
+  // it describes the page these fetches are running on, not how this fragment
+  // was rendered, and it is always present on a rendered page.
+  function srcParam() {
+    var set = (typeof activeTemplateSet === 'function') ? activeTemplateSet() : '';
+    return set ? 'src=' + encodeURIComponent(set) : '';
+  }
+
   // Join non-empty query-param pairs into a query string.
   function joinParams(parts) {
     return parts.filter(function (p) { return !!p; }).join('&');
@@ -241,7 +250,7 @@
 
     menu.dataset.loaded = 'loading';
     var url = '/api/facet-values/' + encodeURIComponent(ctx.id) + '/' + encodeURIComponent(name) +
-      '?' + joinParams(['iri=' + encodeURIComponent(ctx.iri || ''), endpointParam(), langParam()]);
+      '?' + joinParams(['iri=' + encodeURIComponent(ctx.iri || ''), endpointParam(), langParam(), srcParam()]);
     fetch(url, fetchOptions({ headers: { 'Accept': 'application/json' } }))
       .then(function (r) { return r.json(); })
       .then(function (data) {
@@ -431,6 +440,7 @@
     });
     parts.push(endpointParam());
     parts.push(langParam());
+    parts.push(srcParam());
     return '/api/faceted-table/' + encodeURIComponent(id) + '?' + joinParams(parts);
   }
 

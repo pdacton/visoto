@@ -28,7 +28,15 @@ var funcMap = template.FuncMap{
 	"groupByValue":    groupByValue,
 	"safeURL":         safeURL,
 	"currentYear":     currentYear,
+	"templateSet":     defaultTemplateSet,
 }
+
+// defaultTemplateSet is the parse-time placeholder for {{ templateSet }}. Load
+// overrides it per set with that set's registered name (see Load); the standalone
+// partial sets in render_partial.go, which belong to no set, keep this empty
+// default. Registering it here is what lets html/template type-check the call at
+// parse time even though the real implementation is bound afterwards.
+func defaultTemplateSet() string { return "" }
 
 // currentYear returns the current year, so the footer's copyright notice does
 // not go stale.

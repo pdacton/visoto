@@ -24,6 +24,14 @@
 (function () {
   'use strict';
 
+  // The template set the query id is scoped to (see static/js/template-set.js).
+  // Guarded like faceted-table.js's endpoint/lang readers: this file's <script>
+  // sits inside the rendered card, above the shared scripts at the end of
+  // <body>, so the reader is not guaranteed to be defined while it parses.
+  function templateSetName() {
+    return (typeof activeTemplateSet === 'function') ? activeTemplateSet() : '';
+  }
+
   function initSparqlTable(root) {
     var CFG;
     try {
@@ -386,10 +394,14 @@
     // htmx:configRequest hook, and the fragment is cached keyed by its own
     // ?endpoint=&lang=, so reusing the same values keeps the data requests
     // cache-keyed identically.
+    // src is the exception: it names the template set the query id is scoped to,
+    // which is a property of the page rather than of this fragment, so it is read
+    // live instead of being carried in the config.
     var wsBaseUrl = "/api/async-table-data/" + encodeURIComponent(ID) +
       "?iri=" + encodeURIComponent(CFG.iri || "") +
       "&keyVar=" + encodeURIComponent(CFG.keyVar || "") +
-      "&max=" + encodeURIComponent(CFG.max || "");
+      "&max=" + encodeURIComponent(CFG.max || "") +
+      "&src=" + encodeURIComponent(templateSetName());
     if (CFG.searchProp) wsBaseUrl += "&searchProp=" + encodeURIComponent(CFG.searchProp);
     if (CFG.endpointSlug) wsBaseUrl += "&endpoint=" + encodeURIComponent(CFG.endpointSlug);
     // Explicit null/undefined test, not truthiness: "" is the real "no language"

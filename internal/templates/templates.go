@@ -31,7 +31,10 @@ func Name(code, templateName string) string {
 	return lang.Key(code) + ":" + templateName
 }
 
-var templateIncludeRe = regexp.MustCompile(`{{\s*template\s+"([^"]+)"`)
+var (
+	templateIncludeRe = regexp.MustCompile(`{{-?\s*template\s+"([^"]+)"`)
+	templateDefineRe  = regexp.MustCompile(`{{-?\s*(?:define|block)\s+"([^"]+)"`)
+)
 
 // referencedComponents returns the subset of componentFiles that are referenced
 // by {{ template "name" }} in the given page file.
@@ -59,6 +62,155 @@ func referencedComponents(pageFile string, componentFiles []string) []string {
 	return result
 }
 
+// templateGroups holds the template files of each directory, the raw material
+// every template set is assembled from.
+type templateGroups struct {
+	layouts    []string
+	partials   []string
+	components []string
+	pages      []string
+	classes    []string
+	instances  []string
+}
+
+// globGroups collects the template files by directory. An absent directory
+// yields an empty group rather than an error — only a malformed pattern fails,
+// which cannot happen with the fixed patterns below but is checked anyway.
+func globGroups(templatesDir string) (templateGroups, error) {
+	var g templateGroups
+	for _, spec := range []struct {
+		dir string
+		out *[]string
+	}{
+		{"layout", &g.layouts},
+		{"partials", &g.partials},
+		{"components", &g.components},
+		{"pages", &g.pages},
+		{"classes", &g.classes},
+		{"instances", &g.instances},
+	} {
+		files, err := filepath.Glob(filepath.Join(templatesDir, spec.dir, "*.html"))
+		if err != nil {
+			return templateGroups{}, fmt.Errorf("glob %s: %w", spec.dir, err)
+		}
+		*spec.out = files
+	}
+	return g, nil
+}
+
+// entries returns the page-like templates — the ones that get a set each.
+func (g templateGroups) entries() []string {
+	all := make([]string, 0, len(g.pages)+len(g.classes)+len(g.instances))
+	all = append(all, g.pages...)
+	all = append(all, g.classes...)
+	all = append(all, g.instances...)
+	return all
+}
+
+// files returns the parse-order file list of the set entered through page.
+func (g templateGroups) files(page string) []string {
+	// A fresh slice per set: appending onto the shared layouts backing array
+	// would overwrite the previous set's entries whenever len < cap.
+	files := make([]string, 0, len(g.layouts)+len(g.partials)+len(g.components)+1)
+	files = append(files, g.layouts...)
+	files = append(files, g.partials...)
+	files = append(files, referencedComponents(page, g.components)...)
+	return append(files, page)
+}
+
+// setFiles maps every set name to its parse-order file list.
+func (g templateGroups) setFiles() map[string][]string {
+	sets := make(map[string][]string, len(g.pages)+len(g.classes)+len(g.instances))
+	for _, page := range g.entries() {
+		sets[SetName(page)] = g.files(page)
+	}
+	return sets
+}
+
+// SetName returns the name a page-like template's set is registered under.
+// Directory and filename, so classes/ and instances/ variants of the same type
+// do not collide.
+func SetName(page string) string {
+	return filepath.Join(filepath.Base(filepath.Dir(page)), filepath.Base(page))
+}
+
+// SetFiles maps each template set's name to the files it is parsed from, in
+// parse order: every layout and partial, the components the page references,
+// and the page itself.
+//
+// This is the single authoritative answer to "which files are in scope for this
+// page". Load parses each list into a template set, and the async query index in
+// cmd/visoto extracts <sparql-async> and <sparql-facet> declarations from the very
+// same list — so an async query is reachable from exactly the pages whose markup
+// could reference it, and the two namespaces cannot drift apart. Anything that
+// needs this grouping must call here rather than deriving it again.
+func SetFiles(templatesDir string) (map[string][]string, error) {
+	g, err := globGroups(templatesDir)
+	if err != nil {
+		return nil, err
+	}
+	return g.setFiles(), nil
+}
+
+// ValidateIncludes reports the first {{ template "name" }} in sets that names a
+// template its own set does not parse. Such an include is legal Go template
+// syntax and survives parsing — it only fails when the page is executed, as a
+// 500 on whichever route happens to render it first.
+//
+// The check exists because referencedComponents is deliberately shallow: it
+// scans the page file alone, so a component that included another component
+// would leave that second component out of the set. Nothing does this today, and
+// this is what keeps it that way.
+//
+// It takes the mapping rather than a directory so the caller can validate the
+// exact grouping it is about to use (see SetFiles).
+func ValidateIncludes(sets map[string][]string) error {
+	type fileRefs struct{ defines, includes []string }
+
+	// One read per file, not one per (file, set): every layout and partial
+	// appears in all 73 sets.
+	seen := make(map[string]fileRefs)
+	names := func(re *regexp.Regexp, data []byte) []string {
+		var out []string
+		for _, m := range re.FindAllSubmatch(data, -1) {
+			out = append(out, string(m[1]))
+		}
+		return out
+	}
+	for _, files := range sets {
+		for _, path := range files {
+			if _, done := seen[path]; done {
+				continue
+			}
+			data, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("read %s: %w", path, err)
+			}
+			seen[path] = fileRefs{defines: names(templateDefineRe, data), includes: names(templateIncludeRe, data)}
+		}
+	}
+
+	for set, files := range sets {
+		defined := make(map[string]bool, len(files)*2)
+		for _, path := range files {
+			// ParseFiles registers every file under its base name — that is how
+			// base.html reaches {{ template "topbar.html" }}.
+			defined[filepath.Base(path)] = true
+			for _, name := range seen[path].defines {
+				defined[name] = true
+			}
+		}
+		for _, path := range files {
+			for _, name := range seen[path].includes {
+				if !defined[name] {
+					return fmt.Errorf("%s: {{ template %q }} is not defined in template set %s", path, name, set)
+				}
+			}
+		}
+	}
+	return nil
+}
+
 // Load loads Go HTML templates from templates/layout and templates/pages.
 // Creates a multitemplate renderer where each page is combined with all layouts.
 // This allows reusing layout templates with multiple page definitions.
@@ -74,38 +226,7 @@ func Load(templatesDir string, cats *i18n.Catalogs, langs *lang.Set) multitempla
 		codes = []string{i18n.BaseCode}
 	}
 
-	// Compile list of layout templates
-	layouts, err := filepath.Glob(templatesDir + "/layout/*.html")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// Compile list of partial templates
-	partials, err := filepath.Glob(templatesDir + "/partials/*.html")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// Compile list of component templates (optional — no panic if directory is absent)
-	components, err := filepath.Glob(templatesDir + "/components/*.html")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// Compile list of page templates
-	pages, err := filepath.Glob(templatesDir + "/pages/*.html")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// Compile list of class templates
-	classes, err := filepath.Glob(templatesDir + "/classes/*.html")
-	if err != nil {
-		panic(err.Error())
-	}
-
-	// Compile list of instance templates
-	instances, err := filepath.Glob(templatesDir + "/instances/*.html")
+	g, err := globGroups(templatesDir)
 	if err != nil {
 		panic(err.Error())
 	}
@@ -115,34 +236,31 @@ func Load(templatesDir string, cats *i18n.Catalogs, langs *lang.Set) multitempla
 		name  string
 		files []string
 	}{
-		{"layouts", layouts},
-		{"partials", partials},
-		{"pages", pages},
+		{"layouts", g.layouts},
+		{"partials", g.partials},
+		{"pages", g.pages},
 	} {
 		if len(group.files) == 0 {
 			log.Warn("no templates found", slog.String("group", group.name), slog.String("dir", templatesDir))
 		}
 	}
 
-	// Combine all template lists
-	allTemplates := append(pages, classes...)
-	allTemplates = append(allTemplates, instances...)
-
 	// Generate templates map: one template set for each page × language.
 	// Each page gets combined with all layouts and partials.
-	for _, page := range allTemplates {
-		// layoutCopy prevents the append below from overwriting the shared backing
-		// array on subsequent iterations when len < cap.
-		layoutCopy := make([]string, len(layouts))
-		copy(layoutCopy, layouts)
-		files := append(append(append(layoutCopy, partials...), referencedComponents(page, components)...), page)
-		// Use directory/filename as template name to avoid collisions between classes/ and instances/
-		templateName := filepath.Join(filepath.Base(filepath.Dir(page)), filepath.Base(page))
+	for _, page := range g.entries() {
+		templateName := SetName(page)
 
-		base, err := parseSet(files)
+		base, err := parseSet(g.files(page))
 		if err != nil {
 			panic("parse template set " + templateName + ": " + err.Error())
 		}
+
+		// Bound per set rather than per language: the set name is what the async
+		// query index keys on, and it is the same across a set's language variants.
+		// Overriding after parse works because html/template resolves functions at
+		// execute time, and Clone carries the func map into every variant — so the
+		// value cannot be wrong, it is fixed when the set is registered.
+		base = base.Funcs(template.FuncMap{"templateSet": func() string { return templateName }})
 
 		for _, code := range codes {
 			variant, err := base.Clone()
@@ -154,11 +272,11 @@ func Load(templatesDir string, cats *i18n.Catalogs, langs *lang.Set) multitempla
 	}
 
 	log.Debug("templates loaded",
-		slog.Int("layouts", len(layouts)),
-		slog.Int("partials", len(partials)),
-		slog.Int("pages", len(pages)),
-		slog.Int("classes", len(classes)),
-		slog.Int("instances", len(instances)),
+		slog.Int("layouts", len(g.layouts)),
+		slog.Int("partials", len(g.partials)),
+		slog.Int("pages", len(g.pages)),
+		slog.Int("classes", len(g.classes)),
+		slog.Int("instances", len(g.instances)),
 		slog.Int("languages", len(codes)))
 
 	return r

@@ -39,6 +39,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="visoto - a visual SPARQL browser" />
 
+    <!-- The template set this page was rendered from ("pages/plazi.html",
+         "classes/cube%3ACube.html"). It is the scope in which an async query id
+         is resolved: every /api fragment request sends it back as ?src=, so the
+         server knows which template's <sparql-async id="…"> was meant. Bound per
+         set at parse time (see templates.Load), so it cannot disagree with the
+         markup around it. Read by static/js/template-set.js. -->
+    <meta name="vs-template-set" content="{{ templateSet }}">
+
     <!-- block crawlers because this is a development instance and the graph can be big (crawling creates CPU load)-->
     <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
 
@@ -219,6 +227,11 @@
 
     <!-- UI language switcher -->
     <script src="/static/js/language-switcher.js"></script>
+
+    <!-- Template set (?src=) on async fragment requests — the scope an async
+         query id is resolved in. Third of the three htmx:configRequest hooks,
+         beside the endpoint and language ones above. -->
+    <script src="/static/js/template-set.js"></script>
 
     <!-- Upload data modal -->
     <script src="/static/js/upload.js"></script>

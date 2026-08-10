@@ -43,7 +43,7 @@ func asyncTableDataHandler(c *gin.Context) {
 	id := c.Param("id")
 	dataLang := queryLang(c)
 
-	declared, found := findAsyncQuery(id)
+	declared, found := findAsyncQuery(c.Query("src"), id)
 	if !found {
 		c.JSON(http.StatusNotFound, gin.H{"data": []any{}, "total": 0, "complete": true})
 		return

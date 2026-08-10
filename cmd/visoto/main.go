@@ -472,38 +472,13 @@ func searchHandler(c *gin.Context) {
 	}))
 }
 
-// asyncQueryDirs are the template directories scanned for <sparql-async id=...>
-// declarations. Pages host metric queries; layouts host the resource Data view;
-// instances/classes host per-type resource tables; components are included for
-// forward-looking async consumers.
-var asyncQueryDirs = []string{
-	"templates/pages",
-	"templates/layout",
-	"templates/instances",
-	"templates/classes",
-	"templates/components",
-}
-
-// findAsyncQuery locates the query text of a <sparql-async id=id> element across
-// all async template directories. Shared by metricHandler and asyncTableHandler.
-// The underlying scan is memoized and invalidated on template file changes (see
-// scanTemplateElements), since this runs on every async request.
-func findAsyncQuery(id string) (string, bool) {
-	for _, el := range scanTemplateElements(parser.ExtractAsyncElements, "async") {
-		if el.ID == id {
-			return el.Content, true
-		}
-	}
-	return "", false
-}
-
 // metricHandler serves /api/metric/:id — called by HTMX to lazily load metric counts on the home page.
 // It reads the sparql-async element with the matching id, executes its query, and returns the count.
 func metricHandler(c *gin.Context) {
 	id := c.Param("id")
 	dataLang := queryLang(c)
 
-	query, found := findAsyncQuery(id)
+	query, found := findAsyncQuery(c.Query("src"), id)
 	if !found {
 		c.String(http.StatusNotFound, "0")
 		return
@@ -586,7 +561,7 @@ func asyncTableHandler(c *gin.Context) {
 	id := c.Param("id")
 	dataLang := queryLang(c)
 
-	query, found := findAsyncQuery(id)
+	query, found := findAsyncQuery(c.Query("src"), id)
 	if !found {
 		c.String(http.StatusNotFound, "unknown async query id")
 		return
@@ -807,6 +782,15 @@ func main() {
 	}
 	if err := templates.InitPartials(catalogs, siteLangs); err != nil {
 		log.Error("failed to initialize partial templates", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	// Index the templates' <sparql-async>/<sparql-facet> declarations per template
+	// set, so /api fragment handlers can resolve an id against the ?src= set that
+	// asked for it. Fails startup on a duplicate id or a facet with no base query,
+	// which the old global scan resolved silently by directory order.
+	if err := initAsyncIndex("./templates"); err != nil {
+		log.Error("failed to index async template queries", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 

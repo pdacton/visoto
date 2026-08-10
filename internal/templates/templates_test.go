@@ -194,6 +194,92 @@ func TestRenderRealPagePerLanguage(t *testing.T) {
 	}
 }
 
+// TestSetFilesMatchesLoad is the load-bearing test for the async query index:
+// it resolves ids against the sets SetFiles describes, while pages are rendered
+// from the sets Load registers, and {{ templateSet }} is the name that ties a
+// request to a set. If the two ever describe different sets, every async request
+// on the affected page 404s.
+func TestSetFilesMatchesLoad(t *testing.T) {
+	const templatesDir = "../../templates"
+
+	sets, err := SetFiles(templatesDir)
+	if err != nil {
+		t.Fatalf("SetFiles() error = %v", err)
+	}
+	if len(sets) == 0 {
+		t.Fatal("SetFiles() returned no sets")
+	}
+
+	r := Load(templatesDir, loadTestCatalogs(t), testLangs())
+	for name := range sets {
+		for _, code := range testCodes {
+			if inst := r.Instance(Name(code, name), nil); inst == nil {
+				t.Errorf("SetFiles reports set %q, but Load registered no template for language %q", name, code)
+			}
+		}
+	}
+
+	// Every set must contain base.html: it is the entry template Execute runs,
+	// and the async index relies on layout-declared queries being reachable from
+	// every page.
+	for name, files := range sets {
+		var hasBase bool
+		for _, f := range files {
+			if filepath.Base(f) == "base.html" {
+				hasBase = true
+				break
+			}
+		}
+		if !hasBase {
+			t.Errorf("set %q does not include layout/base.html", name)
+		}
+	}
+}
+
+// TestTemplateSetIsBoundPerSet proves {{ templateSet }} reports the set it was
+// rendered from rather than funcMap's empty placeholder — the value the frontend
+// sends back as ?src=. A regression here silently 404s every async request.
+func TestTemplateSetIsBoundPerSet(t *testing.T) {
+	const templatesDir = "../../templates"
+	r := Load(templatesDir, loadTestCatalogs(t), testLangs())
+
+	for _, name := range []string{"pages/home.html", "pages/plazi.html"} {
+		inst := r.Instance(Name("en", name), parser.TemplateData{})
+		if inst == nil {
+			t.Fatalf("no instance for %q", name)
+		}
+		rec := httptest.NewRecorder()
+		if err := inst.Render(rec); err != nil {
+			t.Fatalf("render %q: %v", name, err)
+		}
+		want := `<meta name="vs-template-set" content="` + name + `">`
+		if !strings.Contains(rec.Body.String(), want) {
+			t.Errorf("%s does not contain %s", name, want)
+		}
+	}
+}
+
+// TestValidateIncludes checks the guard itself, both directions: the shipped
+// templates pass, and a set missing the file it includes is reported.
+func TestValidateIncludes(t *testing.T) {
+	sets, err := SetFiles("../../templates")
+	if err != nil {
+		t.Fatalf("SetFiles() error = %v", err)
+	}
+	if err := ValidateIncludes(sets); err != nil {
+		t.Errorf("ValidateIncludes() on the shipped templates: %v", err)
+	}
+
+	dir := t.TempDir()
+	page := filepath.Join(dir, "page.html")
+	if err := os.WriteFile(page, []byte(`{{ template "missingPartial" . }}`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateIncludes(map[string][]string{"pages/page.html": {page}}); err == nil {
+		t.Error("ValidateIncludes() accepted an include no file in the set defines")
+	}
+}
+
 func TestName(t *testing.T) {
 	if got := Name("de", "pages/home.html"); got != "de:pages/home.html" {
 		t.Errorf("Name(de) = %q", got)

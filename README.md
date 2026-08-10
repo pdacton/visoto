@@ -166,6 +166,11 @@ static/            — CSS, JS, images
 | `GET` | `/api/async-table-data/:id` | Working-set table rows (JSON) |
 | `GET` | `/api/faceted-table/:id` | Faceted table — fragment or JSON, content-negotiated |
 | `GET` | `/api/facet-values/:id/:var` | Distinct values and counts for one facet (JSON) |
+
+The five async routes above all require `?src=<template set>` (e.g.
+`src=pages/plazi.html`): `:id` names a `<sparql-async>` declaration, and those are
+scoped to the template set that declares them, not global. The frontend attaches it
+automatically — see [Async query scope](docs/templating.md#async-query-scope).
 | `POST` | `/api/upload` | Upload RDF from a file or URL into a named graph |
 | `GET` | `/api/named-graphs` | List named graphs (JSON) |
 | `DELETE` | `/api/named-graphs` | Delete a named graph |

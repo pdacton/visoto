@@ -212,6 +212,39 @@ SPARQL queries are embedded in template files using `<sparql-query>` custom elem
 {{ template "sparqlMetric" (dict "queryId" "count" "title" "Instances" "icon" "list") }}
 ```
 
+### Async query scope
+
+A `<sparql-async>` id is **scoped to its template set** — the page (or class/instance)
+template plus the layouts, partials and referenced components it is parsed with, which
+is the same grouping that decides which `{{ define }}` names a template can see. Two
+pages may therefore both declare `id="count"` without interfering; within one set an id
+must be unique.
+
+The set name is the page's directory and filename (`pages/plazi.html`,
+`classes/cube%3ACube.html`). It is available in templates as `{{ templateSet }}`,
+rendered into `<head>` by `base.html`, and every `/api` fragment request sends it back
+as `?src=`. Nothing has to be wired up by hand: HTMX requests pick it up from a
+`htmx:configRequest` hook in `static/js/template-set.js`, and the table's own `fetch()`es
+read it through `activeTemplateSet()`.
+
+Two consequences worth knowing:
+
+- A query declared in a **layout** (`layout/base.html`) belongs to every set, so it is
+  reachable from any page — that is how the resource "Data" view works everywhere.
+- **Renaming a template file changes its set name**, and therefore the URLs of its async
+  requests. Cached fragment responses under the old name become unreachable; purge the
+  cache after such a rename.
+
+The index is built once at startup, so adding, renaming or editing a `<sparql-async>`
+body needs a server restart. Startup fails outright on a duplicate id within a set, on a
+`<sparql-facet for="…">` naming no query in its set, and on a `{{ template "…" }}` the
+set does not parse.
+
+Note that extraction reads the template file as HTML, and a Go template comment
+(`{{/* … */}}`) is *not* an HTML comment. Writing `<sparql-facet for="x" var="y">` inside
+one declares a real facet. Naming the elements without angle brackets in such comments
+avoids it; a bare `<sparql-facet>` with no attributes is recognised as prose and ignored.
+
 ---
 
 ## Available Template Functions
