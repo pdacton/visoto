@@ -46,46 +46,32 @@
          and collapse the five columns into one filter. Each column is already the
          lang-filtered value, which is exactly what should be matched. -->
 
-    <!-- Constant (BIND(?? AS ?type)) — declared as a readout, not a filter:
-         "Canton (26)" states the whole table is one type. -->
-    <sparql-facet for="cantonInstances" var="type"
-                  control="select" type="iri"
-                  label="{{ t "facet.type" "Type" }}" class="d-none"></sparql-facet>
-    <!-- The identity column, but only 26 of them — small enough to enumerate, so
-         select beats the text control used for Municipality's 3297 names. -->
-    <sparql-facet for="cantonInstances" var="canton"
-                  control="select" type="iri"
-                  label="{{ t "facet.canton" "Canton" }}" class="d-none"></sparql-facet>
-    <!-- text, not range: the values are labels that happen to be digits. -->
-    <sparql-facet for="cantonInstances" var="identifier"
-                  control="text" type="string"
-                  label="{{ t "facet.identifier" "Identifier" }}" class="d-none"></sparql-facet>
-    <sparql-facet for="cantonInstances" var="name_de"
-                  control="text" type="string"
-                  label="{{ t "facet.name" "Name" }} (de)" class="d-none"></sparql-facet>
-    <sparql-facet for="cantonInstances" var="name_fr"
-                  control="text" type="string"
-                  label="{{ t "facet.name" "Name" }} (fr)" class="d-none"></sparql-facet>
-    <sparql-facet for="cantonInstances" var="name_it"
-                  control="text" type="string"
-                  label="{{ t "facet.name" "Name" }} (it)" class="d-none"></sparql-facet>
-    <!-- Bound on 1 of 26 rows (only Grischun carries a Romansh name), so this
-         facet's "(no value)" checkbox is the useful half: it isolates the 25
-         cantons that have none. -->
-    <sparql-facet for="cantonInstances" var="name_rm"
-                  control="text" type="string"
-                  label="{{ t "facet.name" "Name" }} (rm)" class="d-none"></sparql-facet>
-    <sparql-facet for="cantonInstances" var="name_en"
-                  control="text" type="string"
-                  label="{{ t "facet.name" "Name" }} (en)" class="d-none"></sparql-facet>
+    <sparql-columns for="cantonInstances">
+      <!-- Constant (BIND(?? AS ?type)) — declared as a readout, not a filter:
+           "Canton (26)" states the whole table is one type. -->
+      <sparql-column var="type" label="{{ t "facet.type" "Type" }}" filter icon></sparql-column>
+      <!-- The identity column, and only 26 of them, so this enumerates as a list
+           where Municipality's 3297 names infer a text search instead. -->
+      <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" filter></sparql-column>
+      <!-- text, NOT the range these digits would otherwise infer: the values are
+           labels that happen to be numeric (see the same call on Municipality). -->
+      <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" filter="text"></sparql-column>
+      <sparql-column var="name_de" label="{{ t "facet.name" "Name" }} (de)" filter></sparql-column>
+      <sparql-column var="name_fr" label="{{ t "facet.name" "Name" }} (fr)" filter></sparql-column>
+      <sparql-column var="name_it" label="{{ t "facet.name" "Name" }} (it)" filter></sparql-column>
+      <!-- Bound on 1 of 26 rows (only Grischun carries a Romansh name), so this
+           filter's "(no value)" checkbox is the useful half: it isolates the 25
+           cantons that have none. One value over one row reads as unique rather
+           than as a vocabulary, so it infers text like its sibling columns. -->
+      <sparql-column var="name_rm" label="{{ t "facet.name" "Name" }} (rm)" filter></sparql-column>
+      <sparql-column var="name_en" label="{{ t "facet.name" "Name" }} (en)" filter></sparql-column>
+    </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict
         "queryId" "cantonInstances"
-        "facetFor" "cantonInstances"
         "iri" .ResourceIRI
         "title" (t "card.cantons" "Cantons")
-        "icon" "circle-dot"
-        "iconVar" "type")
+        "icon" "circle-dot")
     }}
   </div>
 </div>

@@ -1,12 +1,14 @@
 /*
- * Faceted search — shared control builders (pairs with the faceted mode of
- * templates/partials/sparql-async-table.html, enabled via its facetFor param).
+ * Faceted search — shared control builders. Pairs with the <sparql-column>
+ * declarations on the page: a table is faceted exactly when one of its columns
+ * carries a filter, which the server reports back as the fragment's facetFor.
  *
- * Facets are attached to COLUMN HEADERS of the one working-set Tabulator table (see
+ * Filters are attached to COLUMN HEADERS of the one working-set Tabulator table (see
  * templates/partials/sparql-table.html), not a separate panel. This module is the
  * reusable toolkit that table init calls to:
  *
- *   - read the <sparql-facet for="id"> specs from the page DOM (readSpecs)
+ *   - read the <sparql-column> declarations from the page DOM (readColumns) and
+ *     resolve the ones that left their filter kind or type to the data (resolveColumn)
  *   - build one facet control (select checkbox dropdown / range / text), each with a
  *     "(no value)" option that matches members lacking any value on the facet path
  *   - build the header-attached funnel UI for a facetable column (headerFormatter):
@@ -102,21 +104,116 @@
     return init;
   }
 
-  // Collect the <sparql-facet for=id> specs from the page DOM, in document order.
-  function readSpecs(id) {
+  // Collect the <sparql-column> declarations for one base query from the page DOM,
+  // in document order. A column names its query with for=, or inherits it from an
+  // enclosing <sparql-columns for="…"> so a table writes the id once.
+  //
+  // What comes back is the DECLARATION, not the finished column: filter and type may
+  // be empty, meaning "resolve me from the data" — see resolveColumn, which the table
+  // calls once it holds rows.
+  function readColumns(id) {
     var specs = [];
-    document.querySelectorAll('sparql-facet').forEach(function (el) {
-      if (el.getAttribute('for') !== id) return;
+    document.querySelectorAll('sparql-column').forEach(function (el) {
+      var owner = el.getAttribute('for');
+      if (!owner) {
+        var box = el.closest('sparql-columns');
+        owner = box ? box.getAttribute('for') : '';
+      }
+      if (owner !== id) return;
       var name = (el.getAttribute('var') || '').replace(/^\?/, '');
       if (!name) return;
       specs.push({
         name: name,
-        type: el.getAttribute('type') || 'string',
-        control: el.getAttribute('control') || 'select',
-        label: el.getAttribute('label') || name
+        label: el.getAttribute('label') || '',
+        tip: el.getAttribute('tip') || '',
+        // Presence is the signal: a bare filter asks for inference, no filter at all
+        // means the column is declared only to name/explain/render itself.
+        filter: el.hasAttribute('filter') ? ((el.getAttribute('filter') || '').trim().toLowerCase() || 'auto') : '',
+        type: (el.getAttribute('type') || '').trim(),
+        icon: flagAttr(el, 'icon'),
+        badge: flagAttr(el, 'badge'),
+        group: flagAttr(el, 'group')
       });
     });
     return specs;
+  }
+
+  // Mirrors column.flagAttr (internal/column/column.go): presence means on, unless
+  // the attribute carries an explicit falsy value.
+  function flagAttr(el, name) {
+    if (!el.hasAttribute(name)) return false;
+    switch ((el.getAttribute(name) || '').trim().toLowerCase()) {
+      case 'false': case '0': case 'no': case 'off': return false;
+    }
+    return true;
+  }
+
+  // When a checkbox list is the better control.
+  //
+  // An IRI column enumerates ENTITIES — cantons, legal forms, properties — and
+  // picking from a list of them is what a user wants, up to the point where the
+  // server's own enumeration would truncate: DefaultEnumerateLimit
+  // (internal/facet/builder.go) is 200, and past it a working-set table would offer
+  // a silently partial list. So that is the line.
+  var SELECT_MAX_IRI = 200;
+
+  // A string column is different: its distinct count usually just tracks the row
+  // count. A dropdown only makes sense for a genuinely small CONTROLLED VOCABULARY
+  // ("outgoing"/"incoming", a status), which shows up as few values REPEATING across
+  // the rows that carry them. Canton names are 26 values over 26 rows — small, but
+  // one per row, so a text search is right; ?kind is 2 values over thousands.
+  //
+  // The ratio is measured against the rows that actually have a value, not all rows:
+  // a column bound on one row in twenty-six (a Romansh name) is unique, not a
+  // vocabulary of one.
+  var SELECT_MAX_STRING = 25;
+  var SELECT_MIN_REPEAT = 4;
+
+  var ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}/;
+
+  // Resolve one declaration against the data: fill in the type and filter kind the
+  // author left implicit, and return the finished spec the controls are built from.
+  //
+  // probe is what the table read off the loaded rows for this column:
+  //   { sample, distinct, bound } — the first BOUND binding (not row 0's, which is
+  // often unbound on an OPTIONAL column), how many distinct values there are, and
+  // how many rows carry one.
+  function resolveColumn(spec, probe) {
+    probe = probe || {};
+    var type = spec.type || inferType(probe.sample);
+    // An absent filter stays absent — the column is declared for its name or tip.
+    var control = spec.filter;
+    if (control === 'auto') control = inferControl(type, probe.distinct || 0, probe.bound || 0);
+    return {
+      name: spec.name,
+      label: spec.label || spec.name,
+      tip: spec.tip,
+      filter: spec.filter,
+      control: control,
+      type: type,
+      icon: spec.icon,
+      badge: spec.badge,
+      group: spec.group
+    };
+  }
+
+  function inferType(sample) {
+    if (!sample) return 'string';
+    if (sample.Type === 'uri') return 'iri';
+    var text = String(sample.DisplayText || sample.Value || '').trim();
+    if (ISO_DATE_RE.test(text)) return 'date';
+    // Number() over parseFloat: "8001 Zürich" must NOT read as a number, and
+    // parseFloat would happily return 8001 and offer a min/max control for it.
+    if (text !== '' && !isNaN(Number(text))) return 'number';
+    return 'string';
+  }
+
+  function inferControl(type, distinct, bound) {
+    if (type === 'number' || type === 'date') return 'range';
+    if (distinct <= 0) return 'text';
+    if (type === 'iri') return distinct <= SELECT_MAX_IRI ? 'select' : 'text';
+    var repeats = distinct * SELECT_MIN_REPEAT <= bound;
+    return (distinct <= SELECT_MAX_STRING && repeats) ? 'select' : 'text';
   }
 
   function el(tag, cls, attrs) {
@@ -285,7 +382,17 @@
       var wrap = el('span', 'vs-facet-header d-inline-flex align-items-center gap-1');
       var title = el('span');
       title.textContent = cell.getValue();
+      // A declared tip explains the column on hover. Set on the header node we build
+      // rather than through Tabulator's own tooltip option, so it works identically
+      // on columns that carry no filter and never reach the funnel branch below.
+      if (spec.tip) {
+        title.title = spec.tip;
+        title.className = 'vs-col-tip';
+      }
       wrap.appendChild(title);
+
+      // A column may be declared purely to name and explain itself.
+      if (spec.control === 'none' || !spec.control) return wrap;
 
       var dd = el('span', 'dropdown vs-facet-dd');
       var btn = el('button', 'btn btn-sm btn-ghost-secondary p-0 px-1 vs-facet-btn',
@@ -422,7 +529,14 @@
     });
     wraps.forEach(function (wrap) {
       var sel = readSelection(wrap);
+      if (!isActive(sel)) return;
       var key = 'f.' + sel.name;
+      // Tell the server which control and value type this facet resolved to. A
+      // declaration that named them still wins server-side, and anything not in the
+      // known sets is ignored (column.Spec.Facet), so these only ever fill the gap a
+      // bare filter= left open.
+      parts.push(key + '.as=' + encodeURIComponent(sel.control));
+      parts.push(key + '.type=' + encodeURIComponent(sel.type));
       if (sel.control === 'range') {
         if (sel.min) parts.push(key + '.min=' + encodeURIComponent(sel.min));
         if (sel.max) parts.push(key + '.max=' + encodeURIComponent(sel.max));
@@ -473,6 +587,9 @@
           (!sel.max || n <= parseFloat(sel.max));
       }
     } else if (sel.control === 'text') {
+      // Always the display text, even on an IRI column: a text box is a search for
+      // what the cell SHOWS. (The backend leg agrees — internal/facet's textExpr
+      // routes an iri-typed column through its label rather than its IRI string.)
       concrete = sel.term
         ? (present && display.toLowerCase().indexOf(sel.term.toLowerCase()) !== -1)
         : false;
@@ -492,7 +609,8 @@
     NO_VALUE: NO_VALUE,
     fetchOptions: fetchOptions,
     isReloadNavigation: isReloadNavigation,
-    readSpecs: readSpecs,
+    readColumns: readColumns,
+    resolveColumn: resolveColumn,
     buildControl: buildControl,
     headerFormatter: headerFormatter,
     readSelection: readSelection,

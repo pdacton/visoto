@@ -22,7 +22,8 @@ import (
 	"strings"
 )
 
-// Control types (the "control" attribute on a <sparql-facet> element).
+// Control types (the "filter" attribute on a <sparql-column> element, or what the
+// frontend resolved from the data when that attribute was left bare).
 const (
 	ControlSelect = "select" // dropdown of enumerated values → VALUES / IN
 	ControlText   = "text"   // free-text box → CONTAINS (store FTS override point)
@@ -44,8 +45,10 @@ const (
 const InstanceRoot = "??"
 
 // FacetSpec is a declared facet: what it hangs off, how to reach a value, and how
-// to expose/constrain it. Parsed from a <sparql-facet> element's attributes. All
-// fields are author-supplied (trusted template input), never end-user input.
+// to expose/constrain it. Projected from a <sparql-column> declaration by
+// column.Spec.Facet. Var, Root and Path are author-supplied (trusted template
+// input) and inserted verbatim; Control and Type may instead come from what the
+// frontend resolved, which that projection whitelists first.
 //
 // Root selects one of three modes:
 //

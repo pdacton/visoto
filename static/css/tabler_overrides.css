@@ -429,3 +429,21 @@ body.resizing {
 @media (prefers-reduced-motion: reduce) {
   .vs-metric-actions { transition: none; }
 }
+
+/* ---- Declarative table vocabulary ----------------------------------------
+   These custom elements carry CONFIGURATION, never content: the query text of a
+   <sparql-query>/<sparql-async>, and the column declarations that describe a
+   table's headers, tips and filters. An unknown element is inline by default, so
+   without this rule a page would render its own query source.
+
+   They used to carry class="d-none" one by one, which meant every declaration
+   repeated it and a forgotten one leaked. Hiding them here also drops the
+   dependency on Tabler's CDN stylesheet arriving before the page is painted. */
+sparql-query,
+sparql-async,
+sparql-columns,
+sparql-column { display: none; }
+
+/* A column whose declaration carries a tip: mark the header so the explanation is
+   discoverable rather than only found by accident. */
+.vs-col-tip { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }

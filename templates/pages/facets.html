@@ -4,7 +4,7 @@
 
 {{ define "pageContent" }}
 
-<p>{{ tHTML "page.facets.aDemonstrationOfTheSparqlAsyncTable" "A demonstration of the <code>sparqlAsyncTable</code> partial in faceted mode over <strong>ZefixOrganisation</strong> (~790k registered Swiss companies). Each facetable column carries a <strong>filter control in its header</strong> (the funnel icon), driven by the <code><sparql-facet></code> declarations on this page. A selection filters the <strong>loaded rows instantly</strong> in the browser; because this class is too large to hold entirely, the app then quietly fetches the <strong>true full-class matches</strong> from the backend and swaps them in — you get an immediate preview and an authoritative result without ever confronting the size." }}</p>
+<p>{{ tHTML "page.facets.aDemonstrationOfTheSparqlAsyncTable" "A demonstration of the <code>sparqlAsyncTable</code> partial in faceted mode over <strong>ZefixOrganisation</strong> (~790k registered Swiss companies). Each facetable column carries a <strong>filter control in its header</strong> (the funnel icon), driven by the <code>&lt;sparql-column&gt;</code> declarations on this page. A selection filters the <strong>loaded rows instantly</strong> in the browser; because this class is too large to hold entirely, the app then quietly fetches the <strong>true full-class matches</strong> from the backend and swaps them in — you get an immediate preview and an authoritative result without ever confronting the size." }}</p>
 <ul>
   <li>{{ tHTML "page.facets.legalFormAMultiSelect" "<strong>Legal form</strong> — a multi-select enum facet over <code>schema:additionalType</code> (values enumerated from the store, e.g. GmbH, AG, sole proprietorship); pick one or more, or <em>(no value)</em> for companies with no recorded legal form." }}</li>
   <li>{{ tHTML "page.facets.nameContainsAFreeText" "<strong>Name contains</strong> — a free-text facet over <code>schema:name</code>, with a <em>(no value)</em> option for companies with no recorded name." }}</li>
@@ -25,24 +25,24 @@
   }
 </sparql-async>
 
-<!-- Facet declarations for the base query above. Always close the custom element. -->
-<sparql-facet for="zefixFacets" var="legalForm" path="schema:additionalType" type="iri"
-              control="select" label="Legal form" class="d-none"></sparql-facet>
-<sparql-facet for="zefixFacets" var="name" path="schema:name" type="string"
-              control="text" label="Name contains" class="d-none"></sparql-facet>
-<sparql-facet for="zefixFacets" var="postalCode" path="schema:address/schema:postalCode" type="number"
-              control="range" label="Postal code" class="d-none"></sparql-facet>
+<!-- Column declarations for the base query above. Always close the custom element.
+     Each path= routes the backend leg through the property that produces the value,
+     which is the fast shape on a class this size; the filter kind and value type are
+     left to the data. -->
+<sparql-columns for="zefixFacets">
+  <sparql-column var="org" icon></sparql-column>
+  <sparql-column var="name" label="Name contains" path="schema:name" filter></sparql-column>
+  <sparql-column var="legalForm" label="Legal form" path="schema:additionalType" filter></sparql-column>
+  <sparql-column var="postalCode" label="Postal code" path="schema:address/schema:postalCode" filter></sparql-column>
+</sparql-columns>
 
-{{/* facetFor = this table's own queryId: that's what turns an async table into a
-     faceted one (it wires the <sparql-facet> declarations above to the column
-     headers). See templates/partials/sparql-async-table.html for the details. */}}
+{{/* No facetFor: a table is faceted because its columns declare filters. See
+     templates/partials/sparql-async-table.html for the details. */}}
 {{ template "sparqlAsyncTable" (dict
       "queryId" "zefixFacets"
-      "facetFor" "zefixFacets"
       "iri" "https://schema.ld.admin.ch/ZefixOrganisation"
       "title" (t "card.organisations" "Organisations")
       "icon" "building"
-      "iconVar" "org"
       "max" 10000) }}
 
 {{ end }}

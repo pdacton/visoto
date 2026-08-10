@@ -247,6 +247,7 @@ func insertBeforeLastBrace(query, injection string) string {
 //   - concrete values only → FILTER EXISTS { ?key <path> ?fv . <value clause> }
 //   - "(no value)" only     → FILTER NOT EXISTS { ?key <path> ?fv }
 //   - both (OR within facet) → { <exists> } UNION { <not-exists> }
+//
 // root is the anchor variable, or "" to filter the projected column directly.
 func facetBlock(root string, con FacetConstraint, p FacetProvider) (string, error) {
 	if root == "" {
@@ -400,8 +401,25 @@ func textClause(fv string, con FacetConstraint, p FacetProvider) (string, error)
 	return p.TextMatchClause(fv, term)
 }
 
+// LabelPath reaches an IRI's human-readable label. It mirrors the top of the
+// priority list that produces DisplayText (internal/sparql/labels.go), so a text
+// filter tests what the cell actually shows.
+//
+// Written as CURIEs: the preprocessor declares the prefixes a query uses, and these
+// three are in every shipped prefix list. An author who needs a different vocabulary
+// — or one property, for speed on a large class — declares path= instead, which
+// takes the class-mode route and never reaches this constant.
+const LabelPath = "(rdfs:label|skos:prefLabel|schema:name)"
+
 // textExpr is the portable CONTAINS expression for column mode (see columnBlock on
 // why the provider seam is bypassed here). Returns "" when there is no term.
+//
+// An IRI-valued column is matched through its LABEL rather than its lexical form:
+// STR() of an IRI is the IRI itself, so a user typing "Zürich" would be tested
+// against .../municipality/261 and never match — the filter would look broken while
+// the local preview (which compares display text) found the row. EXISTS is a SPARQL
+// 1.1 expression, so the label hop still composes with the "(no value)" leg that
+// columnBlock ORs around this.
 func textExpr(v string, con FacetConstraint) string {
 	term := ""
 	if len(con.Values) > 0 {
@@ -409,6 +427,10 @@ func textExpr(v string, con FacetConstraint) string {
 	}
 	if term == "" {
 		return ""
+	}
+	if con.Spec.Type == TypeIRI {
+		lv := facetValueVar(con.Spec)
+		return fmt.Sprintf("EXISTS { %s %s %s . %s }", v, LabelPath, lv, PortableTextMatch(lv, term))
 	}
 	return PortableTextExpr(v, term)
 }

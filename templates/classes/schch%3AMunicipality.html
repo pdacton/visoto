@@ -47,45 +47,35 @@
       LIMIT 20000
     </sparql-async>
 
-    <!-- Column facets (no root=/path=): this table is inline, not working-set, so
-         all rows are on the client — the option lists are built from them and no
-         facet ever reaches the backend.
-         -->
+    <!-- Column-mode filters (no root=/path=): this table is inline, not working-set,
+         so all rows are on the client — the option lists are built from them and no
+         filter ever reaches the backend.
+
+         Every kind and type below is left to the data: IRI columns with few distinct
+         values become dropdowns, the 3297-value name column a text search, dates a
+         range. Only ?postalCodes needs saying more, and it says why. -->
     <!-- ?type is constant here — BIND(?? AS ?type) gives every row the same class
-         IRI — so this facet cannot filter anything. It is declared for what it
+         IRI — so this filter cannot narrow anything. It is declared for what it
          READS OUT rather than what it does: "Municipality (3297)" states that the
          whole table is one type, which otherwise takes scrolling to establish. -->
-    <sparql-facet for="municipalityInstances" var="type"
-                  control="select" type="iri"
-                  label="{{ t "facet.type" "Type" }}" class="d-none"></sparql-facet>
-    <sparql-facet for="municipalityInstances" var="canton"
-                  control="select" type="iri"
-                  label="{{ t "facet.canton" "Canton" }}" class="d-none"></sparql-facet>
-    <sparql-facet for="municipalityInstances" var="district"
-                  control="select" type="iri"
-                  label="{{ t "facet.district" "District" }}" class="d-none"></sparql-facet>
-    <!-- Name search on the key column: 3297 distinct values make a dropdown useless.
-         type="string" (not "iri") though ?municipality is IRI-typed — the local
-         matcher compares display text for string facets, which is the name shown. -->
-    <sparql-facet for="municipalityInstances" var="municipality"
-                  control="text" type="string"
-                  label="{{ t "facet.name" "Name" }}" class="d-none"></sparql-facet>
-    <!-- BFS number lookup. text, NOT range: the values are canton-grouped labels
-         that happen to be digits, and a min/max control would frame them as a
-         quantity worth bracketing. Duplicates what the card's search box finds,
-         but scoped to this one column instead of every column at once. -->
-    <sparql-facet for="municipalityInstances" var="identifier"
-                  control="text" type="string"
-                  label="{{ t "facet.identifier" "Identifier" }}" class="d-none"></sparql-facet>
-    <sparql-facet for="municipalityInstances" var="validFrom"
-                  control="range" type="date"
-                  label="{{ t "facet.validFrom" "Valid from" }}" class="d-none"></sparql-facet>
-    <!-- Bound on only 1143 of 3297 rows, so this facet's "(no value)" checkbox is
-         the useful half of it: no end date = the municipality still exists. The
-         range itself brackets when a municipality was dissolved or merged. -->
-    <sparql-facet for="municipalityInstances" var="validThrough"
-                  control="range" type="date"
-                  label="{{ t "facet.validThrough" "Valid through" }}" class="d-none"></sparql-facet>
+    <sparql-columns for="municipalityInstances">
+      <sparql-column var="type" label="{{ t "facet.type" "Type" }}" filter icon></sparql-column>
+      <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" filter></sparql-column>
+      <!-- 204 districts — just past the 200-value enumeration cap that decides
+           list-vs-search, and the one column here that overrides it: this table is
+           inline, so its options come from the loaded rows and nothing truncates. -->
+      <sparql-column var="district" label="{{ t "facet.district" "District" }}" filter="select"></sparql-column>
+      <sparql-column var="municipality" label="{{ t "facet.name" "Name" }}" filter></sparql-column>
+      <!-- BFS number lookup. text, NOT the range these digits would otherwise infer:
+           the values are canton-grouped labels, and a min/max control would frame
+           them as a quantity worth bracketing. Nothing in the data distinguishes
+           them from a postal code, so this is a judgement only the author can make. -->
+      <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" filter="text"></sparql-column>
+      <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}" filter></sparql-column>
+      <!-- Bound on only 1143 of 3297 rows, so this filter's "(no value)" checkbox is
+           the useful half of it: no end date = the municipality still exists. The
+           range itself brackets when a municipality was dissolved or merged. -->
+      <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}" filter></sparql-column>
     <!-- ?postalCodes is the one facet here that declares root/path, and it must.
          It is a GROUP_CONCAT alias: a column-mode FILTER would target the alias,
          which does not exist in WHERE scope, so the backend would error per row
@@ -97,18 +87,15 @@
          cell text, so "10, 89" would match across the separator); it is what
          makes the backend leg correct if this table ever grows a membership
          triple and goes working-set. -->
-    <sparql-facet for="municipalityInstances" var="postalCodes"
-                  root="?municipality" path="schema:postalCode" type="string"
-                  control="text" label="{{ t "facet.postalCode" "Postal code" }}"
-                  class="d-none"></sparql-facet>
+      <sparql-column var="postalCodes" label="{{ t "facet.postalCode" "Postal code" }}"
+                     root="?municipality" path="schema:postalCode" filter="text"></sparql-column>
+    </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict
         "queryId" "municipalityInstances"
-        "facetFor" "municipalityInstances"
         "iri" .ResourceIRI
         "title" (t "card.municipalities" "Municipalities")
-        "icon" "circle-dot"
-        "iconVar" "type")
+        "icon" "circle-dot")
     }}
   </div>
 </div>

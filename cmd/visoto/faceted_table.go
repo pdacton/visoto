@@ -60,11 +60,15 @@ func facetValuesHandler(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"values": []facetValue{}})
 		return
 	}
-	spec, ok := findFacetSpec(src, id, varName)
+	col, ok := findColumn(src, id, varName)
 	if !ok {
 		c.JSON(http.StatusNotFound, gin.H{"values": []facetValue{}})
 		return
 	}
+	// Enumeration reads only the column's var/root/path, so the control and type the
+	// frontend may have resolved are irrelevant here — and leaving them out keeps
+	// this route's cache key free of them.
+	spec := col.Facet("", "")
 	// Every mode needs the IRI (the declared query's ?? placeholder must be
 	// resolved, and class/instance mode anchor on it). A class-membership key is
 	// required only by class mode — see enumerationQuery.
@@ -230,10 +234,15 @@ func facetedTableHandler(c *gin.Context) {
 		"iconVar":  c.Query("iconVar"),
 		"badgeVar": c.Query("badgeVar"),
 		"groupBy":  c.Query("groupBy"),
+		// This route only reaches the HTML branch when a caller asks for the fragment
+		// rather than the JSON envelope; without facetFor that fragment would come
+		// back with its filter controls missing.
+		"facetFor": id,
 		// See asyncTableHandler: carried into the fragment so the second-stage
 		// fetches can pass ?lang= on. Unconditional — "" is a real code.
 		"lang": dataLang,
 	}
+	applyColumnParams(params, src, id)
 	if err != nil {
 		// Invalid selection (e.g. injection attempt) — surface it, never cache.
 		if wantsJSON(c) {
@@ -319,8 +328,15 @@ func writeFacetedEnvelope(c *gin.Context, result sparql.QueryResult, total int, 
 // f.<var>.novalue=1 so their positional Values stay clean. Returns the constraints
 // with at least one active selection, and whether any active facet is free-text.
 func collectConstraints(c *gin.Context, src, id string) (constraints []facet.FacetConstraint, hasText bool) {
-	for _, spec := range findFacetSpecs(src, id) {
-		key := "f." + spec.Var
+	for _, col := range findColumns(src, id) {
+		if !col.Filterable() {
+			continue
+		}
+		key := "f." + col.Var
+		// A column may leave its filter kind and type to the data, which only the
+		// frontend can read; it sends what it resolved alongside the selection. The
+		// declaration still wins, and unknown values are ignored (column.Spec.Facet).
+		spec := col.Facet(c.Query(key+".as"), c.Query(key+".type"))
 		var values []string
 		noValue := false
 		switch spec.Control {

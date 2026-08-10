@@ -7,19 +7,13 @@
 Design constraints accepted when faceted search shipped. None is a bug; each is a
 boundary worth removing if it starts to hurt. Recorded so the reasons aren't lost.
 
-## 1. `for=` is a global id namespace
+## 1. `for=` is a global id namespace — FIXED
 
-`findFacetSpecs` (`cmd/visoto/faceted_table.go`) matches `<sparql-facet for="X">`
-across **all** async template directories — `templates/pages`, `layout`,
-`instances`, `classes`, `components` — not just the page being rendered. Two pages
-that reuse one base query id would silently merge each other's facets.
-
-Currently latent: only `templates/pages/facets.html` and
-`templates/classes/schch%3AZefixOrganisation.html` declare facets, with distinct
-ids. Documented in the partial's header comment.
-
-**Possible fix:** scope the spec lookup to the template being rendered, or namespace
-ids by their source file.
+`findColumns` (`cmd/visoto/async_index.go`) resolves a `for="X"` within the
+**template set** that declares it — the page plus the layouts, partials and
+components it is parsed with — and every `/api` request names its set in `?src=`.
+Two pages may reuse a base query id without interfering; within one set a duplicate
+fails at startup rather than resolving by directory order.
 
 ## 2. Facets only work on class-instance tables
 
@@ -32,12 +26,12 @@ This follows from the injection strategy: `BuildFacetedQuery` anchors its
 fast (see the "don't wrap the base query as a subquery" rule in
 `internal/sparql/paging.go`). A different anchor would be needed for other shapes.
 
-## 3. The facet var must be a displayed column
+## 3. The filtered var must be a displayed column
 
-A header-attached facet hangs off the column it filters, so every
-`<sparql-facet var="X">` requires `?X` to be SELECTed in the base query. A facet on
-a property you don't want shown isn't expressible; a facet whose var isn't a column
-is skipped with a dev-console warning.
+A header-attached control hangs off the column it filters, so every
+`<sparql-column var="X">` requires `?X` to be SELECTed in the base query. A filter on
+a property you don't want shown isn't expressible; a declaration whose var isn't a
+column is skipped with a dev-console warning.
 
 Note the `path` attribute still does real work — it *produces* the value, e.g.
 `OPTIONAL { ?key <path> ?X }` — so `path` and the column need not use the same
@@ -48,7 +42,7 @@ for vars that aren't columns.
 
 ## 4. `path` is a single property path, not a graph pattern
 
-`<sparql-facet path="...">` is interpolated directly as the predicate of one triple
+`<sparql-column path="...">` is interpolated directly as the predicate of one triple
 pattern. Property paths work (`schema:address/schema:addressLocality`), but shapes
 needing an intermediate node with its own constraint do not.
 

@@ -59,15 +59,74 @@
 
     var WORKING_SET = !!CFG.workingSet;
 
-    // ---- header-attached facets (faceted tables only) ----
-    // FACET_FOR is the base query id; the facet specs live in the page's
-    // <sparql-facet for="<FACET_FOR>"> elements, read via the shared toolkit.
+    // ---- declared columns ----
+    // The page's <sparql-column> elements describe this table's columns: header
+    // label, tip, and optionally a filter control. They are read for the base query
+    // id — which is the table id, except on the faceted re-render where the server
+    // echoes it back as facetFor.
+    //
+    // FACET_FOR stays the id the /api/facet-values and /api/faceted-table routes are
+    // addressed by, and is empty for a table whose columns declare no filter.
+    var COLUMN_FOR = CFG.facetFor || CFG.id;
     var FACET_FOR = CFG.facetFor || "";
-    var facetSpecs = (FACET_FOR && window.VisotoFacets)
-      ? window.VisotoFacets.readSpecs(FACET_FOR) : [];
-    // Map facet var → spec, for O(1) lookup while building columns.
+    var columnDecls = window.VisotoFacets ? window.VisotoFacets.readColumns(COLUMN_FOR) : [];
+    // Resolved specs (filter kind and type filled in from the data), and a var → spec
+    // map for O(1) lookup while building columns. Both are populated by buildColumns,
+    // which is the first point where rows exist to resolve against.
+    var facetSpecs = [];
     var facetByVar = {};
-    facetSpecs.forEach(function (s) { facetByVar[s.name] = s; });
+
+    // Probe the loaded rows for what a declaration left implicit: the first BOUND
+    // binding for the column, and how many distinct values it holds. Row 0 is not
+    // enough — an OPTIONAL column is routinely unbound there, and a date column that
+    // sampled as unbound would fall back to a text box.
+    //
+    // Both scans are bounded: the row window caps the work on a 20k working set, and
+    // counting stops once the answer can no longer change any control choice.
+    var PROBE_ROWS = 5000;
+    // One past the largest threshold any control choice uses (SELECT_MAX_IRI in
+    // faceted-table.js): beyond it every answer is already "too many to list".
+    var PROBE_DISTINCT_MAX = 201;
+    function probeColumn(rows, name) {
+      var sample = null;
+      var seen = Object.create(null); // null-prototype: "constructor" is a value, not a method
+      var distinct = 0, bound = 0;
+      var n = Math.min((rows || []).length, PROBE_ROWS);
+      for (var i = 0; i < n; i++) {
+        var b = rows[i] ? rows[i][name] : null;
+        if (!b) continue;
+        if (!sample) sample = b;
+        bound++;
+        var key = String(b.Value || b.DisplayText || "");
+        if (key && !seen[key]) {
+          seen[key] = true;
+          distinct++;
+        }
+        // Stop once no further value can change a control choice — but only after
+        // the whole window, since "distinct vs bound" needs both to keep counting.
+        if (distinct > PROBE_DISTINCT_MAX) break;
+      }
+      return { sample: sample, distinct: distinct, bound: bound };
+    }
+
+    // The header a column shows: its declared label, else the SPARQL variable.
+    function labelFor(varName) {
+      var spec = facetByVar[varName];
+      return (spec && spec.label) || varName;
+    }
+
+    // Keep the group-by dropdown speaking the same language as the headers. Its
+    // options are rendered server-side from the query's variables (see
+    // templates/partials/sparql-table.html), which don't know about labels; the
+    // working-set path builds them in populateGroupBy instead. Looks the element up
+    // itself so it can run as soon as the columns are resolved.
+    function relabelGroupBy() {
+      var sel = document.getElementById("groupby-" + ID);
+      if (!sel) return;
+      Array.prototype.forEach.call(sel.options, function (opt) {
+        if (opt.value) opt.textContent = labelFor(opt.value);
+      });
+    }
 
     // Enumerate a select facet's options from the rows already loaded, so a table
     // holding the complete population never calls /api/facet-values. That request
@@ -217,16 +276,24 @@
       return img + renderBinding(b);
     }
 
-    // Build column definitions from a var list + a sample row (for literal
-    // detection, which drives variableHeight).
-    function buildColumns(vars, sampleRow) {
-      sampleRow = sampleRow || {};
-      // Warn (dev aid) about declared facets whose var isn't a column: a header-
-      // attached facet has nowhere to live, so it is silently skipped otherwise.
+    // Build column definitions from a var list + the loaded rows (probed for literal
+    // detection, which drives variableHeight, and to resolve declarations).
+    function buildColumns(vars, rows) {
+      rows = rows || [];
+      // Resolve the declarations against the data now that rows exist: a column that
+      // named no filter kind or type gets one from what its values actually are.
+      facetSpecs = columnDecls.map(function (decl) {
+        return window.VisotoFacets.resolveColumn(decl, probeColumn(rows, decl.name));
+      });
+      facetByVar = {};
+      facetSpecs.forEach(function (s) { facetByVar[s.name] = s; });
+      // Warn (dev aid) about a declaration whose var isn't a column: it has nowhere
+      // to live — no header to title, explain or hang a control off — so it is
+      // silently skipped otherwise.
       facetSpecs.forEach(function (s) {
         if ((vars || []).indexOf(s.name) === -1) {
-          console.warn('facet "' + s.name + '" has no matching column — add ?' +
-            s.name + ' to the base query to attach its header control.');
+          console.warn('column "' + s.name + '" is declared but not selected — add ?' +
+            s.name + ' to the base query for it to appear.');
         }
       });
       // Heuristic cap so one long literal can't push other columns out of view
@@ -235,13 +302,15 @@
       // maxInitialWidth only bounds the initial fit — users can drag wider.
       var capWidth = Math.max(Math.floor(window.innerWidth / 4), 250);
       return (vars || []).map(function(varName) {
-        var binding = sampleRow[varName];
+        var binding = probeColumn(rows, varName).sample;
         var isLiteral = binding && binding.Type === 'literal';
         var isBadge = badgeVar && varName === badgeVar;
         var isIcon = iconVar && varName === iconVar;
         var facetSpec = facetByVar[varName];
         var col = {
-          title: varName,
+          // A declared label is the column's name; the SPARQL variable is only the
+          // fallback. This title is also what a CSV/XLSX export writes as its header.
+          title: (facetSpec && facetSpec.label) || varName,
           field: varName,
           formatter: isIcon ? iconCellFormatter : (isBadge ? badgeCellFormatter : htmlCellFormatter),
           variableHeight: isLiteral,
@@ -253,11 +322,12 @@
           headerFilter: "input",
           headerFilterFunc: bindingHeaderFilter
         };
-        // Facetable column: render a funnel dropdown in its header (portal
-        // mechanics live in VisotoFacets.headerFormatter). The facet control
-        // filters locally (instant) and, when the set is incomplete, fetches
-        // the full-class truth from the backend (see scheduleApplyFacets).
-        if (facetSpec) {
+        // Declared column: the header renders its label, its tip as a hover
+        // explanation, and — when the column carries a filter — a funnel dropdown
+        // (portal mechanics live in VisotoFacets.headerFormatter). The control
+        // filters locally (instant) and, when the set is incomplete, fetches the
+        // full-class truth from the backend (see scheduleApplyFacets).
+        if (facetSpec && (facetSpec.control || facetSpec.tip)) {
           col.titleFormatter = window.VisotoFacets.headerFormatter(facetSpec, {
             tableId: ID,
             facetFor: FACET_FOR,
@@ -333,7 +403,8 @@
       var bindings = JSON.parse(document.getElementById(ID + "-bindings").innerHTML.trim());
       var cfg = baseConfig("fitDataStretch");
       cfg.data = toTableData(vars, bindings);
-      cfg.columns = buildColumns(vars, bindings[0]);
+      cfg.columns = buildColumns(vars, bindings);
+      relabelGroupBy();
       // Small tables don't need a pager.
       if (bindings.length <= 10) { cfg.pagination = false; }
       table = new Tabulator("#" + ID + "-table", cfg);
@@ -522,7 +593,7 @@
           var vars = resp.vars || [];
           var rows = toTableData(vars, resp.data || []);
           if (!wsColumnsSet && vars.length) {
-            table.setColumns(buildColumns(vars, (resp.data || [])[0]));
+            table.setColumns(buildColumns(vars, resp.data || []));
             wsColumnsSet = true;
             populateGroupBy(vars);
           }
@@ -564,7 +635,7 @@
       if (groupBySelect.options.length > 1) return; // already populated
       vars.forEach(function(v) {
         var opt = document.createElement("option");
-        opt.value = v; opt.textContent = v;
+        opt.value = v; opt.textContent = labelFor(v);
         groupBySelect.appendChild(opt);
       });
     }

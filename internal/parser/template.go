@@ -61,9 +61,8 @@ func parseElement(n *html.Node) (ExtractedElement, error) {
 		}
 	}
 
-	// Validate required ID. <sparql-facet> is the exception: it carries no id and
-	// is identified by its "for" (base query id) + "var" attributes instead.
-	if elem.ID == "" && elem.TagName != "sparql-facet" {
+	// Validate required ID, for the elements that have one.
+	if elem.ID == "" && requiresID(elem.TagName) {
 		return elem, fmt.Errorf("missing required id attribute")
 	}
 
@@ -71,6 +70,18 @@ func parseElement(n *html.Node) (ExtractedElement, error) {
 	elem.Content = extractTextContent(n)
 
 	return elem, nil
+}
+
+// requiresID reports whether a custom element is identified by its id. The column
+// vocabulary is not: a <sparql-column> is identified by the query it decorates
+// (its own for=, or its enclosing <sparql-columns>) plus its var=, and the
+// <sparql-facet> it replaces was the same.
+func requiresID(tag string) bool {
+	switch tag {
+	case "sparql-facet", "sparql-columns", "sparql-column":
+		return false
+	}
+	return true
 }
 
 // extractTextContent gets all text nodes from an element
@@ -160,10 +171,13 @@ func ExtractAsyncElements(content string) ([]ExtractedElement, error) {
 	return out, nil
 }
 
-// ExtractFacetElements returns all <sparql-facet> elements in a template. Each
-// declares one facet of a base <sparql-async> query, identified by its "for"
-// attribute; the facet's configuration lives in its other attributes (var, path,
-// type, control, label).
+// ExtractFacetElements returns all <sparql-facet> elements in a template.
+//
+// The element was replaced by <sparql-column>, which describes the whole column
+// rather than only its filter. This extractor survives for one purpose: letting
+// startup FAIL on a leftover declaration. Nothing reads sparql-facet any more, so
+// without this check a missed rename would silently drop a table's filters instead
+// of announcing itself.
 func ExtractFacetElements(content string) ([]ExtractedElement, error) {
 	all, err := extractElements(content)
 	if err != nil {
@@ -176,4 +190,82 @@ func ExtractFacetElements(content string) ([]ExtractedElement, error) {
 		}
 	}
 	return out, nil
+}
+
+// ExtractColumnElements returns all <sparql-column> declarations in a template, in
+// document order, with the base query id resolved.
+//
+// A column names the query it decorates with for=. Inside a <sparql-columns for="…">
+// container it inherits that id instead, so a table writes it once and its columns
+// stay one line each. An explicit for= on the column still wins, which keeps a lone
+// declaration (no container) working.
+//
+// This walks the DOM itself rather than going through extractElements: inheritance
+// needs the parent chain, which a flat tag-name scan has already discarded.
+func ExtractColumnElements(content string) ([]ExtractedElement, error) {
+	doc, err := html.Parse(strings.NewReader(content))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+	}
+
+	var out []ExtractedElement
+	var walk func(n *html.Node, inherited string)
+	walk = func(n *html.Node, inherited string) {
+		if n.Type == html.ElementNode {
+			switch n.Data {
+			case "sparql-columns":
+				if v := attrValue(n, "for"); v != "" {
+					inherited = v
+				}
+			case "sparql-column":
+				if elem, err := parseElement(n); err == nil {
+					if elem.Attributes["for"] == "" && inherited != "" {
+						elem.Attributes["for"] = inherited
+					}
+					out = append(out, elem)
+				}
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c, inherited)
+		}
+	}
+	walk(doc, "")
+	return out, nil
+}
+
+// ExtractColumnContainers returns all <sparql-columns> elements. Only the indexer
+// uses them, to reject a container that carries column attributes — the one-letter
+// difference between the container and its children makes that typo easy and its
+// symptom (a column that silently never appears) hard to read.
+func ExtractColumnContainers(content string) ([]ExtractedElement, error) {
+	doc, err := html.Parse(strings.NewReader(content))
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse HTML: %w", err)
+	}
+
+	var out []ExtractedElement
+	var walk func(*html.Node)
+	walk = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "sparql-columns" {
+			if elem, err := parseElement(n); err == nil {
+				out = append(out, elem)
+			}
+		}
+		for c := n.FirstChild; c != nil; c = c.NextSibling {
+			walk(c)
+		}
+	}
+	walk(doc)
+	return out, nil
+}
+
+// attrValue returns one attribute of a node, or "".
+func attrValue(n *html.Node, key string) string {
+	for _, a := range n.Attr {
+		if a.Key == key {
+			return strings.TrimSpace(a.Val)
+		}
+	}
+	return ""
 }

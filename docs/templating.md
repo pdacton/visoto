@@ -237,13 +237,14 @@ Two consequences worth knowing:
 
 The index is built once at startup, so adding, renaming or editing a `<sparql-async>`
 body needs a server restart. Startup fails outright on a duplicate id within a set, on a
-`<sparql-facet for="…">` naming no query in its set, and on a `{{ template "…" }}` the
-set does not parse.
+`<sparql-column>` naming no query in its set, on a malformed column declaration (an
+unknown `filter` or `type`), on a leftover `<sparql-facet>` (the element
+`<sparql-column>` replaced), and on a `{{ template "…" }}` the set does not parse.
 
 Note that extraction reads the template file as HTML, and a Go template comment
-(`{{/* … */}}`) is *not* an HTML comment. Writing `<sparql-facet for="x" var="y">` inside
-one declares a real facet. Naming the elements without angle brackets in such comments
-avoids it; a bare `<sparql-facet>` with no attributes is recognised as prose and ignored.
+(`{{/* … */}}`) is *not* an HTML comment. Writing `<sparql-column for="x" var="y">` inside
+one declares a real column. Naming the elements without angle brackets in such comments
+avoids it; a bare `<sparql-column>` with no attributes is recognised as prose and ignored.
 
 ---
 
@@ -413,7 +414,10 @@ when the placeholder is triggered.
 | `trigger` | `string` | `"load"` | HTMX trigger. Pass a custom event (e.g. `"showData"`) to defer until the view is first revealed. |
 | `searchProp` | `string` | — | Name property IRI used by the working-set "Search all" rebuild. |
 | `max` | `int` | `20000` | Working-set row cap for large classes. |
-| `facetFor` | `string` | — | Set to this table's own `queryId` to enable faceted search. |
+
+`iconVar` / `badgeVar` / `groupBy` are shorthands for tables that declare no columns;
+a table that declares them says the same with `icon` / `badge` / `group` on the column,
+and that wins.
 
 ```html
 <sparql-async id="myTable" class="d-none">
@@ -432,12 +436,52 @@ when the placeholder is triggered.
 size threshold is rendered as a bounded fetch with all-local interaction and a "Search
 all" server rebuild; everything else renders inline. Authors do not choose the mode.
 
-**Faceted search.** Setting `facetFor` to the table's own `queryId` hangs a filter
-control off each facetable column header, declared with sibling
-`<sparql-facet for="..." var="...">` elements. Every faceted `var` must also be
-SELECTed as a column — a facet with no matching column has no header to attach to and
-is skipped with a console warning. `<sparql-facet>` is a non-void custom element, so
-it always needs an explicit closing tag.
+### Declaring columns
+
+A table's columns are described by `<sparql-column>` elements, nested in a
+`<sparql-columns for="<queryId>">` container that names the base query once:
+
+```html
+<sparql-async id="taxa">
+  SELECT ?taxon ?name ?rank WHERE { ?taxon a ?? .
+    OPTIONAL { ?taxon schema:name ?name } OPTIONAL { ?taxon dwc:taxonRank ?rank } }
+</sparql-async>
+<sparql-columns for="taxa">
+  <sparql-column var="taxon" label="Taxon" icon></sparql-column>
+  <sparql-column var="rank" label="Rank" tip="Rank in the taxonomic hierarchy" filter></sparql-column>
+</sparql-columns>
+```
+
+| Attribute | Description |
+|---|---|
+| `var` | **Required.** The SELECTed variable this column shows. |
+| `label` | Header title. Without it the header is the raw variable name. |
+| `tip` | Hover explanation on the header. |
+| `filter` | Give the column a control. Bare = infer the kind; or force `select` / `text` / `range`. |
+| `type` | `iri` / `string` / `number` / `date`. Inferred from the data when omitted. |
+| `path` | Property path that produces (and filters) the value. |
+| `root` | Anchor variable for `path`, when it is not the class-membership key. |
+| `icon` / `badge` / `group` | Resource icon / Tabler badge / initial grouping. |
+
+**A table is faceted exactly when one of its columns declares a filter** — there is
+nothing else to switch on. Every `var` must be SELECTed in the base query: a
+declaration hangs off that column's header, and one with no matching column is skipped
+with a console warning. These are non-void custom elements, so `<sparql-column>` always
+needs an explicit closing tag.
+
+**A bare `filter` picks its control from the data**: few distinct IRIs (up to the
+200-value enumeration cap) or a small repeating vocabulary become a checkbox list,
+numbers and dates a range, everything else a text search. Declare
+`filter="select|text|range"` only where you disagree.
+
+**Text search on an IRI column matches the label**, never the IRI string — locally
+against the displayed text, on the backend through
+`rdfs:label|skos:prefLabel|schema:name` (`facet.LabelPath`). Declaring `path=` pins one
+property instead, which is also the faster shape on a large class: it anchors the
+filter on the membership triple, before the `OPTIONAL`s run.
+
+Column declarations carry configuration, never content, and are hidden by a rule in
+`static/css/tabler_overrides.css` — they need no `class="d-none"`.
 
 ### `sparqlGraph`
 

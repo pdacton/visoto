@@ -153,29 +153,23 @@
                     OPTIONAL { ?value a ?type . } }
                 } LIMIT 5000
               </sparql-async>
-              <!-- Column-mode facets: no path=, because none of these variables is
+              <!-- Column-mode filters: no path=, because none of these variables is
                    reachable by a property path from a root — ?kind is produced by a
                    BIND inside each UNION branch, ?graph only exists in the GRAPH
                    ones. They filter the projected column directly instead.
                    The table is complete at LIMIT 5000, so the option lists are built
-                   from the loaded rows and neither facet ever calls the backend. -->
-              <sparql-facet for="resourceTriples" var="kind"
-                            control="select" type="string"
-                            label="{{ t "facet.kind" "Kind" }}" class="d-none"></sparql-facet>
-              <sparql-facet for="resourceTriples" var="property"
-                            control="select" type="iri"
-                            label="{{ t "facet.property" "Property" }}" class="d-none"></sparql-facet>
-              <sparql-facet for="resourceTriples" var="graph"
-                            control="select" type="iri"
-                            label="{{ t "facet.graph" "Graph" }}" class="d-none"></sparql-facet>
+                   from the loaded rows and none of them ever calls the backend. -->
+              <sparql-columns for="resourceTriples">
+                <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}" filter badge></sparql-column>
+                <sparql-column var="property" label="{{ t "facet.property" "Property" }}" filter></sparql-column>
+                <sparql-column var="graph" label="{{ t "facet.graph" "Graph" }}" filter></sparql-column>
+                <sparql-column var="type" icon></sparql-column>
+              </sparql-columns>
               {{ template "sparqlAsyncTable" (dict
                     "queryId" "resourceTriples"
-                    "facetFor" "resourceTriples"
                     "iri" .ResourceIRI
                     "title" (t "card.allTriples" "All Triples")
                     "icon" "database"
-                    "iconVar" "type"
-                    "badgeVar" "kind"
                     "trigger" "showData") }}
             </div>
             <!-- Schema view: an informal schema derived from the actual data around the

@@ -35,8 +35,8 @@
   {{ $collapsed := .collapsed }}
   {{ $iconVar := .iconVar }}
   {{ $badgeVar := .badgeVar }}
-  {{/* facetFor (set for faceted tables) = base query id; header-attached facet
-       controls are read from the page's sparql-facet elements whose for= matches it.
+  {{/* facetFor (set by the handler for faceted tables) = base query id; the header
+       controls are read from the page's sparql-column elements whose for= matches it.
        Spelled without angle brackets: a Go template comment is not an HTML comment,
        so a tag written here with attributes would be indexed as a real declaration. */}}
   {{ $facetFor := or .facetFor "" }}

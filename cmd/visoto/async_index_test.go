@@ -3,11 +3,13 @@ package main
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/gin-gonic/gin"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/lang"
+	"hutzli.org/visoto/internal/parser"
 	"hutzli.org/visoto/internal/templates"
 )
 
@@ -23,9 +25,9 @@ func mustIndex(t *testing.T) {
 }
 
 // TestInitAsyncIndex runs the startup gate in CI: duplicate <sparql-async> ids
-// within a set, <sparql-facet for=…> naming no base query, and {{ template }}
-// includes a set does not parse all abort here rather than on the server's next
-// boot.
+// within a set, a <sparql-column> naming no base query, a malformed column
+// declaration, a leftover <sparql-facet>, and {{ template }} includes a set does
+// not parse all abort here rather than on the server's next boot.
 func TestInitAsyncIndex(t *testing.T) {
 	mustIndex(t)
 
@@ -97,30 +99,79 @@ func TestAsyncIDsAreScopedToTheirSet(t *testing.T) {
 	}
 }
 
-// TestFacetSpecsResolveFromTheirSet checks the facet half of the index, and that
-// every declared facet still finds its base query.
-func TestFacetSpecsResolveFromTheirSet(t *testing.T) {
+// TestColumnsResolveFromTheirSet checks the column half of the index, and that
+// every declared column still finds its base query.
+func TestColumnsResolveFromTheirSet(t *testing.T) {
 	mustIndex(t)
 
 	var seen int
-	for set, byBase := range asyncIdx.facets {
+	for set, byBase := range asyncIdx.columns {
 		for baseID, specs := range byBase {
 			if len(specs) == 0 {
-				t.Errorf("set %q base %q indexed with no specs", set, baseID)
+				t.Errorf("set %q base %q indexed with no columns", set, baseID)
 			}
-			if got := findFacetSpecs(set, baseID); len(got) != len(specs) {
-				t.Errorf("findFacetSpecs(%q, %q) = %d specs, want %d", set, baseID, len(got), len(specs))
+			if got := findColumns(set, baseID); len(got) != len(specs) {
+				t.Errorf("findColumns(%q, %q) = %d columns, want %d", set, baseID, len(got), len(specs))
 			}
 			for _, s := range specs {
-				if _, ok := findFacetSpec(set, baseID, s.Var); !ok {
-					t.Errorf("findFacetSpec(%q, %q, %q) not found", set, baseID, s.Var)
+				if _, ok := findColumn(set, baseID, s.Var); !ok {
+					t.Errorf("findColumn(%q, %q, %q) not found", set, baseID, s.Var)
 				}
 				seen++
 			}
 		}
 	}
 	if seen == 0 {
-		t.Skip("no <sparql-facet> declarations in the shipped templates")
+		t.Skip("no <sparql-column> declarations in the shipped templates")
+	}
+}
+
+// TestColumnsInheritTheirContainer covers the compact form: a <sparql-columns
+// for="…"> writes the base query id once and its children inherit it. The
+// Municipality class template is the widest user of it.
+func TestColumnsInheritTheirContainer(t *testing.T) {
+	mustIndex(t)
+
+	const (
+		set  = "classes/schch%3AMunicipality.html"
+		base = "municipalityInstances"
+	)
+	cols := findColumns(set, base)
+	if len(cols) < 2 {
+		t.Fatalf("findColumns(%q, %q) = %d columns; the template should declare a container full of them",
+			set, base, len(cols))
+	}
+	// None of them carries for= itself — inheritance is the only reason they resolve.
+	if _, ok := findColumn(set, base, "canton"); !ok {
+		t.Error(`the "canton" column did not inherit its container's for=`)
+	}
+	if cols.IconVar() == "" {
+		t.Error("no column flagged icon; the icon var is meant to come from the declaration")
+	}
+	if !cols.Filterable() {
+		t.Error("no column carries a filter; this table is supposed to be faceted")
+	}
+}
+
+// TestNoLegacyFacetDeclarations is the rename guard. Nothing reads <sparql-facet>
+// any more, so a missed one would silently cost a table its filters; initAsyncIndex
+// fails startup instead, and mustIndex would already have caught it. This asserts
+// the guard is wired the way the error message promises.
+func TestNoLegacyFacetDeclarations(t *testing.T) {
+	err := rejectLegacyFacets("templates/example.html", []parser.ExtractedElement{
+		{TagName: "sparql-facet", Attributes: map[string]string{"for": "x", "var": "y", "control": "select"}},
+	})
+	if err == nil {
+		t.Fatal("rejectLegacyFacets accepted a configured <sparql-facet>")
+	}
+	if !strings.Contains(err.Error(), "sparql-column") {
+		t.Errorf("error should name the replacement element, got: %v", err)
+	}
+	// Prose that merely names the tag carries no attributes and must be left alone.
+	if err := rejectLegacyFacets("templates/example.html", []parser.ExtractedElement{
+		{TagName: "sparql-facet", Attributes: map[string]string{}},
+	}); err != nil {
+		t.Errorf("rejectLegacyFacets rejected a bare mention: %v", err)
 	}
 }
 

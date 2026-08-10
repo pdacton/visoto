@@ -575,8 +575,8 @@ func asyncTableHandler(c *gin.Context) {
 		"badgeVar": c.Query("badgeVar"),
 		"groupBy":  c.Query("groupBy"),
 		// facetFor (set for faceted tables) = the base query id; the rendered
-		// sparqlTable fragment uses it to wire header-attached facet controls from
-		// the page's <sparql-facet> elements. Empty for ordinary async tables.
+		// sparqlTable fragment uses it to wire header-attached filter controls from
+		// the page's <sparql-column> elements. Empty for ordinary async tables.
 		"facetFor": c.Query("facetFor"),
 		// Non-empty string is truthy in the sparqlTable template's {{ if $collapsed }};
 		// absent param yields "" (falsy). The template may still force-collapse an
@@ -589,6 +589,9 @@ func asyncTableHandler(c *gin.Context) {
 		// code (the no-language choice), so an absent field would be ambiguous.
 		"lang": dataLang,
 	}
+	// A table that declares its columns says which one carries the icon, the badge
+	// and the grouping there, rather than repeating the variable names here.
+	applyColumnParams(params, c.Query("src"), id)
 
 	// Auto-detect the working-set mode: a class-instance query has a "?key a ??"
 	// membership triple, so its key var is derivable AND we're scoped to a class
@@ -785,7 +788,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Index the templates' <sparql-async>/<sparql-facet> declarations per template
+	// Index the templates' <sparql-async>/<sparql-column> declarations per template
 	// set, so /api fragment handlers can resolve an id against the ?src= set that
 	// asked for it. Fails startup on a duplicate id or a facet with no base query,
 	// which the old global scan resolved silently by directory order.
