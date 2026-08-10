@@ -462,6 +462,18 @@ A table's columns are described by `<sparql-column>` elements, nested in a
 | `path` | Property path that produces (and filters) the value. |
 | `root` | Anchor variable for `path`, when it is not the class-membership key. |
 | `icon` / `badge` / `group` | Resource icon / Tabler badge / initial grouping. |
+| `hidden` | Keep the variable, drop the column from view. |
+| `width` | Fixed width: `180`, `180px`, `20%`. |
+
+`order` goes on the **container**, not a column: `<sparql-columns for="x" order>` makes
+declaration order the column order, with any undeclared columns following in query
+order. It is opt-in because most tables declare only the few columns they have
+something to say about, and reordering by that partial list would silently promote them
+over the ones the query author put first.
+
+`hidden` keeps the variable in the data, so it still drives grouping, the row icon and
+the CSV/XLSX exports — it only takes the column off screen. It cannot be combined with
+`filter` (the control hangs off a header the column no longer has); startup rejects it.
 
 **A table is faceted exactly when one of its columns declares a filter** — there is
 nothing else to switch on. Every `var` must be SELECTed in the base query: a

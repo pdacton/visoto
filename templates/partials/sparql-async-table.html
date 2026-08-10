@@ -75,6 +75,17 @@
     icon   render the value as a resource icon   (replaces the iconVar param)
     badge  render the value as a Tabler badge    (replaces badgeVar)
     group  group the table by this column        (replaces groupBy)
+    hidden keep the variable, drop the column from view
+    width  fixed width: 180, 180px, 20%
+
+  On the CONTAINER, order= makes declaration order the column order (undeclared
+  columns follow in query order). Opt-in: most tables declare only the few columns
+  they have something to say about, and reordering by that partial list would
+  silently promote them over the ones the query author put first.
+
+  hidden keeps the variable in the data — grouping, the row icon and the exports
+  still see it — and only takes the column off screen. It cannot be combined with
+  filter, since the control hangs off a header the column no longer has.
 
   FILTERING. A table is faceted exactly when one of its columns declares a filter
   — there is nothing else to switch on. It renders the SAME working-set table (one

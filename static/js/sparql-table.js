@@ -301,20 +301,27 @@
       // width, not container width: always measurable, even in hidden containers.
       // maxInitialWidth only bounds the initial fit — users can drag wider.
       var capWidth = Math.max(Math.floor(window.innerWidth / 4), 250);
-      return (vars || []).map(function(varName) {
+      return orderColumns((vars || []).map(function(varName) {
         var binding = probeColumn(rows, varName).sample;
         var isLiteral = binding && binding.Type === 'literal';
         var isBadge = badgeVar && varName === badgeVar;
         var isIcon = iconVar && varName === iconVar;
         var facetSpec = facetByVar[varName];
+        // A declared width wins over the heuristic cap, which exists only to bound
+        // automatic sizing — an author who states a width has already decided.
+        var width = facetSpec && facetSpec.width;
         var col = {
           // A declared label is the column's name; the SPARQL variable is only the
           // fallback. This title is also what a CSV/XLSX export writes as its header.
           title: (facetSpec && facetSpec.label) || varName,
           field: varName,
+          // Hidden keeps the variable in the data — so it can still drive grouping,
+          // the row icon and the downloads — while taking the column off screen.
+          visible: !(facetSpec && facetSpec.hidden),
+          width: width ? (/^\d+$/.test(width) ? Number(width) : width) : undefined,
           formatter: isIcon ? iconCellFormatter : (isBadge ? badgeCellFormatter : htmlCellFormatter),
           variableHeight: isLiteral,
-          maxInitialWidth: capWidth,
+          maxInitialWidth: width ? undefined : capWidth,
           sorter: valueSorter,
           accessorDownload: plainValueAccessor,
           // Filter row is hidden until toggled via the card-header button
@@ -353,7 +360,26 @@
           };
         }
         return col;
+      }));
+    }
+
+    // Put the columns in declaration order, when the declaration asked for it.
+    //
+    // Opt-in (order= on the <sparql-columns> container), because most tables declare
+    // only the few columns they have something to say about: reordering by that
+    // partial list would silently promote them over the ones the query author put
+    // first. Undeclared columns keep their query order, after the declared ones.
+    function orderColumns(cols) {
+      var wanted = facetSpecs.some(function (s) { return s.ordered; });
+      if (!wanted) return cols;
+      var rank = Object.create(null);
+      facetSpecs.forEach(function (s, i) { rank[s.name] = i; });
+      var declared = [], rest = [];
+      cols.forEach(function (c) {
+        (c.field in rank ? declared : rest).push(c);
       });
+      declared.sort(function (a, b) { return rank[a.field] - rank[b.field]; });
+      return declared.concat(rest);
     }
 
     // Map a list of SPARQL binding rows ({var: binding}) to Tabulator rows.

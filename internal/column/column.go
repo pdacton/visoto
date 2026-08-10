@@ -21,6 +21,7 @@ package column
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"hutzli.org/visoto/internal/facet"
@@ -49,6 +50,8 @@ type Spec struct {
 	Icon   bool   // render this column's IRI as a resource icon
 	Badge  bool   // render this column's value as a badge
 	Group  bool   // group the table by this column initially
+	Hidden bool   // keep the variable (grouping, exports) but don't show the column
+	Width  string // fixed column width: "180", "180px", "20%"
 }
 
 // FromAttributes reads one <sparql-column> element's attributes. It normalizes
@@ -56,15 +59,17 @@ type Spec struct {
 // the file that holds it rather than silently degraded.
 func FromAttributes(attrs map[string]string) Spec {
 	s := Spec{
-		Var:   strings.TrimPrefix(strings.TrimSpace(attrs["var"]), "?"),
-		Label: attrs["label"],
-		Tip:   attrs["tip"],
-		Type:  strings.TrimSpace(attrs["type"]),
-		Root:  strings.TrimSpace(attrs["root"]),
-		Path:  strings.TrimSpace(attrs["path"]),
-		Icon:  flagAttr(attrs, "icon"),
-		Badge: flagAttr(attrs, "badge"),
-		Group: flagAttr(attrs, "group"),
+		Var:    strings.TrimPrefix(strings.TrimSpace(attrs["var"]), "?"),
+		Label:  attrs["label"],
+		Tip:    attrs["tip"],
+		Type:   strings.TrimSpace(attrs["type"]),
+		Root:   strings.TrimSpace(attrs["root"]),
+		Path:   strings.TrimSpace(attrs["path"]),
+		Icon:   flagAttr(attrs, "icon"),
+		Badge:  flagAttr(attrs, "badge"),
+		Group:  flagAttr(attrs, "group"),
+		Hidden: flagAttr(attrs, "hidden"),
+		Width:  strings.TrimSpace(attrs["width"]),
 	}
 	// Presence is the signal: a bare filter= asks for inference, so it must be
 	// distinguishable from no filter at all.
@@ -108,6 +113,16 @@ func (s Spec) Validate() error {
 	if s.Type != "" && !knownType(s.Type) {
 		return fmt.Errorf("column %q: type=%q is not one of %q, %q, %q, %q",
 			s.Var, s.Type, facet.TypeIRI, facet.TypeString, facet.TypeNumber, facet.TypeDate)
+	}
+	// A control hangs off the column header, and a hidden column has none — the
+	// filter would be declared, wired and unreachable.
+	if s.Hidden && s.Filterable() {
+		return fmt.Errorf("column %q: hidden and filter= are contradictory — a hidden column has no header to hang the control off; "+
+			"drop one, or keep the column and give it a narrow width=", s.Var)
+	}
+	if s.Width != "" && !widthRe.MatchString(s.Width) {
+		return fmt.Errorf("column %q: width=%q is not a number of pixels (%q, %q) or a percentage (%q)",
+			s.Var, s.Width, "180", "180px", "20%")
 	}
 	// Root/path coherence belongs to the facet builder — ask it rather than restate
 	// the rule here, so the two can never drift.
@@ -153,6 +168,11 @@ func (s Spec) Facet(resolvedControl, resolvedType string) facet.FacetSpec {
 		Label:   s.Label,
 	}
 }
+
+// widthRe accepts what Tabulator's column width option understands, and nothing
+// else: a bare pixel count, an explicit unit, or a percentage. Validated here so a
+// typo fails at startup rather than producing a column of no width at all.
+var widthRe = regexp.MustCompile(`^\d+(px|%|em|rem)?$`)
 
 func knownType(t string) bool {
 	switch t {

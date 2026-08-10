@@ -67,6 +67,16 @@ func TestFromAttributesFlags(t *testing.T) {
 	}
 }
 
+func TestFromAttributesLayout(t *testing.T) {
+	got := FromAttributes(map[string]string{"var": "x", "hidden": "", "width": " 180px "})
+	if !got.Hidden {
+		t.Error("hidden did not read as on")
+	}
+	if got.Width != "180px" {
+		t.Errorf("Width = %q, want it trimmed to %q", got.Width, "180px")
+	}
+}
+
 func TestValidate(t *testing.T) {
 	for _, tc := range []struct {
 		name    string
@@ -76,10 +86,19 @@ func TestValidate(t *testing.T) {
 		{"ok bare", Spec{Var: "x"}, ""},
 		{"ok filtered", Spec{Var: "x", Filter: FilterAuto}, ""},
 		{"ok typed", Spec{Var: "x", Filter: FilterRange, Type: facet.TypeDate}, ""},
+		{"ok hidden", Spec{Var: "x", Hidden: true}, ""},
+		{"ok width px", Spec{Var: "x", Width: "180px"}, ""},
+		{"ok width bare", Spec{Var: "x", Width: "180"}, ""},
+		{"ok width percent", Spec{Var: "x", Width: "20%"}, ""},
 		{"no var", Spec{}, "var is required"},
 		{"bad filter", Spec{Var: "x", Filter: "dropdown"}, "filter="},
 		{"bad type", Spec{Var: "x", Type: "uri"}, "type="},
 		{"root without path", Spec{Var: "x", Root: "?key"}, "needs a path"},
+		// A control hangs off the header, so hiding the column would wire up a
+		// filter nobody can reach.
+		{"hidden and filtered", Spec{Var: "x", Hidden: true, Filter: FilterAuto}, "contradictory"},
+		{"bad width", Spec{Var: "x", Width: "wide"}, "width="},
+		{"bad width unit", Spec{Var: "x", Width: "12ch"}, "width="},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.spec.Validate()

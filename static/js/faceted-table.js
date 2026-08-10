@@ -114,12 +114,13 @@
   function readColumns(id) {
     var specs = [];
     document.querySelectorAll('sparql-column').forEach(function (el) {
-      var owner = el.getAttribute('for');
-      if (!owner) {
-        var box = el.closest('sparql-columns');
-        owner = box ? box.getAttribute('for') : '';
-      }
+      var box = el.closest('sparql-columns');
+      var owner = el.getAttribute('for') || (box ? box.getAttribute('for') : '');
       if (owner !== id) return;
+      // order is declared once, on the container: "these columns are in the order
+      // I wrote them". Reordering every table by declaration order would be wrong —
+      // most declare only the few columns they have something to say about.
+      var ordered = flagAttr(el, 'order') || (box ? flagAttr(box, 'order') : false);
       var name = (el.getAttribute('var') || '').replace(/^\?/, '');
       if (!name) return;
       specs.push({
@@ -132,7 +133,10 @@
         type: (el.getAttribute('type') || '').trim(),
         icon: flagAttr(el, 'icon'),
         badge: flagAttr(el, 'badge'),
-        group: flagAttr(el, 'group')
+        group: flagAttr(el, 'group'),
+        hidden: flagAttr(el, 'hidden'),
+        width: (el.getAttribute('width') || '').trim(),
+        ordered: ordered
       });
     });
     return specs;
@@ -193,7 +197,10 @@
       type: type,
       icon: spec.icon,
       badge: spec.badge,
-      group: spec.group
+      group: spec.group,
+      hidden: spec.hidden,
+      width: spec.width,
+      ordered: spec.ordered
     };
   }
 
