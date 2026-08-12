@@ -56,13 +56,11 @@ Inside `pageContent`, you compose the page from components (which carry their ow
 │       "result" .QueryResults.hierarchy
 │       "id"     "hierarchy") }}
 │
-├── {{ template "relationships" . }}         ← component: outgoing + incoming links
-│
-└── {{ template "classHierarchy" . }}        ← component: subclass/superclass tables
+└── {{ template "relationships" . }}         ← component: outgoing + incoming links
 {{ end }}
 ```
 
-**Components** (`literals`, `relationships`, `classHierarchy`, `ontologyShacl`, `pageHeader`) — pass `.` (full context), they issue their own SPARQL queries internally.
+**Components** (`literals`, `relationships`, `pageHeader`) — pass `.` (full context), they issue their own SPARQL queries internally.
 
 **Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlGrid`, `sparqlTree`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
 
@@ -548,9 +546,12 @@ Components are called with `{{ template "<name>" . }}` — pass the full `.` con
 |---|---|
 | `pageHeader` | Standard page header: queries for title, subtitle, and `rdf:type` list. Defines the `pageTitle`, `metaTitle`, `metaIcon`, `pageSubtitle`, and `pageClasses` blocks. **Include this in almost every template.** |
 | `literals` | Renders all literal (non-IRI) properties of the resource in a `sparqlGrid`. |
-| `classHierarchy` | Renders superclass and subclass tables. Best suited for class templates. |
 | `relationships` | Renders outgoing and incoming IRI-valued relationship tables (collapsed by default). |
-| `ontologyShacl` | Renders SHACL shape constraints. Suited for ontology/class templates. |
+
+> Subclass/superclass, ontology and SHACL tables are **not** components any more.
+> They are part of the resource page's **Schema** view, declared as `<sparql-async>`
+> queries in `layout/base.html`, so every resource page has them without asking and
+> they only run when that tab is first opened. Do not add them to a page template.
 
 ---
 

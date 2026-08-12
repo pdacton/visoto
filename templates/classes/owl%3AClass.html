@@ -41,55 +41,7 @@
     </div>
   </div>
 
-  <!-- subclasses -->
-  <div class="row">
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="subclasses">
-          SELECT DISTINCT ?subclass ?label WHERE {
-            BIND (?? AS ?class)
-            ?subclass rdfs:subClassOf ?class .
-            OPTIONAL { ?subclass rdfs:label ?label . }
-          }
-          ORDER BY ?subclass
-          LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.subclasses
-            "id" "subclasses"
-            "title" (t "card.subclasses" "Subclasses")
-            "icon" "circle-chevron-down"
-            "collapsed" false)
-        }}
-      </div>
-    </div>
-
-    <!-- superclasses -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-query id="superclasses">
-          SELECT DISTINCT ?superclass ?label WHERE {
-            BIND (?? AS ?class)
-            ?class rdfs:subClassOf ?superclass .
-            OPTIONAL { ?superclass rdfs:label ?label . }
-          }
-          ORDER BY ?superclass
-          LIMIT 1000
-        </sparql-query>
-        {{ template "sparqlTable" (dict
-            "result" .QueryResults.superclasses
-            "id" "superclasses"
-            "title" (t "card.superclasses" "Superclasses")
-            "icon" "circle-chevron-up"
-            "collapsed" false)
-        }}
-      </div>
-    </div>
-  </div>
-
   {{ template "relationships" . }}
-
-  {{ template "ontologyShacl" . }}
 
 </div>
 {{ end }}

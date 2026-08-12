@@ -172,11 +172,136 @@
                     "icon" "database"
                     "trigger" "showData") }}
             </div>
-            <!-- Schema view: an informal schema derived from the actual data around the
-                 resource, drawn as a UML-style class diagram. Like the graph view it is
-                 lazily initialized on first show (the toggle JS fires 'schema:init'). -->
+            <!-- Schema view: the informal schema DERIVED from the data around the
+                 resource, drawn as a UML-style class diagram, followed by the schema
+                 the data DECLARES about itself — class hierarchy, ontology axioms and
+                 SHACL shapes. The diagram is lazily initialized on first show (the
+                 toggle JS fires 'schema:init'); the four tables are lazily loaded on
+                 the same reveal (hx-trigger="showSchema").
+
+                 These four tables were the classHierarchy and ontologyShacl
+                 components, called from the Table view of the nine page templates that
+                 happened to include them. They live here instead so the schema story is
+                 in one place on every resource page rather than repeated per template —
+                 and, because this tab is revealed rather than rendered, a page whose
+                 Schema tab is never opened no longer pays for the queries at all.
+
+                 They had to become <sparql-async> to move here: a synchronous
+                 <sparql-query> is collected by ProcessTemplateFile, which reads only the
+                 PAGE file and its component includes and never looks at a layout — one
+                 declared here would silently yield no results. Async ids resolve through
+                 the index built over the whole template set, exactly like the
+                 resourceTriples query in the Data view above.
+
+                 The ids carry a "schema" prefix only to keep them greppable: four page
+                 templates declare their own sync <sparql-query id="subclasses"> etc.
+                 Sync and async ids are separate namespaces and cannot actually collide. -->
             <div id="resource-schema-view" class="d-none">
-              {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+              <div class="mb-3">
+                {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+              </div>
+
+              <sparql-async id="schemaSubclasses">
+                SELECT ?subclass ?description WHERE {
+                  ?subclass rdfs:subClassOf ?? .
+                  OPTIONAL { ?subclass visoto:description ?description .
+                    FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
+                } LIMIT 5000
+              </sparql-async>
+
+              <sparql-async id="schemaSuperclasses">
+                SELECT ?superclass ?description WHERE {
+                  ?? rdfs:subClassOf ?superclass .
+                  OPTIONAL { ?superclass visoto:description ?description .
+                    FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
+                } LIMIT 5000
+              </sparql-async>
+
+              <sparql-async id="schemaOntology">
+                SELECT ?subject ?property ?object WHERE {
+
+                  {
+                    SELECT ?subject ?property ?object WHERE {
+                      BIND (?? AS ?subject)
+                      ?subject ?property ?object .
+                    } LIMIT 1000
+                  }
+
+                  FILTER ( ?property IN ( schema:rangeIncludes,schema:domainIncludes,rdfs:range,rdfs:domain ) ||
+                           STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
+
+                } LIMIT 1000
+              </sparql-async>
+
+              <sparql-async id="schemaShacl">
+                SELECT ?subject ?property ?object WHERE {
+
+                  {
+                    SELECT ?subject ?property ?object WHERE {
+                      BIND (?? AS ?subject)
+                      ?subject ?property ?object .
+                    } LIMIT 1000
+                  }
+
+                  FILTER (STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+
+                } LIMIT 1000
+              </sparql-async>
+
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="mb-3">
+                    {{ template "sparqlAsyncTable" (dict
+                          "queryId" "schemaSubclasses"
+                          "iri" .ResourceIRI
+                          "title" (t "card.subclassesOfThisClass" "Subclasses of this Class")
+                          "icon" "circle-chevron-down"
+                          "iconVar" "subclass"
+                          "trigger" "showSchema") }}
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="mb-3">
+                    {{ template "sparqlAsyncTable" (dict
+                          "queryId" "schemaSuperclasses"
+                          "iri" .ResourceIRI
+                          "title" (t "card.superclassesOfThisClass" "Superclasses of this Class")
+                          "icon" "circle-chevron-up"
+                          "iconVar" "superclass"
+                          "trigger" "showSchema") }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dense triple dumps, so both start collapsed — which also lets the
+                   placeholder skip its skeleton body and avoids an expanded-then-
+                   collapsed flash as four cards swap in at once. -->
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="mb-3">
+                    {{ template "sparqlAsyncTable" (dict
+                          "queryId" "schemaOntology"
+                          "iri" .ResourceIRI
+                          "title" (t "card.schemaInformation" "Schema information")
+                          "icon" "circle-dashed"
+                          "iconVar" "subject"
+                          "collapsed" true
+                          "trigger" "showSchema") }}
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="mb-3">
+                    {{ template "sparqlAsyncTable" (dict
+                          "queryId" "schemaShacl"
+                          "iri" .ResourceIRI
+                          "title" (t "card.shapeInformationSHACL" "Shape information (SHACL)")
+                          "icon" "shapes"
+                          "iconVar" "subject"
+                          "collapsed" true
+                          "trigger" "showSchema") }}
+                  </div>
+                </div>
+              </div>
             </div>
             {{ end }}
           </div>

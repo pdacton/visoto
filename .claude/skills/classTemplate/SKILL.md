@@ -91,7 +91,7 @@ You'll be prompted for:
 - **Backup on Update**: Creates `.backup` file before overwriting existing templates
 - **Example Comments**: Includes helpful comments showing how to customize queries
 - **Partial Integration**: Uses the Visoto partials — `sparqlAsyncTable` (lazy HTMX working-set table; the default for the instances list), `sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlMermaidFlow`, and the graph-embedding partials `sparqlGraph` / `schemaGraph`
-- **Component Integration**: uses the pre-built, ready to use building blocks (`pageHeader`, `literals`, `relationships`, `classHierarchy`, `ontologyShacl`)
+- **Component Integration**: uses the pre-built, ready to use building blocks (`pageHeader`, `literals`, `relationships`). There is no `classHierarchy` or `ontologyShacl` component — calling one is a startup error. Subclass/superclass, ontology and SHACL tables live in the resource page's Schema view (`layout/base.html`) and appear on every resource page automatically.
 
 ## UI strings must be translated
 

@@ -6,15 +6,17 @@
  *     radio's label as active for free.
  *   - Body wraps the table content in #resource-table-view, the graph in
  *     #resource-graph-view, the data table in #resource-data-view, and the
- *     derived schema diagram in #resource-schema-view (all but the table view
+ *     schema diagram and tables in #resource-schema-view (all but the table view
  *     start .d-none).
  *   - The graph partial (templates/partials/sparql-graph.html) is rendered with
  *     lazy=true and initialized on a 'graph:init' event at its -root element.
  *   - The data view (templates/partials/sparql-async-table.html) is an HTMX
  *     element with hx-trigger="showData"; the query runs only when we fire that
  *     event on first reveal.
- *   - The schema partial (templates/partials/schema-graph.html) is rendered with
- *     lazy=true and initialized on a 'schema:init' event at its -root element.
+ *   - The schema view holds both kinds: the diagram partial
+ *     (templates/partials/schema-graph.html) is rendered with lazy=true and
+ *     initialized on a 'schema:init' event at its -root element, and FOUR async
+ *     tables below it wait on hx-trigger="showSchema".
  *
  * Switching only shows/hides the wrappers — neither the graph instances nor the
  * loaded data table is destroyed, so state (dragged nodes, zoom, table grouping)
@@ -85,8 +87,18 @@
       if (!schemaInitialized) {
         schemaInitialized = true;
         // The schema partial defaults its id to "schema-graph" (base.html passes none).
+        // Dispatched before the tables so the expensive Graph Explorer boot starts
+        // ahead of four fragment requests.
         var root = document.getElementById('schema-graph-root');
         if (root) root.dispatchEvent(new Event('schema:init'));
+        // Unlike the Data view's single table, this view holds FOUR async tables
+        // (sub/superclasses, ontology, SHACL) — querySelectorAll, not the singular
+        // querySelector used above, or only the first would ever leave its skeleton.
+        if (window.htmx) {
+          schemaView.querySelectorAll('[hx-get]').forEach(function (el) {
+            window.htmx.trigger(el, 'showSchema');
+          });
+        }
       }
     }
 
@@ -141,13 +153,17 @@
       if (view) applyView(view);
     });
 
-    // The async table fragment arrives via HTMX; re-run Lucide so the card icon
-    // (and any icon cells) render after the swap.
-    if (dataView) {
-      dataView.addEventListener('htmx:afterSwap', function () {
+    // Async table fragments arrive via HTMX; re-run Lucide so the card icon (and
+    // any icon cells) render after the swap. htmx:afterSwap bubbles, so one
+    // listener per container covers all of that container's tables — the schema
+    // view swaps four times. createIcons() only rewrites [data-lucide] nodes, so
+    // being called once per swap is harmless.
+    [dataView, schemaView].forEach(function (view) {
+      if (!view) return;
+      view.addEventListener('htmx:afterSwap', function () {
         if (window.lucide) window.lucide.createIcons();
       });
-    }
+    });
   }
 
   if (document.readyState === 'loading') {
