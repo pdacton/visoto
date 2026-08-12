@@ -5,7 +5,7 @@
 {{ define "pageContent" }}
 <div>
 
-  <p class="text-secondary">{{ tHTML "type.cube.aCubeIsAVersioned" "A <strong>Cube</strong> is a versioned statistical dataset described with the <a href=\"https://cube.link/\" target=\"_blank\" rel=\"noopener\">cube.link</a> vocabulary: a set of observations sharing the same dimensions, published with rich metadata (publisher, themes, status, versions). Superseded versions stay in the graph and are marked with an expiry date — the table below hides them by default." }}</p>
+  <p class="text-secondary">{{ tHTML "type.cube.aCubeIsAVersioned" "A <strong>Cube</strong> is a versioned statistical dataset described with the <a href=\"https://cube.link/\" target=\"_blank\" rel=\"noopener\">cube.link</a> vocabulary: a set of observations sharing the same dimensions, published with rich metadata (publisher, themes, status, versions). Superseded versions stay in the graph and are marked with an expiry date — filter the table's <strong>Version</strong> column to see only current ones." }}</p>
 
   <!-- Metric strip: counts are queried live (LINDAS counts drift). -->
   <sparql-async id="cubeTotal">
@@ -39,51 +39,40 @@
     {{ template "sparqlMetric" (dict
         "queryId" "cubeCurrent"
         "title" (t "card.currentVersions" "Current Versions")
-        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube") }}
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
+        "icon" "/static/img/resource/CubeCurrent.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "cubePublishedCurrent"
         "title" (t "card.publishedCurrent" "Published & Current")
-        "href" "/resource?iri=https%3A%2F%2Fld.admin.ch%2Fvocabulary%2FCreativeWorkStatus%2FPublished") }}
+        "href" "/resource?iri=https%3A%2F%2Fld.admin.ch%2Fvocabulary%2FCreativeWorkStatus%2FPublished"
+        "icon" "/static/img/resource/Published.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "cubePublishers"
         "title" (t "card.publishers" "Publishers")
-        "href" "/resource?iri=http%3A%2F%2Fschema.org%2FOrganization") }}
+        "href" "/resource?iri=http%3A%2F%2Fschema.org%2FOrganization"
+        "icon" "/static/img/resource/Organization.svg") }}
   </div>
 
   <!-- Catalog: one row per cube. Theme labels contain commas, so GROUP_CONCAT
-       uses "; " — the facet script splits on it. -->
+       uses "; " to keep the joined list readable in the Themes column.
+
+       No ?name here: the backend resolves a label for every IRI in the result
+       (extractIRIs → fetchLabels → enrichWithLabels in internal/sparql), and
+       schema:name is one of the properties it looks up, so the Cube column already
+       displays the cube title. Selecting the title again only produced a second
+       column repeating it. -->
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
 
-        <!-- Facet bar: filled by script once the table below has loaded. -->
-        <div id="cube-facets" class="card mb-2 d-none">
-          <div class="card-body py-2">
-            <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-              <span class="text-secondary small me-1">Theme:</span>
-              <span id="cube-facet-themes" class="d-flex flex-wrap gap-1"></span>
-            </div>
-            <div class="d-flex flex-wrap align-items-center gap-2">
-              <span class="text-secondary small me-1">Publisher:</span>
-              <span id="cube-facet-publishers" class="d-flex flex-wrap gap-1"></span>
-              <label class="form-check form-switch mb-0 ms-auto">
-                <input id="cube-toggle-superseded" class="form-check-input" type="checkbox">
-                <span class="form-check-label" id="cube-toggle-superseded-label">{{ t "type.cube.includeSupersededVersions" "Include superseded versions" }}</span>
-              </label>
-            </div>
-          </div>
-        </div>
-
         <sparql-async id="cubeCatalog">
-          SELECT ?cube ?name ?publisher ?themes ?status ?modified ?superseded WHERE {
-            { SELECT ?cube (SAMPLE(?n) AS ?name) (SAMPLE(?creatorName) AS ?publisher)
+          SELECT ?cube ?publisher ?themes ?status ?modified ?superseded WHERE {
+            { SELECT ?cube (SAMPLE(?creatorName) AS ?publisher)
                      (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes)
                      (SAMPLE(?st) AS ?status) (SAMPLE(?mod) AS ?modified)
                      (IF(COUNT(?exp) > 0, "superseded", "current") AS ?superseded)
               WHERE {
                 ?cube a cube:Cube .
-                OPTIONAL { ?cube schema:name ?n .
-                           FILTER(lang(?n) = visoto:dispLang || lang(?n) = "") }
                 OPTIONAL { ?cube dct:creator/schema:name ?creatorName .
                            FILTER(lang(?creatorName) = "en" || lang(?creatorName) = "") }
                 OPTIONAL { ?cube dcat:theme/schema:name ?themeName .
@@ -97,18 +86,58 @@
           ORDER BY DESC(?modified)
           LIMIT 10000
         </sparql-async>
+
+        <!-- Column declarations. This table is INLINE, not working-set: the
+             membership triple is "?cube a cube:Cube" with the class written out,
+             not "?cube a ??", so nothing here reaches /api/faceted-table and every
+             filter runs locally over the loaded rows. path= is therefore
+             documentation of where each value comes from rather than a backend
+             filter anchor — kept because it is the same property the query walks.
+
+             order= is set: the query's SELECT order already is the reading order
+             (publisher, themes, status, modified), so declaring it costs nothing
+             and pins ?cube first as the identity column. -->
+        <sparql-columns for="cubeCatalog" order>
+          <!-- The identity column. Text, not the checkbox list 2000 distinct IRIs
+               would never infer anyway: the search matches the LABEL shown in the
+               cell (the cube title), not the IRI string. path= pins schema:name so
+               that stays true if this ever runs against the backend, where the
+               default would be the broader rdfs:label|skos:prefLabel|schema:name. -->
+          <sparql-column var="cube" label="{{ t "facet.cube" "Cube" }}" icon
+                         tip="{{ t "facet.tip.cube" "The cube resource itself — click through to its dataset profile." }}"
+                         path="schema:name" filter="text"></sparql-column>
+          <!-- A small repeating vocabulary (federal offices), so a bare filter
+               infers the checkbox list. -->
+          <sparql-column var="publisher" label="{{ t "facet.publisher" "Publisher" }}"
+                         tip="{{ t "facet.tip.publisher" "Organization that created the cube (dct:creator)." }}"
+                         path="dct:creator/schema:name" filter></sparql-column>
+          <!-- GROUP_CONCAT of several themes per row, joined with "; ". A select
+               would offer whole concatenations as options, so force text: it
+               substring-matches inside the joined list, which is the useful test. -->
+          <sparql-column var="themes" label="{{ t "facet.themes" "Themes" }}"
+                         tip="{{ t "facet.tip.themes" "All DCAT themes of the cube, separated by “; ”." }}"
+                         path="dcat:theme/schema:name" filter="text"></sparql-column>
+          <sparql-column var="status" label="{{ t "facet.status" "Status" }}" badge
+                         tip="{{ t "facet.tip.status" "Publication status: Draft, Published or Expired." }}"
+                         path="schema:creativeWorkStatus/schema:name" filter width="130"></sparql-column>
+          <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}" type="date"
+                         tip="{{ t "facet.tip.modified" "Date the cube was last modified (schema:dateModified)." }}"
+                         path="schema:dateModified" filter="range" width="150"></sparql-column>
+          <!-- Derived in the query (IF over schema:expires), so it has no property
+               path to declare. Two values over the whole table → checkbox list. -->
+          <sparql-column var="superseded" label="{{ t "facet.version" "Version" }}" badge
+                         tip="{{ t "facet.tip.version" "“current” unless the cube carries an expiry date, which marks it superseded by a newer version." }}"
+                         filter width="130"></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "cubeCatalog"
             "title" (t "card.dataCubes" "Data Cubes")
-            "icon" "box"
-            "badgeVar" "status")
+            "icon" "box")
         }}
       </div>
     </div>
   </div>
-
-  <!-- Catalog facets live in static/js/cube-catalog.js -->
-  <script src="/static/js/cube-catalog.js" defer></script>
 
   {{ template "literals" . }}
 
