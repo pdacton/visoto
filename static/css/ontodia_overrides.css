@@ -873,10 +873,14 @@
  * position:fixed + inset:0 pins it to the viewport, so native browser fullscreen
  * (F11) stacks on top for true edge-to-edge without any JS Fullscreen API.
  */
-.card.graph-maximized > .card-header {
-  display: none;
+/* Descendant, not child, selectors: the card body sits inside a .collapse wrapper
+   (the collapse toggle in the header), so a ">" here would stop matching.
+   !important because Tabler's own .card-header{display:flex} has equal specificity
+   and this file is loaded by the partial, so source order does not reliably win. */
+.card.graph-maximized .card-header {
+  display: none !important;
 }
-.card.graph-maximized > .card-body {
+.card.graph-maximized .card-body {
   padding: 0;
 }
 .card.graph-maximized .graph-canvas {

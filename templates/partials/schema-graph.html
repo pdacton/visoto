@@ -54,8 +54,15 @@
         <a class="btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
           <i data-lucide="maximize"></i>
         </a>
+        <!-- Collapse toggle, same Bootstrap markup as the sparqlTable cards. The diagram
+             only auto-fits at mount, so schema-graph.js re-fits on shown.bs.collapse. -->
+        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
+           aria-expanded="true" aria-controls="collapse-{{ $id }}" style="cursor: pointer;">
+          <i data-lucide="chevron-up"></i>
+        </a>
       </div>
     </div>
+    <div id="collapse-{{ $id }}" class="collapse show">
     <div class="card-body p-0">
       <!-- Height is applied via JS from the data island below (avoids Go's
            html/template ZgotmplZ CSS-context sanitizer; see sparql-graph.html). -->
@@ -66,6 +73,7 @@
       <button type="button" class="btn btn-icon graph-exit-fullscreen" id="{{ $id }}-exit" title="{{ t "graph.exitFullscreen" "Exit fullscreen" }}">
         <i data-lucide="minimize"></i>
       </button>
+    </div>
     </div>
   </div>
 

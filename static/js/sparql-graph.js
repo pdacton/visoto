@@ -327,6 +327,16 @@
       }
 
       maximizeBtn.addEventListener('click', function() {
+        // Fullscreen on a collapsed card would pin a canvas that is inside a
+        // display:none wrapper — nothing visible but the exit button. Expand first;
+        // shown.bs.collapse then refits, and the refit() below covers the already-
+        // expanded case. Bootstrap's bundle is exposed as window.tabler here (the
+        // Tabler build), NOT window.bootstrap — that global does not exist.
+        var collapsed = document.getElementById('collapse-' + ID);
+        var Collapse = window.tabler && window.tabler.Collapse;
+        if (collapsed && !collapsed.classList.contains('show') && Collapse) {
+          Collapse.getOrCreateInstance(collapsed).show();
+        }
         card.classList.add('graph-maximized');
         refit();
       });
@@ -344,6 +354,13 @@
           if (currentWorkspace && currentWorkspace.zoomToFit) currentWorkspace.zoomToFit();
         }, 150);
       });
+
+      // Re-fit after the collapse animation finishes. While collapsed the canvas has
+      // no height, so the workspace's idea of its viewport is stale on the way back —
+      // without this the graph returns off-centre or clipped. shown.bs.collapse fires
+      // at the END of the transition, so the box is already at full height here.
+      var collapseEl = document.getElementById('collapse-' + ID);
+      if (collapseEl) collapseEl.addEventListener('shown.bs.collapse', refit);
     }
     // Buttons exist in the DOM regardless of GE readiness; wire them up as soon as possible.
     setupFullscreen();
