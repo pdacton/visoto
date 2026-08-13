@@ -357,7 +357,6 @@ Tabular display powered by Tabulator.js. Supports search, sorting, CSV/JSON/XLSX
 | `title` | `string` | no | Card heading. |
 | `icon` | `string` | no | Lucide icon name (e.g., `"list"`, `"users"`). |
 | `collapsed` | `bool` | no | Start collapsed. Auto-collapses if the result is empty. |
-| `iconVar` | `string` | no | SPARQL variable name whose URI is used to look up a resource icon image for each row. |
 | `badgeVar` | `string` | no | SPARQL variable name to render as a colored badge in each row. |
 
 ```html
@@ -406,16 +405,16 @@ when the placeholder is triggered.
 | `queryId` | `string` | required | Must match the `id` of a `<sparql-async>` element. |
 | `iri` | `string` | — | Resource IRI, substituted for `??` in the query. |
 | `title` / `icon` | `string` | — | Card heading and Lucide icon. |
-| `iconVar` / `badgeVar` | `string` | — | As in `sparqlTable`. |
+| `badgeVar` | `string` | — | As in `sparqlTable`. |
 | `groupBy` | `string` | — | SPARQL variable the table is initially grouped by. |
 | `collapsed` | `bool` | `false` | Start the loaded card collapsed. |
 | `trigger` | `string` | `"load"` | HTMX trigger. Pass a custom event (e.g. `"showData"`) to defer until the view is first revealed. |
 | `searchProp` | `string` | — | Name property IRI used by the working-set "Search all" rebuild. |
 | `max` | `int` | `20000` | Working-set row cap for large classes. |
 
-`iconVar` / `badgeVar` / `groupBy` are shorthands for tables that declare no columns;
-a table that declares them says the same with `icon` / `badge` / `group` on the column,
-and that wins.
+`badgeVar` / `groupBy` are shorthands for tables that declare no columns; a table
+that declares them says the same with `badge` / `group` on the column, and that wins.
+The row icon has no shorthand — declare it with `icon` on a `<sparql-column>`.
 
 ```html
 <sparql-async id="myTable" class="d-none">

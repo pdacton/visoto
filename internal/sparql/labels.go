@@ -20,49 +20,12 @@ import (
 	"hutzli.org/visoto/internal/logger"
 )
 
-// ── Cache types & variables ──────────────────────────────────────────────────
+// ── Cache ────────────────────────────────────────────────────────────────────
 
-// labelCacheEntry stores IRI→label mappings with expiration
-type labelCacheEntry struct {
-	label      string
-	expiration time.Time
-}
-
-var (
-	labelCache      = sync.Map{} // map[string]labelCacheEntry
-	cacheTTL        = 1 * time.Hour
-	cleanupInterval = 15 * time.Minute
-	cleanupOnce     sync.Once
-)
-
-// ── Cache lifecycle ──────────────────────────────────────────────────────────
-
-// initLabelCache starts the background cleanup goroutine (called once)
-func initLabelCache() {
-	cleanupOnce.Do(func() {
-		go labelCacheCleanup()
-	})
-}
-
-// labelCacheCleanup runs periodically to remove expired entries
-func labelCacheCleanup() {
-	ticker := time.NewTicker(cleanupInterval)
-	defer ticker.Stop()
-
-	for range ticker.C {
-		now := time.Now()
-		labelCache.Range(func(key, value any) bool {
-			if entry, ok := value.(labelCacheEntry); ok {
-				if now.After(entry.expiration) {
-					labelCache.Delete(key)
-				}
-			}
-			return true
-		})
-	}
-}
-
-// ── Cache operations ─────────────────────────────────────────────────────────
+// labelCache holds resolved labels. Keyed by IRI *and* language preferences,
+// because the label a visitor should see depends on both (see labelCacheKey).
+// The implementation is the shared expiring map in cache.go.
+var labelCache = newTTLCache[string](1 * time.Hour)
 
 // labelCacheKey returns a cache key incorporating the IRI and language preferences.
 // Languages are sorted so that equivalent preference sets produce the same key.
@@ -75,24 +38,12 @@ func labelCacheKey(iri string, languages []string) string {
 
 // getCachedLabel retrieves label from cache if not expired
 func getCachedLabel(iri string, languages []string) (string, bool) {
-	key := labelCacheKey(iri, languages)
-	if val, ok := labelCache.Load(key); ok {
-		if entry, ok := val.(labelCacheEntry); ok {
-			if time.Now().Before(entry.expiration) {
-				return entry.label, true
-			}
-			labelCache.Delete(key) // Expired, remove it
-		}
-	}
-	return "", false
+	return labelCache.get(labelCacheKey(iri, languages))
 }
 
 // setCachedLabel stores label in cache with TTL
 func setCachedLabel(iri, label string, languages []string) {
-	labelCache.Store(labelCacheKey(iri, languages), labelCacheEntry{
-		label:      label,
-		expiration: time.Now().Add(cacheTTL),
-	})
+	labelCache.set(labelCacheKey(iri, languages), label)
 }
 
 // ── Query building ───────────────────────────────────────────────────────────

@@ -31,12 +31,15 @@
       ORDER BY ?canton ?identifier
       LIMIT 20000
     </sparql-async>
+    <sparql-columns for="districtInstances">
+      <sparql-column var="type" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "districtInstances"
         "iri" .ResourceIRI
         "title" (t "card.districts" "Districts")
-        "icon" "circle-dot"
-        "iconVar" "type")
+        "icon" "circle-dot")
     }}
   </div>
 </div>

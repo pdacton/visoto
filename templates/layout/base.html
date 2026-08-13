@@ -208,6 +208,9 @@
                     FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
                 } LIMIT 5000
               </sparql-async>
+              <sparql-columns for="schemaSubclasses">
+                <sparql-column var="subclass" icon></sparql-column>
+              </sparql-columns>
 
               <sparql-async id="schemaSuperclasses">
                 SELECT ?superclass ?description WHERE {
@@ -216,6 +219,9 @@
                     FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
                 } LIMIT 5000
               </sparql-async>
+              <sparql-columns for="schemaSuperclasses">
+                <sparql-column var="superclass" icon></sparql-column>
+              </sparql-columns>
 
               <sparql-async id="schemaOntology">
                 SELECT ?subject ?property ?object WHERE {
@@ -232,6 +238,9 @@
 
                 } LIMIT 1000
               </sparql-async>
+              <sparql-columns for="schemaOntology">
+                <sparql-column var="subject" icon></sparql-column>
+              </sparql-columns>
 
               <sparql-async id="schemaShacl">
                 SELECT ?subject ?property ?object WHERE {
@@ -247,6 +256,9 @@
 
                 } LIMIT 1000
               </sparql-async>
+              <sparql-columns for="schemaShacl">
+                <sparql-column var="subject" icon></sparql-column>
+              </sparql-columns>
 
               <div class="row">
                 <div class="col-lg-6">
@@ -256,7 +268,6 @@
                           "iri" .ResourceIRI
                           "title" (t "card.subclassesOfThisClass" "Subclasses of this Class")
                           "icon" "circle-chevron-down"
-                          "iconVar" "subclass"
                           "trigger" "showSchema") }}
                   </div>
                 </div>
@@ -267,7 +278,6 @@
                           "iri" .ResourceIRI
                           "title" (t "card.superclassesOfThisClass" "Superclasses of this Class")
                           "icon" "circle-chevron-up"
-                          "iconVar" "superclass"
                           "trigger" "showSchema") }}
                   </div>
                 </div>
@@ -284,7 +294,6 @@
                           "iri" .ResourceIRI
                           "title" (t "card.schemaInformation" "Schema information")
                           "icon" "circle-dashed"
-                          "iconVar" "subject"
                           "collapsed" true
                           "trigger" "showSchema") }}
                   </div>
@@ -296,7 +305,6 @@
                           "iri" .ResourceIRI
                           "title" (t "card.shapeInformationSHACL" "Shape information (SHACL)")
                           "icon" "shapes"
-                          "iconVar" "subject"
                           "collapsed" true
                           "trigger" "showSchema") }}
                   </div>

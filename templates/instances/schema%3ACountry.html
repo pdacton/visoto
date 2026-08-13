@@ -81,12 +81,15 @@
         ORDER BY ?identifier
         LIMIT 5000
       </sparql-query>
+      <sparql-columns for="cantons">
+        <sparql-column var="type" icon></sparql-column>
+      </sparql-columns>
+
       {{ template "sparqlTable" (dict
             "result" .QueryResults.cantons
             "id" "cantons"
             "title" (t "card.cantons" "Cantons")
-            "icon" "map-pinned"
-            "iconVar" "type")
+            "icon" "map-pinned")
       }}
     </div>
 

@@ -268,12 +268,15 @@
     }
   } ORDER BY DESC(?instances)
 </sparql-async>
+<sparql-columns for="mobilityNovaClasses">
+  <sparql-column var="class" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "mobilityNovaClasses"
       "title" (t "card.novaClasses" "NOVA classes")
       "icon" "shapes"
-      "iconVar" "class"
       "collapsed" true) }}
 </div>
 
@@ -344,12 +347,15 @@
     }
   } ORDER BY ?class
 </sparql-async>
+<sparql-columns for="mobilityOtdClasses">
+  <sparql-column var="class" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "mobilityOtdClasses"
       "title" (t "card.openTransportDataClasses" "Open Transport Data classes")
       "icon" "book-marked"
-      "iconVar" "class"
       "collapsed" true) }}
 </div>
 

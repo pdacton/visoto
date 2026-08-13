@@ -143,12 +143,15 @@
     }
   } ORDER BY xsd:decimal(?total)
 </sparql-async>
+<sparql-columns for="energyCantonPrices">
+  <sparql-column var="canton" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "energyCantonPrices"
       "title" (t "card.medianTariffPerCanton" "Median tariff per canton, H4 household (Rp./kWh)")
-      "icon" "map"
-      "iconVar" "canton") }}
+      "icon" "map") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.energy.cantonLabelsUntagged" "Canton names in LINDAS carry <em>no language tag</em> — Zug, Zoug and Zugo are three untagged literals on the same resource — so a canton may appear under whichever spelling the label resolver picks first. The same resource is meant in every case." }}</p>
@@ -189,12 +192,15 @@
     }
   } ORDER BY DESC(xsd:decimal(?total))
 </sparql-async>
+<sparql-columns for="energyOperatorPrices">
+  <sparql-column var="operator" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "energyOperatorPrices"
       "title" (t "card.tariffPerGridOperator" "Tariff per grid operator, H4 household (Rp./kWh)")
       "icon" "plug-zap"
-      "iconVar" "operator"
       "collapsed" true) }}
 </div>
 
@@ -240,12 +246,15 @@
     }
   } ORDER BY ?category
 </sparql-async>
+<sparql-columns for="energyProfileSpread">
+  <sparql-column var="category" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "energyProfileSpread"
       "title" (t "card.priceSpreadByProfile" "Price spread by consumption profile (Rp./kWh)")
-      "icon" "chart-no-axes-column"
-      "iconVar" "category") }}
+      "icon" "chart-no-axes-column") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.energy.profileDescriptionCaveat" "The profile descriptions are published in <strong>German only</strong> — unlike the cube and dimension names, which carry all four national languages — so they appear here as ElCom records them whatever your language setting. Note also the apostrophes inside them: they are the Swiss thousands separator (<code>4'500</code>), not quotation marks." }}</p>
@@ -291,12 +300,15 @@
     }
   } ORDER BY DESC(?year) DESC(xsd:decimal(?terajoules)) LIMIT 400
 </sparql-async>
+<sparql-columns for="energyBalanceCarriers">
+  <sparql-column var="carrier" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "energyBalanceCarriers"
       "title" (t "card.energyBalanceByCarrier" "Energy balance by carrier (terajoules)")
       "icon" "flame"
-      "iconVar" "carrier"
       "collapsed" true) }}
 </div>
 
@@ -362,12 +374,15 @@
     }
   } ORDER BY DESC(?capacityKW)
 </sparql-async>
+<sparql-columns for="energySolarPerCanton">
+  <sparql-column var="canton" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "energySolarPerCanton"
       "title" (t "card.solarSubsidiesPerCanton" "Solar subsidies per canton, all years")
-      "icon" "sun"
-      "iconVar" "canton") }}
+      "icon" "sun") }}
 </div>
 
 <h3 class="mt-4">{{ t "page.energy.buildingsAndScenarios" "Buildings and scenarios" }}</h3>

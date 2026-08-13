@@ -30,12 +30,15 @@
           ORDER BY ?class
           LIMIT 10000
         </sparql-async>
+        <sparql-columns for="owlClassInstances">
+          <sparql-column var="class" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "owlClassInstances"
             "iri" .ResourceIRI
             "title" (t "card.classesInDataset" "Classes in Dataset")
-            "icon" "circle-dot"
-            "iconVar" "class")
+            "icon" "circle-dot")
         }}
       </div>
     </div>

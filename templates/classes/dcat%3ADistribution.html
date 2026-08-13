@@ -31,12 +31,15 @@
             OPTIONAL { ?instance dct:license ?license . }
           } LIMIT 50000
         </sparql-async>
+        <sparql-columns for="dcatDistributionInstances">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "dcatDistributionInstances"
             "iri" .ResourceIRI
             "title" (t "card.distributions" "Distributions")
-            "icon" "file-download"
-            "iconVar" "type")
+            "icon" "file-download")
         }}
       </div>
     </div>

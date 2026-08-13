@@ -16,6 +16,9 @@
     FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
   } LIMIT 1000
 </sparql-query>
+<sparql-columns for="outgoing">
+  <sparql-column var="type" icon></sparql-column>
+</sparql-columns>
 
 <sparql-query id="incoming">
   SELECT ?type ?source ?property WHERE {
@@ -34,6 +37,9 @@
     FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
   } LIMIT 1000
 </sparql-query>
+<sparql-columns for="incoming">
+  <sparql-column var="type" icon></sparql-column>
+</sparql-columns>
 
 {{ define "relationships" }}
 <div class="row">
@@ -44,8 +50,7 @@
             "id" "outgoing"
             "title" (t "card.outgoingRelationships" "Outgoing Relationships")
             "icon" "expand"
-            "collapsed" true
-            "iconVar" "type")
+            "collapsed" true)
       }}
     </div>
   </div>
@@ -56,8 +61,7 @@
             "id" "incoming"
             "title" (t "card.incomingRelationships" "Incoming Relationships")
             "icon" "shrink"
-            "collapsed" true
-            "iconVar" "type")
+            "collapsed" true)
       }}
     </div>
   </div>

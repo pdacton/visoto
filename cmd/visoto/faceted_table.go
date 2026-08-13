@@ -231,7 +231,6 @@ func facetedTableHandler(c *gin.Context) {
 		"id":       id,
 		"title":    c.Query("title"),
 		"icon":     c.Query("icon"),
-		"iconVar":  c.Query("iconVar"),
 		"badgeVar": c.Query("badgeVar"),
 		"groupBy":  c.Query("groupBy"),
 		// This route only reaches the HTML branch when a caller asks for the fragment
@@ -267,7 +266,8 @@ func facetedTableHandler(c *gin.Context) {
 	preprocessor := prepareQueryInputs(c)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 	defer cancel()
-	result, execErr := preprocessor.ExecuteQueryWithContext(ctx, faceted, true, dataLang, "")
+	facetIconVar, _ := params["iconVar"].(string)
+	result, execErr := preprocessor.ExecuteQueryWithContext(ctx, faceted, true, dataLang, "", queryOptions(facetIconVar)...)
 	if execErr != nil {
 		result.Error = execErr.Error()
 	}
@@ -308,13 +308,7 @@ func wantsJSON(c *gin.Context) bool {
 func writeFacetedEnvelope(c *gin.Context, result sparql.QueryResult, total int, complete, cacheable bool) {
 	if !cacheable {
 		c.Header("Cache-Control", "no-store")
-		c.JSON(http.StatusOK, gin.H{
-			"vars":     result.Vars,
-			"data":     result.Bindings,
-			"total":    total,
-			"complete": complete,
-			"error":    result.Error,
-		})
+		c.JSON(http.StatusOK, workingSetEnvelope(result, total, complete))
 		return
 	}
 	writeWorkingSet(c, result, total, complete)

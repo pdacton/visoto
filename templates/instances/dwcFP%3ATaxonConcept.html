@@ -26,12 +26,15 @@
             OPTIONAL { ?treatment dc:date ?date . }
           } LIMIT 200
         </sparql-query>
+        <sparql-columns for="augmentingTreatments">
+          <sparql-column var="Treatment" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
             "result" .QueryResults.augmentingTreatments
             "id" "augmentingTreatments"
             "title" (t "card.augmentedByTreatments" "Augmented by Treatments")
-            "icon" "file-description"
-            "iconVar" "Treatment")
+            "icon" "file-description")
         }}
       </div>
     </div>

@@ -23,12 +23,15 @@
             FILTER (?property != rdfs:subClassOf)
           } LIMIT 1000
         </sparql-query>
+        <sparql-columns for="outgoing">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
               "result" .QueryResults.outgoing
               "id" "outgoing"
               "title" (t "card.outgoingRelationships" "Outgoing Relationships")
-              "icon" "expand"
-              "iconVar" "type")
+              "icon" "expand")
         }}
       </div>
     </div>
@@ -56,12 +59,15 @@
             FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
           } LIMIT 1000
         </sparql-query>
+        <sparql-columns for="incoming">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
             "result" .QueryResults.incoming
             "id" "incoming"
             "title" (t "card.incomingRelationships" "Incoming Relationships")
-            "icon" "shrink"
-            "iconVar" "type")
+            "icon" "shrink")
         }}
       </div>
     </div>
@@ -80,12 +86,15 @@
               FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
           } LIMIT 10000
         </sparql-query>
+        <sparql-columns for="instances">
+          <sparql-column var="class" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
             "result" .QueryResults.instances
             "id" "instances"
             "title" (t "card.instancesOfThisClass" "Instances of this class")
-            "icon" "circle-dot"
-            "iconVar" "class")
+            "icon" "circle-dot")
         }}
       </div>
     </div>

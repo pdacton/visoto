@@ -272,7 +272,8 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 // --- Query execution (private) ---
 
 // executeQueryWithContext executes a SPARQL query using the provided context (supports cancellation/timeout)
-func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
+func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string, opts ...Option) (QueryResult, error) {
+	settings := newOptions(opts)
 	targetEndpoint := p.resolveEndpoint(endpoint)
 	finalizedQuery := p.finalizeQuery(query, acceptLanguage)
 
@@ -291,12 +292,38 @@ func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string
 	result.Endpoint = targetEndpoint
 
 	if resolveLabels {
-		initLabelCache()
+		initCaches()
 		iris := extractIRIs(result)
 		if len(iris) > 0 {
 			languages := parseAcceptLanguage(acceptLanguage)
-			labelMap := fetchLabels(p, targetEndpoint, iris, languages)
+
+			// Labels and types are two independent questions about the same set of
+			// IRIs, so they go to the endpoint concurrently: the wall-clock cost is
+			// the slower of the two, not their sum. Each degrades on its own — a
+			// failed type query leaves labels intact and vice versa.
+			var labelMap map[string]string
+			var typeMap map[string][]string
+			var wg sync.WaitGroup
+
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				labelMap = fetchLabels(p, targetEndpoint, iris, languages)
+			}()
+
+			if settings.resolveTypes {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					typeMap = fetchTypes(p, targetEndpoint, iris)
+				}()
+			}
+			wg.Wait()
+
 			enrichWithLabels(&result, labelMap)
+			if settings.resolveTypes {
+				enrichWithIcons(&result, typeMap)
+			}
 		}
 	}
 
@@ -355,16 +382,16 @@ func (p *Preprocessor) ExecuteQueriesParallel(queries []ExtractedQuery, timeout 
 
 // ExecuteQuery executes a raw SPARQL query and returns simplified results
 // This method is useful for executing queries without template processing
-func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
-	return p.executeQueryWithContext(context.Background(), query, resolveLabels, acceptLanguage, endpoint)
+func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string, endpoint string, opts ...Option) (QueryResult, error) {
+	return p.executeQueryWithContext(context.Background(), query, resolveLabels, acceptLanguage, endpoint, opts...)
 }
 
 // ExecuteQueryWithContext executes a raw SPARQL query bound to the given context,
 // so callers can enforce a per-request timeout (unlike ExecuteQuery, which uses
 // context.Background()). Used by the working-set table endpoint, where a
 // single working-set query can run several seconds against a large class.
-func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string) (QueryResult, error) {
-	return p.executeQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint)
+func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string, opts ...Option) (QueryResult, error) {
+	return p.executeQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint, opts...)
 }
 
 // QueryIsClass checks whether the given IRI is a class by looking for:

@@ -36,12 +36,15 @@
           FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
       }
     </sparql-async>
+    <sparql-columns for="organizationInstances">
+      <sparql-column var="organization" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "organizationInstances"
         "iri" .ResourceIRI
         "title" (t "card.organizations" "Organizations")
         "icon" "circle-dot"
-        "iconVar" "organization"
         "searchProp" "http://schema.org/name")
     }}
   </div>

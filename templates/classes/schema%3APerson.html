@@ -34,12 +34,15 @@
       }
       LIMIT 20000
     </sparql-async>
+    <sparql-columns for="personInstances">
+      <sparql-column var="type" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "personInstances"
         "iri" .ResourceIRI
         "title" (t "card.persons" "Persons")
-        "icon" "circle-dot"
-        "iconVar" "type")
+        "icon" "circle-dot")
     }}
   </div>
 

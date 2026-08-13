@@ -51,6 +51,11 @@ type QueryResult struct {
 	Error    string               // Error message if query failed
 	Query    string               // The finalized SPARQL query sent to endpoint (with PREFIXes)
 	Endpoint string               // The endpoint URL used for this query
+	// Icons maps an IRI to its resource icon path, for the results that asked for
+	// type resolution (see WithTypes). It is a side map rather than a field on
+	// Binding because Binding is serialized for every cell of every row, while
+	// this holds one entry per *distinct* IRI. Nil when nothing resolved.
+	Icons map[string]string `json:",omitempty"`
 }
 
 // ExtractedQuery represents a SPARQL query found in template

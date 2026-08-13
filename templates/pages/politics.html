@@ -263,12 +263,15 @@
     BIND (ROUND(?members * 1000 / 246) / 10 AS ?seatShare)
   } ORDER BY DESC(?members)
 </sparql-async>
+<sparql-columns for="politicsGroups">
+  <sparql-column var="parliamentaryGroup" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsGroups"
       "title" (t "card.parliamentaryGroupsFraktionen" "Parliamentary groups (Fraktionen)")
-      "icon" "users"
-      "iconVar" "parliamentaryGroup") }}
+      "icon" "users") }}
 </div>
 
 <p class="text-secondary">{{ t "page.politics.namesOfGroupsPartiesAnd" "Names of groups, parties and vote proposals are published in all four national languages plus Romansh, so the tables on this page follow your browser's language preference and fall back to English, then German, where a translation is missing. People's names carry no language tag and are shown as recorded." }}</p>
@@ -313,12 +316,15 @@
     BIND (YEAR(?birthDateSample) AS ?bornIn)
   } ORDER BY DESC(?paidMandates)
 </sparql-async>
+<sparql-columns for="politicsPaidMandates">
+  <sparql-column var="person" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsPaidMandates"
       "title" (t "card.paidInterestTiesByParliamentarian" "Paid interest ties, by parliamentarian")
-      "icon" "banknote"
-      "iconVar" "person") }}
+      "icon" "banknote") }}
 </div>
 
 <h3 class="mt-4">{{ t "page.politics.governmentAndAdministration" "Government and administration" }}</h3>
@@ -393,12 +399,15 @@
     BIND (COALESCE(?abbreviationPreferred, ?abbreviationGerman) AS ?abbreviation)
   } ORDER BY DESC(?members)
 </sparql-async>
+<sparql-columns for="politicsCommissions">
+  <sparql-column var="commission" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-3">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "politicsCommissions"
       "title" (t "card.extraParliamentaryCommissions" "Extra-parliamentary commissions")
       "icon" "landmark"
-      "iconVar" "commission"
       "collapsed" true) }}
 </div>
 

@@ -98,12 +98,15 @@
     }
   } ORDER BY DESC(?units)
 </sparql-async>
+<sparql-columns for="govDepartments">
+  <sparql-column var="dept" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "govDepartments"
       "title" (t "card.departmentsBySize" "Federal departments by units beneath them")
-      "icon" "network"
-      "iconVar" "dept") }}
+      "icon" "network") }}
 </div>
 
 <p>{{ tHTML "page.government.topLevelIntro" "Above the departments sit the bodies that answer to no one inside the administration. Listing the organisations with no parent at all gives the constitutional top of the tree in one query — the government, the four federal courts, the prosecution service and its supervisory authority, the parliamentary services, and the cantons." }}</p>
@@ -124,12 +127,15 @@
     }
   } ORDER BY DESC(?children)
 </sparql-async>
+<sparql-columns for="govTopLevel">
+  <sparql-column var="org" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "govTopLevel"
       "title" (t "card.topLevelBodies" "Bodies at the top of the tree")
-      "icon" "landmark"
-      "iconVar" "org") }}
+      "icon" "landmark") }}
 </div>
 
 <!-- ============================================================= -->
@@ -160,12 +166,15 @@
     }
   } ORDER BY ?familyName ?givenName
 </sparql-async>
+<sparql-columns for="govRoles">
+  <sparql-column var="org" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "govRoles"
       "title" (t "card.rolesAndHolders" "Roles and the people holding them")
       "icon" "users"
-      "iconVar" "org"
       "collapsed" true) }}
 </div>
 
@@ -206,12 +215,15 @@
     }
   } ORDER BY DESC(?versions)
 </sparql-async>
+<sparql-columns for="govVersionsPerIdentity">
+  <sparql-column var="identity" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "govVersionsPerIdentity"
       "title" (t "card.mostRevisedUnits" "Most frequently revised organisational units")
       "icon" "history"
-      "iconVar" "identity"
       "collapsed" true) }}
 </div>
 
@@ -247,12 +259,15 @@
     }
   } ORDER BY DESC(?terms)
 </sparql-async>
+<sparql-columns for="govTermDomains">
+  <sparql-column var="domain" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "govTermDomains"
       "title" (t "card.terminologyDomains" "Terminology by subject field")
-      "icon" "book-open"
-      "iconVar" "domain") }}
+      "icon" "book-open") }}
 </div>
 
 <p>{{ tHTML "page.government.termdatLawNote" "Law dominates the collection by a wide margin, with politics a distant second — an accurate picture of what the Confederation most often needs to translate precisely. Below them the subject fields track the rest of this site almost exactly: agriculture and forestry, environment, medicine, finance, transport." }}</p>

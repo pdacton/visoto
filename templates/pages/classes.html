@@ -57,11 +57,14 @@
               "NO DOMAIN") AS ?domain)
         }
       </sparql-async>
+      <sparql-columns for="allClasses">
+        <sparql-column var="class" icon></sparql-column>
+      </sparql-columns>
+
       {{ template "sparqlAsyncTable" (dict
           "queryId" "allClasses"
           "title" (t "card.classes" "Classes")
-          "icon" "circle-dot"
-          "iconVar" "class")
+          "icon" "circle-dot")
       }}
     </div>
 

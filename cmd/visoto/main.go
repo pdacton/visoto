@@ -19,6 +19,7 @@ import (
 	"hutzli.org/visoto/internal/chat"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/i18n"
+	"hutzli.org/visoto/internal/icon"
 	"hutzli.org/visoto/internal/lang"
 	"hutzli.org/visoto/internal/logger"
 	mcpserver "hutzli.org/visoto/internal/mcp"
@@ -556,7 +557,8 @@ func metricHandler(c *gin.Context) {
 // executes it, and returns a rendered sparqlTable HTML fragment.
 //
 // Presentation params are read from the query string so a single generic handler
-// can serve many tables: title, icon, iconVar, badgeVar.
+// can serve many tables: title, icon, badgeVar. The row icon is not among them:
+// it is declared with <sparql-column icon> and folded in by applyColumnParams.
 func asyncTableHandler(c *gin.Context) {
 	id := c.Param("id")
 	dataLang := queryLang(c)
@@ -571,7 +573,6 @@ func asyncTableHandler(c *gin.Context) {
 		"id":       id,
 		"title":    c.Query("title"),
 		"icon":     c.Query("icon"),
-		"iconVar":  c.Query("iconVar"),
 		"badgeVar": c.Query("badgeVar"),
 		"groupBy":  c.Query("groupBy"),
 		// facetFor (set for faceted tables) = the base query id; the rendered
@@ -656,7 +657,10 @@ func asyncTableHandler(c *gin.Context) {
 	}
 
 	// Inline path: execute the full query and embed the whole result set.
-	result, err := preprocessor.ExecuteQuery(fullQuery, true, dataLang, "")
+	// Types are resolved only when a column will actually render an icon —
+	// applyColumnParams above put the declared variable in params.
+	iconVar, _ := params["iconVar"].(string)
+	result, err := preprocessor.ExecuteQuery(fullQuery, true, dataLang, "", queryOptions(iconVar)...)
 	if err != nil {
 		// Surface the error inside the table card (sparqlTable renders result.Error).
 		result.Error = err.Error()
@@ -805,7 +809,7 @@ func main() {
 	}
 
 	// Initialize icon cache
-	if err := resource.InitIconCache("./static/img/resource"); err != nil {
+	if err := icon.Init("./static/img/resource", log); err != nil {
 		log.Warn("failed to initialize icon cache",
 			slog.String("error", err.Error()))
 	}

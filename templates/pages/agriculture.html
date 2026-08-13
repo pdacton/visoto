@@ -141,12 +141,15 @@
     }
   } ORDER BY DESC(?observations)
 </sparql-async>
+<sparql-columns for="agriGroupByStage">
+  <sparql-column var="group" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "agriGroupByStage"
       "title" (t "card.productGroupByStage" "Product group by value-chain stage")
-      "icon" "git-branch"
-      "iconVar" "group") }}
+      "icon" "git-branch") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.agriculture.groupLabelCaveat" "Product-group names come back in <em>mixed languages</em> — <code>Vegetables</code> and <code>Fruits</code> next to <code>Rohmilch</code>, <code>Käse</code> and <code>Rahm</code>. The German ones simply have no English label in the register, so the resolver falls back to what exists. The resources themselves are perfectly well-formed; only the naming is uneven." }}</p>
@@ -178,12 +181,15 @@
     }
   } ORDER BY DESC(?month) ?product
 </sparql-async>
+<sparql-columns for="agriMilkPrices">
+  <sparql-column var="product" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "agriMilkPrices"
       "title" (t "card.milkProducerPrices" "Monthly milk producer prices, Switzerland and abroad")
-      "icon" "milk"
-      "iconVar" "product") }}
+      "icon" "milk") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.agriculture.milkUnitCaveat" "Prices are per 100 kg in Swiss francs unless the product says otherwise, and the foreign series are converted to francs by the office — so movements in them mix a real price change with an exchange-rate change. Each row carries its own <code>unit</code> and <code>currency</code> dimension; open an observation to see exactly what was measured." }}</p>
@@ -210,12 +216,15 @@
     }
   } ORDER BY DESC(?month) ?product
 </sparql-async>
+<sparql-columns for="agriEggPrices">
+  <sparql-column var="product" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "agriEggPrices"
       "title" (t "card.eggProducerPrices" "Monthly egg producer prices by husbandry system")
       "icon" "egg"
-      "iconVar" "product"
       "collapsed" true) }}
 </div>
 
@@ -248,12 +257,15 @@
     }
   } ORDER BY DESC(?products)
 </sparql-async>
+<sparql-columns for="agriPesticideTypes">
+  <sparql-column var="type" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "agriPesticideTypes"
       "title" (t "card.pesticidesByCategory" "Authorised products by category")
-      "icon" "spray-can"
-      "iconVar" "type") }}
+      "icon" "spray-can") }}
 </div>
 
 <p>{{ tHTML "page.agriculture.biologicalAgents" "Note what sits in the lower half of that table. Alongside the herbicides and fungicides the register lists <strong>beneficial insects, predatory mites and nematodes</strong> as authorised plant protection products in their own right — biological control agents licensed on the same basis as a chemical spray, with the same admission numbers and the same permission holders." }}</p>
@@ -292,12 +304,15 @@
     }
   } ORDER BY DESC(?cases)
 </sparql-async>
+<sparql-columns for="agriDiseaseByEpidemic">
+  <sparql-column var="epidemic" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "agriDiseaseByEpidemic"
       "title" (t "card.animalDiseaseOutbreaks" "Reported outbreaks by disease, since 2024")
-      "icon" "activity"
-      "iconVar" "epidemic") }}
+      "icon" "activity") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.agriculture.cantonCountCaveat" "The canton column can read 27 rather than 26: the register uses a separate code for the Principality of Liechtenstein, which participates in the Swiss veterinary area. Note too that a case is a <em>report</em>, not an animal — one row can cover a whole affected herd, and the stock and sick counts on the observation say how many." }}</p>

@@ -300,11 +300,14 @@
       }
     } ORDER BY DESC(?instances)
   </sparql-async>
+  <sparql-columns for="plaziClasses">
+    <sparql-column var="class" icon></sparql-column>
+  </sparql-columns>
+
   {{ template "sparqlAsyncTable" (dict
       "queryId" "plaziClasses"
       "title" (t "card.classes" "Classes")
-      "icon" "shapes"
-      "iconVar" "class")
+      "icon" "shapes")
   }}
 </div>
 

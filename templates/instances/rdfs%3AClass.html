@@ -18,12 +18,15 @@
               FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
           }
         </sparql-async>
+        <sparql-columns for="classInstances">
+          <sparql-column var="instance" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "classInstances"
             "iri" .ResourceIRI
             "title" (t "card.instancesOfThisClass" "Instances of this class")
-            "icon" "circle-dot"
-            "iconVar" "instance")
+            "icon" "circle-dot")
         }}
       </div>
     </div>

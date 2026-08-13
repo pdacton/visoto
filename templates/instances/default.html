@@ -22,12 +22,15 @@
             FILTER (?property != rdfs:subClassOf)
           } LIMIT 10000
         </sparql-async>
+        <sparql-columns for="outgoing">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
               "queryId" "outgoing"
               "iri" .ResourceIRI
               "title" (t "card.outgoingRelationships" "Outgoing Relationships")
-              "icon" "expand"
-              "iconVar" "type")
+              "icon" "expand")
         }}
       </div>
     </div>
@@ -51,12 +54,15 @@
             OPTIONAL { ?source a ?type . }
           } LIMIT 10000
         </sparql-async>
+        <sparql-columns for="incoming">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "incoming"
             "iri" .ResourceIRI
             "title" (t "card.incomingRelationships" "Incoming Relationships")
-            "icon" "shrink"
-            "iconVar" "type")
+            "icon" "shrink")
         }}
       </div>
     </div>

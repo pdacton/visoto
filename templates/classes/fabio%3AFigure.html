@@ -28,12 +28,15 @@
         OPTIONAL { ?figure fabio:hasRepresentation ?representation . }
       }
     </sparql-async>
+    <sparql-columns for="figureInstances">
+      <sparql-column var="Figure" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "figureInstances"
         "iri" .ResourceIRI
         "title" (t "card.figures" "Figures")
-        "icon" "photo"
-        "iconVar" "Figure")
+        "icon" "photo")
     }}
   </div>
 </div>

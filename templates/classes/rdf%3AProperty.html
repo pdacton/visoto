@@ -34,12 +34,15 @@
           ORDER BY ?property
           LIMIT 10000
         </sparql-async>
+        <sparql-columns for="rdfPropertyInstances">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "rdfPropertyInstances"
             "iri" .ResourceIRI
             "title" (t "card.propertyInstances" "Property Instances")
-            "icon" "circle-dot"
-            "iconVar" "type")
+            "icon" "circle-dot")
         }}
       </div>
     </div>

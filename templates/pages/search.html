@@ -101,14 +101,19 @@
   </div>
 
   <!-- Results Section -->
+  {{/* external= because this table's rows come from the Go search subsystem
+       rather than from a query declared in the templates, so there is no
+       <sparql-query id="search-results"> for the container to name. */}}
+  <sparql-columns for="search-results" external>
+    <sparql-column var="type" icon></sparql-column>
+  </sparql-columns>
   {{ if .SearchResults }}
   <div class="row">
     <div class="col">
       {{ template "sparqlTable" (dict
         "result" .SearchResults
         "id" "search-results"
-        "title" (printf "Search Results for \"%s\"" .Query)
-        "iconVar" "type") }}
+        "title" (printf "Search Results for \"%s\"" .Query)) }}
 
       <!-- Provider Info -->
       {{ if .Provider }}

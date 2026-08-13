@@ -31,12 +31,15 @@
         OPTIONAL { ?section bibo:endPage ?endPage . }
       }
     </sparql-async>
+    <sparql-columns for="bookSectionInstances">
+      <sparql-column var="BookSection" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "bookSectionInstances"
         "iri" .ResourceIRI
         "title" (t "card.bookSections" "Book Sections")
-        "icon" "book-2"
-        "iconVar" "BookSection")
+        "icon" "book-2")
     }}
   </div>
 </div>

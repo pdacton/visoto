@@ -25,12 +25,15 @@
             OPTIONAL { ?concept dwc:authority ?authority . }
           } LIMIT 200
         </sparql-query>
+        <sparql-columns for="usingConcepts">
+          <sparql-column var="TaxonConcept" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
             "result" .QueryResults.usingConcepts
             "id" "usingConcepts"
             "title" (t "card.taxonConcepts" "Taxon Concepts")
             "icon" "bug"
-            "iconVar" "TaxonConcept"
             "badgeVar" "rank")
         }}
       </div>

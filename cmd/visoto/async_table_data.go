@@ -87,7 +87,10 @@ func asyncTableDataHandler(c *gin.Context) {
 			"error": err.Error()})
 		return
 	}
-	result, err := preprocessor.ExecuteQueryWithContext(ctx, wsQuery, true, dataLang, "")
+	// Unlike the fragment routes this one builds no params map, so the icon column
+	// is read straight from the declarations — src and id are both already in hand.
+	opts := queryOptions(findColumns(c.Query("src"), id).IconVar())
+	result, err := preprocessor.ExecuteQueryWithContext(ctx, wsQuery, true, dataLang, "", opts...)
 	if err != nil {
 		// A transient SPARQL failure must never be cached as if it were real data.
 		c.Header("Cache-Control", "no-store")
@@ -122,13 +125,27 @@ func asyncTableDataHandler(c *gin.Context) {
 // entire in-scope population (complete) or a capped subset (search to load more).
 func writeWorkingSet(c *gin.Context, result sparql.QueryResult, total int, complete bool) {
 	markCacheable(c)
-	c.JSON(http.StatusOK, gin.H{
+	c.JSON(http.StatusOK, workingSetEnvelope(result, total, complete))
+}
+
+// workingSetEnvelope is the JSON body shape both the working-set loader and the
+// faceted-table route return, so the frontend can reuse one parser for both.
+//
+// icons is a side map (IRI → icon path) rather than a field on each binding:
+// there is one entry per distinct IRI, against up to 20 000 rows of bindings.
+// It is omitted entirely when nothing resolved.
+func workingSetEnvelope(result sparql.QueryResult, total int, complete bool) gin.H {
+	env := gin.H{
 		"vars":     result.Vars,
 		"data":     result.Bindings,
 		"total":    total,
 		"complete": complete,
 		"error":    result.Error,
-	})
+	}
+	if len(result.Icons) > 0 {
+		env["icons"] = result.Icons
+	}
+	return env
 }
 
 // ---- instance count cache ----

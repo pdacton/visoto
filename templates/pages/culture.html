@@ -99,12 +99,15 @@
     }
   } ORDER BY DESC(?recordSets)
 </sparql-async>
+<sparql-columns for="cultureRecordSetTypes">
+  <sparql-column var="type" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "cultureRecordSetTypes"
       "title" (t "card.descriptionLevels" "Levels of description")
-      "icon" "list-tree"
-      "iconVar" "type") }}
+      "icon" "list-tree") }}
 </div>
 
 <p>{{ tHTML "page.culture.divisionsIntro" "At the very top the archive divides into eight <strong>main departments</strong>, and they are periods of Swiss history rather than subjects. The <em>Archiv der Helvetik</em> covers the short-lived Helvetic Republic of 1798–1803, followed by the Mediation and the Tagsatzung; the bulk of everything sits under the <em>Archiv des Schweizerischen Bundesstaates</em>, the federal state from 1848 onward. Deposits and donations from private hands form their own division alongside them." }}</p>
@@ -128,12 +131,15 @@
     }
   } ORDER BY DESC(?children)
 </sparql-async>
+<sparql-columns for="cultureTopDivisions">
+  <sparql-column var="division" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "cultureTopDivisions"
       "title" (t "card.mainDepartments" "Main departments of the archive")
-      "icon" "library"
-      "iconVar" "division") }}
+      "icon" "library") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.culture.divisionsCaveat" "The child counts above are <em>direct</em> members only — the fonds sitting immediately beneath each department, not the millions of dossiers below those. A department showing a single child is not small; it is simply described through one intermediate level before it fans out." }}</p>
@@ -248,12 +254,15 @@
     }
   } ORDER BY DESC(xsd:integer(?holdings))
 </sparql-async>
+<sparql-columns for="cultureIsilInstitutions">
+  <sparql-column var="isil" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "cultureIsilInstitutions"
       "title" (t "card.collectingInstitutions" "Collecting institutions by reported holdings")
-      "icon" "building-2"
-      "iconVar" "isil") }}
+      "icon" "building-2") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.culture.isilCaveat" "The holdings figures are self-reported and not on a common basis — some institutions count volumes, others items or linear metres — so treat the ordering as indicative rather than a ranking. Only part of the register reports a figure at all; the institutions without one are missing from this table, not empty." }}</p>

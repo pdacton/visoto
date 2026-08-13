@@ -166,13 +166,16 @@
             FILTER (?property != dcat:distribution)
           } LIMIT 1000
         </sparql-query>
+        <sparql-columns for="incoming">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
           "result" .QueryResults.incoming
           "id" "incoming"
           "title" (t "card.incomingRelationships" "Incoming Relationships")
           "icon" "shrink"
-          "collapsed" true
-          "iconVar" "type")
+          "collapsed" true)
         }}
       </div>
     </div>
@@ -188,13 +191,16 @@
             FILTER (?property != rdf:type)
           } LIMIT 1000
         </sparql-query>
+        <sparql-columns for="outgoing">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
           "result" .QueryResults.outgoing
           "id" "outgoing"
           "title" (t "card.outgoingRelationships" "Outgoing Relationships")
           "icon" "expand"
-          "collapsed" true
-          "iconVar" "type")
+          "collapsed" true)
         }}
       </div>
     </div>

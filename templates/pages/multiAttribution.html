@@ -25,11 +25,14 @@
           ?example a ?type .
         }
       </sparql-async>
+      <sparql-columns for="multiAttribution">
+        <sparql-column var="type" icon></sparql-column>
+      </sparql-columns>
+
       {{ template "sparqlAsyncTable" (dict
           "queryId" "multiAttribution"
           "title" (t "card.typeCombinationsWithMultipleClasses" "Type Combinations with Multiple Classes")
-          "icon" "circles-relation"
-          "iconVar" "type")
+          "icon" "circles-relation")
       }}
     </div>
 

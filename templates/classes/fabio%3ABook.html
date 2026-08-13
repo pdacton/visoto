@@ -29,12 +29,15 @@
         OPTIONAL { ?book dc:date ?date . }
       }
     </sparql-async>
+    <sparql-columns for="bookInstances">
+      <sparql-column var="Book" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "bookInstances"
         "iri" .ResourceIRI
         "title" (t "card.books" "Books")
-        "icon" "book"
-        "iconVar" "Book")
+        "icon" "book")
     }}
   </div>
 </div>

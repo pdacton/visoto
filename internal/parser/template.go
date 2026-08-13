@@ -171,6 +171,28 @@ func ExtractAsyncElements(content string) ([]ExtractedElement, error) {
 	return out, nil
 }
 
+// ExtractSyncElements returns all <sparql-query> elements in a template — the
+// queries executed server-side during the page render, as opposed to the
+// <sparql-async> ones fetched afterwards.
+//
+// The async index uses this to know which ids exist, so a <sparql-column> may
+// decorate a synchronously-rendered table too. Only the ids are of interest
+// there: the query text is executed by the page pipeline, not by a fragment
+// handler.
+func ExtractSyncElements(content string) ([]ExtractedElement, error) {
+	all, err := extractElements(content)
+	if err != nil {
+		return nil, err
+	}
+	var out []ExtractedElement
+	for _, el := range all {
+		if el.TagName == "sparql-query" {
+			out = append(out, el)
+		}
+	}
+	return out, nil
+}
+
 // ExtractFacetElements returns all <sparql-facet> elements in a template.
 //
 // The element was replaced by <sparql-column>, which describes the whole column

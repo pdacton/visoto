@@ -167,26 +167,14 @@
         }, 1000);
       }
 
-      function iriToName(uri) {
-        var decoded = decodeURIComponent(uri);
-        return decoded.includes('#') ? decoded.split('#').pop() : decoded.split('/').pop();
-      }
+      // Icon resolution is shared with schema-graph.js and mirrors internal/icon
+      // (see static/js/visoto-icons.js) — one definition of "own name first, then
+      // any exact type match, then any .fallback".
+      var ICONS = window.VisotoIcons;
 
-      // typeStyleResolver: resolves icon from rdf:type values (for instances like Bern)
-      // Two-pass: first try regular icons, then fall back to fallback icons (.fallback.svg).
+      // typeStyleResolver: resolves the icon from rdf:type values (instances like Bern).
       function typeStyleResolver(types) {
-        var fallback = null;
-        for (var i = 0; i < types.length; i++) {
-          var name = iriToName(types[i]);
-          if (AVAILABLE_ICONS[name]) {
-            return { icon: '/static/img/resource/' + name + '.svg' };
-          }
-          if (!fallback && AVAILABLE_ICONS[name + '.fallback']) {
-            fallback = name;
-          }
-        }
-        if (fallback) return { icon: '/static/img/resource/' + fallback + '.fallback.svg' };
-        return { icon: '/static/img/resource/defaultClass.svg' };
+        return { icon: ICONS.resolve('', types, AVAILABLE_ICONS) || '/static/img/resource/defaultClass.svg' };
       }
 
       // StandardTemplateWithIcon: subclass of StandardTemplate that also checks the element's own IRI
@@ -195,12 +183,8 @@
       // By subclassing StandardTemplate we get its render() for free and only patch the props.
       class StandardTemplateWithIconUrl extends window.GraphExplorer.StandardTemplate {
         render() {
-          var name = iriToName(this.props.iri || '');
-          if (AVAILABLE_ICONS[name]) {
-            this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.svg' });
-          } else if (AVAILABLE_ICONS[name + '.fallback']) {
-            this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.fallback.svg' });
-          }
+          var url = ICONS.resolve(this.props.iri || '', [], AVAILABLE_ICONS);
+          if (url) this.props = Object.assign({}, this.props, { iconUrl: url });
           return super.render();
         }
       }

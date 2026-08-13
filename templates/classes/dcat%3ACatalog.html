@@ -26,12 +26,15 @@
           ORDER BY ?instance
           LIMIT 10000
         </sparql-async>
+        <sparql-columns for="dcatCatalogInstances">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "dcatCatalogInstances"
             "iri" .ResourceIRI
             "title" (t "card.catalogs" "Catalogs")
-            "icon" "books"
-            "iconVar" "type")
+            "icon" "books")
         }}
       </div>
     </div>

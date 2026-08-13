@@ -4,7 +4,6 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestParseAcceptLanguage(t *testing.T) {
@@ -276,43 +275,6 @@ func TestBuildLabelQuery(t *testing.T) {
 				}
 			}
 		})
-	}
-}
-
-func TestLabelCache(t *testing.T) {
-	testIRI := "http://example.com/test-cache"
-	testLabel := "Test Label"
-
-	testLangs := []string{"en", "de"}
-
-	// Clear any existing entry for test IRI
-	labelCache.Delete(labelCacheKey(testIRI, testLangs))
-
-	// Test cache miss
-	if _, found := getCachedLabel(testIRI, testLangs); found {
-		t.Error("getCachedLabel() should return false for uncached IRI")
-	}
-
-	// Test cache set and get
-	setCachedLabel(testIRI, testLabel, testLangs)
-
-	label, found := getCachedLabel(testIRI, testLangs)
-	if !found {
-		t.Error("getCachedLabel() should return true for cached IRI")
-	}
-	if label != testLabel {
-		t.Errorf("getCachedLabel() = %v, want %v", label, testLabel)
-	}
-
-	// Test expiration by manually setting an expired entry
-	expiredIRI := "http://example.com/expired"
-	labelCache.Store(labelCacheKey(expiredIRI, testLangs), labelCacheEntry{
-		label:      "Expired",
-		expiration: time.Now().Add(-1 * time.Hour),
-	})
-
-	if _, found := getCachedLabel(expiredIRI, testLangs); found {
-		t.Error("getCachedLabel() should return false for expired entry")
 	}
 }
 

@@ -1,178 +1,51 @@
 package resource
 
 import (
-	"log/slog"
-	"os"
-	"strings"
-	"sync"
-
-	"hutzli.org/visoto/internal/logger"
+	"hutzli.org/visoto/internal/icon"
 	"hutzli.org/visoto/internal/parser"
 )
 
-// iconCache holds the set of available icon names (without .svg extension)
-type iconCache struct {
-	icons         map[string]bool
-	fallbackIcons map[string]bool
-	mu            sync.RWMutex
-}
+// defaultIcon is what a resource page shows when nothing matches. Unlike a table
+// cell — which renders no icon at all on a miss — the page header always has a
+// slot to fill, so it needs a generic stand-in.
+const defaultIcon = icon.BasePath + "default.svg"
 
-var (
-	globalIconCache *iconCache
-	once            sync.Once
-)
-
-// InitIconCache scans the icon directory and builds the cache
-func InitIconCache(iconDir string) error {
-	once.Do(func() {
-		globalIconCache = &iconCache{
-			icons:         make(map[string]bool),
-			fallbackIcons: make(map[string]bool),
-		}
-	})
-
-	// Scan directory for .svg files
-	entries, err := os.ReadDir(iconDir)
-	if err != nil {
-		return err
-	}
-
-	globalIconCache.mu.Lock()
-	defer globalIconCache.mu.Unlock()
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		name := entry.Name()
-		if baseName, ok := strings.CutSuffix(name, ".fallback.svg"); ok {
-			// Fallback icons: stored by bare class name (e.g. "DefinedTermSet")
-			globalIconCache.fallbackIcons[baseName] = true
-		} else if baseName, ok := strings.CutSuffix(name, ".svg"); ok {
-			// Regular icons: stored without .svg extension
-			globalIconCache.icons[baseName] = true
-		}
-	}
-
-	log := logger.Get()
-	log.Info("icon cache initialized",
-		slog.Int("count", len(globalIconCache.icons)),
-		slog.Int("fallback_count", len(globalIconCache.fallbackIcons)))
-
-	return nil
-}
-
-// GetIconNames returns all available icon names for use in JS templates.
-// Regular icons are keyed by bare class name (e.g. "Canton").
-// Fallback icons are keyed with the ".fallback" suffix (e.g. "DefinedTermSet.fallback")
-// so that callers can construct the correct file path by appending ".svg".
-func GetIconNames() map[string]bool {
-	if globalIconCache == nil {
-		return map[string]bool{}
-	}
-	globalIconCache.mu.RLock()
-	defer globalIconCache.mu.RUnlock()
-	result := make(map[string]bool, len(globalIconCache.icons)+len(globalIconCache.fallbackIcons))
-	for k, v := range globalIconCache.icons {
-		result[k] = v
-	}
-	for k := range globalIconCache.fallbackIcons {
-		result[k+".fallback"] = true
-	}
-	return result
-}
-
-// hasIcon checks if an icon with the given name exists
-func hasIcon(name string) bool {
-	if globalIconCache == nil {
-		return false
-	}
-	globalIconCache.mu.RLock()
-	defer globalIconCache.mu.RUnlock()
-	return globalIconCache.icons[name]
-}
-
-// hasFallbackIcon checks if a fallback icon with the given name exists
-func hasFallbackIcon(name string) bool {
-	if globalIconCache == nil {
-		return false
-	}
-	globalIconCache.mu.RLock()
-	defer globalIconCache.mu.RUnlock()
-	return globalIconCache.fallbackIcons[name]
-}
-
-// extractResourceNameFromIRI extracts the class name from a full URI
-// Examples:
+// GetIconForResource returns the icon path for a resource page's header.
 //
-//	https://schema.ld.admin.ch/Canton -> Canton
-//	http://www.w3.org/2004/02/skos/core#ConceptScheme -> ConceptScheme
-func extractResourceNameFromIRI(uri string) string {
-	// Check for fragment first (the part after #)
-	if idx := strings.LastIndex(uri, "#"); idx != -1 {
-		return uri[idx+1:]
-	}
-
-	// Extract last segment after final /
-	if idx := strings.LastIndex(uri, "/"); idx != -1 {
-		return uri[idx+1:]
-	}
-
-	return uri
-}
-
-// GetIconForResource determines the appropriate icon path for a resource
-// Accepts either sparql.TemplateData (resource pages) or other types (search, home, etc.)
-// Priority for resource pages:
-// 1. Resource IRI match (for instance-specific icons)
-// 2. First matching RDF class from pageClasses bindings
-// 3. Default to "default.svg"
-// Returns the full path including "/static/img/resource/", or empty string for non-resource pages
+// The matching rule itself lives in internal/icon and is shared with the SPARQL
+// tables; this function only supplies the two things that are specific to a
+// resource page — where the RDF types come from (the pageClasses query declared
+// in templates/components/pageHeader.html) and what a miss means (default.svg).
+//
+// Accepts parser.TemplateData for resource pages; anything else (search, home)
+// gets "" because those pages have no single resource to describe.
 func GetIconForResource(data interface{}) string {
-	const basePath = "/static/img/resource/"
-
-	// Check if it's TemplateData (resource pages)
 	td, ok := data.(parser.TemplateData)
 	if !ok {
-		// For other types (search, home, etc.) return empty string (no icon)
 		return ""
 	}
 
-	// Priority 1: exact match
-	// e.g. schema:Municipality gets Municipalty.svg
-	resourceName := extractResourceNameFromIRI(td.ResourceIRI)
-	if hasIcon(resourceName) {
-		return basePath + resourceName + ".svg"
+	if path := icon.Resolve(td.ResourceIRI, pageClasses(td)); path != "" {
+		return path
 	}
-	if hasFallbackIcon(resourceName) {
-		return basePath + resourceName + ".fallback.svg"
-	}
+	return defaultIcon
+}
 
-	// Priority 2: class match
-	// e.g. the municipality "Bern" with class schema:Municipality gets Municipality.svg
-	if pageClasses, ok := td.QueryResults["pageClasses"]; ok {
-		for _, binding := range pageClasses.Bindings {
-			if classBinding, ok := binding["class"]; ok {
-				className := extractResourceNameFromIRI(classBinding.Value)
-				if hasIcon(className) {
-					return basePath + className + ".svg"
-				}
-			}
-		}
-		// lower prio icons:
-		// If no class match, check for fallback icons like Version.fallback.svg or DefinedTerm.fallback.svg
-		// this is necessary because in LINDAS some resource have many different classes
-		// and we want to show the more specific icon
-		for _, binding := range pageClasses.Bindings {
-			if classBinding, ok := binding["class"]; ok {
-				className := extractResourceNameFromIRI(classBinding.Value)
-				if hasFallbackIcon(className) {
-					return basePath + className + ".fallback.svg"
-				}
-			}
+// pageClasses collects the RDF types the page header query found, in the order
+// the endpoint returned them. Order only matters as a tie-break: icon.Resolve
+// scans the whole list for an exact match before it accepts any fallback, which
+// is what keeps a generic class (schema:DefinedTerm) from beating a specific one
+// (schch:Canton) on the many LINDAS resources that carry both.
+func pageClasses(td parser.TemplateData) []string {
+	result, ok := td.QueryResults["pageClasses"]
+	if !ok {
+		return nil
+	}
+	classes := make([]string, 0, len(result.Bindings))
+	for _, binding := range result.Bindings {
+		if b, ok := binding["class"]; ok && b.Value != "" {
+			classes = append(classes, b.Value)
 		}
 	}
-
-	// Priority 3: Default to default.svg
-	return basePath + "default.svg"
+	return classes
 }

@@ -35,12 +35,15 @@
         OPTIONAL { ?treatment trt:augmentsTaxonConcept ?augmentsTaxonConcept . }
       }
     </sparql-async>
+    <sparql-columns for="treatmentInstances">
+      <sparql-column var="Treatment" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "treatmentInstances"
         "iri" .ResourceIRI
         "title" (t "card.treatments" "Treatments")
-        "icon" "file-description"
-        "iconVar" "Treatment")
+        "icon" "file-description")
     }}
   </div>
 </div>

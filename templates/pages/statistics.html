@@ -98,12 +98,15 @@
     }
   } ORDER BY DESC(?municipalities)
 </sparql-async>
+<sparql-columns for="statsMunicipalitiesPerCanton">
+  <sparql-column var="canton" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "statsMunicipalitiesPerCanton"
       "title" (t "card.municipalitiesPerCanton" "Municipalities and districts per canton")
-      "icon" "map"
-      "iconVar" "canton") }}
+      "icon" "map") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.statistics.municipalitiesCaveat" "Municipalities also carry a <code>geosparql:hasGeometry</code> link to their boundary polygon in <code>geo.ld.admin.ch</code>, and a GeoNames feature code — so the register is a bridge into mapping data as well as a list of names. Not every municipality has a geometry attached; the coverage is partial." }}</p>
@@ -180,12 +183,15 @@
     }
   } ORDER BY DESC(?companies)
 </sparql-async>
+<sparql-columns for="statsZefixLegalForms">
+  <sparql-column var="legalForm" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "statsZefixLegalForms"
       "title" (t "card.zefixLegalForms" "Registered entities by legal form")
-      "icon" "building"
-      "iconVar" "legalForm") }}
+      "icon" "building") }}
 </div>
 
 <p>{{ tHTML "page.statistics.zefixForms" "Three forms account for almost the whole register: the <strong>GmbH/Sàrl</strong>, the <strong>Aktiengesellschaft</strong> and the sole proprietorship. Everything else — foundations, associations, cooperatives, partnerships, branches of foreign companies — is a long tail. The presence of foundations and associations is a reminder that this is a register of <em>legal entities</em>, not only of businesses trading for profit." }}</p>
@@ -214,12 +220,15 @@
     }
   } ORDER BY DESC(?companies)
 </sparql-async>
+<sparql-columns for="statsZefixPerCanton">
+  <sparql-column var="canton" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "statsZefixPerCanton"
       "title" (t "card.zefixPerCanton" "Registered entities per canton")
-      "icon" "briefcase"
-      "iconVar" "canton") }}
+      "icon" "briefcase") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.statistics.zefixCaveat" "These are <em>registered</em> entities at their legal domicile, which is not the same as economic activity: a holding company registered in Zug may employ nobody there. Note also that the register carries current entries — it is a snapshot of who exists now, not a history of formations and dissolutions." }}</p>
@@ -260,12 +269,15 @@
     }
   } ORDER BY DESC(?concepts) LIMIT 60
 </sparql-async>
+<sparql-columns for="statsI14yLargest">
+  <sparql-column var="scheme" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "statsI14yLargest"
       "title" (t "card.largestClassifications" "The largest classifications")
-      "icon" "list-tree"
-      "iconVar" "scheme") }}
+      "icon" "list-tree") }}
 </div>
 
 <p>{{ tHTML "page.statistics.i14yNames" "The names in that table are worth reading as a list. <strong>CH-ISCO-19</strong> is the Swiss occupation nomenclature, the largest thing here at some twenty-five thousand entries. <strong>CHOP</strong> is the surgical procedure classification and <strong>ICD-10-GM</strong> the disease classification — both of which every Swiss hospital codes against. <strong>NOGA</strong> is the industry classification behind business statistics. Between them they are the vocabulary in which the state describes work, illness and the economy." }}</p>
@@ -299,12 +311,15 @@
     }
   } ORDER BY DESC(?terms)
 </sparql-async>
+<sparql-columns for="statsSharedDimensions">
+  <sparql-column var="dim" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "statsSharedDimensions"
       "title" (t "card.sharedDimensions" "Shared geographic dimensions")
-      "icon" "layers"
-      "iconVar" "dim") }}
+      "icon" "layers") }}
 </div>
 
 <!-- ============================================================= -->

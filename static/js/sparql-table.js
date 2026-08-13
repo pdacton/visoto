@@ -240,10 +240,27 @@
     var iconVar = iconVarEl ? iconVarEl.innerHTML.trim() : null;
     var badgeVarEl = document.getElementById(ID + "-badge-var");
     var badgeVar = badgeVarEl ? badgeVarEl.innerHTML.trim() : null;
-    var availableIcons = null;
+
+    // IRI → icon path, resolved server-side (internal/icon) so a row can show the
+    // icon of its entity's rdf:type, not just of an IRI that happens to be named
+    // after a class. One entry per DISTINCT IRI, which is why it stays small on a
+    // 20k-row working set.
+    //
+    // Inline tables carry it in an island; working-set and faceted responses bring
+    // their own with each payload, so mergeIcons accumulates rather than replaces —
+    // a faceted result must not drop the icons of rows already loaded.
+    var icons = {};
+    function mergeIcons(map) {
+      if (!map) return;
+      for (var iri in map) {
+        if (Object.prototype.hasOwnProperty.call(map, iri)) icons[iri] = map[iri];
+      }
+    }
     if (iconVar) {
-      var iconsEl = document.getElementById(ID + "-available-icons");
-      if (iconsEl) availableIcons = JSON.parse(iconsEl.innerHTML.trim());
+      var iconsEl = document.getElementById(ID + "-icons");
+      if (iconsEl) {
+        try { mergeIcons(JSON.parse(iconsEl.innerHTML.trim())); } catch (e) { /* no icons */ }
+      }
     }
 
     function badgeCellFormatter(cell) {
@@ -257,22 +274,20 @@
       }
       return badge;
     }
-    function iriToName(uri) {
-      try { uri = decodeURIComponent(uri); } catch(e) {}
-      var name = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
-      if (name.includes(':')) name = name.split(':').pop();
-      return name;
-    }
+    // The icon path is a plain map lookup — the matching rule (own name, then
+    // rdf:type, exact before .fallback) ran server-side in internal/icon.
+    //
+    // Must stay a real <img> pointing at /static/img/resource/: bookmarks.js
+    // (findTypeIcon) gives a dragged resource its icon by scraping the one the
+    // table rendered, so a CSS background or inline SVG would quietly break
+    // "My Links".
     function iconCellFormatter(cell) {
       var b = cell.getValue();
       if (!b || !b.Value) return '';
-      var name = iriToName(b.Value);
-      var img = '';
-      if (availableIcons && availableIcons[name]) {
-        img = '<img src="/static/img/resource/' + name + '.svg" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">';
-      } else if (availableIcons && availableIcons[name + '.fallback']) {
-        img = '<img src="/static/img/resource/' + name + '.fallback.svg" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">';
-      }
+      var src = icons[b.Value];
+      var img = src
+        ? '<img src="' + escapeHtml(src) + '" width="24" height="24" alt="" style="margin-right:0.4em;vertical-align:middle;">'
+        : '';
       return img + renderBinding(b);
     }
 
@@ -618,6 +633,9 @@
           if (resp.error) { console.warn("working-set error:", resp.error); }
           var vars = resp.vars || [];
           var rows = toTableData(vars, resp.data || []);
+          // Icons come with the payload here rather than in an island, since a
+          // working-set table embeds no rows server-side.
+          mergeIcons(resp.icons);
           if (!wsColumnsSet && vars.length) {
             table.setColumns(buildColumns(vars, resp.data || []));
             wsColumnsSet = true;
@@ -780,7 +798,7 @@
     // Only non-empty values are sent, mirroring the per-key conditional
     // guards this object used to be assembled with server-side.
     var facetPassthrough = {};
-    ["title", "icon", "iconVar", "badgeVar", "groupBy", "max"].forEach(function (k) {
+    ["title", "icon", "badgeVar", "groupBy", "max"].forEach(function (k) {
       if (CFG[k]) facetPassthrough[k] = CFG[k];
     });
     var facetDebounce;
@@ -841,6 +859,7 @@
           if (resp.error) { console.warn("faceted fetch error:", resp.error); }
           var vars = resp.vars || [];
           var rows = toTableData(vars, resp.data || []);
+          mergeIcons(resp.icons);
           wsComplete = !!resp.complete;
           wsSearchTerm = "";
           wsLoaded = rows.length;

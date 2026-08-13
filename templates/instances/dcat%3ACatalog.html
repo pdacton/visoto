@@ -25,12 +25,15 @@
           ORDER BY ?title
           LIMIT 10000
         </sparql-query>
+        <sparql-columns for="datasets">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
             "result" .QueryResults.datasets
             "id" "datasets"
             "title" (t "card.datasets" "Datasets")
-            "icon" "database"
-            "iconVar" "type")
+            "icon" "database")
         }}
       </div>
     </div>
@@ -53,12 +56,15 @@
           ORDER BY ?identifier
           LIMIT 10000
         </sparql-query>
+        <sparql-columns for="records">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
             "result" .QueryResults.records
             "id" "records"
             "title" (t "card.catalogRecords" "Catalog Records")
-            "icon" "file-description"
-            "iconVar" "type")
+            "icon" "file-description")
         }}
       </div>
     </div>

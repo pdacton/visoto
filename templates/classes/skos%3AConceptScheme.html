@@ -51,13 +51,16 @@
 
           } LIMIT 10000
         </sparql-async>
+        <sparql-columns for="skosConceptSchemeInstances">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "skosConceptSchemeInstances"
             "iri" .ResourceIRI
             "title" (t "card.availableSKOSConceptSchemas" "Available SKOS Concept Schemas")
             "icon" "circle-dot"
-            "badgeVar" "status"
-            "iconVar" "type")
+            "badgeVar" "status")
         }}
       </div>
     </div>

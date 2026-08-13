@@ -37,12 +37,15 @@
         OPTIONAL { ?materialCitation dwc:collectionCode ?collectionCode . }
       }
     </sparql-async>
+    <sparql-columns for="materialCitationInstances">
+      <sparql-column var="MaterialCitation" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "materialCitationInstances"
         "iri" .ResourceIRI
         "title" (t "card.materialCitations" "Material Citations")
         "icon" "flask"
-        "iconVar" "MaterialCitation"
         "badgeVar" "typeStatus")
     }}
   </div>

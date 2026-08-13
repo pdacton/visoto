@@ -31,12 +31,15 @@
             OPTIONAL { ?instance dc:source ?source . }
           } LIMIT 50000
         </sparql-async>
+        <sparql-columns for="mappedCodeInstances">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "mappedCodeInstances"
             "iri" .ResourceIRI
             "title" (t "card.mappedCodes" "Mapped Codes")
-            "icon" "code"
-            "iconVar" "type")
+            "icon" "code")
         }}
       </div>
     </div>

@@ -100,15 +100,16 @@ func (p *Preprocessor) ProcessTemplateFile(filepath string, iri string, acceptLa
 
 // ----- Query execution (delegated to sparql.Preprocessor) -----
 
-// ExecuteQuery executes a raw SPARQL query and returns simplified results
-func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string, endpoint string) (sparql.QueryResult, error) {
-	return p.sp.ExecuteQuery(query, resolveLabels, acceptLanguage, endpoint)
+// ExecuteQuery executes a raw SPARQL query and returns simplified results.
+// Pass sparql.WithTypes() to additionally resolve resource icons.
+func (p *Preprocessor) ExecuteQuery(query string, resolveLabels bool, acceptLanguage string, endpoint string, opts ...sparql.Option) (sparql.QueryResult, error) {
+	return p.sp.ExecuteQuery(query, resolveLabels, acceptLanguage, endpoint, opts...)
 }
 
 // ExecuteQueryWithContext executes a raw SPARQL query bound to the given context,
 // allowing the caller to enforce a per-request timeout.
-func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string) (sparql.QueryResult, error) {
-	return p.sp.ExecuteQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint)
+func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string, opts ...sparql.Option) (sparql.QueryResult, error) {
+	return p.sp.ExecuteQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint, opts...)
 }
 
 // FinalizeQuery returns the query as it would be sent to the endpoint (PREFIXes

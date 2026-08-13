@@ -105,12 +105,15 @@
     }
   } ORDER BY DESC(?dangerLevel) ?region
 </sparql-async>
+<sparql-columns for="envFireDanger">
+  <sparql-column var="canton" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "envFireDanger"
       "title" (t "card.fireDangerAndBans" "Forest fire danger and fire bans in force, by region")
-      "icon" "flame"
-      "iconVar" "canton") }}
+      "icon" "flame") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.environment.fireLabelCaveat" "The danger levels and ban descriptions carry <em>no language tag</em> — the German, French, Italian and English wordings sit on the same resource as four untagged literals — so a level may appear in whichever language the label resolver reaches first. The IRI is what identifies the level; the wording is a label on it." }}</p>
@@ -143,12 +146,15 @@
     }
   } ORDER BY DESC(xsd:decimal(?waterTemperature))
 </sparql-async>
+<sparql-columns for="envHydroLive">
+  <sparql-column var="water" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "envHydroLive"
       "title" (t "card.hydroLive" "Live readings: water temperature, discharge and level")
-      "icon" "droplets"
-      "iconVar" "water") }}
+      "icon" "droplets") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.environment.hydroUnits" "Water level is metres above sea level (not depth), discharge is m³/s, temperature is °C. A station may briefly appear twice when a new reading lands while an older one is still being replaced — the measurement timestamp distinguishes them." }}</p>
@@ -195,12 +201,15 @@
     }
   } ORDER BY DESC(xsd:decimal(?stockPerHectare))
 </sparql-async>
+<sparql-columns for="envForestStock">
+  <sparql-column var="canton" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "envForestStock"
       "title" (t "card.growingStockPerCanton" "Growing stock per hectare of forest, NFI5 (m³/ha, with standard error)")
-      "icon" "trees"
-      "iconVar" "canton") }}
+      "icon" "trees") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.environment.nfiTopicCaveat" "The inventory publishes each measure as its own <em>predicate</em> rather than as a value of a shared dimension — <code>Topic/21</code> is growing stock, <code>Topic/13</code> is fellings and mortality, and so on for several hundred topics, each with an <code>r</code> variant expressing it per hectare. So changing what this table reports means changing a predicate, not a filter." }}</p>
@@ -242,12 +251,15 @@
     }
   } ORDER BY ?group DESC(xsd:decimal(?species))
 </sparql-async>
+<sparql-columns for="envRedList">
+  <sparql-column var="group" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "envRedList"
       "title" (t "card.redListByGroup" "Red List: species per conservation status and organism group")
       "icon" "bird"
-      "iconVar" "group"
       "groupBy" "group") }}
 </div>
 
@@ -287,12 +299,15 @@
     }
   } ORDER BY DESC(?year) ?level DESC(xsd:decimal(?megatonnesCO2eq))
 </sparql-async>
+<sparql-columns for="envGreenhouseGases">
+  <sparql-column var="sector" icon></sparql-column>
+</sparql-columns>
+
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "envGreenhouseGases"
       "title" (t "card.greenhouseGasesBySector" "Greenhouse gas emissions by sector (million tonnes CO₂-equivalent)")
       "icon" "factory"
-      "iconVar" "sector"
       "collapsed" true) }}
 </div>
 

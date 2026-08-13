@@ -10,7 +10,10 @@
     - title: (optional) card title
     - icon: (optional) Lucid icon name to display before the title
     - collapsed: (optional) if true, card starts in collapsed state
-    - iconVar: (optional) SPARQL variable name whose IRI is used to look up a resource icon
+    - iconVar: (internal) SPARQL variable carrying the row icon. NOT an authoring
+               parameter — declare it with <sparql-column var="…" icon> instead.
+               The async fragment handlers fold the declaration in here before
+               rendering; a sync table looks it up itself (see below).
     - badgeVar: (optional) SPARQL variable name to render as a Tabler badge instead of a link
     - groupBy: (optional) SPARQL variable the table is initially grouped by; a
                grouping the user picked earlier (persisted in localStorage) wins
@@ -33,7 +36,14 @@
   {{ $title := .title }}
   {{ $icon := .icon }}
   {{ $collapsed := .collapsed }}
+  {{/* Which column carries the row icon. On the async path a handler has already
+       folded the <sparql-column icon> declaration into .iconVar before rendering
+       this fragment; a synchronously-rendered table has no handler, so it looks the
+       declaration up itself. The lookup needs the template set the query id is
+       scoped to, which {{ templateSet }} reports — and which is empty in the
+       standalone partial set the async fragments render through, hence the order. */}}
   {{ $iconVar := .iconVar }}
+  {{ if not $iconVar }}{{ $iconVar = columnIconVar (templateSet) .id }}{{ end }}
   {{ $badgeVar := .badgeVar }}
   {{/* facetFor (set by the handler for faceted tables) = base query id; the header
        controls are read from the page's sparql-column elements whose for= matches it.
@@ -166,7 +176,12 @@
           <template id="{{ $id }}-vars">{{ toJSON $result.Vars }}</template>
           <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
           {{ end }}
-          {{ if $iconVar }}<template id="{{ $id }}-icon-var">{{ $iconVar }}</template><template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>{{ end }}
+          {{/* Icon column: the variable it applies to, and the IRI → icon path map
+               the backend resolved for this result (one entry per distinct IRI, so
+               it stays small even on a 20k-row set). Working-set tables carry no
+               rows inline, so their map arrives with the data instead. */}}
+          {{ if $iconVar }}<template id="{{ $id }}-icon-var">{{ $iconVar }}</template>
+          {{ if not $workingSet }}<template id="{{ $id }}-icons">{{ toJSON $result.Icons }}</template>{{ end }}{{ end }}
           {{ if $badgeVar }}<template id="{{ $id }}-badge-var">{{ $badgeVar }}</template>{{ end }}
         {{ end }}
       </div>

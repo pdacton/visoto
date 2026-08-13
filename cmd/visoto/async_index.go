@@ -29,6 +29,7 @@ import (
 
 	"hutzli.org/visoto/internal/column"
 	"hutzli.org/visoto/internal/parser"
+	"hutzli.org/visoto/internal/sparql"
 	"hutzli.org/visoto/internal/templates"
 )
 
@@ -48,6 +49,7 @@ var asyncIdx = &asyncIndex{}
 // by every set that includes the file: layout/base.html alone is in all of them.
 type fileDecls struct {
 	async      []parser.ExtractedElement
+	sync       []parser.ExtractedElement // <sparql-query>: ids only, so columns can decorate a sync table
 	columns    []parser.ExtractedElement
 	containers []parser.ExtractedElement
 	facets     []parser.ExtractedElement // legacy <sparql-facet>, kept only to reject
@@ -101,6 +103,34 @@ func initAsyncIndex(templatesDir string) error {
 			}
 		}
 
+		// Sync <sparql-query> ids are collected so a <sparql-column> may decorate a
+		// synchronously-rendered table too — only the ids matter here, the query
+		// text is executed by the page pipeline rather than by a fragment handler.
+		//
+		// Deliberately NOT checked for duplicates the way async ids are: overriding
+		// a shared component's query is an established pattern (a page redefining
+		// pageHeader.html's pageSubtitle or title for itself, ~67 times across the
+		// templates), and the page render already resolves that by last-one-wins.
+		syncIDs := make(map[string]bool)
+		for _, path := range files {
+			for _, el := range parsed[path].sync {
+				if el.ID != "" {
+					syncIDs[el.ID] = true
+				}
+			}
+			// <sparql-columns for="X" external> declares that the table with id X is
+			// rendered from data the Go side supplies rather than from a query
+			// declared in the templates — the search results table is the one such
+			// case. Without this the for= would name nothing and fail the check
+			// below, and that check is worth keeping strict for everything else: a
+			// mistyped for= otherwise costs a column its configuration silently.
+			for _, el := range parsed[path].containers {
+				if _, ok := el.Attributes["external"]; ok && el.Attributes["for"] != "" {
+					syncIDs[el.Attributes["for"]] = true
+				}
+			}
+		}
+
 		// Columns are collected after every query in the set is known, so a column
 		// may sit in a different file from the query it decorates.
 		columns := make(map[string]column.Table)
@@ -126,8 +156,19 @@ func initAsyncIndex(templatesDir string) error {
 					}
 					continue
 				}
-				if _, ok := queries[base]; !ok {
-					return fmt.Errorf(`%s: <sparql-column for=%q var=%q> names no <sparql-async> in template set %s`,
+				_, isAsync := queries[base]
+				if !isAsync && !syncIDs[base] {
+					return fmt.Errorf(`%s: <sparql-column for=%q var=%q> names no <sparql-async> or <sparql-query> in template set %s`,
+						path, base, spec.Var, set)
+				}
+				// An id that names both kinds in one set leaves it undecided which
+				// table the declaration decorates. Only worth rejecting when a column
+				// actually references it — the collision alone is harmless, and a few
+				// ids (outgoing, incoming, instances) exist in both forms in unrelated
+				// sets.
+				if isAsync && syncIDs[base] {
+					return fmt.Errorf(`%s: <sparql-column for=%q var=%q> is ambiguous in template set %s — `+
+						`that id names both a <sparql-async> and a <sparql-query>; rename one of them`,
 						path, base, spec.Var, set)
 				}
 				if err := spec.Validate(); err != nil {
@@ -144,6 +185,10 @@ func initAsyncIndex(templatesDir string) error {
 	}
 
 	asyncIdx = idx
+	// Sync tables resolve their own declarations while rendering, since no handler
+	// builds their params. The templates package cannot reach this index directly
+	// (it is built here, from package main), so hand it a lookup.
+	templates.SetColumnLookup(findColumns)
 	return nil
 }
 
@@ -159,6 +204,10 @@ func parseDecls(path string) (fileDecls, error) {
 	if err != nil {
 		return fileDecls{}, fmt.Errorf("%s: extract async elements: %w", path, err)
 	}
+	sync, err := parser.ExtractSyncElements(string(content))
+	if err != nil {
+		return fileDecls{}, fmt.Errorf("%s: extract sync elements: %w", path, err)
+	}
 	columns, err := parser.ExtractColumnElements(string(content))
 	if err != nil {
 		return fileDecls{}, fmt.Errorf("%s: extract column elements: %w", path, err)
@@ -171,7 +220,7 @@ func parseDecls(path string) (fileDecls, error) {
 	if err != nil {
 		return fileDecls{}, fmt.Errorf("%s: extract facet elements: %w", path, err)
 	}
-	return fileDecls{async: async, columns: columns, containers: containers, facets: facets}, nil
+	return fileDecls{async: async, sync: sync, columns: columns, containers: containers, facets: facets}, nil
 }
 
 // rejectLegacyFacets fails startup on a <sparql-facet> that still carries
@@ -221,6 +270,20 @@ func findAsyncQuery(src, id string) (string, bool) {
 // template set, in document order.
 func findColumns(src, baseID string) column.Table {
 	return asyncIdx.columns[src][baseID]
+}
+
+// queryOptions returns the per-query switches a table result needs — currently
+// only whether to resolve rdf:type into resource icons.
+//
+// This is what gates the type query: with no icon column nothing renders icons,
+// so the extra (batched, cached, parallel) round trip would be pure cost. The
+// fragment routes pass the folded params value; the working-set route, which
+// builds no params, reads the declaration directly.
+func queryOptions(iconVar string) []sparql.Option {
+	if iconVar == "" {
+		return nil
+	}
+	return []sparql.Option{sparql.WithTypes()}
 }
 
 // findColumn returns the single column declared as (baseID, varName), if any.

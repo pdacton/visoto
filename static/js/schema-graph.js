@@ -344,15 +344,11 @@
       },
     };
 
+    // Icon resolution is shared with sparql-graph.js and mirrors internal/icon
+    // (see static/js/visoto-icons.js).
     function typeStyleResolver(types) {
-      var fallback = null;
-      for (var i = 0; i < types.length; i++) {
-        var name = localName(types[i]);
-        if (AVAILABLE_ICONS[name]) return { icon: '/static/img/resource/' + name + '.svg' };
-        if (!fallback && AVAILABLE_ICONS[name + '.fallback']) fallback = name;
-      }
-      if (fallback) return { icon: '/static/img/resource/' + fallback + '.fallback.svg' };
-      return { icon: '/static/img/resource/defaultClass.svg' };
+      var url = window.VisotoIcons.resolve('', types, AVAILABLE_ICONS);
+      return { icon: url || '/static/img/resource/defaultClass.svg' };
     }
 
     function renderSchema(store, mode, cls) {
@@ -370,12 +366,8 @@
       // help).
       class StandardTemplateWithIconUrl extends GE.StandardTemplate {
         render() {
-          var name = localName(this.props.iri || '');
-          if (AVAILABLE_ICONS[name]) {
-            this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.svg' });
-          } else if (AVAILABLE_ICONS[name + '.fallback']) {
-            this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.fallback.svg' });
-          }
+          var url = window.VisotoIcons.resolve(this.props.iri || '', [], AVAILABLE_ICONS);
+          if (url) this.props = Object.assign({}, this.props, { iconUrl: url });
           return super.render();
         }
       }

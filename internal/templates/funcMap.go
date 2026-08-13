@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"hutzli.org/visoto/internal/icon"
 	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/sparql"
 )
@@ -19,7 +20,7 @@ var funcMap = template.FuncMap{
 	"resourceHref":    sparql.ResourceHref,
 	"dict":            makeDict,
 	"resourceIcon":    resource.GetIconForResource,
-	"iconNames":       resource.GetIconNames,
+	"iconNames":       icon.Names,
 	"toJSON":          toJSON,
 	"toJSONRaw":       toJSONRaw,
 	"toJSONPretty":    toJSONPretty,
@@ -29,6 +30,7 @@ var funcMap = template.FuncMap{
 	"safeURL":         safeURL,
 	"currentYear":     currentYear,
 	"templateSet":     defaultTemplateSet,
+	"columnIconVar":   columnIconVar,
 }
 
 // defaultTemplateSet is the parse-time placeholder for {{ templateSet }}. Load

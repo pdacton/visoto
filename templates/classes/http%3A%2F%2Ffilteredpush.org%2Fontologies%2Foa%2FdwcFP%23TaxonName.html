@@ -38,12 +38,15 @@
         OPTIONAL { ?taxonName dwc:species ?species . }
       }
     </sparql-async>
+    <sparql-columns for="taxonNameInstances">
+      <sparql-column var="TaxonName" icon></sparql-column>
+    </sparql-columns>
+
     {{ template "sparqlAsyncTable" (dict
         "queryId" "taxonNameInstances"
         "iri" .ResourceIRI
         "title" (t "card.taxonNames" "Taxon Names")
         "icon" "bug"
-        "iconVar" "TaxonName"
         "badgeVar" "rank")
     }}
   </div>

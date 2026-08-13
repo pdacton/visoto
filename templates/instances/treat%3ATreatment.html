@@ -26,12 +26,15 @@
             FILTER (isIRI(?cited))
           } LIMIT 300
         </sparql-query>
+        <sparql-columns for="citedResources">
+          <sparql-column var="type" icon></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlTable" (dict
             "result" .QueryResults.citedResources
             "id" "citedResources"
             "title" (t "card.cites" "Cites")
-            "icon" "quote"
-            "iconVar" "type")
+            "icon" "quote")
         }}
       </div>
     </div>
