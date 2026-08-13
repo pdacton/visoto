@@ -1,0 +1,159 @@
+<!-- cube:ObservationSet Class Template — the observation sets of LINDAS cubes -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <p class="text-secondary">{{ tHTML "type.observationSet.anObservationSetIs" "An <strong>ObservationSet</strong> is the container holding all observations of a <a href=\"/resource?iri=https%3A%2F%2Fcube.link%2FCube\">Cube</a> — the join node between a dataset and its data points, linked from the cube via <code>cube:observationSet</code> and pointing at each measurement via <code>cube:observation</code>. It carries no metadata of its own, so the table below describes each set through the cube that owns it." }}</p>
+
+  <!-- Metric strip: counts are queried live (LINDAS counts drift). -->
+  <sparql-async id="obsSetTotal">
+    SELECT (COUNT(?set) AS ?count) WHERE { ?set a cube:ObservationSet . }
+  </sparql-async>
+  <sparql-async id="obsSetCurrent">
+    SELECT (COUNT(DISTINCT ?set) AS ?count) WHERE {
+      ?set a cube:ObservationSet .
+      ?cube cube:observationSet ?set .
+      FILTER NOT EXISTS { ?cube schema:expires ?e }
+    }
+  </sparql-async>
+  <sparql-async id="obsSetPublishers">
+    SELECT (COUNT(DISTINCT ?creator) AS ?count) WHERE {
+      ?set a cube:ObservationSet .
+      ?cube cube:observationSet ?set ; dct:creator ?creator .
+    }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "obsSetTotal"
+        "title" (t "card.observationSetsAllVersions" "Observation Sets (all versions)")
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservationSet"
+        "icon" "/static/img/resource/Cube.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "obsSetCurrent"
+        "title" (t "card.currentVersions" "Current Versions")
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
+        "icon" "/static/img/resource/CubeCurrent.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "obsSetPublishers"
+        "title" (t "card.publishers" "Publishers")
+        "href" "/resource?iri=http%3A%2F%2Fschema.org%2FOrganization"
+        "icon" "/static/img/resource/Organization.svg") }}
+  </div>
+
+  <!-- Catalog: one row per observation set.
+
+       An ObservationSet has exactly TWO outgoing predicates in LINDAS — rdf:type
+       and cube:observation (13.1M of the latter) — and one incoming one,
+       cube:observationSet. So every descriptive column here is walked backwards
+       from the owning cube; there is nothing else to show.
+
+       Deliberately NO observation count column. COUNT(?obs) over cube:observation
+       is a 13.1M-triple scan: ~19s for all 1975 sets (~7s restricted to current
+       cubes) against 0.46s for the metadata join below. The per-set count is one
+       click away on each set's own resource page, which is where it costs nothing.
+
+       No ?name: the backend resolves a label for every IRI in the result
+       (extractIRIs → fetchLabels → enrichWithLabels in internal/sparql), so the
+       Cube column already displays the cube title — selecting it again would only
+       add a second column repeating it. Set IRIs have no label and fall back to
+       the IRI, which is the readable identity here (…/<cube>/observation/). -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+
+        <sparql-async id="observationSetCatalog">
+          SELECT ?set ?path ?cube ?publisher ?themes ?status ?modified ?superseded WHERE {
+            { SELECT ?set (SAMPLE(?c) AS ?cube) (SAMPLE(?creatorName) AS ?publisher)
+                     (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes)
+                     (SAMPLE(?st) AS ?status) (SAMPLE(?mod) AS ?modified)
+                     (IF(COUNT(?exp) > 0, "superseded", "current") AS ?superseded)
+              WHERE {
+                ?set a cube:ObservationSet .
+                OPTIONAL {
+                  ?c cube:observationSet ?set .
+                  OPTIONAL { ?c dct:creator/schema:name ?creatorName .
+                             FILTER(lang(?creatorName) = "en" || lang(?creatorName) = "") }
+                  OPTIONAL { ?c dcat:theme/schema:name ?themeName .
+                             FILTER(lang(?themeName) = visoto:dispLang) }
+                  OPTIONAL { ?c schema:creativeWorkStatus/schema:name ?st .
+                             FILTER(lang(?st) = visoto:dispLang || lang(?st) = "en") }
+                  OPTIONAL { ?c schema:dateModified ?mod }
+                  OPTIONAL { ?c schema:expires ?exp }
+                }
+              } GROUP BY ?set }
+            # Every set IRI ends in ".../observation/", so the label resolver's last
+            # path segment is the string "observation" for all 1975 of them — useless
+            # as an identity and unsearchable. Strip host and that trailing segment to
+            # leave the part that actually differs (e.g. "elcom/electricityprice-canton").
+            BIND(REPLACE(REPLACE(STR(?set), "^https?://[^/]+/", ""), "/?observation/?$", "") AS ?path)
+          }
+          ORDER BY DESC(?modified)
+          LIMIT 10000
+        </sparql-async>
+
+        <!-- Column declarations. This table is INLINE, not working-set: the
+             membership triple is "?set a cube:ObservationSet" with the class
+             written out, not "?set a ??", so nothing here reaches
+             /api/faceted-table and every filter runs locally over the loaded rows.
+             path= is documentation of where each value comes from rather than a
+             backend filter anchor — and note the paths below start at the CUBE,
+             not at ?set, since that is where the values live.
+
+             order= is set: the query's SELECT order already is the reading order,
+             so declaring it costs nothing and pins ?set first as the identity. -->
+        <sparql-columns for="observationSetCatalog" order>
+          <!-- The click-through to the set's own page; the icon marks it as a
+               resource link. Every set IRI ends in ".../observation/", so the label
+               resolver renders the literal word "observation" in this cell on all
+               1975 rows — it is a link, not an identity, hence narrow and unfiltered.
+               The Path column beside it is what tells the rows apart. -->
+          <sparql-column var="set" label="{{ t "facet.observationSet" "Observation Set" }}" icon width="90"
+                         tip="{{ t "facet.tip.observationSet" "The observation set itself — click through to list its observations." }}"></sparql-column>
+          <!-- The identity column: the set's own path (see the BIND above), which is
+               what actually differs between rows. Text filter — ~2000 distinct values
+               would never infer a checkbox list, and substring matching over the path
+               is the useful test ("elcom", "MilkDairy"). -->
+          <sparql-column var="path" label="{{ t "facet.path" "Path" }}"
+                         tip="{{ t "facet.tip.path" "The distinguishing part of the set's IRI: host and the trailing “observation/” segment removed." }}"
+                         filter="text"></sparql-column>
+          <sparql-column var="cube" label="{{ t "facet.cube" "Cube" }}" icon
+                         tip="{{ t "facet.tip.cubeOfSet" "The cube that owns this observation set (cube:observationSet)." }}"
+                         path="^cube:observationSet/schema:name" filter="text"></sparql-column>
+          <!-- A small repeating vocabulary (federal offices), so a bare filter
+               infers the checkbox list. -->
+          <sparql-column var="publisher" label="{{ t "facet.publisher" "Publisher" }}"
+                         tip="{{ t "facet.tip.publisher" "Organization that created the cube (dct:creator)." }}"
+                         path="^cube:observationSet/dct:creator/schema:name" filter></sparql-column>
+          <!-- GROUP_CONCAT of several themes per row, joined with "; ". A select
+               would offer whole concatenations as options, so force text: it
+               substring-matches inside the joined list, which is the useful test. -->
+          <sparql-column var="themes" label="{{ t "facet.themes" "Themes" }}"
+                         tip="{{ t "facet.tip.themes" "All DCAT themes of the cube, separated by “; ”." }}"
+                         path="^cube:observationSet/dcat:theme/schema:name" filter="text"></sparql-column>
+          <sparql-column var="status" label="{{ t "facet.status" "Status" }}" badge
+                         tip="{{ t "facet.tip.status" "Publication status: Draft, Published or Expired." }}"
+                         path="^cube:observationSet/schema:creativeWorkStatus/schema:name" filter width="130"></sparql-column>
+          <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}" type="date"
+                         tip="{{ t "facet.tip.modified" "Date the cube was last modified (schema:dateModified)." }}"
+                         path="^cube:observationSet/schema:dateModified" filter="range" width="150"></sparql-column>
+          <!-- Derived in the query (IF over schema:expires), so it has no property
+               path to declare. Two values over the whole table → checkbox list. -->
+          <sparql-column var="superseded" label="{{ t "facet.version" "Version" }}" badge
+                         tip="{{ t "facet.tip.version" "“current” unless the cube carries an expiry date, which marks it superseded by a newer version." }}"
+                         filter width="130"></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "observationSetCatalog"
+            "title" (t "card.observationSets" "Observation Sets")
+            "icon" "layers")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}
