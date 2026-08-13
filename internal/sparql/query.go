@@ -357,7 +357,11 @@ func (p *Preprocessor) ExecuteQueriesParallel(queries []ExtractedQuery, timeout 
 			default:
 			}
 
-			queryResult, err := p.executeQueryWithContext(ctx, query.Query, query.ResolveLabels, acceptLanguage, query.Endpoint)
+			var opts []Option
+			if query.ResolveTypes {
+				opts = append(opts, WithTypes())
+			}
+			queryResult, err := p.executeQueryWithContext(ctx, query.Query, query.ResolveLabels, acceptLanguage, query.Endpoint, opts...)
 			if err != nil {
 				queryResult.Error = fmt.Sprintf("Query execution failed: %v", err)
 			}

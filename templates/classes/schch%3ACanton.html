@@ -22,12 +22,34 @@
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-async id="cantonInstances">
-      SELECT ?type ?canton ?identifier ?name_de ?name_fr ?name_it ?name_rm ?name_en
+      SELECT ?type ?canton ?identifier ?validFrom ?districts ?municipalities ?name_de ?name_fr ?name_it ?name_rm ?name_en
       WHERE {
         BIND (?? AS ?type)
         BIND (?? AS ?class)
         ?canton (rdf:type|owl:type) ?class .
         OPTIONAL { ?canton schema:identifier ?identifier . }
+        # Directly on the canton, NOT behind vl:version — unlike districts and
+        # municipalities, whose validity hangs off a version node.
+        OPTIONAL { ?canton schema:validFrom ?validFrom . }
+        # The two counts are subqueries because they are independent one-to-many
+        # legs off the same canton: joined flat in this WHERE they would multiply
+        # each other (13 districts × 180 municipalities = 2340 rows to aggregate
+        # over), and each COUNT would report the other's cardinality. Aggregating
+        # separately keeps every group at its own size.
+        #
+        # OPTIONAL because an inner SELECT joins like a required pattern: today all
+        # 26 cantons have both, but a canton with neither would drop off the list
+        # entirely rather than show 0.
+        OPTIONAL {
+          SELECT ?canton (COUNT(DISTINCT ?district) AS ?districts) WHERE {
+            ?canton schema:hasPart ?district . ?district a schch:District .
+          } GROUP BY ?canton
+        }
+        OPTIONAL {
+          SELECT ?canton (COUNT(DISTINCT ?municipality) AS ?municipalities) WHERE {
+            ?municipality schema:containedInPlace ?canton . ?municipality a schch:Municipality .
+          } GROUP BY ?canton
+        }
         OPTIONAL { ?canton schema:name ?name_de . FILTER(lang(?name_de) = "de") }
         OPTIONAL { ?canton schema:name ?name_fr . FILTER(lang(?name_fr) = "fr") }
         OPTIONAL { ?canton schema:name ?name_it . FILTER(lang(?name_it) = "it") }
@@ -47,15 +69,24 @@
          lang-filtered value, which is exactly what should be matched. -->
 
     <sparql-columns for="cantonInstances">
-      <!-- Constant (BIND(?? AS ?type)) — declared as a readout, not a filter:
-           "Canton (26)" states the whole table is one type. -->
-      <sparql-column var="type" label="{{ t "facet.type" "Type" }}" filter icon></sparql-column>
+      <!-- Constant (BIND(?? AS ?type)) — so the column neither narrows nor
+           distinguishes anything. Hidden rather than dropped from the SELECT: the
+           row icon resolves per row from the entity's own rdf:type, and the
+           exports still carry the class. -->
+      <sparql-column var="type" hidden></sparql-column>
       <!-- The identity column, and only 26 of them, so this enumerates as a list
            where Municipality's 3297 names infer a text search instead. -->
-      <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" filter></sparql-column>
+      <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" filter icon></sparql-column>
       <!-- text, NOT the range these digits would otherwise infer: the values are
            labels that happen to be numeric (see the same call on Municipality). -->
       <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" filter="text"></sparql-column>
+      <!-- Real quantities, unlike ?identifier above — a min/max range is exactly
+           the right control here, so these take the inferred kind. -->
+      <sparql-column var="districts" label="{{ t "facet.districtCount" "Districts" }}" filter></sparql-column>
+      <sparql-column var="municipalities" label="{{ t "facet.municipalityCount" "Municipalities" }}" filter></sparql-column>
+      <!-- 1960-01-01 for every canton in the current data, so this filter narrows
+           nothing today; it earns its place if a canton is ever added or revised. -->
+      <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}" filter></sparql-column>
       <sparql-column var="name_de" label="{{ t "facet.name" "Name" }} (de)" filter></sparql-column>
       <sparql-column var="name_fr" label="{{ t "facet.name" "Name" }} (fr)" filter></sparql-column>
       <sparql-column var="name_it" label="{{ t "facet.name" "Name" }} (it)" filter></sparql-column>

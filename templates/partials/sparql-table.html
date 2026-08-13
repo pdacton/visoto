@@ -14,7 +14,8 @@
                parameter — declare it with <sparql-column var="…" icon> instead.
                The async fragment handlers fold the declaration in here before
                rendering; a sync table looks it up itself (see below).
-    - badgeVar: (optional) SPARQL variable name to render as a Tabler badge instead of a link
+    - badgeVar: (optional) SPARQL variable name to render as a Tabler badge instead of a link;
+                accepts a comma-separated list, since a table may badge several columns
     - groupBy: (optional) SPARQL variable the table is initially grouped by; a
                grouping the user picked earlier (persisted in localStorage) wins
 

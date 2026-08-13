@@ -120,11 +120,19 @@
     // templates/partials/sparql-table.html), which don't know about labels; the
     // working-set path builds them in populateGroupBy instead. Looks the element up
     // itself so it can run as soon as the columns are resolved.
+    // Drops the options a hidden column contributes, too: those are rendered from
+    // the query's variables, so a column declared hidden still offers itself here
+    // under its raw variable name — a grouping the user cannot see the header of,
+    // and (for the constant column a class table hides) one that cannot separate
+    // anything either.
     function relabelGroupBy() {
       var sel = document.getElementById("groupby-" + ID);
       if (!sel) return;
-      Array.prototype.forEach.call(sel.options, function (opt) {
-        if (opt.value) opt.textContent = labelFor(opt.value);
+      Array.prototype.slice.call(sel.options).forEach(function (opt) {
+        if (!opt.value) return;
+        var spec = facetByVar[opt.value];
+        if (spec && spec.hidden) { opt.remove(); return; }
+        opt.textContent = labelFor(opt.value);
       });
     }
 
@@ -236,10 +244,19 @@
     }
 
     // Optional icon/badge config (emitted as <template> islands for both modes).
-    var iconVarEl = document.getElementById(ID + "-icon-var");
-    var iconVar = iconVarEl ? iconVarEl.innerHTML.trim() : null;
-    var badgeVarEl = document.getElementById(ID + "-badge-var");
-    var badgeVar = badgeVarEl ? badgeVarEl.innerHTML.trim() : null;
+    //
+    // Both are comma-separated lists, not single names: a table may icon several
+    // IRI columns (a municipality AND its district AND its canton) and badge more
+    // than one (a status AND a version). A hand-passed iconVar=/badgeVar= param is
+    // still just one name, which is a one-element list. Empty entries are dropped
+    // so an absent value cannot end up matching a column whose variable is "".
+    function varList(el) {
+      return el
+        ? el.innerHTML.split(",").map(function (s) { return s.trim(); }).filter(Boolean)
+        : [];
+    }
+    var iconVars = varList(document.getElementById(ID + "-icon-var"));
+    var badgeVars = varList(document.getElementById(ID + "-badge-var"));
 
     // IRI → icon path, resolved server-side (internal/icon) so a row can show the
     // icon of its entity's rdf:type, not just of an IRI that happens to be named
@@ -256,7 +273,7 @@
         if (Object.prototype.hasOwnProperty.call(map, iri)) icons[iri] = map[iri];
       }
     }
-    if (iconVar) {
+    if (iconVars.length) {
       var iconsEl = document.getElementById(ID + "-icons");
       if (iconsEl) {
         try { mergeIcons(JSON.parse(iconsEl.innerHTML.trim())); } catch (e) { /* no icons */ }
@@ -319,8 +336,8 @@
       return orderColumns((vars || []).map(function(varName) {
         var binding = probeColumn(rows, varName).sample;
         var isLiteral = binding && binding.Type === 'literal';
-        var isBadge = badgeVar && varName === badgeVar;
-        var isIcon = iconVar && varName === iconVar;
+        var isBadge = badgeVars.indexOf(varName) !== -1;
+        var isIcon = iconVars.indexOf(varName) !== -1;
         var facetSpec = facetByVar[varName];
         // A declared width wins over the heuristic cap, which exists only to bound
         // automatic sizing — an author who states a width has already decided.
@@ -678,6 +695,8 @@
       if (!groupBySelect || !groupBySelect.dataset.wsGroupby) return;
       if (groupBySelect.options.length > 1) return; // already populated
       vars.forEach(function(v) {
+        var spec = facetByVar[v];
+        if (spec && spec.hidden) return; // no visible header to group under
         var opt = document.createElement("option");
         opt.value = v; opt.textContent = labelFor(v);
         groupBySelect.appendChild(opt);

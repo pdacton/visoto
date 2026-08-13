@@ -185,11 +185,30 @@ func knownType(t string) bool {
 // Table is a table's declared columns, in document order.
 type Table []Spec
 
-// IconVar returns the variable whose IRI selects a resource row icon, or "".
-func (t Table) IconVar() string { return t.firstFlagged(func(s Spec) bool { return s.Icon }) }
+// IconVar returns the variables rendered with a resource icon as a comma-separated
+// list, or "". Like badge (and unlike grouping), icon is not a single-column role:
+// a table listing municipalities with their district and canton wants the icon on
+// all three, and returning only the first silently dropped the rest. The wire
+// format stays a plain string so the iconVar= param a template may pass by hand —
+// a single variable name — is still a valid value.
+func (t Table) IconVar() string { return t.flaggedVars(func(s Spec) bool { return s.Icon }) }
 
-// BadgeVar returns the variable rendered as a badge, or "".
-func (t Table) BadgeVar() string { return t.firstFlagged(func(s Spec) bool { return s.Badge }) }
+// BadgeVar returns the variables rendered as badges as a comma-separated list,
+// or "". Not a single-column role either: a table may well want a badge on both
+// a status and a version column. See IconVar for the wire format.
+func (t Table) BadgeVar() string { return t.flaggedVars(func(s Spec) bool { return s.Badge }) }
+
+// flaggedVars returns the vars of every column matching pick, comma-separated.
+// Used by the roles a table may fill more than once; contrast firstFlagged.
+func (t Table) flaggedVars(pick func(Spec) bool) string {
+	var vars []string
+	for _, s := range t {
+		if pick(s) && s.Var != "" {
+			vars = append(vars, s.Var)
+		}
+	}
+	return strings.Join(vars, ",")
+}
 
 // GroupVar returns the variable the table is initially grouped by, or "".
 func (t Table) GroupVar() string { return t.firstFlagged(func(s Spec) bool { return s.Group }) }

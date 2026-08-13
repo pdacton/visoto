@@ -128,6 +128,11 @@
           OPTIONAL { ?station schema:provider ?provider . }   
         } LIMIT 5000
       </sparql-query>
+      <sparql-columns for="stationen">
+        <sparql-column var="station" label="{{ t "facet.station" "Station" }}" icon></sparql-column>
+        <sparql-column var="provider" label="{{ t "facet.provider" "Provider" }}" icon></sparql-column>
+      </sparql-columns>
+
       {{ template "sparqlTable" (dict
           "result" .QueryResults.stationen
           "id" "stationen"
@@ -145,6 +150,11 @@
           OPTIONAL { ?zefix_Organisation schema:additionalType ?form . }
         } LIMIT 5000
       </sparql-query>
+      <sparql-columns for="Organisationen">
+        <sparql-column var="zefix_Organisation" label="{{ t "facet.organisation" "Organisation" }}" icon></sparql-column>
+        <sparql-column var="form" label="{{ t "facet.legalForm" "Legal form" }}"></sparql-column>
+      </sparql-columns>
+
       {{ template "sparqlTable" (dict
           "result" .QueryResults.Organisationen
           "id" "Organisationen"

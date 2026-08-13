@@ -371,6 +371,53 @@ func TestExtractAsyncElements(t *testing.T) {
 	}
 }
 
+// TestResolveTypesFromIconColumns covers the gate that decides whether a sync
+// table pays for the rdf:type lookup its icons need. Both directions matter: an
+// icon column that never sets the flag renders no icons at all (the map stays
+// empty, silently), and a flag set without one buys an extra round trip per page
+// whose result nothing displays.
+func TestResolveTypesFromIconColumns(t *testing.T) {
+	const tmpl = `
+<sparql-query id="withIcon">SELECT ?municipality WHERE { ?municipality a ?t }</sparql-query>
+<sparql-columns for="withIcon">
+  <sparql-column var="municipality" icon></sparql-column>
+</sparql-columns>
+
+<sparql-query id="plain">SELECT ?s WHERE { ?s ?p ?o }</sparql-query>
+<sparql-columns for="plain">
+  <sparql-column var="s" filter></sparql-column>
+</sparql-columns>
+
+<sparql-query id="iconOff">SELECT ?s WHERE { ?s ?p ?o }</sparql-query>
+<sparql-columns for="iconOff">
+  <sparql-column var="s" icon="false"></sparql-column>
+</sparql-columns>
+`
+	queries, err := extractQueriesDOM(tmpl)
+	if err != nil {
+		t.Fatalf("extractQueriesDOM() error = %v", err)
+	}
+	got := make(map[string]bool, len(queries))
+	for _, q := range queries {
+		got[q.ID] = q.ResolveTypes
+	}
+	want := map[string]bool{"withIcon": true, "plain": false, "iconOff": false}
+	for id, w := range want {
+		if got[id] != w {
+			t.Errorf("query %q: ResolveTypes = %v, want %v", id, got[id], w)
+		}
+	}
+}
+
+// A declaration naming no query decorates nothing, so it must not turn the type
+// lookup on for every query on the page.
+func TestIconColumnQueriesIgnoresUnanchoredDeclaration(t *testing.T) {
+	got := iconColumnQueries(`<sparql-column var="x" icon></sparql-column>`)
+	if len(got) != 0 {
+		t.Errorf("iconColumnQueries() = %v, want empty for a column naming no query", got)
+	}
+}
+
 // Helper functions
 func containsSubstring(s, substr string) bool {
 	return len(s) >= len(substr) &&

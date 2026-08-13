@@ -82,7 +82,13 @@
         LIMIT 5000
       </sparql-query>
       <sparql-columns for="cantons">
-        <sparql-column var="type" icon></sparql-column>
+        <!-- ?type is constant here — the FILTER pins it to schch:Canton — so the
+             column neither narrows nor distinguishes anything. Hidden rather than
+             dropped from the SELECT: the row icon resolves per row from the
+             entity's own rdf:type, and the exports still carry the class. -->
+        <sparql-column var="type" hidden></sparql-column>
+        <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" icon></sparql-column>
+        <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"></sparql-column>
       </sparql-columns>
 
       {{ template "sparqlTable" (dict

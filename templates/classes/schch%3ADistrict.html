@@ -14,7 +14,14 @@
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-async id="districtInstances">
-      SELECT ?type ?district ?identifier ?canton ?validFrom ?validThrough (COUNT(?municipality) AS ?municipalities)
+      <!-- A district may carry more than one vl:version (district/111 does). Two
+           consequences, both handled here rather than in the GROUP BY:
+             - COUNT(DISTINCT …), not COUNT: the extra version row multiplies every
+               municipality and doubled 111's count from 11 to 22.
+             - MIN(?vf)/MIN(?vt) rather than grouping by the dates: grouping put the
+               same district on one row per version, listing Dietikon twice.
+           MIN mirrors what the Canton and District instance pages already do. -->
+      SELECT ?type ?district ?identifier ?canton (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) (COUNT(DISTINCT ?municipality) AS ?municipalities)
       WHERE {
         BIND (?? AS ?type)
         ?district rdf:type ?type .
@@ -22,17 +29,27 @@
         OPTIONAL { ?district schema:containedInPlace ?canton . ?canton a schch:Canton . }
         OPTIONAL {
           ?district vl:version ?version .
-          ?version schema:validFrom ?validFrom .
-          OPTIONAL { ?version schema:validThrough ?validThrough . }
+          ?version schema:validFrom ?vf .
+          OPTIONAL { ?version schema:validThrough ?vt . }
         }
         OPTIONAL { ?municipality schema:containedInPlace ?district . ?municipality a schch:Municipality . }
       }
-      GROUP BY ?type ?district ?identifier ?canton ?validFrom ?validThrough
+      GROUP BY ?type ?district ?identifier ?canton
       ORDER BY ?canton ?identifier
       LIMIT 20000
     </sparql-async>
     <sparql-columns for="districtInstances">
-      <sparql-column var="type" icon></sparql-column>
+      <!-- ?type is constant here — BIND(?? AS ?type) gives every row the same class
+           IRI — so the column neither narrows nor distinguishes anything. Hidden
+           rather than dropped from the SELECT: the row icon resolves per row from
+           the entity's own rdf:type, and the exports still carry the class. -->
+      <sparql-column var="type" hidden></sparql-column>
+      <sparql-column var="district" label="{{ t "facet.district" "District" }}" icon></sparql-column>
+      <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" icon></sparql-column>
+      <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"></sparql-column>
+      <sparql-column var="municipalities" label="{{ t "facet.municipalityCount" "Municipalities" }}"></sparql-column>
+      <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}"></sparql-column>
+      <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

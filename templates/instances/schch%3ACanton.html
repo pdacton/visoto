@@ -96,6 +96,14 @@
         ORDER BY ?identifier
         LIMIT 5000
       </sparql-query>
+      <sparql-columns for="districts">
+        <sparql-column var="district" label="{{ t "facet.district" "District" }}" icon></sparql-column>
+        <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"></sparql-column>
+        <sparql-column var="municipalities" label="{{ t "facet.municipalityCount" "Municipalities" }}"></sparql-column>
+        <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}"></sparql-column>
+        <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}"></sparql-column>
+      </sparql-columns>
+
       {{ template "sparqlTable" (dict
             "result" .QueryResults.districts
             "id" "districts"
@@ -122,6 +130,14 @@
         ORDER BY ?identifier
         LIMIT 5000
       </sparql-query>
+      <sparql-columns for="municipalities">
+        <sparql-column var="municipality" label="{{ t "facet.municipality" "Municipality" }}" icon></sparql-column>
+        <sparql-column var="district" label="{{ t "facet.district" "District" }}" icon></sparql-column>
+        <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"></sparql-column>
+        <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}"></sparql-column>
+        <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}"></sparql-column>
+      </sparql-columns>
+
       {{ template "sparqlTable" (dict
             "result" .QueryResults.municipalities
             "id" "municipalities"

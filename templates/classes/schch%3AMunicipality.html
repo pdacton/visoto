@@ -56,16 +56,19 @@
          dates a range. The three that override the inference each say why. -->
     <sparql-columns for="municipalityInstances">
       <!-- ?type is constant here — BIND(?? AS ?type) gives every row the same class
-           IRI — so this filter cannot narrow anything. It is declared for what it
-           READS OUT rather than what it does: "Municipality (3297)" states that the
-           whole table is one type, which otherwise takes scrolling to establish. -->
-      <sparql-column var="type" label="{{ t "facet.type" "Type" }}" filter icon></sparql-column>
-      <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" filter></sparql-column>
+           IRI — so the column neither narrows nor distinguishes anything. Hidden
+           rather than dropped from the SELECT: the row icon resolves per row from
+           the entity's own rdf:type, and the exports still carry the class. -->
+      <sparql-column var="type" hidden></sparql-column>
+      <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}" filter icon></sparql-column>
       <!-- 204 districts — just past the 200-value enumeration cap that decides
            list-vs-search, and the one column here that overrides it: this table is
            inline, so its options come from the loaded rows and nothing truncates. -->
-      <sparql-column var="district" label="{{ t "facet.district" "District" }}" filter="select"></sparql-column>
-      <sparql-column var="municipality" label="{{ t "facet.name" "Name" }}" filter></sparql-column>
+      <sparql-column var="district" label="{{ t "facet.district" "District" }}" filter="select" icon></sparql-column>
+      <!-- icon lives here, not on ?type: the municipality IRI has no icon of its
+           own name, so internal/icon falls back to its rdf:type (schch:Municipality)
+           and every row gets the class icon beside the name it belongs to. -->
+      <sparql-column var="municipality" label="{{ t "facet.municipality" "Municipality" }}" filter icon></sparql-column>
       <!-- BFS number lookup. text, NOT the range these digits would otherwise infer:
            the values are canton-grouped labels, and a min/max control would frame
            them as a quantity worth bracketing. Nothing in the data distinguishes

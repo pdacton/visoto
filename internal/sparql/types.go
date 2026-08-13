@@ -64,6 +64,11 @@ type ExtractedQuery struct {
 	Query         string // SPARQL query text
 	ResolveLabels bool   // Whether to perform IRI label enrichment
 	Endpoint      string // Optional endpoint override from template attribute
+	// ResolveTypes requests the rdf:type lookup that resolves row icons. Set from
+	// the query's own <sparql-column icon> declarations, so the extra round trip
+	// is paid only by a table that will actually render icons — the same gate
+	// queryOptions applies on the async path.
+	ResolveTypes bool
 }
 
 // queryExecutionResult holds the result of executing one query (internal use)

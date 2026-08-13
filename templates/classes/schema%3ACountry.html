@@ -41,12 +41,15 @@
          language and would collapse four independent columns into one filter. -->
 
     <sparql-columns for="countryInstances">
-      <!-- Constant (BIND(?? AS ?type)) — a readout, not a filter: "Country (284)". -->
-      <sparql-column var="type" label="{{ t "facet.type" "Type" }}" filter icon></sparql-column>
+      <!-- Constant (BIND(?? AS ?type)) — so the column neither narrows nor
+           distinguishes anything. Hidden rather than dropped from the SELECT: the
+           row icon resolves per row from the entity's own rdf:type, and the
+           exports still carry the class. -->
+      <sparql-column var="type" hidden></sparql-column>
       <!-- 284 distinct IRIs — past the server's 200-value enumeration cap, so this
            infers a text search rather than the checkbox list Canton's 26 get. A
            select here would silently truncate if the table ever went working-set. -->
-      <sparql-column var="country" label="{{ t "facet.country" "Country" }}" filter></sparql-column>
+      <sparql-column var="country" label="{{ t "facet.country" "Country" }}" filter icon></sparql-column>
       <!-- Codes like "1A0" — alphanumeric, so not even numeric-looking enough to
            tempt a range control. -->
       <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" filter></sparql-column>

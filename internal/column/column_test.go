@@ -167,10 +167,12 @@ func TestTablePresentation(t *testing.T) {
 		{Var: "type", Icon: true},
 		{Var: "kind", Badge: true, Filter: FilterAuto},
 		{Var: "canton", Group: true},
-		{Var: "other", Icon: true}, // a second icon column is ignored, not fought over
+		{Var: "other", Icon: true}, // icon is multi-column: both are listed
 	}
-	if got := tbl.IconVar(); got != "type" {
-		t.Errorf("IconVar() = %q, want %q", got, "type")
+	// A table listing an entity beside its parents wants the icon on every IRI
+	// column, so IconVar collects them all rather than letting the first win.
+	if got := tbl.IconVar(); got != "type,other" {
+		t.Errorf("IconVar() = %q, want %q", got, "type,other")
 	}
 	if got := tbl.BadgeVar(); got != "kind" {
 		t.Errorf("BadgeVar() = %q, want %q", got, "kind")
@@ -186,6 +188,35 @@ func TestTablePresentation(t *testing.T) {
 	}
 	if _, ok := tbl.Find("nope"); ok {
 		t.Error(`Find("nope") found an undeclared column`)
+	}
+}
+
+// Badge is the one presentation flag that is NOT a single-column role: a catalog
+// may badge both a status and a version. Returning only the first (as IconVar and
+// GroupVar do) rendered every later badge column as bare text, with no error —
+// the reader's only clue was that the pill was missing.
+func TestBadgeVarListsEveryBadgeColumn(t *testing.T) {
+	tbl := Table{
+		{Var: "cube"},
+		{Var: "status", Badge: true},
+		{Var: "modified"},
+		{Var: "superseded", Badge: true},
+	}
+	if got, want := tbl.BadgeVar(), "status,superseded"; got != want {
+		t.Errorf("BadgeVar() = %q, want %q — a second badge column must not be dropped", got, want)
+	}
+}
+
+// The empty result must stay empty rather than becoming ",": the reader splits on
+// commas, and a stray empty entry would match a column whose variable is unset.
+func TestBadgeVarEmptyWithoutBadges(t *testing.T) {
+	tbl := Table{{Var: "cube", Icon: true}, {Var: "modified"}}
+	if got := tbl.BadgeVar(); got != "" {
+		t.Errorf("BadgeVar() = %q, want \"\" when no column declares a badge", got)
+	}
+	// A badge flag on a declaration with no var has no column to attach to.
+	if got := (Table{{Badge: true}}).BadgeVar(); got != "" {
+		t.Errorf("BadgeVar() = %q, want \"\" for a badge declaration with no var", got)
 	}
 }
 

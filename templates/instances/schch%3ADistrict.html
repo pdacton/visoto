@@ -88,7 +88,21 @@
         LIMIT 5000
       </sparql-query>
       <sparql-columns for="municipalities">
-        <sparql-column var="type" icon></sparql-column>
+        <!-- ?type is constant here — the FILTER pins it to schch:Municipality — so
+             the column neither narrows nor distinguishes anything. Hidden rather
+             than dropped from the SELECT: the row icon resolves per row from the
+             entity's own rdf:type, and the exports still carry the class. -->
+        <sparql-column var="type" hidden></sparql-column>
+        <sparql-column var="municipality" label="{{ t "facet.municipality" "Municipality" }}" icon></sparql-column>
+        <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"></sparql-column>
+        <!-- Both counts carry DISTINCT, which is load-bearing rather than defensive:
+             ?station and ?org are independent one-to-many legs off the same
+             municipality, so they multiply each other in this flat join. DISTINCT
+             keeps each value right; the aggregation just runs over more rows. -->
+        <sparql-column var="stations" label="{{ t "facet.stationCount" "Stations" }}"></sparql-column>
+        <sparql-column var="orgs" label="{{ t "facet.organisationCount" "Organisations" }}"></sparql-column>
+        <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}"></sparql-column>
+        <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}"></sparql-column>
       </sparql-columns>
 
       {{ template "sparqlTable" (dict

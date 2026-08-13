@@ -27,7 +27,8 @@
     - iri:      (optional) resource IRI; substituted for ?? in the query
     - title:    (optional) card title, passed through to sparqlTable
     - icon:     (optional) Lucide icon name for the card header
-    - badgeVar: (optional) SPARQL var rendered as a Tabler badge
+    - badgeVar: (optional) SPARQL var rendered as a Tabler badge; comma-separated
+                for several
     - groupBy:  (optional) SPARQL var the table is initially grouped by
     - collapsed: (optional) if truthy, the loaded table's card starts collapsed
     - trigger:  (optional) HTMX trigger; defaults to "load" (eager, like metrics).
@@ -77,7 +78,8 @@
     root   anchor variable for path, when it is not the class-membership key
     icon   render the value as a resource icon (resolved from the value IRI, or
            failing that from its rdf:type — see internal/icon)
-    badge  render the value as a Tabler badge    (replaces badgeVar)
+    badge  render the value as a Tabler badge    (replaces badgeVar; unlike icon
+           and group, several columns may carry it)
     group  group the table by this column        (replaces groupBy)
     hidden keep the variable, drop the column from view
     width  fixed width: 180, 180px, 20%

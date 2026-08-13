@@ -115,6 +115,12 @@ func extractQueriesDOM(templateContent string) ([]sparql.ExtractedQuery, error) 
 		return nil, err
 	}
 
+	// Which query ids declare an icon column. A sync table resolves its icons from
+	// the page-level result, which is executed here rather than by a fragment
+	// handler, so the rdf:type lookup has to be requested at extraction time — the
+	// declarations live in the same file, so no index is needed to find them.
+	iconQueries := iconColumnQueries(templateContent)
+
 	queries := make([]sparql.ExtractedQuery, 0, len(elements))
 	idMap := make(map[string]bool)
 
@@ -149,6 +155,7 @@ func extractQueriesDOM(templateContent string) ([]sparql.ExtractedQuery, error) 
 			Query:         elem.Content,
 			ResolveLabels: resolveLabels,
 			Endpoint:      endpoint,
+			ResolveTypes:  iconQueries[elem.ID],
 		})
 	}
 
@@ -212,6 +219,48 @@ func ExtractFacetElements(content string) ([]ExtractedElement, error) {
 		}
 	}
 	return out, nil
+}
+
+// iconColumnQueries reports which base query ids declare at least one column with
+// icon, so extractQueriesDOM can request the rdf:type lookup for those queries and
+// no others. A declaration that names no query (no for=, no enclosing container)
+// decorates nothing and is skipped rather than turning the lookup on globally.
+//
+// Parse failures yield no ids: an unreadable template already fails louder in
+// extractElements, and silently paying for the type query everywhere would be the
+// worse way to be wrong.
+func iconColumnQueries(content string) map[string]bool {
+	cols, err := ExtractColumnElements(content)
+	if err != nil {
+		return nil
+	}
+	out := make(map[string]bool)
+	for _, c := range cols {
+		if !flagSet(c.Attributes, "icon") {
+			continue
+		}
+		if id := c.Attributes["for"]; id != "" {
+			out[id] = true
+		}
+	}
+	return out
+}
+
+// flagSet reports whether a valueless boolean column attribute is on. It mirrors
+// column.flagAttr — which is what actually decides whether the icon renders — so
+// that icon="false" does not pay for a type query whose result nothing displays.
+// Kept as a local copy rather than importing internal/column for one predicate;
+// if a third caller needs it, export it there and drop this.
+func flagSet(attrs map[string]string, name string) bool {
+	v, ok := attrs[name]
+	if !ok {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "false", "0", "no", "off":
+		return false
+	}
+	return true
 }
 
 // ExtractColumnElements returns all <sparql-column> declarations in a template, in
