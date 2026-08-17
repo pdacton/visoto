@@ -1,0 +1,110 @@
+<!-- cube:meta/Hierarchy Instance Template -->
+
+<sparql-query id="breadcrumbs"> SELECT ?sharedDimension { ?? shdim:sharedDimension ?sharedDimension . } </sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.hierarchy.hierarchies" "<a href=\"/resource?iri=meta:Hierarchy\">Hierarchies</a>" }}</li>
+  {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
+    <li class="breadcrumb-item">{{ render ((index $binding "sharedDimension")) }}</li>
+  {{ end }}
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+    <p class="text-secondary">{{ tHTML "type.hierarchy.aHierarchyIs" "A <strong>Hierarchy</strong> describes how the values of a dimension nest. It starts at a <code>meta:hierarchyRoot</code> and declares levels, each naming the property that leads one step down — usually <code>skos:narrower</code> or <code>schema:containsPlace</code>." }}</p>
+
+    {{ template "literals" . }}
+
+    <!-- The levels of this hierarchy.
+
+         Each meta:nextInHierarchy is a property shape: sh:path is the property
+         that descends to the next level, schema:name labels the level. Level
+         shapes are blank nodes, so the path and name are all there is to show —
+         there is nothing to link to.
+
+         Sync sparqlTable, not the async working-set one: this selects the levels
+         of ONE hierarchy ("?? meta:nextInHierarchy ?level"), which is not a
+         class-membership pattern, so BuildWorkingSetQuery cannot rewrite it. The
+         bound is tiny — hierarchies declare a handful of levels. -->
+    <div class="row">
+        <div class="col-lg">
+            <div class="mb-3">
+                <sparql-query id="hierarchyLevels">
+                    SELECT ?level ?path ?name WHERE {
+                        ?? meta:nextInHierarchy ?level .
+                        OPTIONAL { ?level sh:path ?path }
+                        OPTIONAL { ?level schema:name ?name .
+                                   FILTER(lang(?name) = visoto:dispLang || lang(?name) = "") }
+                    }
+                </sparql-query>
+                <sparql-columns for="hierarchyLevels" order>
+                    <sparql-column var="name" label="{{ t "facet.level" "Level" }}"
+                                   path="schema:name" filter="text"></sparql-column>
+                    <sparql-column var="path" label="{{ t "facet.path" "Path" }}"
+                                   tip="{{ t "facet.tip.hierarchyPath" "The property that leads from this level to the next one down." }}"
+                                   path="sh:path" filter></sparql-column>
+                </sparql-columns>
+
+                {{ template "sparqlTable" (dict
+                    "result" .QueryResults.hierarchyLevels
+                    "id" "hierarchyLevels"
+                    "title" (t "card.levels" "Levels")
+                    "icon" "list-tree")
+                }}
+            </div>
+        </div>
+    </div>
+
+    <!-- The hierarchy rendered as an actual tree, walked from the root.
+
+         The descent property is READ from the hierarchy's own level shape
+         (?level sh:path ?path), not guessed. It varies per hierarchy —
+         skos:narrower for most, schema:containsPlace for the cantons hierarchy,
+         and blank-node property paths elsewhere — so hard-coding an alternation
+         silently produced a one-node tree for anything not on the list.
+         Binding ?path from the data makes the query correct for every hierarchy.
+
+         Two levels deep: the query cannot know how deep a given hierarchy runs,
+         and an unbounded property path over a large dimension is slow. Deeper
+         levels are reachable by clicking through to the term itself.
+
+         sparqlTree takes flat ?node/?parent pairs and inverts them itself. -->
+    <div class="row">
+        <div class="col">
+            <div class="mb-3">
+                <sparql-query id="hierarchyTree">
+                    SELECT ?node ?parent WHERE {
+                        ?? meta:hierarchyRoot ?root ;
+                           meta:nextInHierarchy ?level .
+                        ?level sh:path ?path .
+                        {
+                            BIND (?root AS ?node)
+                        }
+                        UNION
+                        {
+                            ?root ?path ?node .
+                            BIND (?root AS ?parent)
+                        }
+                        UNION
+                        {
+                            ?root ?path ?parent .
+                            ?parent ?path ?node .
+                        }
+                    }
+                </sparql-query>
+                {{ template "sparqlTree" (dict
+                    "result" .QueryResults.hierarchyTree
+                    "id" "hierarchyTree"
+                    "title" (t "card.hierarchy" "Hierarchy")
+                    "icon" "list-tree"
+                    "treeExpanded" false
+                    "ResourceIRI" .ResourceIRI)
+                }}
+            </div>
+        </div>
+    </div>
+
+    {{ template "relationships" . }}
+
+{{ end }}

@@ -1,0 +1,95 @@
+<!-- cube:meta/Hierarchy Class Template — catalog of dimension hierarchies -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <p class="text-secondary">{{ tHTML "type.hierarchy.aHierarchyIs" "A <strong>Hierarchy</strong> describes how the values of a dimension nest — Switzerland containing its cantons, a species classification, an energy-carrier tree. It names a <code>meta:hierarchyRoot</code> to start from and one or more levels, each declaring the property that leads to the next level down (usually <code>skos:narrower</code> or <code>schema:containsPlace</code>). Hierarchies attach to a <a href=\"/resource?iri=meta:SharedDimension\">shared dimension</a>." }}</p>
+
+  <!-- Metric strip: counts are queried live (LINDAS counts drift). -->
+  <sparql-async id="hierarchyTotal">
+    SELECT (COUNT(?h) AS ?count) WHERE { ?h a meta:Hierarchy . }
+  </sparql-async>
+  <sparql-async id="hierarchyNamed">
+    SELECT (COUNT(?h) AS ?count) WHERE { ?h a meta:Hierarchy . FILTER(!isBlank(?h)) }
+  </sparql-async>
+  <sparql-async id="hierarchyDimensions">
+    SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
+      ?h a meta:Hierarchy ; shdim:sharedDimension ?dim .
+    }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "hierarchyTotal"
+        "title" (t "card.hierarchies" "Hierarchies")
+        "href" "/resource?iri=meta%3AHierarchy"
+        "icon" "/static/img/resource/Hierarchy.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "hierarchyNamed"
+        "title" (t "card.namedHierarchies" "Named Hierarchies")
+        "href" "/resource?iri=meta%3AHierarchy"
+        "icon" "/static/img/resource/Hierarchy.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "hierarchyDimensions"
+        "title" (t "card.sharedDimensions" "Shared Dimensions")
+        "href" "/resource?iri=meta%3ASharedDimension"
+        "icon" "/static/img/resource/SharedDimension.svg") }}
+  </div>
+
+  <!-- Catalog: one row per hierarchy.
+
+       FILTER(!isBlank(?hierarchy)) is deliberate. Of the 1,976 hierarchies in
+       LINDAS, 1,273 are blank nodes declared inline on a dimension shape — they
+       have no IRI, so they cannot be linked to and a row for them would be a
+       dead end. The 703 named ones are the navigable population, and the
+       metric strip above still reports both totals.
+
+       Levels are counted in a subquery grouped by ?hierarchy so the
+       meta:nextInHierarchy join cannot multiply rows. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+
+        <sparql-async id="hierarchyCatalog">
+          SELECT ?hierarchy ?root ?sharedDimension ?levels WHERE {
+            { SELECT ?hierarchy (COUNT(DISTINCT ?lvl) AS ?levels)
+                     (SAMPLE(?r) AS ?root) (SAMPLE(?sd) AS ?sharedDimension)
+              WHERE {
+                ?hierarchy a meta:Hierarchy .
+                FILTER(!isBlank(?hierarchy))
+                OPTIONAL { ?hierarchy meta:hierarchyRoot ?r }
+                OPTIONAL { ?hierarchy shdim:sharedDimension ?sd }
+                OPTIONAL { ?hierarchy meta:nextInHierarchy ?lvl }
+              } GROUP BY ?hierarchy }
+          }
+          ORDER BY DESC(?levels)
+          LIMIT 10000
+        </sparql-async>
+
+        <sparql-columns for="hierarchyCatalog" order>
+          <sparql-column var="hierarchy" label="{{ t "facet.hierarchy" "Hierarchy" }}" icon
+                         path="schema:name" filter="text"></sparql-column>
+          <sparql-column var="root" label="{{ t "facet.root" "Root" }}"
+                         tip="{{ t "facet.tip.hierarchyRoot" "The term the hierarchy starts from — e.g. Switzerland for the cantons hierarchy." }}"
+                         path="meta:hierarchyRoot" filter="text"></sparql-column>
+          <sparql-column var="sharedDimension" label="{{ t "facet.sharedDimension" "Shared Dimension" }}"
+                         tip="{{ t "facet.tip.hierarchyDimension" "The shared dimension whose terms this hierarchy organizes." }}"
+                         path="shdim:sharedDimension" filter="text"></sparql-column>
+          <sparql-column var="levels" label="{{ t "facet.levels" "Levels" }}" type="number"
+                         tip="{{ t "facet.tip.levels" "How many meta:nextInHierarchy levels the hierarchy declares." }}"
+                         path="meta:nextInHierarchy" filter="range" width="110"></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "hierarchyCatalog"
+            "title" (t "card.hierarchies" "Hierarchies")
+            "icon" "network")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

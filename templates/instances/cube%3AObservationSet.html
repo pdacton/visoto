@@ -1,0 +1,80 @@
+<!-- cube:ObservationSet Instance Template -->
+
+<sparql-query id="breadcrumbs"> SELECT ?cube { ?cube cube:observationSet ?? . } </sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.observationSet.observationSets" "<a href=\"/resource?iri=cube:ObservationSet\">Observation Sets</a>" }}</li>
+  {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
+    <li class="breadcrumb-item">{{ render ((index $binding "cube")) }}</li>
+  {{ end }}
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+    <p class="text-secondary">{{ tHTML "type.observationSet.anObservationSetIs" "An <strong>Observation Set</strong> is the container holding a cube's data points. It carries no metadata of its own — only <code>cube:observation</code> links — so the interesting parts are the owning <a href=\"/resource?iri=cube:Cube\">cube</a> above and the observations below." }}</p>
+
+    <!-- How many observations does this set hold? Queried live rather than
+         stated, because the range is enormous: most sets hold a few hundred,
+         the ElCom electricity-price set holds 748,720. -->
+    <sparql-async id="observationCount">
+      SELECT (COUNT(?obs) AS ?count) WHERE { ?? cube:observation ?obs . }
+    </sparql-async>
+    <div class="row row-deck row-cards mb-3">
+      {{ template "sparqlMetric" (dict
+          "queryId" "observationCount"
+          "iri" .ResourceIRI
+          "title" (t "card.observations" "Observations")
+          "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
+          "icon" "/static/img/resource/Observation.svg") }}
+    </div>
+
+    {{ template "literals" . }}
+
+    <!-- A bounded sample of observations, shown as predicate/value pairs.
+
+         Observations carry cube-specific dimension predicates — the ElCom set
+         uses .../dimension/period, /category, /total, /aidfee and so on — so
+         there is no fixed column set that works across sets. Pivoting to
+         predicate/value keeps the table honest for any cube.
+
+         LIMIT 20 observations, not the whole set: this is a sync table, and the
+         largest set holds 748,720 observations. The count metric above states
+         the true size; the full data belongs in the resource page's Data view,
+         which is built for exactly this. A working-set table is not an option
+         here — "?? cube:observation ?obs" is not a class-membership pattern, so
+         BuildWorkingSetQuery cannot rewrite it (see cube:Constraint for the 400
+         that produces). -->
+    <div class="row">
+        <div class="col-lg">
+            <div class="mb-3">
+                <sparql-query id="observationSample">
+                    SELECT ?observation ?predicate ?value WHERE {
+                        { SELECT ?observation WHERE { ?? cube:observation ?observation . } LIMIT 20 }
+                        ?observation ?predicate ?value .
+                        FILTER (?predicate != rdf:type)
+                    }
+                </sparql-query>
+                <sparql-columns for="observationSample" order>
+                    <sparql-column var="observation" label="{{ t "facet.observation" "Observation" }}" icon
+                                   filter="text"></sparql-column>
+                    <sparql-column var="predicate" label="{{ t "facet.dimension" "Dimension" }}"
+                                   tip="{{ t "facet.tip.observationPredicate" "The cube dimension this value belongs to. Predicates are cube-specific, so they differ from set to set." }}"
+                                   filter></sparql-column>
+                    <sparql-column var="value" label="{{ t "facet.value" "Value" }}"
+                                   filter="text"></sparql-column>
+                </sparql-columns>
+
+                {{ template "sparqlTable" (dict
+                    "result" .QueryResults.observationSample
+                    "id" "observationSample"
+                    "title" (t "card.observationSample" "Observation Sample")
+                    "icon" "table")
+                }}
+            </div>
+        </div>
+    </div>
+
+    {{ template "relationships" . }}
+
+{{ end }}

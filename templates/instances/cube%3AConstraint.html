@@ -1,0 +1,99 @@
+<!-- cube:Constraint Instance Template — the SHACL shape describing a cube's dimensions -->
+
+<sparql-query id="breadcrumbs"> SELECT ?cube { ?cube cube:observationConstraint ?? . } </sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.constraint.cubes" "<a href=\"/resource?iri=cube:Cube\">Cubes</a>" }}</li>
+  {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
+    <li class="breadcrumb-item">{{ render ((index $binding "cube")) }}</li>
+  {{ end }}
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+    <p class="text-secondary">{{ tHTML "type.constraint.aConstraintIs" "A <strong>Constraint</strong> is the SHACL shape a cube points at with <code>cube:observationConstraint</code>. Each <code>sh:property</code> below declares one dimension of the cube: what it measures, its scale and unit, and — for dimensions drawn from a controlled vocabulary — which <a href=\"/resource?iri=meta:SharedDimension\">shared dimension</a> its permitted values come from." }}</p>
+
+    {{ template "literals" . }}
+
+    <!-- The cube's dimensions, one row per sh:property shape.
+
+         GROUP BY ?shape is required, not cosmetic: the term-set lookup walks
+         sh:in/rdf:rest*/rdf:first, so a dimension whose sh:in list holds N terms
+         would otherwise produce N identical rows (the NFI inventory dimension
+         alone repeats 5x ungrouped). Grouping collapses that back to 74 rows for
+         74 shapes on nfi_C-96/2024-1.
+
+         The dimension shapes themselves are blank nodes — cube:KeyDimension,
+         cube:MeasureDimension and cube:AttributeDimension have NO named
+         instances at all in LINDAS (6,678 / 4,037 / 64, every one blank). That
+         is why those classes have no templates of their own: this table is the
+         only place they can be shown. ?dimType is what makes them visible, and
+         it excludes sh:PropertyShape, which every shape carries and which would
+         crowd out the informative type.
+
+         A sync sparql-query, NOT the async working-set table: this query selects
+         the shapes of ONE constraint ("?? sh:property ?shape"), which is not a
+         class-membership pattern. BuildWorkingSetQuery looks for "?key a <class>"
+         and, failing to find it, falls back to wrapping the whole query in a way
+         that splices a bare SELECT into a group — invalid SPARQL, 400, empty
+         table. The bound is small anyway: the largest constraint in LINDAS
+         declares 288 dimensions. -->
+    <div class="row">
+        <div class="col-lg">
+            <div class="mb-3">
+                <sparql-query id="constraintDimensions">
+                    SELECT ?dimension ?dimType ?name ?scaleType ?datatype ?unit ?termSet WHERE {
+                        { SELECT ?shape ?dimension
+                                 (SAMPLE(?dimType_)   AS ?dimType)
+                                 (SAMPLE(?name_)      AS ?name)
+                                 (SAMPLE(?scaleType_) AS ?scaleType)
+                                 (SAMPLE(?datatype_)  AS ?datatype)
+                                 (SAMPLE(?unit_)      AS ?unit)
+                                 (SAMPLE(?termSet_)   AS ?termSet)
+                          WHERE {
+                            ?? sh:property ?shape .
+                            ?shape sh:path ?dimension .
+                            OPTIONAL { ?shape a ?dimType_ . FILTER(?dimType_ != sh:PropertyShape) }
+                            OPTIONAL { ?shape schema:name ?name_ .
+                                       FILTER(lang(?name_) = visoto:dispLang || lang(?name_) = "") }
+                            OPTIONAL { ?shape qudt:scaleType ?scaleType_ }
+                            OPTIONAL { ?shape sh:datatype ?datatype_ }
+                            OPTIONAL { ?shape qudt:unit ?unit_ }
+                            OPTIONAL { ?shape sh:in/rdf:rest*/rdf:first/schema:inDefinedTermSet ?termSet_ }
+                          } GROUP BY ?shape ?dimension }
+                    }
+                </sparql-query>
+                <sparql-columns for="constraintDimensions" order>
+                    <sparql-column var="dimension" label="{{ t "facet.dimension" "Dimension" }}" icon
+                                   path="sh:path" filter="text"></sparql-column>
+                    <sparql-column var="dimType" label="{{ t "facet.dimensionType" "Dimension Type" }}" badge
+                                   tip="{{ t "facet.tip.dimensionType" "Key, Measure or Attribute dimension." }}"
+                                   filter width="150"></sparql-column>
+                    <sparql-column var="name" label="{{ t "facet.name" "Name" }}"
+                                   path="schema:name" filter="text"></sparql-column>
+                    <sparql-column var="scaleType" label="{{ t "facet.scaleType" "Scale Type" }}" badge
+                                   path="qudt:scaleType" filter width="140"></sparql-column>
+                    <sparql-column var="datatype" label="{{ t "facet.datatype" "Datatype" }}" badge
+                                   path="sh:datatype" filter width="130"></sparql-column>
+                    <sparql-column var="unit" label="{{ t "facet.unit" "Unit" }}"
+                                   path="qudt:unit" filter width="120"></sparql-column>
+                    <sparql-column var="termSet" label="{{ t "facet.sharedDimension" "Shared Dimension" }}"
+                                   tip="{{ t "facet.tip.termSetOfDimension" "The shared dimension supplying this dimension's permitted values, when it draws on one." }}"
+                                   path="schema:inDefinedTermSet" filter="text"></sparql-column>
+                </sparql-columns>
+
+                {{ template "sparqlTable" (dict
+                    "result" .QueryResults.constraintDimensions
+                    "id" "constraintDimensions"
+                    "badgeVar" "dimType,scaleType,datatype"
+                    "title" (t "card.dimensions" "Dimensions")
+                    "icon" "ruler")
+                }}
+            </div>
+        </div>
+    </div>
+
+    {{ template "relationships" . }}
+
+{{ end }}

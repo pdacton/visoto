@@ -1,0 +1,172 @@
+<!-- cube-creator SharedDimensionTerm Instance Template -->
+
+<sparql-query id="breadcrumbs"> SELECT ?termSet { ?? schema:inDefinedTermSet ?termSet . } </sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.sharedDimensionTerm.sharedDimension" "<a href=\"/resource?iri=meta:SharedDimension\">Shared Dimension</a>" }}</li>
+  {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
+    <li class="breadcrumb-item">{{ render ((index $binding "termSet")) }}</li>
+  {{ end }}
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+    {{ template "literals" . }}
+
+    <!-- Term hierarchy, scoped to this term's own shared dimension.
+
+         The tree is built from skos:broader, never from skos:narrower: broader
+         is the complete direction (379 triples over 462 terms), while narrower
+         is only present on 17 terms and mirrors just 238 of those 379 links.
+         Building from narrower would silently drop 141 children. sparqlTree
+         takes flat ?node/?parent pairs and inverts the edges itself, so the
+         one-directional broader data is all it needs.
+
+         Scoping to ?termSet keeps the tree to the dimension the user is looking
+         at — the 462 terms span 23 unrelated sets, 16 of which have a hierarchy
+         (up to 5 levels deep; the deepest are cofog and foen_species_classification).
+
+         The shared dimension itself is emitted as the tree's root, and terms
+         without a skos:broader are re-parented onto it via COALESCE. This shows
+         the term-to-dimension relation directly in the hierarchy, and gives the
+         7 flat sets (el01, mfmu_stations, …) a real root rather than a bare list
+         of siblings. -->
+
+    <!-- Wunderbaum builds the tree from flat ?node/?parent rows and promotes any
+         child whose parent is absent to a root, so the extra root row needs no
+         special handling in sparql-tree.js. -->
+    <div class="row">
+        <div class="col">
+            <div class="mb-3">
+                <sparql-query id="termTree">
+                    SELECT ?node ?parent ?code WHERE {
+                        # which shared dimension does this term belong to?
+                        ?? schema:inDefinedTermSet ?termSet .
+                        {
+                            # the shared dimension itself, as the single root
+                            BIND (?termSet AS ?node)
+                        }
+                        UNION
+                        {
+                            # all terms of that same shared dimension; terms with no
+                            # skos:broader hang directly off the shared dimension, so
+                            # the tree always has one root instead of many orphans
+                            ?node schema:inDefinedTermSet ?termSet .
+                            ?node a shdim:SharedDimensionTerm .
+                            OPTIONAL { ?node skos:broader ?broader . }
+                            BIND (COALESCE(?broader, ?termSet) AS ?parent)
+                            OPTIONAL { ?node schema:identifier ?code . }
+                        }
+                    }
+                </sparql-query>
+                {{ template "sparqlTree" (dict
+                    "result" .QueryResults.termTree
+                    "id" "termTree"
+                    "title" (t "card.hierarchy" "Hierarchy")
+                    "icon" "list-tree"
+                    "treeExpanded" false
+                    "ResourceIRI" .ResourceIRI)
+                }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Where is this term actually used?
+
+         Answered from the SHACL constraint, not by scanning observations. A
+         cube declares its permitted dimension values as sh:in on the property
+         shape, so this reads a handful of triples regardless of how much data
+         uses the term.
+
+         The direct route — ?obs ?dimension <term> . ?set cube:observation ?obs .
+         ?cube cube:observationSet ?set — returns the same cubes (verified on
+         cofog/gf0101: both give BFS_cofog_national/1,2,3), but it does not
+         scale: a term like YesNo/1 has 435,320 incoming observation triples and
+         the aggregate times out on the endpoint. The SHACL query answers the
+         same question for that term instantly.
+
+         This is also what the "incoming relationships" card cannot usefully
+         show. Its sources are almost entirely named observation IRIs, hundreds
+         of thousands per popular term; the only blank nodes among them are the
+         rdf:first cells of these very sh:in lists.
+
+         ?dimension and ?cube are matched with required triples, not OPTIONAL:
+         with OPTIONAL the table renders empty even though the query returns
+         rows against the endpoint. Every cube shape in this data binds both, so
+         requiring them loses nothing. -->
+    <!-- sparqlTable needs an explicit "id" — omitting it fails at render with
+         `executing "sparqlTable" at <.id>: invalid value; expected string`. -->
+    <div class="row">
+        <div class="col">
+            <div class="mb-3">
+                <sparql-query id="usedInCubes">
+                    SELECT ?cube ?dimension ?publisher ?themes ?status ?modified ?superseded WHERE {
+                        { SELECT ?cube ?dimension
+                                 (SAMPLE(?creatorName) AS ?publisher)
+                                 (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes)
+                                 (SAMPLE(?st) AS ?status) (SAMPLE(?mod) AS ?modified)
+                                 (IF(COUNT(?exp) > 0, "superseded", "current") AS ?superseded)
+                          WHERE {
+                            ?prop sh:in/rdf:rest*/rdf:first ?? .
+                            ?shape sh:property ?prop .
+                            ?prop sh:path ?dimension .
+                            ?cube cube:observationConstraint ?shape .
+                            OPTIONAL { ?cube dct:creator/schema:name ?creatorName .
+                                       FILTER(lang(?creatorName) = "en" || lang(?creatorName) = "") }
+                            OPTIONAL { ?cube dcat:theme/schema:name ?themeName .
+                                       FILTER(lang(?themeName) = visoto:dispLang) }
+                            OPTIONAL { ?cube schema:creativeWorkStatus/schema:name ?st .
+                                       FILTER(lang(?st) = visoto:dispLang || lang(?st) = "en") }
+                            OPTIONAL { ?cube schema:dateModified ?mod }
+                            OPTIONAL { ?cube schema:expires ?exp }
+                          } GROUP BY ?cube ?dimension }
+                    }
+                    ORDER BY DESC(?modified)
+                </sparql-query>
+
+                <!-- Same column vocabulary as the cube:Cube catalog, so the two
+                     tables read alike. ?dimension is the addition: it names the
+                     cube property this term fills, which is the whole point of
+                     the card. Version matters more here than in the catalog —
+                     a term is typically declared by every version of a cube
+                     (YesNo/1 appears in 34, mostly superseded TV_DegreeOfSeverity
+                     revisions), so without it the table looks like 34 unrelated
+                     cubes instead of a handful of lineages. -->
+                <sparql-columns for="usedInCubes" order>
+                    <sparql-column var="cube" label="{{ t "facet.cube" "Cube" }}" icon
+                                   path="schema:name" filter="text"></sparql-column>
+                    <sparql-column var="dimension" label="{{ t "facet.dimension" "Dimension" }}"
+                                   tip="{{ t "facet.tip.dimension" "The cube property whose permitted values include this term." }}"
+                                   path="sh:path" filter="text"></sparql-column>
+                    <sparql-column var="publisher" label="{{ t "facet.publisher" "Publisher" }}"
+                                   path="dct:creator/schema:name" filter></sparql-column>
+                    <sparql-column var="themes" label="{{ t "facet.themes" "Themes" }}"
+                                   path="dcat:theme/schema:name" filter="text"></sparql-column>
+                    <sparql-column var="status" label="{{ t "facet.status" "Status" }}" badge
+                                   path="schema:creativeWorkStatus/schema:name" filter width="130"></sparql-column>
+                    <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}" type="date"
+                                   path="schema:dateModified" filter="range" width="150"></sparql-column>
+                    <sparql-column var="superseded" label="{{ t "facet.version" "Version" }}" badge
+                                   filter width="130"></sparql-column>
+                </sparql-columns>
+
+                {{/* badgeVar is passed explicitly: unlike iconVar, the sync
+                     sparqlTable has no columnIconVar-style fallback that reads the
+                     <sparql-column … badge> declarations above, so a sync table
+                     that only declares them renders Status/Version as plain text.
+                     The declarations still carry the labels, filters and widths. */}}
+                {{ template "sparqlTable" (dict
+                    "result" .QueryResults.usedInCubes
+                    "id" "usedInCubes"
+                    "badgeVar" "status,superseded"
+                    "title" (t "card.usedInCubes" "Used in Cubes")
+                    "icon" "box")
+                }}
+            </div>
+        </div>
+    </div>
+
+    {{ template "relationships" . }}
+
+{{ end }}

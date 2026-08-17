@@ -1,0 +1,119 @@
+<!-- cube:meta/SharedDimension Class Template — catalog of shared dimensions -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <p class="text-secondary">{{ tHTML "type.sharedDimension.aSharedDimensionIs" "A <strong>Shared Dimension</strong> is a controlled vocabulary reused across cubes: a set of <a href=\"/resource?iri=https%3A%2F%2Fcube-creator.zazuko.com%2Fshared-dimensions%2Fvocab%23SharedDimensionTerm\">terms</a> that several datasets all point at, so their values stay comparable. Dimensions are authored in <a href=\"https://cube-creator.zazuko.com/\" target=\"_blank\" rel=\"noopener\">Cube Creator</a>. The <strong>Cubes</strong> column counts the datasets that declare the dimension via <code>meta:isUsedIn</code>." }}</p>
+
+  <!-- Metric strip: counts are queried live (LINDAS counts drift). -->
+  <sparql-async id="dimTotal">
+    SELECT (COUNT(?dim) AS ?count) WHERE { ?dim a meta:SharedDimension . }
+  </sparql-async>
+  <sparql-async id="dimUsed">
+    SELECT (COUNT(DISTINCT ?dim) AS ?count) WHERE {
+      ?dim a meta:SharedDimension ; meta:isUsedIn ?cube .
+    }
+  </sparql-async>
+  <sparql-async id="dimCubes">
+    SELECT (COUNT(DISTINCT ?cube) AS ?count) WHERE {
+      ?dim a meta:SharedDimension ; meta:isUsedIn ?cube .
+    }
+  </sparql-async>
+  <sparql-async id="dimTerms">
+    SELECT (COUNT(DISTINCT ?term) AS ?count) WHERE {
+      ?term a shdim:SharedDimensionTerm .
+    }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "dimTotal"
+        "title" (t "card.sharedDimensions" "Shared Dimensions")
+        "href" "/resource?iri=meta%3ASharedDimension"
+        "icon" "/static/img/resource/SharedDimension.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "dimUsed"
+        "title" (t "card.dimensionsInUse" "Dimensions in Use")
+        "href" "/resource?iri=meta%3ASharedDimension"
+        "icon" "/static/img/resource/CubeCurrent.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "dimCubes"
+        "title" (t "card.cubesUsingThem" "Cubes Using Them")
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
+        "icon" "/static/img/resource/Cube.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "dimTerms"
+        "title" (t "card.sharedDimensionTerms" "Shared Dimension Terms")
+        "href" "/resource?iri=https%3A%2F%2Fcube-creator.zazuko.com%2Fshared-dimensions%2Fvocab%23SharedDimensionTerm"
+        "icon" "/static/img/resource/SharedDimensionTerm.svg") }}
+  </div>
+
+  <!-- Catalog: one row per shared dimension.
+
+       No ?name column: the backend resolves a label for every IRI in the result
+       (extractIRIs → fetchLabels → enrichWithLabels in internal/sparql), and
+       schema:name is one of the properties it looks up, so the Dimension column
+       already displays the title.
+
+       Deliberately NO term count. Terms are counted per dimension with
+       ?t schema:inDefinedTermSet ?dim, and the counts are wildly uneven — zefix
+       alone has 791,930 terms, week 4,226, municipality 3,465. Aggregating that
+       across all 96 dimensions makes the catalog query far too slow to serve.
+       The per-dimension term list lives on the instance page, where a single
+       dimension is in scope and the async working-set table can bound it. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+
+        <sparql-async id="dimensionCatalog">
+          SELECT ?dimension ?cubes ?identifier ?scaleType ?validFrom WHERE {
+            { SELECT ?dimension (COUNT(DISTINCT ?cube) AS ?cubes)
+                     (SAMPLE(?id) AS ?identifier) (SAMPLE(?st) AS ?scaleType)
+                     (SAMPLE(?vf) AS ?validFrom)
+              WHERE {
+                ?dimension a meta:SharedDimension .
+                OPTIONAL { ?dimension meta:isUsedIn ?cube }
+                OPTIONAL { ?dimension dct:identifier ?id }
+                OPTIONAL { ?dimension qudt:scaleType ?st }
+                OPTIONAL { ?dimension schema:validFrom ?vf }
+              } GROUP BY ?dimension }
+          }
+          ORDER BY DESC(?cubes)
+          LIMIT 10000
+        </sparql-async>
+
+        <!-- Inline table, not working-set: the membership triple is written out
+             as "?dimension a meta:SharedDimension" rather than "?dimension a ??",
+             so every filter runs locally over the loaded rows. 96 dimensions is
+             well within that. -->
+        <sparql-columns for="dimensionCatalog" order>
+          <sparql-column var="dimension" label="{{ t "facet.dimension" "Dimension" }}" icon
+                         tip="{{ t "facet.tip.sharedDimension" "The shared dimension itself — click through for its terms and the cubes using it." }}"
+                         path="schema:name" filter="text"></sparql-column>
+          <sparql-column var="cubes" label="{{ t "facet.cubes" "Cubes" }}" type="number"
+                         tip="{{ t "facet.tip.cubes" "How many cubes declare this dimension via meta:isUsedIn. 0 means it is published but not yet referenced." }}"
+                         path="meta:isUsedIn" filter="range" width="110"></sparql-column>
+          <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"
+                         tip="{{ t "facet.tip.identifier" "Short machine name of the dimension (dct:identifier)." }}"
+                         path="dct:identifier" filter="text"></sparql-column>
+          <sparql-column var="scaleType" label="{{ t "facet.scaleType" "Scale Type" }}" badge
+                         tip="{{ t "facet.tip.scaleType" "QUDT scale type — Nominal, Ordinal, Interval or Ratio." }}"
+                         path="qudt:scaleType" filter width="130"></sparql-column>
+          <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid From" }}" type="date"
+                         tip="{{ t "facet.tip.validFrom" "Date the dimension became valid (schema:validFrom)." }}"
+                         path="schema:validFrom" filter="range" width="150"></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "dimensionCatalog"
+            "title" (t "card.sharedDimensions" "Shared Dimensions")
+            "icon" "ruler")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

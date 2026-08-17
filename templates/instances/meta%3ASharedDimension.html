@@ -1,0 +1,126 @@
+<!-- cube:meta/SharedDimension Instance Template -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.sharedDimension.sharedDimensions" "<a href=\"/resource?iri=meta:SharedDimension\">Shared Dimensions</a>" }}</li>
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+    {{ template "literals" . }}
+
+    <!-- Terms of this dimension.
+
+         Async working-set table, not inline: term counts per dimension are
+         extremely uneven — zefix carries 791,930 terms, week 4,226,
+         municipality 3,465, while most dimensions have a handful. An inline
+         table would try to load all of them.
+
+         Membership is the plain triple "?term schema:inDefinedTermSet ??" so
+         sparql.MembershipTriplePattern can find it and swap in a bounded IRI
+         subquery (see the cube-creator SharedDimensionTerm class template for
+         what happens when it cannot: the fallback splices a bare SELECT into a
+         group and the endpoint rejects it).
+
+         Terms are matched on schema:inDefinedTermSet rather than on
+         "?term a shdim:SharedDimensionTerm", because not every member of a
+         shared dimension carries that type — countries, municipalities and
+         weeks are plain schema:DefinedTerm members of their dimension.
+
+         One row per (term, type), not per term. Terms are consistently
+         multi-typed — every country term carries three (schema:DefinedTerm,
+         schema:Country, schema:AdministrativeArea), as does every cofog/el01
+         term (hydra:Resource, schema:DefinedTerm, shdim:SharedDimensionTerm) —
+         so the table shows ~3x as many rows as there are terms. That is
+         accepted here: it keeps every type visible and its own row, and the
+         table's local grouping/filtering can collapse by term when wanted. -->
+    <div class="row">
+        <div class="col-lg">
+            <div class="mb-3">
+                <sparql-async id="dimensionTerms">
+                    SELECT ?term ?type ?identifier ?broader ?validFrom WHERE {
+                        ?term schema:inDefinedTermSet ?? .
+                        OPTIONAL { ?term a ?type }
+                        OPTIONAL { ?term schema:identifier ?identifier }
+                        OPTIONAL { ?term skos:broader ?broader }
+                        OPTIONAL { ?term schema:validFrom ?validFrom }
+                    } LIMIT 50000
+                </sparql-async>
+                <sparql-columns for="dimensionTerms">
+                    <sparql-column var="term" icon></sparql-column>
+                </sparql-columns>
+
+                {{ template "sparqlAsyncTable" (dict
+                    "queryId" "dimensionTerms"
+                    "iri" .ResourceIRI
+                    "title" (t "card.terms" "Terms")
+                    "icon" "tag")
+                }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Cubes using this dimension, straight from meta:isUsedIn.
+
+         This is the cheap direction: the dimension states its own usage, so no
+         SHACL walk and no observation scan is needed. (The reverse question —
+         "which cubes use this single TERM" — has no such property and is
+         answered from sh:in on the term page instead.)
+
+         Same column vocabulary as the cube:Cube catalog so the two read alike.
+         badgeVar is passed explicitly: the sync sparqlTable has no fallback that
+         reads <sparql-column … badge> declarations, unlike iconVar. -->
+    <div class="row">
+        <div class="col-lg">
+            <div class="mb-3">
+                <sparql-query id="dimensionCubes">
+                    SELECT ?cube ?publisher ?themes ?status ?modified ?superseded WHERE {
+                        { SELECT ?cube (SAMPLE(?creatorName) AS ?publisher)
+                                 (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes)
+                                 (SAMPLE(?st) AS ?status) (SAMPLE(?mod) AS ?modified)
+                                 (IF(COUNT(?exp) > 0, "superseded", "current") AS ?superseded)
+                          WHERE {
+                            ?? meta:isUsedIn ?cube .
+                            OPTIONAL { ?cube dct:creator/schema:name ?creatorName .
+                                       FILTER(lang(?creatorName) = "en" || lang(?creatorName) = "") }
+                            OPTIONAL { ?cube dcat:theme/schema:name ?themeName .
+                                       FILTER(lang(?themeName) = visoto:dispLang) }
+                            OPTIONAL { ?cube schema:creativeWorkStatus/schema:name ?st .
+                                       FILTER(lang(?st) = visoto:dispLang || lang(?st) = "en") }
+                            OPTIONAL { ?cube schema:dateModified ?mod }
+                            OPTIONAL { ?cube schema:expires ?exp }
+                          } GROUP BY ?cube }
+                    }
+                    ORDER BY DESC(?modified)
+                </sparql-query>
+
+                <sparql-columns for="dimensionCubes" order>
+                    <sparql-column var="cube" label="{{ t "facet.cube" "Cube" }}" icon
+                                   path="schema:name" filter="text"></sparql-column>
+                    <sparql-column var="publisher" label="{{ t "facet.publisher" "Publisher" }}"
+                                   path="dct:creator/schema:name" filter></sparql-column>
+                    <sparql-column var="themes" label="{{ t "facet.themes" "Themes" }}"
+                                   path="dcat:theme/schema:name" filter="text"></sparql-column>
+                    <sparql-column var="status" label="{{ t "facet.status" "Status" }}" badge
+                                   path="schema:creativeWorkStatus/schema:name" filter width="130"></sparql-column>
+                    <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}" type="date"
+                                   path="schema:dateModified" filter="range" width="150"></sparql-column>
+                    <sparql-column var="superseded" label="{{ t "facet.version" "Version" }}" badge
+                                   filter width="130"></sparql-column>
+                </sparql-columns>
+
+                {{ template "sparqlTable" (dict
+                    "result" .QueryResults.dimensionCubes
+                    "id" "dimensionCubes"
+                    "badgeVar" "status,superseded"
+                    "title" (t "card.usedInCubes" "Used in Cubes")
+                    "icon" "box")
+                }}
+            </div>
+        </div>
+    </div>
+
+    {{ template "relationships" . }}
+
+{{ end }}

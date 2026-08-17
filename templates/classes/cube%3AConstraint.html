@@ -1,0 +1,96 @@
+<!-- cube:Constraint Class Template — catalog of cube observation shapes -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <p class="text-secondary">{{ tHTML "type.constraint.aConstraintIs" "A <strong>Constraint</strong> is the SHACL shape a cube points at with <code>cube:observationConstraint</code>. Each <code>sh:property</code> in it declares one dimension of the cube — its scale, unit and permitted values — so a constraint is effectively the data model of a <a href=\"/resource?iri=cube:Cube\">cube</a>." }}</p>
+
+  <!-- Metric strip: counts are queried live (LINDAS counts drift). -->
+  <sparql-async id="constraintTotal">
+    SELECT (COUNT(?c) AS ?count) WHERE { ?c a cube:Constraint . }
+  </sparql-async>
+  <sparql-async id="constraintCubes">
+    SELECT (COUNT(DISTINCT ?cube) AS ?count) WHERE {
+      ?cube cube:observationConstraint ?c . ?c a cube:Constraint .
+    }
+  </sparql-async>
+  <sparql-async id="constraintDimensionShapes">
+    SELECT (COUNT(?shape) AS ?count) WHERE {
+      ?c a cube:Constraint ; sh:property ?shape .
+    }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "constraintTotal"
+        "title" (t "card.constraints" "Constraints")
+        "href" "/resource?iri=cube%3AConstraint"
+        "icon" "/static/img/resource/Constraint.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "constraintCubes"
+        "title" (t "card.cubesConstrained" "Cubes Constrained")
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
+        "icon" "/static/img/resource/Cube.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "constraintDimensionShapes"
+        "title" (t "card.dimensionShapes" "Dimension Shapes")
+        "href" "/resource?iri=cube%3AConstraint"
+        "icon" "/static/img/resource/KeyDimension.svg") }}
+  </div>
+
+  <!-- Catalog: one row per constraint.
+
+       The dimension count is the useful discriminator here — it ranges from a
+       handful to 288 (politics committee-type-statistic). It is computed in a
+       subquery grouped by ?constraint so the sh:property join cannot multiply
+       rows.
+
+       ?cube is joined OUTSIDE that subquery: a constraint belongs to exactly one
+       cube, so it adds no rows, and keeping it out of the GROUP BY leaves the
+       count query a plain membership pattern. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+
+        <sparql-async id="constraintCatalog">
+          SELECT ?constraint ?cube ?dimensions ?closed WHERE {
+            { SELECT ?constraint (COUNT(?shape) AS ?dimensions) (SAMPLE(?cl) AS ?closed)
+              WHERE {
+                ?constraint a cube:Constraint .
+                OPTIONAL { ?constraint sh:property ?shape }
+                OPTIONAL { ?constraint sh:closed ?cl }
+              } GROUP BY ?constraint }
+            OPTIONAL { ?cube cube:observationConstraint ?constraint }
+          }
+          ORDER BY DESC(?dimensions)
+          LIMIT 10000
+        </sparql-async>
+
+        <sparql-columns for="constraintCatalog" order>
+          <sparql-column var="constraint" label="{{ t "facet.constraint" "Constraint" }}" icon
+                         tip="{{ t "facet.tip.constraint" "The SHACL shape itself — click through for the dimensions it declares." }}"
+                         filter="text"></sparql-column>
+          <sparql-column var="cube" label="{{ t "facet.cube" "Cube" }}"
+                         tip="{{ t "facet.tip.cubeOfConstraint" "The cube that points at this shape via cube:observationConstraint." }}"
+                         path="schema:name" filter="text"></sparql-column>
+          <sparql-column var="dimensions" label="{{ t "facet.dimensions" "Dimensions" }}" type="number"
+                         tip="{{ t "facet.tip.dimensions" "How many sh:property shapes the constraint declares — the cube's dimension count." }}"
+                         path="sh:property" filter="range" width="130"></sparql-column>
+          <sparql-column var="closed" label="{{ t "facet.closed" "Closed" }}" badge
+                         tip="{{ t "facet.tip.closed" "sh:closed — whether observations may carry properties beyond those declared here." }}"
+                         path="sh:closed" filter width="110"></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "constraintCatalog"
+            "title" (t "card.constraints" "Constraints")
+            "icon" "shield-check")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}
