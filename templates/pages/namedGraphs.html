@@ -24,11 +24,13 @@
           OPTIONAL { ?graph ?property ?value }
         }
       </sparql-async>
+      <sparql-columns for="namedGraphsList">
+        <sparql-column var="graph" group></sparql-column>
+      </sparql-columns>
       {{ template "sparqlAsyncTable" (dict
           "queryId" "namedGraphsList"
           "title" (t "card.namedGraphsAttributes" "Named Graphs & Attributes")
-          "icon" "package"
-          "groupBy" "graph")
+          "icon" "package")
       }}
     </div>
 
@@ -41,11 +43,13 @@
           }
         } GROUP BY ?graph ?class
       </sparql-async>
+      <sparql-columns for="namedGraphs">
+        <sparql-column var="graph" group></sparql-column>
+      </sparql-columns>
       {{ template "sparqlAsyncTable" (dict
           "queryId" "namedGraphs"
           "title" (t "card.namedGraphsAndClasses" "Named Graphs and Classes")
-          "icon" "package"
-          "groupBy" "graph")
+          "icon" "package")
       }}
     </div>
 

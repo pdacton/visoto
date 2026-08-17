@@ -32,6 +32,7 @@ var funcMap = template.FuncMap{
 	"templateSet":     defaultTemplateSet,
 	"columnIconVars":  columnIconVars,
 	"columnBadgeVars": columnBadgeVars,
+	"columnGroupVar":  columnGroupVar,
 }
 
 // defaultTemplateSet is the parse-time placeholder for {{ templateSet }}. Load

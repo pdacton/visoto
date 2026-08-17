@@ -191,10 +191,10 @@ func TestTablePresentation(t *testing.T) {
 	}
 }
 
-// Badge is the one presentation flag that is NOT a single-column role: a catalog
-// may badge both a status and a version. Returning only the first (as IconVar and
-// GroupVar do) rendered every later badge column as bare text, with no error —
-// the reader's only clue was that the pill was missing.
+// Badge is not a single-column role: a catalog may badge both a status and a
+// version. Returning only the first (as GroupVar does) rendered every later badge
+// column as bare text, with no error — the reader's only clue was that the pill
+// was missing.
 func TestBadgeVarsListsEveryBadgeColumn(t *testing.T) {
 	tbl := Table{
 		{Var: "cube"},

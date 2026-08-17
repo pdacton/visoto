@@ -10,19 +10,19 @@
     - title: (optional) card title
     - icon: (optional) Lucid icon name to display before the title
     - collapsed: (optional) if true, card starts in collapsed state
-    - groupBy: (optional) SPARQL variable the table is initially grouped by; a
-               grouping the user picked earlier (persisted in localStorage) wins
-
-  Row icons and badges are NOT parameters. Declare them on the column itself:
+  Row icons, badges and grouping are NOT parameters. Declare them on the column:
 
     <sparql-columns for="<id>">
       <sparql-column var="cube"   icon></sparql-column>
       <sparql-column var="status" badge></sparql-column>
+      <sparql-column var="theme"  group></sparql-column>
     </sparql-columns>
 
   which works for a sync <sparql-query> id as well as an async one. Several columns
-  may carry each role. The internal .iconVars/.badgeVars dict keys below are how the
-  async fragment handlers pass the resolved declarations in; do not write them by hand.
+  may carry icon and badge; group names one column, and a grouping the user picked
+  earlier (persisted in localStorage) wins over it. The internal .iconVars/.badgeVars/
+  .groupBy dict keys below are how the async fragment handlers pass the resolved
+  declarations in; do not write them by hand.
 
   Working-set mode (set by the async-table handler for large classes):
     - workingSet: true  → Tabulator loads a bounded set once from
@@ -42,14 +42,14 @@
   {{ $title := .title }}
   {{ $icon := .icon }}
   {{ $collapsed := .collapsed }}
-  {{/* Which columns carry a row icon and which render as badges. Both are declared
-       with <sparql-column icon> / <sparql-column badge> and nothing else — there is
-       no dict param for either. On the async path a handler has already folded the
-       declarations into .iconVars/.badgeVars before rendering this fragment; a
-       synchronously-rendered table has no handler, so it looks them up itself. The
-       lookup needs the template set the query id is scoped to, which
-       {{ templateSet }} reports — and which is empty in the standalone partial set
-       the async fragments render through, hence the order. */}}
+  {{/* Which columns carry a row icon, which render as badges, and which the table
+       is grouped by. All three are declared with <sparql-column icon|badge|group>
+       and nothing else — there is no dict param for any of them. On the async path
+       a handler has already folded the declarations into .iconVars/.badgeVars/
+       .groupBy before rendering this fragment; a synchronously-rendered table has no
+       handler, so it looks them up itself. The lookup needs the template set the
+       query id is scoped to, which {{ templateSet }} reports — and which is empty in
+       the standalone partial set the async fragments render through, hence the order. */}}
   {{ $iconVar := .iconVars }}
   {{ if not $iconVar }}{{ $iconVar = columnIconVars (templateSet) .id }}{{ end }}
   {{ $badgeVar := .badgeVars }}
@@ -59,7 +59,10 @@
        Spelled without angle brackets: a Go template comment is not an HTML comment,
        so a tag written here with attributes would be indexed as a real declaration. */}}
   {{ $facetFor := or .facetFor "" }}
+  {{/* Only the INITIAL grouping. A choice the user made earlier is restored from
+       localStorage and overrides this — including an explicit "no grouping". */}}
   {{ $groupBy := or .groupBy "" }}
+  {{ if not $groupBy }}{{ $groupBy = columnGroupVar (templateSet) .id }}{{ end }}
   {{/* Working-set mode: the frontend fetches a bounded set once from
        /api/async-table-data/:id, then pages/sorts/searches it locally. Rows are
        not embedded inline. "complete" = the set is the whole in-scope population;

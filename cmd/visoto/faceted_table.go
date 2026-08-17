@@ -228,10 +228,9 @@ func facetedTableHandler(c *gin.Context) {
 
 	faceted, err := facet.BuildFacetedQuery(fullQuery, keyVar, constraints, facet.Default())
 	params := map[string]any{
-		"id":      id,
-		"title":   c.Query("title"),
-		"icon":    c.Query("icon"),
-		"groupBy": c.Query("groupBy"),
+		"id":    id,
+		"title": c.Query("title"),
+		"icon":  c.Query("icon"),
 		// This route only reaches the HTML branch when a caller asks for the fragment
 		// rather than the JSON envelope; without facetFor that fragment would come
 		// back with its filter controls missing.

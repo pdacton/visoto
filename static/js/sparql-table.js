@@ -815,11 +815,14 @@
     // Presentation params passed through to the backend faceted query so its result
     // columns/labels match the browsed table.
     // Only non-empty values are sent, mirroring the per-key conditional
-    // guards this object used to be assembled with server-side. Icon and badge
-    // columns are absent by design: the backend reads those off the same
-    // <sparql-column> declarations, so sending them would be a second opinion.
+    // guards this object used to be assembled with server-side. The per-column
+    // roles (icon, badge, grouping) are absent by design: the backend reads those
+    // off the same <sparql-column> declarations, so sending them would be a second
+    // opinion. Grouping in particular must not be sent — CFG.groupBy is only the
+    // declared initial value, so echoing it back would override the user's own
+    // choice on every facet rebuild.
     var facetPassthrough = {};
-    ["title", "icon", "groupBy", "max"].forEach(function (k) {
+    ["title", "icon", "max"].forEach(function (k) {
       if (CFG[k]) facetPassthrough[k] = CFG[k];
     });
     var facetDebounce;

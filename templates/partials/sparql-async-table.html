@@ -26,7 +26,6 @@
     - iri:      (optional) resource IRI; substituted for ?? in the query
     - title:    (optional) card title, passed through to sparqlTable
     - icon:     (optional) Lucide icon name for the card header
-    - groupBy:  (optional) SPARQL var the table is initially grouped by
     - collapsed: (optional) if truthy, the loaded table's card starts collapsed
     - trigger:  (optional) HTMX trigger; defaults to "load" (eager, like metrics).
                 Pass a custom event (e.g. "showData") to defer until first reveal.
@@ -34,10 +33,9 @@
                 rebuild on large classes (e.g. "http://schema.org/name").
     - max:      (optional) working-set row cap for large classes (default 20000).
 
-  groupBy is a shorthand for tables that declare no columns. A table that does (see
-  below) says the same thing with group on the column itself, and that declaration
-  wins. Row icons and badges have no shorthand: both are always declared with icon /
-  badge on a <sparql-column>.
+  Per-column behaviour has no dict-param shorthand: row icons, badges and the
+  initial grouping are always declared with icon / badge / group on a
+  <sparql-column> (see below). The params above are table-wide settings only.
 
   Working-set vs inline is AUTO-DETECTED by the async-table handler: a class-
   instance query (one with a "?key a ??" membership triple) whose class exceeds
@@ -77,7 +75,8 @@
            failing that from its rdf:type — see internal/icon)
     badge  render the value as a Tabler badge    (like icon, and unlike group,
            several columns may carry it)
-    group  group the table by this column        (replaces groupBy)
+    group  group the table by this column        (one column only: a second
+           declaration is ignored rather than fought over)
     hidden keep the variable, drop the column from view
     width  fixed width: 180, 180px, 20%
 
@@ -136,7 +135,6 @@
   {{ with .iri }}{{ $url = printf "%s&iri=%s" $url (urlquery .) }}{{ end }}
   {{ with .title }}{{ $url = printf "%s&title=%s" $url (urlquery .) }}{{ end }}
   {{ with .icon }}{{ $url = printf "%s&icon=%s" $url (urlquery .) }}{{ end }}
-  {{ with .groupBy }}{{ $url = printf "%s&groupBy=%s" $url (urlquery .) }}{{ end }}
   {{ if .collapsed }}{{ $url = printf "%s&collapsed=1" $url }}{{ end }}
   {{/* Working-set hints — the handler auto-detects the mode; these are only used
        when it decides a class is large. searchProp scopes the "Search all"

@@ -99,12 +99,18 @@ declared `badge` on every column, so their params were pure duplication.
 `queryOptions` — became a real template scan that fails on any reintroduced
 `"iconVar"`/`"badgeVar"` dict key, verified by reintroducing one.
 
-## Out of scope
+## Follow-up: `groupBy` (done)
 
-`groupBy` is the third shorthand of the same family (superseded by
-`<sparql-column group>`) and has the same argument for removal, but the user's
-request named only `badgeVar` / `iconVar`. Worth deciding together — removing
-two of three leaves the remaining one looking arbitrary.
+`groupBy` was the third shorthand of the same family, left out of this issue's
+scope and removed immediately afterwards on the same argument. Unlike icon and
+badge it was a real migration rather than a no-op: no template declared
+`<sparql-column group>` beforehand, so all three call sites
+(`pages/namedGraphs.html` ×2, `pages/environment.html`) gained declarations at
+once. `columnGroupVar` joined the other two lookups, and the guard test became
+`TestNoRemovedTableParamsRemain`, covering all three params.
+
+Per-column behaviour is now uniformly declaration-only; the dict params that
+remain are table-wide settings.
 
 ## Notes
 

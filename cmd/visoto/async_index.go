@@ -295,10 +295,9 @@ func findColumn(src, baseID, varName string) (column.Spec, bool) {
 // the sparqlTable fragment takes, so a table that declares its columns does not
 // also repeat the same variable names in the partial call.
 //
-// icon and badge come from the declarations and nowhere else — there is no dict
-// param or query-string key left to lose to. groupBy still has one, and the
-// declaration wins over it. facetFor is derived rather than declared: a table is
-// faceted exactly when one of its columns carries a filter.
+// Every per-column role comes from the declarations and nowhere else — no dict
+// param or query-string key is left to lose to. facetFor is derived rather than
+// declared: a table is faceted exactly when one of its columns carries a filter.
 func applyColumnParams(params map[string]any, src, id string) {
 	cols := findColumns(src, id)
 	if len(cols) == 0 {
@@ -306,9 +305,7 @@ func applyColumnParams(params map[string]any, src, id string) {
 	}
 	params["iconVars"] = cols.IconVars()
 	params["badgeVars"] = cols.BadgeVars()
-	if v := cols.GroupVar(); v != "" {
-		params["groupBy"] = v
-	}
+	params["groupBy"] = cols.GroupVar()
 	if cols.Filterable() {
 		params["facetFor"] = id
 	}

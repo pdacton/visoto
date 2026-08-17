@@ -43,6 +43,14 @@ func columnBadgeVars(set, id string) string {
 	return lookupVars(set, id, column.Table.BadgeVars)
 }
 
+// columnGroupVar is the same lookup for <sparql-column … group>, exposed as
+// {{ columnGroupVar (templateSet) $id }}. Singular, unlike the icon and badge
+// roles: a table is grouped by one column, so a second declaration is ignored
+// rather than concatenated (see column.Table.GroupVar).
+func columnGroupVar(set, id string) string {
+	return lookupVars(set, id, column.Table.GroupVar)
+}
+
 // lookupVars resolves a table's declarations and projects one role off them. The
 // nil-lookup and empty-key guards live here so every role answers "no columns
 // declared" identically rather than each restating the rule.

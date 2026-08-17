@@ -565,9 +565,9 @@ func metricHandler(c *gin.Context) {
 // executes it, and returns a rendered sparqlTable HTML fragment.
 //
 // Presentation params are read from the query string so a single generic handler
-// can serve many tables: title, icon, groupBy. The per-column roles are not among
-// them: row icons and badges are declared with <sparql-column icon> / <sparql-column
-// badge> and folded in by applyColumnParams.
+// can serve many tables: title, icon, collapsed. The per-column roles are not among
+// them: row icons, badges and the initial grouping are declared with
+// <sparql-column icon|badge|group> and folded in by applyColumnParams.
 func asyncTableHandler(c *gin.Context) {
 	id := c.Param("id")
 	dataLang := queryLang(c)
@@ -579,10 +579,9 @@ func asyncTableHandler(c *gin.Context) {
 	}
 
 	params := map[string]any{
-		"id":      id,
-		"title":   c.Query("title"),
-		"icon":    c.Query("icon"),
-		"groupBy": c.Query("groupBy"),
+		"id":    id,
+		"title": c.Query("title"),
+		"icon":  c.Query("icon"),
 		// facetFor (set for faceted tables) = the base query id; the rendered
 		// sparqlTable fragment uses it to wire header-attached filter controls from
 		// the page's <sparql-column> elements. Empty for ordinary async tables.

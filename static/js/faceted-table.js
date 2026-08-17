@@ -527,9 +527,9 @@
   }
 
   // Serialize a list of .vs-facet controls into /api/faceted-table query params.
-  // passthrough = { title, icon, groupBy, max } presentation params. Icon and badge
-  // columns are not among them: the backend reads those off the <sparql-column>
-  // declarations directly.
+  // passthrough = { title, icon, max } presentation params. The per-column roles
+  // (icon, badge, grouping) are not among them: the backend reads those off the
+  // <sparql-column> declarations directly.
   function buildFacetURL(id, iri, wraps, passthrough) {
     var parts = ['iri=' + encodeURIComponent(iri || '')];
     Object.keys(passthrough || {}).forEach(function (k) {

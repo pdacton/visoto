@@ -8,22 +8,27 @@ import (
 
 // The sync sparqlTable path has no handler to fold <sparql-column> declarations
 // into its params — the dict is written inline in the page template — so the
-// partial calls columnIconVars / columnBadgeVars while rendering. These tests pin
-// those lookups, which are otherwise only exercised by rendering a real page.
+// partial calls columnIconVars / columnBadgeVars / columnGroupVar while rendering.
+// These tests pin those lookups, which are otherwise only exercised by rendering a
+// real page.
 
 func TestColumnRoleLookups(t *testing.T) {
 	index := map[string]map[string]column.Table{
 		"pages/resource.html": {
 			"outgoing": {{Var: "type", Icon: true}},
 			"plain":    {{Var: "label"}}, // declared, but carries no rendering role
-			// Both roles are comma-separated lists: a table may icon several IRI
-			// columns and badge more than one (a status AND a version).
+			// Icon and badge are comma-separated lists: a table may icon several IRI
+			// columns and badge more than one (a status AND a version). Grouping is
+			// not — hence the two group flags here, of which only the first counts.
 			"many": {
 				{Var: "cube", Icon: true},
-				{Var: "status", Badge: true},
+				{Var: "status", Badge: true, Group: true},
 				{Var: "dimension", Icon: true},
-				{Var: "superseded", Badge: true},
+				{Var: "superseded", Badge: true, Group: true},
 			},
+			// One element, both roles — the shape templates/pages/environment.html
+			// uses, where the grouped column is also the one carrying the icon.
+			"dual": {{Var: "group", Icon: true, Group: true}},
 		},
 	}
 	SetColumnLookup(func(set, id string) column.Table { return index[set][id] })
@@ -40,6 +45,12 @@ func TestColumnRoleLookups(t *testing.T) {
 		{"every icon column, in document order", columnIconVars, "pages/resource.html", "many", "cube,dimension"},
 		{"every badge column, in document order", columnBadgeVars, "pages/resource.html", "many", "status,superseded"},
 		{"icon declaration is not a badge", columnBadgeVars, "pages/resource.html", "outgoing", ""},
+		// Grouping names ONE column: a second group declaration is ignored rather
+		// than concatenated, unlike the icon/badge lists above.
+		{"first group column wins", columnGroupVar, "pages/resource.html", "many", "status"},
+		{"table with no group column", columnGroupVar, "pages/resource.html", "outgoing", ""},
+		{"icon and group on one element", columnGroupVar, "pages/resource.html", "dual", "group"},
+		{"same element still carries its icon", columnIconVars, "pages/resource.html", "dual", "group"},
 		{"unknown id in a known set", columnIconVars, "pages/resource.html", "nope", ""},
 		{"id from another set is not visible", columnIconVars, "pages/other.html", "outgoing", ""},
 		// The async fragment path renders through a standalone partial set where
@@ -48,6 +59,7 @@ func TestColumnRoleLookups(t *testing.T) {
 		{"empty set", columnIconVars, "", "outgoing", ""},
 		{"empty id", columnIconVars, "pages/resource.html", "", ""},
 		{"empty set, badge role", columnBadgeVars, "", "many", ""},
+		{"empty set, group role", columnGroupVar, "", "many", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -68,5 +80,8 @@ func TestColumnLookupsWithoutRegistration(t *testing.T) {
 	}
 	if got := columnBadgeVars("pages/resource.html", "outgoing"); got != "" {
 		t.Errorf("columnBadgeVars() = %q with no lookup registered, want \"\"", got)
+	}
+	if got := columnGroupVar("pages/resource.html", "outgoing"); got != "" {
+		t.Errorf("columnGroupVar() = %q with no lookup registered, want \"\"", got)
 	}
 }

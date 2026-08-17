@@ -252,15 +252,14 @@
   } ORDER BY ?group DESC(xsd:decimal(?species))
 </sparql-async>
 <sparql-columns for="envRedList">
-  <sparql-column var="group" icon></sparql-column>
+  <sparql-column var="group" icon group></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "envRedList"
       "title" (t "card.redListByGroup" "Red List: species per conservation status and organism group")
-      "icon" "bird"
-      "groupBy" "group") }}
+      "icon" "bird") }}
 </div>
 
 <p class="text-secondary">{{ tHTML "page.environment.redListDataDeficient" "Watch the <em>data deficient</em> rows. They are not a category of threat but an admission that too little is known to assess the species at all, and for some groups they outnumber every threat category combined — a statement about the survey effort rather than about the organisms." }}</p>

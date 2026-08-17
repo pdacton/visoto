@@ -407,15 +407,14 @@ when the placeholder is triggered.
 | `queryId` | `string` | required | Must match the `id` of a `<sparql-async>` element. |
 | `iri` | `string` | — | Resource IRI, substituted for `??` in the query. |
 | `title` / `icon` | `string` | — | Card heading and Lucide icon. |
-| `groupBy` | `string` | — | SPARQL variable the table is initially grouped by. |
 | `collapsed` | `bool` | `false` | Start the loaded card collapsed. |
 | `trigger` | `string` | `"load"` | HTMX trigger. Pass a custom event (e.g. `"showData"`) to defer until the view is first revealed. |
 | `searchProp` | `string` | — | Name property IRI used by the working-set "Search all" rebuild. |
 | `max` | `int` | `20000` | Working-set row cap for large classes. |
 
-`groupBy` is a shorthand for tables that declare no columns; a table that declares
-them says the same with `group` on the column, and that wins. Row icons and badges
-have no shorthand — declare them with `icon` / `badge` on a `<sparql-column>`.
+Per-column behaviour has no dict-param shorthand — declare row icons, badges and the
+initial grouping with `icon` / `badge` / `group` on a `<sparql-column>`. The params
+above are table-wide settings only.
 
 ```html
 <sparql-async id="myTable" class="d-none">
