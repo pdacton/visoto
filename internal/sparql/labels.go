@@ -17,6 +17,7 @@ import (
 	"sync"
 	"time"
 
+	"hutzli.org/visoto/internal/cache"
 	"hutzli.org/visoto/internal/logger"
 )
 
@@ -24,8 +25,8 @@ import (
 
 // labelCache holds resolved labels. Keyed by IRI *and* language preferences,
 // because the label a visitor should see depends on both (see labelCacheKey).
-// The implementation is the shared expiring map in cache.go.
-var labelCache = newTTLCache[string](1 * time.Hour)
+// The implementation is the shared expiring map in internal/cache.
+var labelCache = cache.New[string](1 * time.Hour)
 
 // labelCacheKey returns a cache key incorporating the IRI and language preferences.
 // Languages are sorted so that equivalent preference sets produce the same key.
@@ -38,12 +39,12 @@ func labelCacheKey(iri string, languages []string) string {
 
 // getCachedLabel retrieves label from cache if not expired
 func getCachedLabel(iri string, languages []string) (string, bool) {
-	return labelCache.get(labelCacheKey(iri, languages))
+	return labelCache.Get(labelCacheKey(iri, languages))
 }
 
 // setCachedLabel stores label in cache with TTL
 func setCachedLabel(iri, label string, languages []string) {
-	labelCache.set(labelCacheKey(iri, languages), label)
+	labelCache.Set(labelCacheKey(iri, languages), label)
 }
 
 // ── Query building ───────────────────────────────────────────────────────────

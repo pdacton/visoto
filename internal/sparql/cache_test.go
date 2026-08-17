@@ -2,64 +2,11 @@ package sparql
 
 import (
 	"testing"
-	"time"
 )
 
-// TestTTLCache replaces the former TestLabelCache in labels_test.go. That test
-// reached into the label cache's internals directly (labelCache.Store with a
-// hand-built entry struct), which no longer exist now that both the label and
-// type caches share one implementation. The behaviour it checked — miss, set,
-// hit, expiry — is checked here against the shared cache instead, and
-// TestLabelCacheKey below still covers the label-specific part: the key.
-func TestTTLCache(t *testing.T) {
-	c := newTTLCache[string](time.Hour)
-
-	if _, found := c.get("absent"); found {
-		t.Error("get() should miss for an unset key")
-	}
-
-	c.set("k", "v")
-	got, found := c.get("k")
-	if !found {
-		t.Fatal("get() should hit after set")
-	}
-	if got != "v" {
-		t.Errorf("get() = %q, want %q", got, "v")
-	}
-}
-
-// TestTTLCacheExpiry checks that an entry past its TTL reads as a miss and is
-// dropped, so correctness never depends on the background sweeper having run.
-func TestTTLCacheExpiry(t *testing.T) {
-	c := newTTLCache[string](-time.Second) // everything is already expired
-
-	c.set("k", "v")
-	if _, found := c.get("k"); found {
-		t.Error("get() should miss for an expired entry")
-	}
-	if _, stillThere := c.entries.Load("k"); stillThere {
-		t.Error("get() should delete the expired entry it walked over")
-	}
-}
-
-func TestTTLCacheSweep(t *testing.T) {
-	c := newTTLCache[string](time.Hour)
-	c.set("fresh", "v")
-
-	expired := newTTLCache[string](-time.Second)
-	expired.set("stale", "v")
-
-	now := time.Now()
-	c.sweep(now)
-	expired.sweep(now)
-
-	if _, ok := c.entries.Load("fresh"); !ok {
-		t.Error("sweep() dropped a live entry")
-	}
-	if _, ok := expired.entries.Load("stale"); ok {
-		t.Error("sweep() kept an expired entry")
-	}
-}
+// The generic cache behaviour — miss, set, hit, expiry, sweep — is tested in
+// internal/cache, which owns the implementation. What stays here is the part
+// specific to labels: the key, and the round trip through it.
 
 // TestLabelCacheKey covers what is specific to labels: the same IRI under
 // different language preferences is a different cache entry, and equivalent

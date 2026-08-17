@@ -14,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"hutzli.org/visoto/internal/cache"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
 )
@@ -292,7 +293,7 @@ func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string
 	result.Endpoint = targetEndpoint
 
 	if resolveLabels {
-		initCaches()
+		cache.Init()
 		iris := extractIRIs(result)
 		if len(iris) > 0 {
 			languages := parseAcceptLanguage(acceptLanguage)

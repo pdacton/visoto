@@ -21,6 +21,7 @@ import (
 	"sync"
 	"time"
 
+	"hutzli.org/visoto/internal/cache"
 	"hutzli.org/visoto/internal/icon"
 	"hutzli.org/visoto/internal/logger"
 )
@@ -28,10 +29,10 @@ import (
 // typeCache holds IRI → rdf:type IRIs. Keyed by IRI alone (no language), and
 // held far longer than labels: a resource's class is essentially static, while
 // its label can be re-translated.
-var typeCache = newTTLCache[[]string](6 * time.Hour)
+var typeCache = cache.New[[]string](6 * time.Hour)
 
-func getCachedTypes(iri string) ([]string, bool) { return typeCache.get(iri) }
-func setCachedTypes(iri string, types []string)  { typeCache.set(iri, types) }
+func getCachedTypes(iri string) ([]string, bool) { return typeCache.Get(iri) }
+func setCachedTypes(iri string, types []string)  { typeCache.Set(iri, types) }
 
 // buildTypeQuery constructs the SPARQL query fetching types for the given IRIs.
 //

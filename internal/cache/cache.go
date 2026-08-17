@@ -1,13 +1,11 @@
-package sparql
-
-// cache.go holds the small expiring cache shared by the enrichment passes that
-// run after a query returns: label resolution (labels.go) and rdf:type lookup
-// (rdftypes.go).
+// Package cache holds the small expiring cache used wherever the app asks an
+// endpoint one batched question and wants to remember the answer for a while:
+// label resolution and rdf:type lookup after a query returns (internal/sparql),
+// and full-text connector discovery before one is built (internal/search).
 //
-// Both do the same thing — take the IRIs a result mentions, ask the endpoint one
-// batched question about them, and remember the answer for a while — so they
-// share one implementation and one sweeper goroutine rather than keeping a
-// near-identical copy each.
+// They all do the same thing, so they share one implementation and one sweeper
+// goroutine rather than keeping a near-identical copy each.
+package cache
 
 import (
 	"sync"
@@ -22,25 +20,25 @@ type ttlEntry[V any] struct {
 	expires time.Time
 }
 
-// ttlCache is a concurrent map whose entries expire.
+// TTL is a concurrent map whose entries expire.
 //
 // Expired entries are dropped on read, so correctness never depends on the
 // sweeper; the sweeper exists only to stop entries that are never read again
 // from pinning memory forever.
-type ttlCache[V any] struct {
+type TTL[V any] struct {
 	entries sync.Map // map[string]ttlEntry[V]
 	ttl     time.Duration
 }
 
-// newTTLCache returns a cache and registers it with the shared sweeper. Call it
-// from a package-level var so registration happens before any request runs.
-func newTTLCache[V any](ttl time.Duration) *ttlCache[V] {
-	c := &ttlCache[V]{ttl: ttl}
+// New returns a cache and registers it with the shared sweeper. Call it from a
+// package-level var so registration happens before any request runs.
+func New[V any](ttl time.Duration) *TTL[V] {
+	c := &TTL[V]{ttl: ttl}
 	registerCache(c)
 	return c
 }
 
-func (c *ttlCache[V]) get(key string) (V, bool) {
+func (c *TTL[V]) Get(key string) (V, bool) {
 	var zero V
 	raw, ok := c.entries.Load(key)
 	if !ok {
@@ -57,12 +55,12 @@ func (c *ttlCache[V]) get(key string) (V, bool) {
 	return entry.value, true
 }
 
-func (c *ttlCache[V]) set(key string, value V) {
+func (c *TTL[V]) Set(key string, value V) {
 	c.entries.Store(key, ttlEntry[V]{value: value, expires: time.Now().Add(c.ttl)})
 }
 
 // sweep drops every entry that expired before now.
-func (c *ttlCache[V]) sweep(now time.Time) {
+func (c *TTL[V]) sweep(now time.Time) {
 	c.entries.Range(func(key, raw any) bool {
 		if entry, ok := raw.(ttlEntry[V]); ok && now.After(entry.expires) {
 			c.entries.Delete(key)
@@ -74,7 +72,7 @@ func (c *ttlCache[V]) sweep(now time.Time) {
 // ---- shared sweeper ----
 
 // sweepable is what the cleanup goroutine needs from a cache; it exists so the
-// registry can hold ttlCaches of different value types in one slice.
+// registry can hold TTL caches of different value types in one slice.
 type sweepable interface {
 	sweep(now time.Time)
 }
@@ -91,10 +89,10 @@ func registerCache(c sweepable) {
 	caches = append(caches, c)
 }
 
-// initCaches starts the background sweeper, once per process. Called from the
-// query path rather than an init() so a process that never queries (tests, the
-// index builder) does not spawn a goroutine it has no use for.
-func initCaches() {
+// Init starts the background sweeper, once per process. Called from the paths
+// that populate a cache rather than an init() so a process that never queries
+// (tests, the index builder) does not spawn a goroutine it has no use for.
+func Init() {
 	cleanupOnce.Do(func() {
 		go cacheCleanup()
 	})
