@@ -50,3 +50,7 @@ data/
 
 # Icon factory
 iconfactory/
+
+# graphify knowledge graph (regenerate with `graphify update .`)
+graphify-out/
+.claude/settings.json.graphify-bak
