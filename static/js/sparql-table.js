@@ -285,7 +285,7 @@
       if (!value) return '';
       var uri = value.Value || '';
       var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
-      var badge = '<span class="badge bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
+      var badge = '<span class="badge rounded-pill bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
       if (value.Type === 'uri' && uri) {
         return '<a href="/resource?iri=' + encodeURIComponent(uri) + '">' + badge + '</a>';
       }
