@@ -118,6 +118,106 @@
         "href" "#versions") }}
   </div>
 
+
+  <!-- Attributes (name, description, dates, keywords, ...) -->
+  {{ template "literals" . }}
+
+  <!-- The actual data: one row per observation, one column per dimension.
+
+       Columns are derived server-side from this cube's SHACL constraint, because
+       the dimension predicates differ per cube — see the sparqlCube partial. -->
+  <div class="row" id="data">
+    <div class="col-lg">
+      <div class="mb-3">
+        {{ template "sparqlCube" (dict
+            "id" "cubeData"
+            "iri" .ResourceIRI
+            "title" (t "card.data" "Data")
+            "icon" "table")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Publication metadata: who published it, under what terms, how often it is
+       refreshed, and what period the data covers.
+
+       All of this is on the cube already but was previously only visible as raw
+       rows in the Attributes card at the bottom. Coverage across the 2,011
+       cubes: dct:creator 1,364, dct:rights 940, dct:temporal 870,
+       dcat:landingPage 830, dct:accrualPeriodicity 455.
+
+       dct:temporal is a blank PeriodOfTime node, so the start/end dates are
+       reached through schema:startDate / schema:endDate rather than read
+       directly — the bare property would render an unhelpful genid. -->
+  <div class="row" id="provenance">
+    <div class="col-lg">
+      <div class="mb-3">
+        <!-- sparqlGrid renders ?property/?value PAIRS, one row per field — not a
+             single row with one column per field. A wide SELECT produces a grid
+             of empty labels and empty values, which looks like a data problem but
+             is a shape mismatch. Hence the UNION rather than parallel OPTIONALs. -->
+        <sparql-query id="cubeProvenance">
+          SELECT ?property ?value WHERE {
+            { ?? dct:publisher ?value           BIND("Publisher" AS ?property) }
+            UNION
+            { ?? dct:creator ?value             BIND("Creator" AS ?property) }
+            UNION
+            { ?? dct:rights ?value              BIND("Terms of use" AS ?property) }
+            UNION
+            { ?? dct:accrualPeriodicity ?value  BIND("Update frequency" AS ?property) }
+            UNION
+            { ?? dct:temporal/schema:startDate ?value BIND("Coverage from" AS ?property) }
+            UNION
+            { ?? dct:temporal/schema:endDate ?value   BIND("Coverage to" AS ?property) }
+            UNION
+            { ?? dcat:landingPage ?value        BIND("Landing page" AS ?property) }
+            UNION
+            { ?? void:sparqlEndpoint ?value     BIND("SPARQL endpoint" AS ?property) }
+          }
+        </sparql-query>
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.cubeProvenance
+            "id" "cubeProvenance"
+            "title" (t "card.publication" "Publication")
+            "icon" "badge-info")
+        }}
+      </div>
+    </div>
+  </div>
+  <!-- Other versions of this cube (numeric-tail sibling heuristic; empty for
+       unversioned cubes) -->
+  <div class="row" id="versions">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-async id="cubeVersions">
+          SELECT ?cube ?version ?status ?modified ?expires WHERE {
+            BIND(REPLACE(STR(??), "/[0-9]+$", "/") AS ?base)
+            ?cube a cube:Cube .
+            FILTER(STRSTARTS(STR(?cube), ?base))
+            FILTER(STR(?cube) != STR(??))
+            FILTER(REGEX(REPLACE(STR(?cube), ?base, ""), "^/?[0-9]+$"))
+            OPTIONAL { ?cube schema:version ?version }
+            OPTIONAL { ?cube schema:creativeWorkStatus/schema:name ?status .
+                       FILTER(lang(?status) = visoto:dispLang || lang(?status) = "en") }
+            OPTIONAL { ?cube schema:dateModified ?modified }
+            OPTIONAL { ?cube schema:expires ?expires }
+          }
+          ORDER BY DESC(?modified)
+          LIMIT 100
+        </sparql-async>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "cubeVersions"
+            "iri" .ResourceIRI
+            "title" (t "card.otherVersions" "Other Versions")
+            "icon" "history"
+            "badgeVar" "status"
+            "collapsed" true)
+        }}
+      </div>
+    </div>
+  </div>
+
   <!-- Dimensions decoded from the SHACL observation constraint -->
   <div class="row" id="dimensions">
     <div class="col-lg">
@@ -154,41 +254,29 @@
     </div>
   </div>
 
-  <!-- Other versions of this cube (numeric-tail sibling heuristic; empty for
-       unversioned cubes) -->
-  <div class="row" id="versions">
+  <!-- The cube's own machinery: the SHACL shape that defines its dimensions and
+       the observation set holding its data. Both now have instance templates of
+       their own, and neither was linked from here — they were buried among the
+       outgoing relationships at the bottom of the page. -->
+  <div class="row" id="structure">
     <div class="col-lg">
       <div class="mb-3">
-        <sparql-async id="cubeVersions">
-          SELECT ?cube ?version ?status ?modified ?expires WHERE {
-            BIND(REPLACE(STR(??), "/[0-9]+$", "/") AS ?base)
-            ?cube a cube:Cube .
-            FILTER(STRSTARTS(STR(?cube), ?base))
-            FILTER(STR(?cube) != STR(??))
-            FILTER(REGEX(REPLACE(STR(?cube), ?base, ""), "^/?[0-9]+$"))
-            OPTIONAL { ?cube schema:version ?version }
-            OPTIONAL { ?cube schema:creativeWorkStatus/schema:name ?status .
-                       FILTER(lang(?status) = visoto:dispLang || lang(?status) = "en") }
-            OPTIONAL { ?cube schema:dateModified ?modified }
-            OPTIONAL { ?cube schema:expires ?expires }
+        <sparql-query id="cubeStructure">
+          SELECT ?property ?value WHERE {
+            { ?? cube:observationConstraint ?value BIND("Constraint (shape)" AS ?property) }
+            UNION
+            { ?? cube:observationSet ?value        BIND("Observation set" AS ?property) }
           }
-          ORDER BY DESC(?modified)
-          LIMIT 100
-        </sparql-async>
-        {{ template "sparqlAsyncTable" (dict
-            "queryId" "cubeVersions"
-            "iri" .ResourceIRI
-            "title" (t "card.otherVersions" "Other Versions")
-            "icon" "history"
-            "badgeVar" "status"
-            "collapsed" true)
+        </sparql-query>
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.cubeStructure
+            "id" "cubeStructure"
+            "title" (t "card.structure" "Structure")
+            "icon" "boxes")
         }}
       </div>
     </div>
   </div>
-
-  <!-- Attributes (name, description, dates, keywords, ...) -->
-  {{ template "literals" . }}
 
   <!-- Incoming / outgoing connections -->
   {{ template "relationships" . }}

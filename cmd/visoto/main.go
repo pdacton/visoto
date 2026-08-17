@@ -890,6 +890,10 @@ func main() {
 	router.GET("/api/metric/:id", epFromURL, langFromURL, metricHandler)
 	router.GET("/api/async-table/:id", epFromURL, langFromURL, asyncTableHandler)
 	router.GET("/api/async-table-data/:id", epFromURL, langFromURL, asyncTableDataHandler)
+	// Backs the sparqlCube partial. Unlike the async-table routes it takes no
+	// ?src=/query id: the query is generated from the cube's own SHACL constraint,
+	// so the ?iri= alone determines the response.
+	router.GET("/api/cube-table/:id", epFromURL, langFromURL, cubeTableHandler)
 	router.GET("/api/faceted-table/:id", epFromURL, langFromURL, facetedTableHandler)
 	router.GET("/api/facet-values/:id/:var", epFromURL, langFromURL, facetValuesHandler)
 	router.GET("/resource", epFromURL, resourcePageHandler)

@@ -1,0 +1,42 @@
+<!--
+  sparqlCube — the observations of a cube as a plain table, one row per
+  observation and one column per dimension.
+
+  Cube observations carry per-cube dimension predicates (.../petition/datum,
+  .../electricityprice/category, …), so the column set cannot be written in a
+  template and SPARQL cannot project a variable named at query time. The columns
+  are therefore derived server-side: /api/cube-table/:id reads the cube's SHACL
+  observation constraint, then generates a wide query with one OPTIONAL per
+  dimension and renders it through the ordinary sparqlTable partial.
+
+  Usage:
+    {{ template "sparqlCube" (dict "id" "cubeData" "iri" .ResourceIRI
+                                   "title" (t "card.data" "Data") "icon" "table") }}
+
+  Params:
+    - id:    unique id for the card on this page
+    - iri:   the cube IRI whose observations to show (usually .ResourceIRI)
+    - title: card title
+    - icon:  optional Lucide icon name for the card header
+
+  Bounds (set in cmd/visoto/cube_table.go): 15 columns ordered by sh:order, and
+  1000 observations loaded once and paged locally. Both matter — cubes range from
+  5 to 288 dimensions, and the largest observation set holds 748,720 rows.
+
+  Loads lazily over HTMX like the other async cards, so a page carrying this
+  partial pays nothing until the fragment arrives.
+-->
+{{ define "sparqlCube" }}
+  {{ $id := .id }}
+  <div id="{{ $id }}-container"
+       hx-get="/api/cube-table/{{ $id }}?iri={{ urlquery .iri }}{{ if .title }}&title={{ urlquery .title }}{{ end }}{{ if .icon }}&icon={{ urlquery .icon }}{{ end }}"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <div class="card">
+      <div class="card-body d-flex align-items-center gap-2 text-secondary">
+        <span class="spinner-border spinner-border-sm" role="status"></span>
+        {{ .title }}
+      </div>
+    </div>
+  </div>
+{{ end }}
