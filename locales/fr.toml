@@ -673,7 +673,7 @@
 "nav.cubeMeasureDimension" = "cube:MeasureDimension"
 "nav.cubeObservation" = "cube:Observation"
 "nav.cubeObservationSet" = "cube:ObservationSet"
-"nav.cubeSharedDimension" = "cube:SharedDimension"
+"nav.cubeSharedDimension" = "cube:meta/SharedDimension"
 "nav.foag" = "OFAG"
 "nav.owlClass" = "owl:Class"
 "nav.owlOntology" = "owl:Ontology"

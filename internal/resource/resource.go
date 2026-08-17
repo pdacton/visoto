@@ -273,14 +273,30 @@ func expandPrefixedIRI(prefixedIRI string, prefixes []config.Prefix) string {
 	return prefixedIRI
 }
 
-// shortenIRI converts a full IRI to prefixed form if possible
+// shortenIRI converts a full IRI to prefixed form if possible.
+//
+// The LONGEST matching prefix wins, not the first one declared. Several
+// configured namespaces nest inside another — meta: (https://cube.link/meta/)
+// and relation: (https://cube.link/relation/) both sit under cube:
+// (https://cube.link/). Taking the first match in declaration order made
+// https://cube.link/meta/SharedDimension shorten to "cube:meta/SharedDimension",
+// which is not a legal CURIE (a local name cannot contain "/") and, worse, is a
+// different string than the "meta:SharedDimension" the same resource is linked
+// as elsewhere. Template resolution derives a filename from this string, so the
+// one resource resolved to two different templates depending on the link the
+// user arrived through.
 func shortenIRI(fullIRI string, prefixes []config.Prefix) string {
-	// Try to match against each prefix URI
+	bestName, bestLocal, bestLen := "", "", -1
 	for _, p := range prefixes {
 		uri := strings.Trim(p.URI, "<>")
-		if localName, found := strings.CutPrefix(fullIRI, uri); found {
-			return p.Name + ":" + localName
+		localName, found := strings.CutPrefix(fullIRI, uri)
+		if !found || len(uri) <= bestLen {
+			continue
 		}
+		bestName, bestLocal, bestLen = p.Name, localName, len(uri)
+	}
+	if bestLen >= 0 {
+		return bestName + ":" + bestLocal
 	}
 
 	// No matching prefix found, return full IRI

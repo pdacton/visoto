@@ -70,6 +70,44 @@ func TestIRIExpansionAndShortening(t *testing.T) {
 	}
 }
 
+// TestShortenIRIPrefersLongestPrefix pins the nested-namespace rule: several
+// configured prefixes sit inside another (meta: and relation: are both under
+// cube:), and the shortened string is what template resolution turns into a
+// filename. Matching in declaration order instead produced "cube:meta/X" — not a
+// legal CURIE, and a different string than the "meta:X" the same resource is
+// linked as elsewhere, so one resource resolved to two different templates
+// depending on which link the user followed.
+func TestShortenIRIPrefersLongestPrefix(t *testing.T) {
+	// Declaration order deliberately puts the SHORTER namespace first, which is
+	// how visoto.config lists them.
+	prefixes := []config.Prefix{
+		{Name: "cube", URI: "<https://cube.link/>"},
+		{Name: "meta", URI: "<https://cube.link/meta/>"},
+		{Name: "relation", URI: "<https://cube.link/relation/>"},
+		{Name: "schema", URI: "<http://schema.org/>"},
+	}
+
+	tests := []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{"nested namespace wins over parent", "https://cube.link/meta/SharedDimension", "meta:SharedDimension"},
+		{"second nested namespace", "https://cube.link/relation/StandardError", "relation:StandardError"},
+		{"parent namespace still matches its own terms", "https://cube.link/Cube", "cube:Cube"},
+		{"unrelated namespace unaffected", "http://schema.org/Person", "schema:Person"},
+		{"no matching prefix stays full", "http://example.org/Thing", "http://example.org/Thing"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := shortenIRI(tt.input, prefixes); got != tt.want {
+				t.Errorf("shortenIRI(%q):\n  got:  %s\n  want: %s", tt.input, got, tt.want)
+			}
+		})
+	}
+}
+
 func TestNamedGraphsQuery(t *testing.T) {
 	tests := []struct {
 		name     string
