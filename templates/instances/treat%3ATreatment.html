@@ -21,7 +21,7 @@
       <div class="mb-3">
         <sparql-query id="citedResources">
           SELECT ?cited ?type WHERE {
-            ?? (cito:cites|trt:citesMaterialCitation) ?cited .
+            ?? (cito:cites|treat:citesMaterialCitation) ?cited .
             OPTIONAL { ?cited a ?type . }
             FILTER (isIRI(?cited))
           } LIMIT 300

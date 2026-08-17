@@ -21,7 +21,7 @@
       <div class="mb-3">
         <sparql-query id="augmentingTreatments">
           SELECT ?treatment ?title ?date WHERE {
-            ?treatment trt:augmentsTaxonConcept ?? .
+            ?treatment treat:augmentsTaxonConcept ?? .
             OPTIONAL { ?treatment dc:title ?title . }
             OPTIONAL { ?treatment dc:date ?date . }
           } LIMIT 200
