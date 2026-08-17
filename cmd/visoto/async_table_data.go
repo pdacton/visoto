@@ -89,7 +89,7 @@ func asyncTableDataHandler(c *gin.Context) {
 	}
 	// Unlike the fragment routes this one builds no params map, so the icon column
 	// is read straight from the declarations — src and id are both already in hand.
-	opts := queryOptions(findColumns(c.Query("src"), id).IconVar())
+	opts := queryOptions(findColumns(c.Query("src"), id).IconVars())
 	result, err := preprocessor.ExecuteQueryWithContext(ctx, wsQuery, true, dataLang, "", opts...)
 	if err != nil {
 		// A transient SPARQL failure must never be cached as if it were real data.

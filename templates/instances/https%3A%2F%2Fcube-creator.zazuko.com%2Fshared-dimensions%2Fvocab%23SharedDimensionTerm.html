@@ -151,15 +151,9 @@
                                    filter width="130"></sparql-column>
                 </sparql-columns>
 
-                {{/* badgeVar is passed explicitly: unlike iconVar, the sync
-                     sparqlTable has no columnIconVar-style fallback that reads the
-                     <sparql-column … badge> declarations above, so a sync table
-                     that only declares them renders Status/Version as plain text.
-                     The declarations still carry the labels, filters and widths. */}}
                 {{ template "sparqlTable" (dict
                     "result" .QueryResults.usedInCubes
                     "id" "usedInCubes"
-                    "badgeVar" "status,superseded"
                     "title" (t "card.usedInCubes" "Used in Cubes")
                     "icon" "box")
                 }}

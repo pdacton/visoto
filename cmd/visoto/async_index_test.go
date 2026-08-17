@@ -145,7 +145,7 @@ func TestColumnsInheritTheirContainer(t *testing.T) {
 	if _, ok := findColumn(set, base, "canton"); !ok {
 		t.Error(`the "canton" column did not inherit its container's for=`)
 	}
-	if cols.IconVar() == "" {
+	if cols.IconVars() == "" {
 		t.Error("no column flagged icon; the icon var is meant to come from the declaration")
 	}
 	if !cols.Filterable() {

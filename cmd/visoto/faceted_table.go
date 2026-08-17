@@ -228,11 +228,10 @@ func facetedTableHandler(c *gin.Context) {
 
 	faceted, err := facet.BuildFacetedQuery(fullQuery, keyVar, constraints, facet.Default())
 	params := map[string]any{
-		"id":       id,
-		"title":    c.Query("title"),
-		"icon":     c.Query("icon"),
-		"badgeVar": c.Query("badgeVar"),
-		"groupBy":  c.Query("groupBy"),
+		"id":      id,
+		"title":   c.Query("title"),
+		"icon":    c.Query("icon"),
+		"groupBy": c.Query("groupBy"),
 		// This route only reaches the HTML branch when a caller asks for the fragment
 		// rather than the JSON envelope; without facetFor that fragment would come
 		// back with its filter controls missing.
@@ -266,8 +265,8 @@ func facetedTableHandler(c *gin.Context) {
 	preprocessor := prepareQueryInputs(c)
 	ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 	defer cancel()
-	facetIconVar, _ := params["iconVar"].(string)
-	result, execErr := preprocessor.ExecuteQueryWithContext(ctx, faceted, true, dataLang, "", queryOptions(facetIconVar)...)
+	facetIconVars, _ := params["iconVars"].(string)
+	result, execErr := preprocessor.ExecuteQueryWithContext(ctx, faceted, true, dataLang, "", queryOptions(facetIconVars)...)
 	if execErr != nil {
 		result.Error = execErr.Error()
 	}

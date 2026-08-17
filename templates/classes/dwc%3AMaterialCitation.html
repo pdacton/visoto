@@ -39,14 +39,14 @@
     </sparql-async>
     <sparql-columns for="materialCitationInstances">
       <sparql-column var="MaterialCitation" icon></sparql-column>
+      <sparql-column var="typeStatus" badge></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict
         "queryId" "materialCitationInstances"
         "iri" .ResourceIRI
         "title" (t "card.materialCitations" "Material Citations")
-        "icon" "flask"
-        "badgeVar" "typeStatus")
+        "icon" "flask")
     }}
   </div>
 </div>

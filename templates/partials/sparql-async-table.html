@@ -19,16 +19,13 @@
     {{ template "sparqlAsyncTable" (dict
           "queryId" "myTable"
           "title"   (t "card.myTable" "My Table")
-          "icon"    "database"
-          "badgeVar" "kind") }}
+          "icon"    "database") }}
 
   Parameters (via dict):
     - queryId:  (required) id matching the <sparql-async> element
     - iri:      (optional) resource IRI; substituted for ?? in the query
     - title:    (optional) card title, passed through to sparqlTable
     - icon:     (optional) Lucide icon name for the card header
-    - badgeVar: (optional) SPARQL var rendered as a Tabler badge; comma-separated
-                for several
     - groupBy:  (optional) SPARQL var the table is initially grouped by
     - collapsed: (optional) if truthy, the loaded table's card starts collapsed
     - trigger:  (optional) HTMX trigger; defaults to "load" (eager, like metrics).
@@ -37,10 +34,10 @@
                 rebuild on large classes (e.g. "http://schema.org/name").
     - max:      (optional) working-set row cap for large classes (default 20000).
 
-  badgeVar / groupBy are shorthands for tables that declare no columns. A table
-  that does (see below) says the same thing with badge / group on the column
-  itself, and that declaration wins. The row icon has no shorthand: it is always
-  declared with icon on a <sparql-column>.
+  groupBy is a shorthand for tables that declare no columns. A table that does (see
+  below) says the same thing with group on the column itself, and that declaration
+  wins. Row icons and badges have no shorthand: both are always declared with icon /
+  badge on a <sparql-column>.
 
   Working-set vs inline is AUTO-DETECTED by the async-table handler: a class-
   instance query (one with a "?key a ??" membership triple) whose class exceeds
@@ -78,8 +75,8 @@
     root   anchor variable for path, when it is not the class-membership key
     icon   render the value as a resource icon (resolved from the value IRI, or
            failing that from its rdf:type — see internal/icon)
-    badge  render the value as a Tabler badge    (replaces badgeVar; unlike icon
-           and group, several columns may carry it)
+    badge  render the value as a Tabler badge    (like icon, and unlike group,
+           several columns may carry it)
     group  group the table by this column        (replaces groupBy)
     hidden keep the variable, drop the column from view
     width  fixed width: 180, 180px, 20%
@@ -139,7 +136,6 @@
   {{ with .iri }}{{ $url = printf "%s&iri=%s" $url (urlquery .) }}{{ end }}
   {{ with .title }}{{ $url = printf "%s&title=%s" $url (urlquery .) }}{{ end }}
   {{ with .icon }}{{ $url = printf "%s&icon=%s" $url (urlquery .) }}{{ end }}
-  {{ with .badgeVar }}{{ $url = printf "%s&badgeVar=%s" $url (urlquery .) }}{{ end }}
   {{ with .groupBy }}{{ $url = printf "%s&groupBy=%s" $url (urlquery .) }}{{ end }}
   {{ if .collapsed }}{{ $url = printf "%s&collapsed=1" $url }}{{ end }}
   {{/* Working-set hints — the handler auto-detects the mode; these are only used

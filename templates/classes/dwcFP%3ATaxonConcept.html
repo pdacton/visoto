@@ -39,14 +39,14 @@
     </sparql-async>
     <sparql-columns for="taxonConceptInstances">
       <sparql-column var="TaxonConcept" icon></sparql-column>
+      <sparql-column var="rank" badge></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict
         "queryId" "taxonConceptInstances"
         "iri" .ResourceIRI
         "title" (t "card.taxonConcepts" "Taxon Concepts")
-        "icon" "bug"
-        "badgeVar" "rank")
+        "icon" "bug")
     }}
   </div>
 </div>

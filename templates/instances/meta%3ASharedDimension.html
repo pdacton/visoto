@@ -68,9 +68,7 @@
          "which cubes use this single TERM" — has no such property and is
          answered from sh:in on the term page instead.)
 
-         Same column vocabulary as the cube:Cube catalog so the two read alike.
-         badgeVar is passed explicitly: the sync sparqlTable has no fallback that
-         reads <sparql-column … badge> declarations, unlike iconVar. -->
+         Same column vocabulary as the cube:Cube catalog so the two read alike. -->
     <div class="row">
         <div class="col-lg">
             <div class="mb-3">
@@ -113,7 +111,6 @@
                 {{ template "sparqlTable" (dict
                     "result" .QueryResults.dimensionCubes
                     "id" "dimensionCubes"
-                    "badgeVar" "status,superseded"
                     "title" (t "card.usedInCubes" "Used in Cubes")
                     "icon" "box")
                 }}

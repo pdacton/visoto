@@ -279,8 +279,8 @@ func findColumns(src, baseID string) column.Table {
 // so the extra (batched, cached, parallel) round trip would be pure cost. The
 // fragment routes pass the folded params value; the working-set route, which
 // builds no params, reads the declaration directly.
-func queryOptions(iconVar string) []sparql.Option {
-	if iconVar == "" {
+func queryOptions(iconVars string) []sparql.Option {
+	if iconVars == "" {
 		return nil
 	}
 	return []sparql.Option{sparql.WithTypes()}
@@ -295,21 +295,17 @@ func findColumn(src, baseID, varName string) (column.Spec, bool) {
 // the sparqlTable fragment takes, so a table that declares its columns does not
 // also repeat the same variable names in the partial call.
 //
-// A declaration wins over the dict param it replaces; the param stays supported
-// because most tables declare no columns at all and a single "iconVar" key is the
-// shorter way to say it. facetFor is derived rather than declared: a table is
+// icon and badge come from the declarations and nowhere else — there is no dict
+// param or query-string key left to lose to. groupBy still has one, and the
+// declaration wins over it. facetFor is derived rather than declared: a table is
 // faceted exactly when one of its columns carries a filter.
 func applyColumnParams(params map[string]any, src, id string) {
 	cols := findColumns(src, id)
 	if len(cols) == 0 {
 		return
 	}
-	if v := cols.IconVar(); v != "" {
-		params["iconVar"] = v
-	}
-	if v := cols.BadgeVar(); v != "" {
-		params["badgeVar"] = v
-	}
+	params["iconVars"] = cols.IconVars()
+	params["badgeVars"] = cols.BadgeVars()
 	if v := cols.GroupVar(); v != "" {
 		params["groupBy"] = v
 	}

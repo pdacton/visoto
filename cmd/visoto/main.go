@@ -565,8 +565,9 @@ func metricHandler(c *gin.Context) {
 // executes it, and returns a rendered sparqlTable HTML fragment.
 //
 // Presentation params are read from the query string so a single generic handler
-// can serve many tables: title, icon, badgeVar. The row icon is not among them:
-// it is declared with <sparql-column icon> and folded in by applyColumnParams.
+// can serve many tables: title, icon, groupBy. The per-column roles are not among
+// them: row icons and badges are declared with <sparql-column icon> / <sparql-column
+// badge> and folded in by applyColumnParams.
 func asyncTableHandler(c *gin.Context) {
 	id := c.Param("id")
 	dataLang := queryLang(c)
@@ -578,11 +579,10 @@ func asyncTableHandler(c *gin.Context) {
 	}
 
 	params := map[string]any{
-		"id":       id,
-		"title":    c.Query("title"),
-		"icon":     c.Query("icon"),
-		"badgeVar": c.Query("badgeVar"),
-		"groupBy":  c.Query("groupBy"),
+		"id":      id,
+		"title":   c.Query("title"),
+		"icon":    c.Query("icon"),
+		"groupBy": c.Query("groupBy"),
 		// facetFor (set for faceted tables) = the base query id; the rendered
 		// sparqlTable fragment uses it to wire header-attached filter controls from
 		// the page's <sparql-column> elements. Empty for ordinary async tables.
@@ -667,8 +667,8 @@ func asyncTableHandler(c *gin.Context) {
 	// Inline path: execute the full query and embed the whole result set.
 	// Types are resolved only when a column will actually render an icon —
 	// applyColumnParams above put the declared variable in params.
-	iconVar, _ := params["iconVar"].(string)
-	result, err := preprocessor.ExecuteQuery(fullQuery, true, dataLang, "", queryOptions(iconVar)...)
+	iconVars, _ := params["iconVars"].(string)
+	result, err := preprocessor.ExecuteQuery(fullQuery, true, dataLang, "", queryOptions(iconVars)...)
 	if err != nil {
 		// Surface the error inside the table card (sparqlTable renders result.Error).
 		result.Error = err.Error()

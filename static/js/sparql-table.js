@@ -247,9 +247,9 @@
     //
     // Both are comma-separated lists, not single names: a table may icon several
     // IRI columns (a municipality AND its district AND its canton) and badge more
-    // than one (a status AND a version). A hand-passed iconVar=/badgeVar= param is
-    // still just one name, which is a one-element list. Empty entries are dropped
-    // so an absent value cannot end up matching a column whose variable is "".
+    // than one (a status AND a version). They come from <sparql-column icon> /
+    // <sparql-column badge> declarations, resolved server-side. Empty entries are
+    // dropped so an absent value cannot end up matching a column whose variable is "".
     function varList(el) {
       return el
         ? el.innerHTML.split(",").map(function (s) { return s.trim(); }).filter(Boolean)
@@ -815,9 +815,11 @@
     // Presentation params passed through to the backend faceted query so its result
     // columns/labels match the browsed table.
     // Only non-empty values are sent, mirroring the per-key conditional
-    // guards this object used to be assembled with server-side.
+    // guards this object used to be assembled with server-side. Icon and badge
+    // columns are absent by design: the backend reads those off the same
+    // <sparql-column> declarations, so sending them would be a second opinion.
     var facetPassthrough = {};
-    ["title", "icon", "badgeVar", "groupBy", "max"].forEach(function (k) {
+    ["title", "icon", "groupBy", "max"].forEach(function (k) {
       if (CFG[k]) facetPassthrough[k] = CFG[k];
     });
     var facetDebounce;

@@ -92,7 +92,8 @@ func pick(sets map[string]*template.Template, code string) (*template.Template, 
 // RenderSparqlTable renders the sparqlTable partial to standalone HTML for async
 // (HTMX) fragment responses, in the given UI language. params is the same dict
 // the pre-render path passes via {{ template "sparqlTable" (dict ...) }} — e.g.
-// "result", "id", "title", "icon", "iconVar", "badgeVar". For large classes the
+// "result", "id", "title", "icon", plus the "iconVars"/"badgeVars" the handler
+// folded in from the <sparql-column> declarations. For large classes the
 // async-table handler adds the working-set params "workingSet", "iri", "keyVar",
 // "total", "complete", "searchProp", "max" (see the partial's header comment).
 func RenderSparqlTable(code string, params map[string]any) (template.HTML, error) {

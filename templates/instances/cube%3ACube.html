@@ -206,12 +206,14 @@
           ORDER BY DESC(?modified)
           LIMIT 100
         </sparql-async>
+        <sparql-columns for="cubeVersions">
+          <sparql-column var="status" badge></sparql-column>
+        </sparql-columns>
         {{ template "sparqlAsyncTable" (dict
             "queryId" "cubeVersions"
             "iri" .ResourceIRI
             "title" (t "card.otherVersions" "Other Versions")
             "icon" "history"
-            "badgeVar" "status"
             "collapsed" true)
         }}
       </div>

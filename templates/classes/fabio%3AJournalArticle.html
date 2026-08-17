@@ -34,14 +34,14 @@
     </sparql-async>
     <sparql-columns for="journalArticleInstances">
       <sparql-column var="JournalArticle" icon></sparql-column>
+      <sparql-column var="journal" badge></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict
         "queryId" "journalArticleInstances"
         "iri" .ResourceIRI
         "title" (t "card.journalArticles" "Journal Articles")
-        "icon" "article"
-        "badgeVar" "journal")
+        "icon" "article")
     }}
   </div>
 </div>

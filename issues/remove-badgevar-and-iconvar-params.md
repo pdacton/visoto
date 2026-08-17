@@ -1,6 +1,6 @@
 # Remove `badgeVar` / `iconVar` from `sparqlTable` and `sparqlAsyncTable`
 
-**Status:** Open
+**Status:** Resolved (2026-08-17)
 **Component:** `templates/partials/sparql-table.html`, `templates/partials/sparql-async-table.html`,
 `cmd/visoto/main.go`, `cmd/visoto/async_index.go`, `cmd/visoto/faceted_table.go`,
 `internal/column`, `internal/templates`, `static/js/sparql-table.js`, `static/js/faceted-table.js`
@@ -75,6 +75,29 @@ No template passes `iconVar=` — it is entirely handler-internal already.
 6. Simplify `columnIconVar` in `internal/templates`: with `.iconVar` gone, the
    sync path's `{{ if not $iconVar }}` fallback in `sparql-table.html:46-47`
    becomes the only path.
+
+## Resolution
+
+Done as proposed, with one addition the issue did not anticipate.
+
+Two of the call sites are **sync** `sparqlTable` calls, and sync tables had no
+badge equivalent of the `columnIconVar` lookup — the SharedDimensionTerm template
+carried a comment saying exactly that, and passed `badgeVar` by hand *because* the
+declarations it already had could not be read. Removing the param therefore
+required adding that lookup, not just deleting plumbing. Rather than a near-copy
+of `columnIconVar`, both roles now go through one `lookupVars(set, id, role)`
+helper exposed as `{{ columnIconVars }}` / `{{ columnBadgeVars }}`, so a future
+role is one line.
+
+Two further call sites (`cube:Constraint`, `meta:SharedDimension`) appeared in
+commits made after this issue was written, bringing the total to 10. Both already
+declared `badge` on every column, so their params were pure duplication.
+
+`Table.IconVar()`/`BadgeVar()` were renamed to `IconVars()`/`BadgeVars()`
+(step 4), the config-island keys and the JS facet passthrough dropped both roles
+(step 5), and `TestNoIconVarParamsRemain` — which despite its name only checked
+`queryOptions` — became a real template scan that fails on any reintroduced
+`"iconVar"`/`"badgeVar"` dict key, verified by reintroducing one.
 
 ## Out of scope
 

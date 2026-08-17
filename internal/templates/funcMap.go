@@ -30,7 +30,8 @@ var funcMap = template.FuncMap{
 	"safeURL":         safeURL,
 	"currentYear":     currentYear,
 	"templateSet":     defaultTemplateSet,
-	"columnIconVar":   columnIconVar,
+	"columnIconVars":  columnIconVars,
+	"columnBadgeVars": columnBadgeVars,
 }
 
 // defaultTemplateSet is the parse-time placeholder for {{ templateSet }}. Load
