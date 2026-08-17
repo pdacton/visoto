@@ -102,7 +102,7 @@ type SparqlEndpoint struct {
 	Username       string `toml:"username"     json:"-"` // Optional basic auth username for write operations
 	Password       string `toml:"password"     json:"-"` // Optional basic auth password for write operations
 	AccessToken    string `toml:"access_token" json:"-"` // Optional Bearer token for write operations (takes precedence over username/password)
-	SearchProvider string `toml:"search_provider"`       // FTS provider: "stardog" (default), "graphdb", "fuseki"
+	SearchProvider string `toml:"search_provider"`       // FTS provider: "stardog" (default), "graphdb" (Simple FTS), "graphdb-lucene" (auto-discovered Lucene connectors), "fuseki", "qlever", "sparql-query"
 	ExportProvider string `toml:"export_provider"`       // optional export provider override: "graphdb", "gsp", "construct"
 }
 

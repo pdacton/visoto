@@ -440,7 +440,7 @@ func searchHandler(c *gin.Context) {
 	if ep := activeEndpoint(c); ep != nil && ep.SearchProvider != "" {
 		providerName = ep.SearchProvider
 	}
-	searcher := search.New(preprocessor.SparqlPreprocessor(), providerName)
+	searcher := search.New(preprocessor.SparqlPreprocessor(), providerName, activeEndpointURL(c))
 
 	// Parse search parameters
 	params := search.ParseParams(c)
@@ -458,7 +458,15 @@ func searchHandler(c *gin.Context) {
 
 	// Execute search
 	acceptLanguage := c.Request.Header.Get("Accept-Language")
-	result := searcher.Execute(params, acceptLanguage)
+	result := searcher.Execute(c.Request.Context(), params, acceptLanguage)
+
+	// Name the provider that actually produced the rows. The FTS provider often
+	// finds nothing on properties its index does not cover, and the CONTAINS
+	// fallback answers instead; crediting the FTS provider for those rows misleads.
+	providerLabel := result.Provider
+	if result.FallbackUsed {
+		providerLabel += " (fallback: sparql-query)"
+	}
 
 	// Render results
 	c.HTML(http.StatusOK, renderName(c, "pages/search.html"), endpointTemplateData(c, gin.H{
@@ -469,7 +477,7 @@ func searchHandler(c *gin.Context) {
 		"SelectedProperty": params.Property,
 		"SelectedLimit":    params.Limit,
 		"SearchResults":    result.Results,
-		"Provider":         result.Provider,
+		"Provider":         providerLabel,
 	}))
 }
 
