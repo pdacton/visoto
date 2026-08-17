@@ -443,7 +443,3 @@ sparql-query,
 sparql-async,
 sparql-columns,
 sparql-column { display: none; }
-
-/* A column whose declaration carries a tip: mark the header so the explanation is
-   discoverable rather than only found by accident. */
-.vs-col-tip { text-decoration: underline dotted; text-underline-offset: 2px; cursor: help; }

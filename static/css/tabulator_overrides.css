@@ -88,6 +88,49 @@
     opacity: 1;
 }
 
+/* Facet funnel placement: right-aligned, immediately left of the sort arrow,
+   rather than inline after the header label.
+
+   The funnel is absolutely positioned. Its containing block is
+   .tabulator-col-title-holder (position:relative) — NOT .tabulator-col-title,
+   which is position:static.
+
+   IMPORTANT: .tabulator-col-title is overflow:hidden, and that clips the funnel
+   even though the containing block is the holder. `right` must therefore stay
+   >= 0: pushed outside the title box the funnel becomes invisible AND
+   non-hit-testable (elementFromPoint returns the title, not the button), with no
+   error to show for it. 18px = the 12px sorter + a 6px gap, measured against
+   tabulator_bootstrap5.min.css, which places .tabulator-col-sorter at right:0
+   (the base theme's right:4px does NOT apply here). Re-measure if the Tabulator
+   version or theme changes.
+
+   All rules are scoped to the facet classes, so columns without a filter keep
+   the stock header layout. */
+.tabulator .tabulator-col-content .vs-facet-header {
+    display: block;
+    width: 100%;
+}
+
+.tabulator .tabulator-col-content .vs-facet-label {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    /* Reserve the funnel's lane so a long label ellipsises before it collides
+       with the funnel instead of running underneath it. Keep >= the funnel's
+       footprint, and in sync with the `right` offset above. */
+    padding-right: 26px;
+}
+
+.tabulator .tabulator-col-content .vs-facet-dd {
+    position: absolute;
+    right: 18px;
+    top: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+}
+
 /* ============================================================
    TABLE ROWS & CELLS
    ============================================================ */
@@ -460,4 +503,52 @@
    dialog or the mobile offcanvas nav. */
 .vs-facet-menu {
     z-index: 1035;
+    /* Positioned by positionMenu() in faceted-table.js, which sets only top/left;
+       the fixed positioning belongs here with the rest of the menu's appearance. */
+    position: fixed;
+    /* Size to the content, floored at 15rem and capped so a long enum value
+       cannot stretch the menu across the viewport.
+
+       NOT a bare min-width: an element with only a min-width measures
+       offsetWidth === 0 while hidden, which is why positionMenu() carried a
+       magic 240 fallback. max-content resolves to a real width even then.
+
+       The floor must stay >= the widest control's intrinsic size. A range facet
+       on a date column lays out two <input type="date"> side by side, and each
+       wants ~150px for the dd/mm/yyyy mask plus its picker icon — roughly 310px
+       together, which a fixed 15rem (240px) clipped. */
+    width: max-content;
+    min-width: 15rem;
+    max-width: min(24rem, calc(100vw - 2rem));
+}
+
+/* Scrollable checkbox list inside a select facet. Long values wrap rather than
+   widening the menu past its max-width. */
+.vs-facet-menu .vs-select-menu {
+    max-height: 18rem;
+    overflow-y: auto;
+}
+
+.vs-facet-menu .form-check-label {
+    overflow-wrap: anywhere;
+}
+
+/* The control fills the menu, so a range facet's two date inputs share the full
+   width instead of overflowing it. */
+.vs-facet-menu .vs-facet {
+    min-width: 0;
+}
+
+.vs-facet-menu .vs-min,
+.vs-facet-menu .vs-max {
+    min-width: 0;
+    flex: 1 1 0;
+}
+
+/* lucide.createIcons() replaces the <i data-lucide> placeholder with an <svg>,
+   copying its attributes over — so the funnel glyph must be sized on the
+   generated element, not on the <i> the JS writes. */
+.vs-facet-btn svg {
+    width: 0.9em;
+    height: 0.9em;
 }

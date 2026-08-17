@@ -292,10 +292,8 @@
       wrap.appendChild(noValueToggle(apply));
 
     } else { // select — a scrollable checkbox list
+      // Scroll cap and width live in CSS (.vs-facet-menu .vs-select-menu).
       var menu = el('div', 'vs-select-menu');
-      menu.style.maxHeight = '18rem';
-      menu.style.overflowY = 'auto';
-      menu.style.minWidth = '12rem';
       menu.dataset.loaded = '0';
       // Fixed "(no value)" option — available even before the value list loads.
       menu.appendChild(checkRow(NO_VALUE, vsT('js.facet.noValue', '(no value)'), 0, true, apply));
@@ -386,16 +384,18 @@
   // duplicate a control, which would split the selection).
   function headerFormatter(spec, ctx) {
     return function (cell) {
-      var wrap = el('span', 'vs-facet-header d-inline-flex align-items-center gap-1');
-      var title = el('span');
+      // Layout (block, with the label ellipsising and the funnel absolutely
+      // right-aligned) lives in tabulator_overrides.css — see the .vs-facet-header
+      // rules there, which explain why the funnel cannot simply sit inline here.
+      var wrap = el('span', 'vs-facet-header');
+      var title = el('span', 'vs-facet-label');
       title.textContent = cell.getValue();
       // A declared tip explains the column on hover. Set on the header node we build
       // rather than through Tabulator's own tooltip option, so it works identically
       // on columns that carry no filter and never reach the funnel branch below.
-      if (spec.tip) {
-        title.title = spec.tip;
-        title.className = 'vs-col-tip';
-      }
+      // The native title attribute is the whole affordance: tipped headers are
+      // deliberately not marked visually (no underline, no help cursor).
+      if (spec.tip) title.title = spec.tip;
       wrap.appendChild(title);
 
       // A column may be declared purely to name and explain itself.
@@ -405,11 +405,14 @@
       var btn = el('button', 'btn btn-sm btn-ghost-secondary p-0 px-1 vs-facet-btn',
         { type: 'button', 'aria-expanded': 'false' });
       btn.title = vsTf('js.facet.filterBy', 'Filter by {label}', { label: spec.label });
-      btn.innerHTML = '<i data-lucide="list-filter" style="width:0.9em;height:0.9em;"></i>';
+      // Icon size is set in CSS (.vs-facet-btn svg): lucide.createIcons() below
+      // REPLACES this <i> with an <svg>, so styling the placeholder is pointless.
+      btn.innerHTML = '<i data-lucide="list-filter"></i>';
       dd.appendChild(btn);
 
+      // position:fixed and the menu width live in CSS (.vs-facet-menu); this code
+      // only sets top/left, in positionMenu() below.
       var menu = el('div', 'dropdown-menu p-0 vs-facet-menu');
-      menu.style.position = 'fixed';
       var control = buildControl(spec, {
         id: ctx.facetFor,
         iri: ctx.iri,
@@ -439,6 +442,11 @@
         var r = btn.getBoundingClientRect();
         menu.style.top = (r.bottom + 2) + 'px';
         // Right-align the menu to the button, clamped to the viewport.
+        // The fallback mirrors .vs-facet-menu's 15rem floor at a 16px root. It is
+        // now near-dead: that rule sizes the menu with width:max-content, which
+        // resolves to a real width even while hidden (a bare min-width measured
+        // 0, which is why the fallback was load-bearing before). A range facet's
+        // menu is wider than the floor, so trust offsetWidth, not this number.
         var width = menu.offsetWidth || 240;
         var left = Math.min(r.right - width, window.innerWidth - width - 8);
         menu.style.left = Math.max(8, left) + 'px';
