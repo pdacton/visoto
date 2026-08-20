@@ -1,0 +1,168 @@
+<!-- schch:Term Instance Template — a single TERMDAT terminology entry.
+
+     A TERMDAT entry is not just a labelled code: it is a term defined in up to
+     four national languages, filed under subject domains, marked with how far it
+     has been checked, and — in 99% of cases — cited to a legal or documentary
+     source. That last property is what makes the entry authoritative, so the page
+     is ordered the way a terminologist reads one: what it is called, what it
+     means, where it belongs, where it comes from.
+
+     Ranked above schema:DefinedTerm in type_priority, so these ~77.8k entries get
+     this page instead of the generic one. -->
+
+<sparql-query id="breadcrumbs">SELECT ?termSet { ?? schema:inDefinedTermSet ?termSet . }</sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.term.terms" "<a href=\"/resource?iri=schch:Term\">Terminology Entries</a>" }}</li>
+  {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
+    <li class="breadcrumb-item">{{ render ((index $binding "termSet")) }}</li>
+  {{ end }}
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+<!-- ?property/?value PAIRS via UNION — sparqlGrid needs that shape; parallel
+     OPTIONALs in a wide SELECT render a grid of empty labels.
+
+     ROW LABELS ARE PLAIN ENGLISH LITERALS, NOT TRANSLATION CALLS. The preprocessor
+     lifts the text of a <sparql-query> out of the file BEFORE Go executes the
+     template, so a translation action written inside one is shipped to the endpoint
+     verbatim and comes back as a 400 with an empty card. Only markup OUTSIDE the
+     query element (card titles, <sparql-column label=...>) is translatable.
+
+     Three rows here exist only on TERMDAT entries: the reliability code, the link
+     to the entry's abbreviation/variant satellites (schema:hasPart — those
+     satellites carry no template of their own, so this is how they are reached),
+     and lexinfo:hypernym. The hypernym is TERMDAT's own hierarchy predicate rather
+     than skos:broader, but it is set on only ~1.3% of entries, so it earns a grid
+     row rather than a section of its own. lexinfo: is declared in visoto.config. -->
+<sparql-query id="termIdentity">
+  SELECT ?property ?value WHERE {
+    { ?? schema:identifier ?value .          BIND("Identifier" AS ?property) }
+    UNION { ?? schema:position ?value .      BIND("Position" AS ?property) }
+    UNION { ?? schema:inDefinedTermSet ?ts . BIND(STR(?ts) AS ?value)
+                                             BIND("Term set" AS ?property) }
+    UNION { ?? schch:reliabilityCode ?rc .   BIND(STR(?rc) AS ?value)
+                                             BIND("Reliability" AS ?property) }
+    UNION { ?? schema:hasPart ?hp .          BIND(STR(?hp) AS ?value)
+                                             BIND("Abbreviation entry" AS ?property) }
+    UNION { ?? lexinfo:hypernym ?h .         BIND(STR(?h) AS ?value)
+                                             BIND("Broader term" AS ?property) }
+    UNION { ?? a ?t . FILTER(?t != schema:DefinedTerm && ?t != schch:Term)
+                                             BIND(STR(?t) AS ?value)
+                                             BIND("Also typed as" AS ?property) }
+  } LIMIT 100
+</sparql-query>
+
+<!-- All languages side by side — on a terminology entry the set of equivalents
+     across de/fr/it/en is the primary content, so this is never dispLang-filtered.
+     STR(?v) strips the tag from the value so groupByValue merges identical
+     literals (an abbreviation is often the same string in several languages). -->
+<sparql-query id="termLabels">
+  SELECT ?property ?value WHERE {
+    { ?? schema:name ?v .                BIND(CONCAT("name @", LANG(?v)) AS ?property)      BIND(STR(?v) AS ?value) }
+    UNION { ?? schema:alternateName ?v . BIND(CONCAT("altName @", LANG(?v)) AS ?property)   BIND(STR(?v) AS ?value) }
+    UNION { ?? skos:prefLabel ?v .       BIND(CONCAT("prefLabel @", LANG(?v)) AS ?property) BIND(STR(?v) AS ?value) }
+    UNION { ?? skos:hiddenLabel ?v .     BIND(CONCAT("hidden @", LANG(?v)) AS ?property)    BIND(STR(?v) AS ?value) }
+  } LIMIT 200
+</sparql-query>
+
+<!-- The definition and its usage notes, all languages at once. Term notes are
+     structured prose ("EXP: ...", "GEN: ...") and run to several hundred
+     characters per language, which is why this card gets the full page width
+     rather than sharing a row. -->
+<sparql-query id="termDefinition">
+  SELECT ?property ?value WHERE {
+    { ?? schema:description ?v . BIND(CONCAT("definition @", LANG(?v)) AS ?property) BIND(STR(?v) AS ?value) }
+    UNION { ?? schch:termNote ?v . BIND(CONCAT("note @", LANG(?v)) AS ?property)     BIND(STR(?v) AS ?value) }
+  } LIMIT 100
+</sparql-query>
+
+<!-- schch:termDomain carries top-level domains (LAW, POLITICS) and sub-domains
+     ("Parliamentary work") through the SAME predicate, with no reliable way to
+     tell them apart in the data — so a flat list is the honest rendering; a tree
+     would have to invent the nesting. -->
+<sparql-query id="termDomains">
+  SELECT ?domain WHERE { ?? schch:termDomain ?domain . } LIMIT 50
+</sparql-query>
+<sparql-columns for="termDomains">
+  <sparql-column var="domain" label="{{ t "facet.subjectDomain" "Subject domain" }}" icon></sparql-column>
+</sparql-columns>
+
+<!-- TERMDAT cites the term, its definition and its notes to separate sources.
+     At ~99% coverage this is the best-populated property on the class, and in a
+     terminology database the citation is what makes an entry authoritative — so
+     the card is shown open rather than collapsed. -->
+<sparql-query id="termSources">
+  SELECT ?property ?value WHERE {
+    { ?? schema:citation ?v .              BIND(CONCAT("source @", LANG(?v)) AS ?property)            BIND(STR(?v) AS ?value) }
+    UNION { ?? schch:descriptionCitation ?v . BIND(CONCAT("definition source @", LANG(?v)) AS ?property) BIND(STR(?v) AS ?value) }
+    UNION { ?? schch:termNoteCitation ?v . BIND(CONCAT("note source @", LANG(?v)) AS ?property)       BIND(STR(?v) AS ?value) }
+    UNION { ?? schema:URL ?v .             BIND("TERMDAT entry" AS ?property) BIND(STR(?v) AS ?value) }
+    UNION { ?? schema:dateModified ?v .    BIND("Last modified" AS ?property) BIND(STR(?v) AS ?value) }
+  } LIMIT 100
+</sparql-query>
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.termIdentity
+            "id" "termIdentity"
+            "title" (t "card.identity" "Identity")
+            "icon" "fingerprint") }}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.termLabels
+            "id" "termLabels"
+            "title" (t "card.labels" "Labels & Languages")
+            "icon" "languages") }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Full width: term notes are long prose in four languages. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.termDefinition
+            "id" "termDefinition"
+            "title" (t "card.definition" "Definition & Notes")
+            "icon" "book-open") }}
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.termDomains
+            "id" "termDomains"
+            "title" (t "card.subjectDomains" "Subject Domains")
+            "icon" "library") }}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.termSources
+            "id" "termSources"
+            "title" (t "card.sources" "Sources")
+            "icon" "scroll-text") }}
+      </div>
+    </div>
+  </div>
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

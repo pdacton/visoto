@@ -64,7 +64,7 @@ const activeEndpointKey = "activeEndpoint"
 func configLanguages(in []config.Language) []lang.Language {
 	out := make([]lang.Language, 0, len(in))
 	for _, l := range in {
-		out = append(out, lang.Language{Code: l.Code, Label: l.Label})
+		out = append(out, lang.Language{Code: l.Code, Label: l.Label, Name: l.DisplayName()})
 	}
 	return out
 }

@@ -9,6 +9,8 @@
 "topbar.enableDarkMode" = "Dunkelmodus aktivieren"
 "topbar.assistant" = "Otto, der Assistent"
 "topbar.settings" = "Einstellungen"
+"topbar.themes" = "Themen"
+"topbar.themesDescription" = "LINDAS-Inhalte nach Thema entdecken"
 "topbar.openSettings" = "Einstellungsmenü öffnen"
 "topbar.uploadData" = "Daten hochladen"
 "topbar.namedGraphs" = "Benannte Graphen"
@@ -63,7 +65,6 @@
 "nav.affairIdentifier" = "Geschäftsnummer"
 "nav.agentFoaf" = "Akteur (foaf)"
 "nav.agriculture" = "Landwirtschaft"
-"nav.agricultureAndFood" = "Landwirtschaft und Ernährung"
 "nav.agricultureFood" = "Landwirtschaft & Ernährung"
 "nav.airQualityStations" = "Luftmessstationen"
 "nav.airport" = "Flughafen"
@@ -83,7 +84,6 @@
 "nav.connectYourAi" = "Eigene KI verbinden"
 "nav.countries" = "Länder"
 "nav.country" = "Land"
-"nav.cultureAndArchives" = "Kultur und Archive"
 "nav.cultureArchives" = "Kultur & Archive"
 "nav.cube" = "Cube"
 "nav.cubes" = "Cubes"
@@ -98,7 +98,6 @@
 "nav.distribution" = "Distribution"
 "nav.energy" = "Energie"
 "nav.environmentAndEnergy" = "Umwelt und Energie"
-"nav.environmentAndNature" = "Umwelt und Natur"
 "nav.environmentEnergy" = "Umwelt & Energie"
 "nav.environmentNature" = "Umwelt & Natur"
 "nav.feature" = "Objekt"
@@ -120,7 +119,6 @@
 "nav.library" = "Bibliothek"
 "nav.lobbyOrganization" = "Lobbyorganisation"
 "nav.menu" = "Menü"
-"nav.mobilityAndTransport" = "Mobilität und Verkehr"
 "nav.mobilityTransport" = "Mobilität & Verkehr"
 "nav.mountainLandingSites" = "Gebirgslandeplätze"
 "nav.multiAttribution" = "Mehrfachzuordnung"
@@ -141,7 +139,6 @@
 "nav.places" = "Orte"
 "nav.plantProtection" = "Pflanzenschutz"
 "nav.politicalParties" = "Politische Parteien"
-"nav.politicsAndGovernment" = "Politik und Regierung"
 "nav.politicsGovernment" = "Politik & Regierung"
 "nav.possibleOutcome" = "Mögliches Ergebnis"
 "nav.postalAddress" = "Postadresse"
@@ -201,8 +198,10 @@
 "card.cubesAllVersions" = "Cubes (alle Versionen)"
 "card.currentVersions" = "Aktuelle Versionen"
 "card.dataCubes" = "Datenwürfel"
+"card.dataPreview" = "Datenvorschau"
 "card.dataServices" = "Datendienste"
 "card.datasets" = "Datensätze"
+"card.dateModified" = "Zuletzt geändert"
 "card.definedTermSets" = "Begriffsmengen"
 "card.definedTerms" = "Definierte Begriffe"
 "card.dimensions" = "Dimensionen"
@@ -1143,7 +1142,6 @@
 "card.terminologyEntries" = "Terminologieeinträge"
 "card.topLevelBodies" = "Organe an der Spitze der Struktur"
 "nav.governmentAdministration" = "Regierung & Verwaltung"
-"nav.governmentAndAdministration" = "Regierung und Verwaltung"
 
 # ── Page: government ──────────────────────────────────────────────────
 "page.government.aboutThisTheme" = "Über dieses Thema"
@@ -1204,7 +1202,6 @@
 "card.largestClassifications" = "Die grössten Klassifikationen"
 "card.mergersPerYear" = "Gemeindemutationen pro Jahr"
 "card.municipalitiesPerCanton" = "Gemeinden und Bezirke pro Kanton"
-"nav.statisticsAndRegisters" = "Statistik und Register"
 "nav.statisticsRegisters" = "Statistik & Register"
 
 # ── Page: statistics ──────────────────────────────────────────────────
@@ -1272,7 +1269,6 @@
 "card.mediaCubes" = "Medienforschungs-Cubes"
 "card.mediaObservations" = "Medienbeobachtungen"
 "card.municipalitiesCovered" = "Erfasste Gemeinden"
-"nav.mediaAndCommunications" = "Medien und Kommunikation"
 "nav.mediaCommunications" = "Medien & Kommunikation"
 
 # ── Page: media ───────────────────────────────────────────────────────

@@ -9,6 +9,8 @@
 "topbar.enableDarkMode" = "Attiva la modalità scura"
 "topbar.assistant" = "Otto, l'assistente"
 "topbar.settings" = "Impostazioni"
+"topbar.themes" = "Temi"
+"topbar.themesDescription" = "Scoprire i contenuti LINDAS per tema"
 "topbar.openSettings" = "Apri il menu delle impostazioni"
 "topbar.uploadData" = "Carica dati"
 "topbar.namedGraphs" = "Grafi denominati"
@@ -63,7 +65,6 @@
 "nav.affairIdentifier" = "Identificatore dell'affare"
 "nav.agentFoaf" = "Agente (foaf)"
 "nav.agriculture" = "Agricoltura"
-"nav.agricultureAndFood" = "Agricoltura e alimentazione"
 "nav.agricultureFood" = "Agricoltura & alimentazione"
 "nav.airQualityStations" = "Stazioni di qualità dell'aria"
 "nav.airport" = "Aeroporto"
@@ -83,7 +84,6 @@
 "nav.connectYourAi" = "Collega la tua IA"
 "nav.countries" = "Paesi"
 "nav.country" = "Paese"
-"nav.cultureAndArchives" = "Cultura e archivi"
 "nav.cultureArchives" = "Cultura & archivi"
 "nav.cube" = "Cubo"
 "nav.cubes" = "Cubi"
@@ -98,7 +98,6 @@
 "nav.distribution" = "Distribuzione"
 "nav.energy" = "Energia"
 "nav.environmentAndEnergy" = "Ambiente ed energia"
-"nav.environmentAndNature" = "Ambiente e natura"
 "nav.environmentEnergy" = "Ambiente & energia"
 "nav.environmentNature" = "Ambiente & natura"
 "nav.feature" = "Entità"
@@ -120,7 +119,6 @@
 "nav.library" = "Biblioteca"
 "nav.lobbyOrganization" = "Organizzazione lobbistica"
 "nav.menu" = "Menu"
-"nav.mobilityAndTransport" = "Mobilità e trasporti"
 "nav.mobilityTransport" = "Mobilità & trasporti"
 "nav.mountainLandingSites" = "Aree di atterraggio in montagna"
 "nav.multiAttribution" = "Attribuzione multipla"
@@ -141,7 +139,6 @@
 "nav.places" = "Luoghi"
 "nav.plantProtection" = "Protezione delle piante"
 "nav.politicalParties" = "Partiti politici"
-"nav.politicsAndGovernment" = "Politica e governo"
 "nav.politicsGovernment" = "Politica & governo"
 "nav.possibleOutcome" = "Esito possibile"
 "nav.postalAddress" = "Indirizzo postale"
@@ -201,8 +198,10 @@
 "card.cubesAllVersions" = "Cubi (tutte le versioni)"
 "card.currentVersions" = "Versioni attuali"
 "card.dataCubes" = "Cubi di dati"
+"card.dataPreview" = "Anteprima dei dati"
 "card.dataServices" = "Servizi di dati"
 "card.datasets" = "Set di dati"
+"card.dateModified" = "Data di modifica"
 "card.definedTermSets" = "Insiemi di termini definiti"
 "card.definedTerms" = "Termini definiti"
 "card.dimensions" = "Dimensioni"
@@ -1142,7 +1141,6 @@
 "card.terminologyEntries" = "Voci terminologiche"
 "card.topLevelBodies" = "Organi al vertice della struttura"
 "nav.governmentAdministration" = "Governo & amministrazione"
-"nav.governmentAndAdministration" = "Governo e amministrazione"
 
 # ── Page: government ──────────────────────────────────────────────────
 "page.government.aboutThisTheme" = "Informazioni su questo tema"
@@ -1203,7 +1201,6 @@
 "card.largestClassifications" = "Le classificazioni più ampie"
 "card.mergersPerYear" = "Mutazioni di comuni per anno"
 "card.municipalitiesPerCanton" = "Comuni e distretti per cantone"
-"nav.statisticsAndRegisters" = "Statistica e registri"
 "nav.statisticsRegisters" = "Statistica & registri"
 
 # ── Page: statistics ──────────────────────────────────────────────────
@@ -1271,7 +1268,6 @@
 "card.mediaCubes" = "Cubi di ricerca sui media"
 "card.mediaObservations" = "Osservazioni sui media"
 "card.municipalitiesCovered" = "Comuni rilevati"
-"nav.mediaAndCommunications" = "Media e comunicazione"
 "nav.mediaCommunications" = "Media & comunicazione"
 
 # ── Page: media ───────────────────────────────────────────────────────

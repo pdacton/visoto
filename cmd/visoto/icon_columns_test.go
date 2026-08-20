@@ -27,9 +27,10 @@ func TestIconColumnsAreDeclared(t *testing.T) {
 		// Async, cube-shaped: the case the feature exists for — ?canton binds
 		// instance IRIs, so the icon can only come from rdf:type.
 		{"async cube table", "pages/energy.html", "energyCantonPrices", "canton"},
-		// Async class-instance table: the column holds a class IRI, which already
-		// worked by name before this change and must not regress.
-		{"async class instances", "classes/default.html", "instances", "class"},
+		// Async class-instance table: the class column holds a class IRI, which
+		// already worked by name before this change and must not regress; the
+		// instance column resolves through rdf:type like the cube-shaped case.
+		{"async class instances", "classes/default.html", "instances", "class,instance"},
 		// Sync table: no handler folds the declaration in, so this one is only
 		// reachable through the columnIconVars lookup at render time.
 		{"sync relationships", "pages/resource.html", "outgoing", "type"},

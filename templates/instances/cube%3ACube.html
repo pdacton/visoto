@@ -81,6 +81,18 @@
   {{ end }}
 
   <!-- Headline figures for this cube -->
+
+  <!-- The observation set holding this cube's data. Queried synchronously
+       because the metric card's href has to be known at render time, and the
+       set IRI is data: it is USUALLY the cube IRI plus "/observation/", but
+       cubes whose own IRI ends in a slash break that string rule, so it is
+       queried rather than constructed. -->
+  <sparql-query id="cubeObservationSet">
+    SELECT ?set WHERE {
+      ?? cube:observationSet ?set .
+    } LIMIT 1
+  </sparql-query>
+
   <sparql-async id="cubeObservationCount">
     SELECT (COUNT(?obs) AS ?count) WHERE {
       ?? cube:observationSet/cube:observation ?obs .
@@ -99,13 +111,33 @@
     }
   </sparql-async>
 
+  <!-- schema:dateModified is a full xsd:dateTime (e.g. 2024-03-12T09:41:22.123Z).
+       The card has room for the date and clock time only, so the fractional
+       seconds and the zone suffix ("Z" or "+02:00") are cut off in SPARQL
+       rather than rendered and clipped. -->
+  <sparql-async id="cubeModifiedMetric">
+    SELECT (COALESCE(SAMPLE(?short), "&ndash;") AS ?count) WHERE {
+      OPTIONAL {
+        ?? schema:dateModified ?m .
+        BIND(REPLACE(STR(?m), "(\\.[0-9]+)?(Z|[+-][0-9]{2}:[0-9]{2})?$", "") AS ?short)
+      }
+    }
+  </sparql-async>
+
+  {{ $obsSet := firstValue .QueryResults.cubeObservationSet "set" }}
+  {{/* Both count cards lead to the observation set — that is where the data
+       actually is. Falls back to the cube:Observation class page for a cube
+       with no set, so the link is never an empty ?iri=. */}}
+  {{ $obsHref := "/resource?iri=https%3A%2F%2Fcube.link%2FObservation" }}
+  {{ if $obsSet }}{{ $obsHref = printf "/resource?iri=%s" (urlquery $obsSet) }}{{ end }}
+
   <div class="row row-deck row-cards mb-3">
     {{ template "sparqlMetric" (dict
         "queryId" "cubeObservationCount"
         "iri" .ResourceIRI
         "title" (t "card.observations" "Observations")
-        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
-        "icon" "/static/img/resource/Cube.svg") }}
+        "href" $obsHref
+        "icon" "/static/img/resource/Observation.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "cubeDimensionCount"
         "iri" .ResourceIRI
@@ -116,6 +148,11 @@
         "iri" .ResourceIRI
         "title" (t "card.version" "Version")
         "href" "#versions") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "cubeModifiedMetric"
+        "iri" .ResourceIRI
+        "title" (t "card.dateModified" "Date Modified")
+        "href" "#collapse-literals") }}
   </div>
 
 
@@ -132,7 +169,7 @@
         {{ template "sparqlCube" (dict
             "id" "cubeData"
             "iri" .ResourceIRI
-            "title" (t "card.data" "Data")
+            "title" (t "card.dataPreview" "Data Preview")
             "icon" "table")
         }}
       </div>

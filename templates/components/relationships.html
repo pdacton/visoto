@@ -17,14 +17,17 @@
   } LIMIT 1000
 </sparql-query>
 <sparql-columns for="outgoing">
-  <sparql-column var="type" icon></sparql-column>
+  <sparql-column var="destination" icon></sparql-column>
 </sparql-columns>
 
+<!-- No ?type column: the icon on ?source comes from its rdf:type, which the
+     server resolves in its own batched type query (internal/sparql/rdftypes.go),
+     not from a column in this result. Selecting the type only duplicated a row
+     per type of the source. -->
 <sparql-query id="incoming">
-  SELECT ?type ?source ?property WHERE {
+  SELECT ?source ?property WHERE {
     BIND (?? AS ?o)
     ?source ?property ?o .
-    OPTIONAL { ?source a ?type . }
     FILTER (?property != rdf:type)
     FILTER (?property != rdfs:subClassOf)
     FILTER (?property NOT IN (
@@ -38,7 +41,7 @@
   } LIMIT 1000
 </sparql-query>
 <sparql-columns for="incoming">
-  <sparql-column var="type" icon></sparql-column>
+  <sparql-column var="source" icon></sparql-column>
 </sparql-columns>
 
 {{ define "relationships" }}

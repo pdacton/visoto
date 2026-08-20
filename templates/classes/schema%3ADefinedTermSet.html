@@ -1,0 +1,124 @@
+<!-- schema:DefinedTermSet Class Template — the catalog of controlled vocabularies.
+
+     The grouping class one level above schema:DefinedTerm: 969 instances, each a
+     vocabulary that terms point into with schema:inDefinedTermSet.
+
+     Most of them already have a better template and are ranked above this one in
+     visoto.config's type_priority — 692 are skos:ConceptScheme (i14y concept
+     registry) and 96 are meta:SharedDimension (cube dimensions). What actually
+     lands here is the remaining 181: the 124 TERMDAT sets (107 TerminologyCollection,
+     11 Glossary, 6 TerminologyOffice) plus 57 politics/culture vocabularies with no
+     other type.
+
+     The table stays INLINE rather than working-set — 969 rows is far under the
+     threshold, and the member count below is a per-set aggregate that the
+     working-set rewrite could not carry anyway. -->
+
+{{ define "pageTitle" }}{{ t "type.definedTermSet.title" "Term Sets" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.definedTermSet.metaTitle" "Term Set" }}{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
+
+<sparql-query id="pageClasses">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}{{ t "type.definedTermSet.subtitle" "A controlled vocabulary: the set a defined term belongs to. Terminology collections, glossaries and code lists, with the number of terms each one holds." }}{{ end }}
+
+<!-- Members are counted per set with COUNT(DISTINCT), which is why this query
+     needs its own GROUP BY at the top level — the same place the membership
+     substitution lands, so the shape stays compatible either way.
+
+     Language picking uses the house MIN-rank idiom (dispLang, else en, else
+     untagged, else any) because many of these sets carry de/fr/it/en names at
+     once and a plain lang() OR would render "FS-Modell, FS Model". The rank must
+     stay a SINGLE DIGIT: SUBSTR(?picked, 3) strips exactly "N|".
+
+     The membership triple is the literal "?instance a ??" so
+     sparql.MembershipTriplePattern can still find it if this class ever grows past
+     the working-set threshold. -->
+<sparql-async id="definedTermSetInstances">
+  SELECT ?instance
+         (SUBSTR(MIN(?ranked_),3) AS ?name)
+         (SAMPLE(?memberCount_) AS ?members)
+         (SAMPLE(?identifier_) AS ?identifier)
+         (SAMPLE(?publisher_)  AS ?publisher)
+         (GROUP_CONCAT(DISTINCT ?typeName_; separator=", ") AS ?kind)
+  WHERE {
+    ?instance a ?? .
+    OPTIONAL { ?instance schema:name ?nm_ .
+               BIND(IF(lang(?nm_) = visoto:dispLang, 1,
+                    IF(lang(?nm_) = "en", 2,
+                    IF(lang(?nm_) = "", 3, 4))) AS ?rk_)
+               BIND(CONCAT(STR(?rk_), "|", STR(?nm_)) AS ?ranked_) }
+    # The member count MUST be aggregated in its own subquery, not as a
+    # COUNT(DISTINCT ?m) alongside the other OPTIONALs. Counted at the top level it
+    # cross-multiplies against the name/type/publisher OPTIONALs over ~516k
+    # membership triples: measured >2 minutes (endpoint timeout) versus ~3s this
+    # way. Nesting is safe HERE only because this class is small enough to render
+    # inline — a working-set table would need the count at the top level.
+    OPTIONAL {
+      { SELECT ?instance (COUNT(DISTINCT ?m_) AS ?memberCount_) WHERE {
+          ?m_ schema:inDefinedTermSet ?instance .
+        } GROUP BY ?instance }
+    }
+    OPTIONAL { ?instance schema:identifier ?identifier_ . }
+    OPTIONAL { ?instance dct:publisher ?publisher_ . }
+    OPTIONAL { ?instance a ?t_ .
+               FILTER(?t_ != schema:DefinedTermSet)
+               BIND(REPLACE(STR(?t_), "^.*[/#]", "") AS ?typeName_) }
+  }
+  GROUP BY ?instance
+  LIMIT 50000
+</sparql-async>
+
+<!-- Filtered columns are aggregate/SAMPLE aliases, which do not exist in WHERE
+     scope, so each carries root= + path= to route the filter onto the real triple.
+     Without them a facet returns zero rows with no error anywhere — see the long
+     note in classes/schema%3ADefinedTerm.html.
+
+     ?members is deliberately NOT filtered: it is a COUNT with no underlying
+     triple to anchor a filter on, so any facet declared here could only target the
+     alias, i.e. silently return nothing. Sorting the column covers the need. -->
+<sparql-columns for="definedTermSetInstances" order>
+  <sparql-column var="instance" label="{{ t "facet.termSet" "Term set" }}" icon
+                 path="schema:name" filter="text"></sparql-column>
+
+  <!-- The flavour of set: TerminologyCollection, Glossary, TerminologyOffice,
+       ConceptScheme, SharedDimension. The one column that separates the families. -->
+  <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}"
+                 tip="{{ t "facet.tip.kind" "The other rdf:types this set carries — terminology collection, glossary, concept scheme, shared dimension." }}"
+                 badge root="?instance" path="rdf:type" filter="select"></sparql-column>
+
+  <sparql-column var="members" label="{{ t "facet.members" "Terms" }}" type="number"
+                 tip="{{ t "facet.tip.members" "How many terms point at this set with schema:inDefinedTermSet." }}"
+                 width="110"></sparql-column>
+
+  <sparql-column var="publisher" label="{{ t "facet.publisher" "Publisher" }}"
+                 icon root="?instance" path="dct:publisher" filter="select"></sparql-column>
+
+  <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"
+                 root="?instance" path="schema:identifier" filter="text" width="140"></sparql-column>
+</sparql-columns>
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "definedTermSetInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.termSets" "Term Sets")
+            "icon" "library-big"
+            "searchProp" "http://schema.org/name")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

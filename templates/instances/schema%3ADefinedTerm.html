@@ -1,0 +1,102 @@
+<!-- schema:DefinedTerm Instance Template — the generic vocabulary-term page.
+
+     DELIBERATELY THIN. Every co-type with a template of its own now outranks
+     schema:DefinedTerm in visoto.config's type_priority (skos:Concept,
+     SharedDimensionTerm, the schch: place types, schch:Term for TERMDAT), so what
+     reaches this template is the long tail: version.link Identity, FOAG products,
+     ISO calendar weeks, rdfs:Class, hydro stations, bodies of water — hundreds of
+     flavours with no dominant shape. A bespoke section would be empty on most
+     pages, so this template shows only the two things the tail genuinely shares —
+     multi-typing and multilingual naming — and leaves the rest to the generic
+     Attributes grid.
+
+     In particular there is NO SKOS hierarchy here, even though skos:broader is
+     common across DefinedTerms overall: ~455k of the terms carrying it are
+     skos:Concept, which now wins the template, leaving about 31 terms in all of
+     LINDAS that would both reach this page and have a broader term. -->
+
+<sparql-query id="breadcrumbs">SELECT ?termSet { ?? schema:inDefinedTermSet ?termSet . }</sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.definedTerm.definedTerms" "<a href=\"/resource?iri=schema:DefinedTerm\">Defined Terms</a>" }}</li>
+  {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
+    <li class="breadcrumb-item">{{ render ((index $binding "termSet")) }}</li>
+  {{ end }}
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+<!-- sparqlGrid renders ?property/?value PAIRS, one row per field — not a single
+     row with one column per field. A wide SELECT produces a grid of empty labels
+     and empty values, which looks like a data problem but is a shape mismatch.
+     Hence the UNION rather than parallel OPTIONALs.
+
+     ROW LABELS ARE PLAIN ENGLISH LITERALS, NOT TRANSLATION CALLS. The preprocessor
+     lifts the text of a <sparql-query> out of the file BEFORE Go executes the
+     template, so a translation action written inside one is shipped to the endpoint
+     verbatim and comes back as a 400 with an empty card. Only markup OUTSIDE the
+     query element (card titles, <sparql-column label=...>) is translatable. -->
+<sparql-query id="definedTermIdentity">
+  SELECT ?property ?value WHERE {
+    { ?? schema:identifier ?value .          BIND("Identifier" AS ?property) }
+    UNION { ?? skos:notation ?value .        BIND("Notation" AS ?property) }
+    UNION { ?? schema:position ?value .      BIND("Position" AS ?property) }
+    UNION { ?? schema:validFrom ?value .     BIND("Valid from" AS ?property) }
+    UNION { ?? schema:validThrough ?value .  BIND("Valid through" AS ?property) }
+    UNION { ?? schema:inDefinedTermSet ?ts . BIND(STR(?ts) AS ?value)
+                                             BIND("Term set" AS ?property) }
+    UNION { ?? a ?t . FILTER(?t != schema:DefinedTerm) BIND(STR(?t) AS ?value)
+                                             BIND("Also typed as" AS ?property) }
+  } LIMIT 100
+</sparql-query>
+
+<!-- All languages at once, deliberately NOT filtered to dispLang: on a vocabulary
+     term the set of names across the national languages IS the content, not noise.
+
+     STR(?v) strips the language tag from the VALUE so the grid's groupByValue
+     merges byte-identical strings — many terms carry the same literal as both
+     schema:name and skos:prefLabel, and those collapse into one row listing both
+     properties rather than two identical-looking rows. -->
+<sparql-query id="definedTermLabels">
+  SELECT ?property ?value WHERE {
+    { ?? schema:name ?v .                BIND(CONCAT("name @", LANG(?v)) AS ?property)        BIND(STR(?v) AS ?value) }
+    UNION { ?? skos:prefLabel ?v .       BIND(CONCAT("prefLabel @", LANG(?v)) AS ?property)   BIND(STR(?v) AS ?value) }
+    UNION { ?? schema:alternateName ?v . BIND(CONCAT("altName @", LANG(?v)) AS ?property)     BIND(STR(?v) AS ?value) }
+    UNION { ?? skos:hiddenLabel ?v .     BIND(CONCAT("hidden @", LANG(?v)) AS ?property)      BIND(STR(?v) AS ?value) }
+    UNION { ?? schema:description ?v .   BIND(CONCAT("description @", LANG(?v)) AS ?property) BIND(STR(?v) AS ?value) }
+  } LIMIT 200
+</sparql-query>
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.definedTermIdentity
+            "id" "definedTermIdentity"
+            "title" (t "card.identity" "Identity")
+            "icon" "fingerprint") }}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.definedTermLabels
+            "id" "definedTermLabels"
+            "title" (t "card.labels" "Labels & Languages")
+            "icon" "languages") }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Everything the two cards above did not name. This is what carries the long
+       tail: a FOAG product and a calendar week have nothing in common, and the
+       generic Attributes grid shows both without pretending otherwise. -->
+  {{ template "literals" . }}
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

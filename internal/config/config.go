@@ -82,6 +82,21 @@ type Language struct {
 	// looking for their own language needs. It is a literal, not a message key:
 	// one label per code, identical in every locale.
 	Label string `toml:"label"`
+
+	// Name is the full language name shown in the picker's dropdown menu, while
+	// Label stays the compact form shown in the closed topbar control. Optional:
+	// when unset it falls back to Label, so a config that only lists labels
+	// keeps working unchanged. Like Label it is a literal, not a message key.
+	Name string `toml:"name"`
+}
+
+// DisplayName is the full name to show in the language menu: Name when the
+// config supplies one, otherwise the compact Label.
+func (l Language) DisplayName() string {
+	if n := strings.TrimSpace(l.Name); n != "" {
+		return n
+	}
+	return l.Label
 }
 
 // SparqlEndpoint represents a named SPARQL endpoint configuration
@@ -242,15 +257,16 @@ func (a *ApplicationConfig) validateEndpointSlugs() error {
 
 // DefaultLanguages is the language set used when visoto.config declares none:
 // the four Swiss national languages plus English, and the empty "no language"
-// choice. Labels are endonyms. Returns a fresh slice so callers can't mutate it.
+// choice. Labels are compact codes, names their endonyms. Returns a fresh
+// slice so callers can't mutate it.
 func DefaultLanguages() []Language {
 	return []Language{
-		{Code: "de", Label: "Deutsch"},
-		{Code: "fr", Label: "Français"},
-		{Code: "it", Label: "Italiano"},
-		{Code: "en", Label: "English"},
-		{Code: "rm", Label: "Rumantsch"},
-		{Code: "", Label: "No language"},
+		{Code: "de", Label: "DE", Name: "Deutsch"},
+		{Code: "fr", Label: "FR", Name: "Français"},
+		{Code: "it", Label: "IT", Name: "Italiano"},
+		{Code: "en", Label: "EN", Name: "English"},
+		{Code: "rm", Label: "RM", Name: "Rumantsch"},
+		{Code: "", Label: "None", Name: "No language"},
 	}
 }
 

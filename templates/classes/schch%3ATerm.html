@@ -1,0 +1,131 @@
+<!-- schch:Term Class Template — the TERMDAT catalog.
+
+     TERMDAT is the Swiss federal terminology database: ~77.8k concept-level
+     entries, each a term defined in up to four national languages with its legal
+     source. It lives in exactly one named graph (lindas.admin.ch/fch/termdat), and
+     schch:Term occurs ONLY there — so this one rdf:type is the whole isolation,
+     and unlike a GRAPH clause it is a plain membership triple, which keeps the
+     working-set rewrite working.
+
+     Split out from schema:DefinedTerm (which every TERMDAT entry also carries)
+     because a terminology entry is a different thing from a generic vocabulary
+     term: it has a definition, usage notes, subject domains and a cited source.
+     schch:Term is ranked above schema:DefinedTerm in visoto.config's type_priority
+     so these pages win.
+
+     NOT covered here: the ~29.7k lexical variants in the same graph (schch:Name,
+     Synonym, Abbreviation, Phraseology). They inherit their parent term's
+     definition and citations verbatim, so they are satellites rather than entries
+     in their own right — they fall through to the schema:DefinedTerm template and
+     are reached from the parent's schema:hasPart. -->
+
+{{ define "pageTitle" }}{{ t "type.term.title" "Terminology Entries" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.term.metaTitle" "Terminology Entry" }}{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
+
+<sparql-query id="pageClasses">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}{{ t "type.term.subtitle" "Entries in TERMDAT, the Swiss federal terminology database — each a term defined in the national languages, with its subject domains and its legal or documentary source." }}{{ end }}
+
+<!-- Same three invariants as the schema:DefinedTerm catalog, for the same reasons:
+     the membership triple stays the literal "?instance a ??" so the working-set
+     rewrite can find it; the GROUP BY stays TOP-level, where that substitution
+     lands; and the language rank stays a SINGLE DIGIT because SUBSTR(?picked, 3)
+     strips exactly "N|". TERMDAT is the sharpest case for the rank trick — nearly
+     every entry carries de, fr, it and en.
+
+     The definition is filtered to dispLang rather than ranked: it is a preview
+     column, and a wrong-language fallback in a 300-character cell is worse than an
+     empty one. The instance page shows all languages. -->
+<sparql-async id="termInstances">
+  SELECT ?instance
+         (SUBSTR(MIN(?ranked_),3) AS ?name)
+         (SAMPLE(?identifier_)  AS ?identifier)
+         (SAMPLE(?termSet_)     AS ?termSet)
+         (SAMPLE(?reliability_) AS ?reliability)
+         (GROUP_CONCAT(DISTINCT ?domain_; separator=", ") AS ?domains)
+         (SAMPLE(?definition_)  AS ?definition)
+  WHERE {
+    ?instance a ?? .
+    OPTIONAL { ?instance schema:name ?nm_ .
+               BIND(IF(lang(?nm_) = visoto:dispLang, 1,
+                    IF(lang(?nm_) = "en", 2,
+                    IF(lang(?nm_) = "", 3, 4))) AS ?rk_)
+               BIND(CONCAT(STR(?rk_), "|", STR(?nm_)) AS ?ranked_) }
+    OPTIONAL { ?instance schema:identifier ?identifier_ . }
+    OPTIONAL { ?instance schema:inDefinedTermSet ?termSet_ . }
+    OPTIONAL { ?instance schch:reliabilityCode ?reliability_ . }
+    # The domain IRI tail is an opaque number (.../domain/19), so the label has to
+    # come from the domain resource itself. Ranked like the term name so a domain
+    # carrying all four languages contributes exactly one string per domain.
+    OPTIONAL { ?instance schch:termDomain ?d_ .
+               OPTIONAL { ?d_ schema:name ?dn_ .
+                          FILTER(lang(?dn_) = visoto:dispLang || lang(?dn_) = "en" || lang(?dn_) = "") }
+               BIND(COALESCE(?dn_, REPLACE(STR(?d_), "^.*/", "")) AS ?domain_) }
+    OPTIONAL { ?instance schema:description ?definition_ .
+               FILTER(lang(?definition_) = visoto:dispLang) }
+  }
+  GROUP BY ?instance
+  LIMIT 50000
+</sparql-async>
+
+<!-- Every filtered column here is an aggregate or a SAMPLE alias, so root= and
+     path= are mandatory on all of them — see the long note in
+     classes/schema%3ADefinedTerm.html. Without them a filter silently returns zero
+     rows. -->
+<sparql-columns for="termInstances" order>
+  <sparql-column var="instance" label="{{ t "facet.term" "Term" }}" icon
+                 path="schema:name" filter="text"></sparql-column>
+
+  <!-- TERMDAT files each entry under one or more subject domains (LAW, POLITICS)
+       and sub-domains, all through the same predicate. That mix is what makes this
+       the most useful slicer on the catalog. -->
+  <sparql-column var="domains" label="{{ t "facet.subjectDomains" "Subject domains" }}"
+                 tip="{{ t "facet.tip.subjectDomains" "Subject areas this term is filed under (schch:termDomain), including sub-domains." }}"
+                 badge root="?instance" path="schch:termDomain" filter="select"></sparql-column>
+
+  <!-- The terminology office or collection that owns the entry. -->
+  <sparql-column var="termSet" label="{{ t "facet.termSet" "Term set" }}"
+                 tip="{{ t "facet.tip.termSet" "The vocabulary this term belongs to (schema:inDefinedTermSet)." }}"
+                 icon group root="?instance" path="schema:inDefinedTermSet" filter="select"></sparql-column>
+
+  <!-- A small closed vocabulary, so the checkbox list is short and genuinely
+       useful for separating validated entries from provisional ones. -->
+  <sparql-column var="reliability" label="{{ t "facet.reliability" "Reliability" }}"
+                 tip="{{ t "facet.tip.reliability" "How far the entry has been checked (schch:reliabilityCode)." }}"
+                 badge root="?instance" path="schch:reliabilityCode" filter="select" width="150"></sparql-column>
+
+  <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"
+                 root="?instance" path="schema:identifier" filter="text" width="120"></sparql-column>
+
+  <!-- No filter: free prose, and a text facet over it would be slower and less
+       useful than the term search in the first column. -->
+  <sparql-column var="definition" label="{{ t "facet.definition" "Definition" }}"
+                 tip="{{ t "facet.tip.definition" "The definition in the display language, where one exists." }}"></sparql-column>
+</sparql-columns>
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "termInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.terms" "Terms")
+            "icon" "book-a"
+            "searchProp" "http://schema.org/name"
+            "max" 50000)
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

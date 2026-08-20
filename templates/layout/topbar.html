@@ -49,6 +49,85 @@
       </form>
     </div>
 
+    <!-- Theme launcher. Conditional on the lindas tag rather than a slug: the
+         three LINDAS endpoints (prod/int/test) share the tag, and these subject
+         pages only have data there. -->
+    {{ if eq .EndpointTag "lindas" }}
+    <div class="nav-item dropdown flex-shrink-0" id="theme-menu">
+      <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" role="button" aria-expanded="false" aria-label="{{ t "topbar.themes" "Themes" }}" data-bs-original-title="{{ t "topbar.themes" "Themes" }}">
+        <!-- Inline rather than data-lucide: the pinned lucide@1.24.0 bundle has no
+             3x3-dot glyph, and an unknown icon name fails silently, leaving an
+             empty box. currentColor keeps it in step with the other topbar icons. -->
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 1.25rem; height: 1.25rem;" aria-hidden="true" focusable="false">
+          <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
+          <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+          <circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
+        </svg>
+      </a>
+      <div class="dropdown-menu dropdown-menu-end vs-theme-menu">
+        <div class="vs-theme-header">
+          <div class="vs-theme-header-title">{{ t "topbar.themes" "Themes" }}</div>
+          <div class="vs-theme-header-subtitle">{{ t "topbar.themesDescription" "Discover LINDAS content by theme" }}</div>
+        </div>
+        <!-- Grouped by subject, not alphabetically: resources & environment,
+             then society & knowledge, then state & data. The icons are
+             decorative here (alt="") because each tile carries a visible label. -->
+        <div class="vs-theme-grid">
+          <a class="dropdown-item vs-theme-tile" href="/energy.html">
+            <img src="/static/img/resource/Energy.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.energy" "Energy" }}</span>
+          </a>
+          <a class="dropdown-item vs-theme-tile" href="/mobility.html">
+            <img src="/static/img/resource/Traffic.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.mobilityTransport" "Mobility & Transport" }}</span>
+          </a>
+          <a class="dropdown-item vs-theme-tile" href="/environment.html">
+            <img src="/static/img/resource/Environment.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.environmentNature" "Environment & Nature" }}</span>
+          </a>
+          <a class="dropdown-item vs-theme-tile" href="/agriculture.html">
+            <img src="/static/img/resource/Agriculture.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.agricultureFood" "Agriculture & Food" }}</span>
+          </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="vs-theme-grid">
+          <a class="dropdown-item vs-theme-tile" href="/health.html">
+            <img src="/static/img/resource/Health.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.health" "Health" }}</span>
+          </a>
+          <a class="dropdown-item vs-theme-tile" href="/media.html">
+            <img src="/static/img/resource/Media.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.mediaCommunications" "Media & Communications" }}</span>
+          </a>
+          <a class="dropdown-item vs-theme-tile" href="/culture.html">
+            <img src="/static/img/resource/Culture.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.cultureArchives" "Culture & Archives" }}</span>
+          </a>
+          <a class="dropdown-item vs-theme-tile" href="/plazi.html">
+            <img src="/static/img/resource/TaxonName.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.plaziClassification" "Plazi Classification" }}</span>
+          </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="vs-theme-grid">
+          <a class="dropdown-item vs-theme-tile" href="/politics.html">
+            <img src="/static/img/resource/Government.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.politicsGovernment" "Politics & Government" }}</span>
+          </a>
+          <a class="dropdown-item vs-theme-tile" href="/government.html">
+            <img src="/static/img/resource/Administration.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.governmentAdministration" "Government & Administration" }}</span>
+          </a>
+          <a class="dropdown-item vs-theme-tile" href="/statistics.html">
+            <img src="/static/img/resource/Statistics.svg" alt="" aria-hidden="true">
+            <span>{{ t "nav.statisticsRegisters" "Statistics & Registers" }}</span>
+          </a>
+        </div>
+      </div>
+    </div>
+    {{ end }}
+
     <div class="d-flex align-items-center flex-shrink-0">
       <!-- SPARQL Endpoint selector.
            Desktop-only as a visible control, but the <select> stays in the DOM at
@@ -85,7 +164,7 @@
         <div class="dropdown-menu dropdown-menu-end">
           {{ range . }}
           <a class="dropdown-item site-lang-item{{ if .Selected }} active{{ end }}" href="#" data-lang-code="{{ .Code }}">
-            <i data-lucide="{{ if .Selected }}check{{ else }}languages{{ end }}" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ .Label }}
+            <i data-lucide="{{ if .Selected }}check{{ else }}languages{{ end }}" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ .Name }}
           </a>
           {{ end }}
         </div>

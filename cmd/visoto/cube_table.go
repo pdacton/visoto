@@ -120,9 +120,13 @@ func cubeDimensions(ctx context.Context, preprocessor *parser.Preprocessor, iri,
 	// the headers come back as a mix of languages within one table. The second
 	// OPTIONAL is the fallback for dimensions labelled in one language only, or
 	// with an untagged literal.
+	// The subject may be either a cube or one of its observation sets: the same
+	// table is offered on both pages, and a set carries no shape of its own — it
+	// is reached from the owning cube via cube:observationSet. The alternation
+	// resolves the constraint from whichever was given.
 	q := fmt.Sprintf(`
 SELECT ?dimension (SAMPLE(?name_) AS ?name) (SAMPLE(?order_) AS ?order) WHERE {
-  %s <https://cube.link/observationConstraint>/<http://www.w3.org/ns/shacl#property> ?shape .
+  %s (<https://cube.link/observationConstraint>|^<https://cube.link/observationSet>/<https://cube.link/observationConstraint>)/<http://www.w3.org/ns/shacl#property> ?shape .
   ?shape <http://www.w3.org/ns/shacl#path> ?dimension .
   FILTER(?dimension != <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>)
   FILTER(?dimension != <https://cube.link/observedBy>)
@@ -267,8 +271,10 @@ func buildCubeObservationQuery(iri string, dims []cubeDimension) string {
 		sel.WriteString(d.Var)
 	}
 
+	// Accepts a cube IRI (hop through its observation set) or an observation set
+	// IRI (its observations directly) — see cubeDimensions for why both.
 	var body strings.Builder
-	fmt.Fprintf(&body, " WHERE {\n  { SELECT ?observation WHERE { %s <https://cube.link/observationSet>/<https://cube.link/observation> ?observation } LIMIT %d }\n",
+	fmt.Fprintf(&body, " WHERE {\n  { SELECT ?observation WHERE { %s <https://cube.link/observationSet>?/<https://cube.link/observation> ?observation } LIMIT %d }\n",
 		iriTerm, maxCubeTableRows)
 	for _, d := range dims {
 		dimTerm, err := sparql.IRITerm(d.IRI)

@@ -1,0 +1,143 @@
+<!-- schema:DefinedTerm Class Template — the catalog of every controlled-vocabulary
+     term in the graph.
+
+     This is the most abstract class in LINDAS: ~1.38M instances spanning 323
+     other rdf:types. Zefix organisations, i14y classification codes, TERMDAT
+     terminology, ISO calendar weeks and cube dimension terms are all "defined
+     terms", and they share almost nothing beyond schema:name. The table below is
+     therefore built around ONE affordance: the "Also typed as" column names each
+     term's other type(s), so filtering it slices the abstract mass down to a
+     single recognizable flavour. Grouping by term set does the same job along the
+     other axis — vocabularies as collapsible groups rather than one flat list. -->
+
+{{ define "pageTitle" }}{{ t "type.definedTerm.title" "Defined Terms" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.definedTerm.metaTitle" "Defined Term" }}{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
+
+<sparql-query id="pageClasses">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<!-- Static, not a visoto:description query: schema.org's own definition is not in
+     LINDAS, and on a class this abstract an explanation of what the page holds is
+     worth more than an empty subtitle. -->
+{{ define "pageSubtitle" }}{{ t "type.definedTerm.subtitle" "A term in a controlled vocabulary — a code, a label, a classification entry. Filter “Also typed as” to narrow to one flavour, or open a term set to browse one vocabulary." }}{{ end }}
+
+<!-- ONE ROW PER TERM. Terms are consistently multi-typed AND multilingual, so a
+     plain OPTIONAL join multiplies: a NOGA code with 3 rdf:types and 4 languages
+     of schema:name returns 12 rows for one term. SAMPLE/GROUP_CONCAT collapse the
+     repeats and the MIN-rank trick below picks exactly one name.
+
+     LANGUAGE PICKING. FILTER(lang(?x) = visoto:dispLang || lang(?x) = "") matches
+     several labels at once when a term carries de+fr+it+en, rendering "Kupfer,
+     Cuivre". Ranking each label and taking MIN picks one: dispLang, else en, else
+     untagged, else any. The rank is prefixed onto the string ("1|Kupfer") because
+     MIN orders lexically and SPARQL has no argmin; SUBSTR(?picked, 3) strips it
+     back off — which is why the rank MUST stay a single digit. Same idiom as
+     templates/instances/cube%3AObservation.html.
+
+     MEMBERSHIP TRIPLE. "?instance a ??" is written as that exact plain triple:
+     the async working-set model finds it by regex (sparql.MembershipTriplePattern)
+     and swaps it for a bounded IRI subquery. A query it cannot match falls through
+     to a wrap-anything fallback that splices a bare SELECT into a group — invalid
+     SPARQL. The GROUP BY therefore stays at the TOP level, where that substitution
+     lands, never in a nested subquery.
+
+     All predicates use prefixed names. A full angle-bracketed IRI written inline
+     here is silently swallowed before the query reaches the endpoint (the angle
+     brackets parse as an HTML tag), leaving a 400 with no clue in the UI. -->
+<sparql-async id="definedTermInstances">
+  SELECT ?instance
+         (SUBSTR(MIN(?ranked_),3) AS ?name)
+         (SAMPLE(?identifier_) AS ?identifier)
+         (SAMPLE(?termSet_)    AS ?termSet)
+         (SAMPLE(?broader_)    AS ?broader)
+         (SAMPLE(?validFrom_)  AS ?validFrom)
+         (GROUP_CONCAT(DISTINCT ?typeName_; separator=", ") AS ?alsoTyped)
+  WHERE {
+    ?instance a ?? .
+    OPTIONAL { ?instance schema:name ?nm_ .
+               BIND(IF(lang(?nm_) = visoto:dispLang, 1,
+                    IF(lang(?nm_) = "en", 2,
+                    IF(lang(?nm_) = "", 3, 4))) AS ?rk_)
+               BIND(CONCAT(STR(?rk_), "|", STR(?nm_)) AS ?ranked_) }
+    OPTIONAL { ?instance schema:identifier ?identifier_ . }
+    OPTIONAL { ?instance schema:inDefinedTermSet ?termSet_ . }
+    OPTIONAL { ?instance skos:broader ?broader_ . }
+    OPTIONAL { ?instance schema:validFrom ?validFrom_ . }
+    OPTIONAL { ?instance a ?t_ .
+               FILTER(?t_ != schema:DefinedTerm)
+               BIND(REPLACE(STR(?t_), "^.*[/#]", "") AS ?typeName_) }
+  }
+  GROUP BY ?instance
+  LIMIT 50000
+</sparql-async>
+
+<!-- AGGREGATE FACETS NEED root= AND path=. Every column below is either an
+     aggregate (?name, ?alsoTyped) or a SAMPLE alias (?identifier, ?termSet,
+     ?broader, ?validFrom), and NONE of those exist in WHERE scope. A filter
+     declared without root=/path= targets the alias, so the backend leg returns
+     zero rows with no error anywhere — the table looks fine until someone touches
+     a filter. Routing each through the underlying property fixes it and is also
+     the faster shape: it anchors the filter on the membership triple, before the
+     OPTIONALs run. Same problem ?postalCodes documents in schch%3AMunicipality. -->
+<sparql-columns for="definedTermInstances" order>
+  <sparql-column var="instance" label="{{ t "facet.term" "Term" }}" icon
+                 path="schema:name" filter="text"></sparql-column>
+
+  <!-- The column that makes 1.38M abstract terms navigable: it names the flavour.
+       Filtering through rdf:type also gives the right multi-value semantics —
+       picking "Concept" keeps a term with all of its types rather than narrowing
+       it to one. -->
+  <sparql-column var="alsoTyped" label="{{ t "facet.alsoTypedAs" "Also typed as" }}"
+                 tip="{{ t "facet.tip.alsoTypedAs" "The other rdf:types this term carries. Filter here to narrow the terms to one flavour." }}"
+                 badge root="?instance" path="rdf:type" filter="select"></sparql-column>
+
+  <!-- group= opens the table as collapsible vocabularies instead of one flat list. -->
+  <sparql-column var="termSet" label="{{ t "facet.termSet" "Term set" }}"
+                 tip="{{ t "facet.tip.termSet" "The vocabulary this term belongs to (schema:inDefinedTermSet)." }}"
+                 icon group root="?instance" path="schema:inDefinedTermSet" filter="select"></sparql-column>
+
+  <!-- text, NOT the range these digits would infer: NOGA "011100" and week
+       "2024-W01" are labels, not quantities. An identifier is unique only WITHIN
+       a term set, which is what the grouping above makes visible. -->
+  <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"
+                 root="?instance" path="schema:identifier" filter="text"></sparql-column>
+
+  <!-- No filter: high-cardinality IRI column, far past the 200-value enumeration
+       cap. Kept as a column because this table spans all terms including the ~455k
+       skos:Concepts, where skos:broader is well populated. -->
+  <sparql-column var="broader" label="{{ t "facet.broader" "Broader" }}"
+                 tip="{{ t "facet.tip.broader" "The parent term in this vocabulary's hierarchy (skos:broader)." }}"
+                 icon root="?instance" path="skos:broader"></sparql-column>
+
+  <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}" type="date"
+                 root="?instance" path="schema:validFrom" filter="range" width="150"></sparql-column>
+</sparql-columns>
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <!-- searchProp is essential here: at this size the table is a working set,
+             and without a pinned name property the "Search all" rebuild has
+             nothing to match on but the IRI string. -->
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "definedTermInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.definedTerms" "Defined Terms")
+            "icon" "tag"
+            "searchProp" "http://schema.org/name"
+            "max" 50000)
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

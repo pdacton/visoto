@@ -1,0 +1,262 @@
+<!-- cube:Observation Instance Template — a single data point of a cube.
+
+     The raw triples of an observation are close to unreadable: every predicate
+     is a cube-specific dimension IRI (.../dimension/aidfee) and every object is
+     a bare number (2.3). Neither says what it means. All of the meaning lives
+     one level up, in the cube's SHACL observation constraint, which names each
+     dimension ("Feed-in remuneration at cost (KEV)"), gives it a unit
+     (Rp./kWH), and types it as a key or a measure. This template joins the
+     observation to that constraint so the page reads as data rather than RDF. -->
+
+{{ template "pageHeader" . }}
+
+<!-- The chain above this observation: set ← cube. Both are needed by the
+     breadcrumb and by the Context card, so they are fetched once here.
+
+     LINDAS observation sets are IRIs like .../observation/ with no label of
+     their own, so the breadcrumb labels the step from the cube's name instead
+     of rendering the bare IRI. -->
+<sparql-query id="cubeChain">
+  SELECT ?set ?cube ?cubeName WHERE {
+    ?set cube:observation ?? .
+    OPTIONAL {
+      ?cube cube:observationSet ?set .
+      OPTIONAL {
+        ?cube schema:name ?cubeName .
+        FILTER(lang(?cubeName) = visoto:dispLang || lang(?cubeName) = "en" || lang(?cubeName) = "")
+      }
+    }
+  } LIMIT 1
+</sparql-query>
+
+<!-- Observation IRIs are opaque coordinate tails — "9-H4-standard-2026", or
+     just "N" for the noise cube — so the H1 alone says nothing about what the
+     page holds. The subtitle names the owning cube to give it context; the key
+     dimensions card below spells the coordinates out in full. -->
+<sparql-query id="pageSubtitle">
+  SELECT (CONCAT("A data point of ", ?name) AS ?description) WHERE {
+    ?set cube:observation ?? .
+    ?cube cube:observationSet ?set ;
+          schema:name ?name .
+    FILTER(lang(?name) = visoto:dispLang || lang(?name) = "en" || lang(?name) = "")
+  } LIMIT 1
+</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+{{ define "breadcrumb" }}
+  {{ $chain := .QueryResults.cubeChain }}
+  {{ if $chain.Bindings }}
+    {{ $b := index $chain.Bindings 0 }}
+    {{ $cube := index $b "cube" }}
+    {{ $set := index $b "set" }}
+    {{/* index on a missing key yields a zero Binding struct, which is truthy —
+         always test .Value, never the Binding itself. */}}
+    {{ if $cube.Value }}
+      <li class="breadcrumb-item">
+        <a href="/resource?iri={{ urlquery $cube.Value }}">{{ with (index $b "cubeName").Value }}{{ . }}{{ else }}{{ lastPathSegment $cube.Value }}{{ end }}</a>
+      </li>
+    {{ end }}
+    {{ if $set.Value }}
+      <li class="breadcrumb-item">
+        <a href="/resource?iri={{ urlquery $set.Value }}">{{ t "type.observation.observationSet" "Observation Set" }}</a>
+      </li>
+    {{ end }}
+  {{ end }}
+{{ end }}
+
+<!-- Key dimensions: the coordinates that identify this observation — which
+     canton, which year, which product. Together they are the observation's
+     primary key, which is why the IRI tail reads "9-H4-standard-2026".
+
+     Labels, units and the key/measure split all come from the cube's constraint
+     (cube:KeyDimension / cube:MeasureDimension). A dimension with no label at
+     all still shows up under its raw predicate, so nothing is silently dropped.
+
+     LANGUAGE PICKING — why not the usual one-liner. Most templates write
+     FILTER(lang(?x) = visoto:dispLang || lang(?x) = ""), which works when a
+     resource has one label plus an untagged fallback. ELCom dimensions carry
+     de/fr/it/en for EVERY dimension, so that OR matches several at once and the
+     grid renders "KANTON, CANTON". Ranking each label and taking MIN per
+     dimension picks exactly one: dispLang, else en, else untagged, else any.
+     The rank is prefixed onto the string ("1|Kanton") because MIN orders
+     lexically and SPARQL has no argmin; SUBSTR(?picked, 3) strips it back off,
+     which is why the rank must stay a single digit. -->
+<sparql-query id="keyDimensions">
+  SELECT ?property ?value WHERE {
+    { SELECT ?path (MIN(?ranked) AS ?picked) WHERE {
+        ?? ?path ?raw .
+        ?set cube:observation ?? .
+        ?cube cube:observationSet ?set ;
+              cube:observationConstraint/sh:property ?dim .
+        ?dim sh:path ?path ;
+             a cube:KeyDimension .
+        OPTIONAL {
+          ?dim schema:name ?name .
+          BIND(IF(lang(?name) = visoto:dispLang, 1,
+               IF(lang(?name) = "en", 2,
+               IF(lang(?name) = "", 3, 4))) AS ?rank)
+          BIND(CONCAT(STR(?rank), "|", STR(?name)) AS ?ranked)
+        }
+      } GROUP BY ?path }
+    ?? ?path ?raw .
+    BIND(COALESCE(SUBSTR(?picked, 3), STR(?path)) AS ?property)
+    # Same cube:Undefined "no value" marker as in the measures query below.
+    BIND(IF(isLiteral(?raw) && STR(?raw) = "", "—", ?raw) AS ?value)
+  } LIMIT 200
+</sparql-query>
+
+<!-- Measures: the numbers that were actually observed. The unit symbol is
+     appended to the value rather than given its own column, because a grid row
+     reads as one sentence — "Grid usage: 11.12 Rp./kWH" — and a third column
+     would be mostly repetition (every measure here shares Rp./kWH).
+
+     qudt:symbol is the short form; some units only carry qudt:ucumCode, hence
+     the COALESCE. Numbers are concatenated as strings, so STR() is required. -->
+<sparql-query id="measures">
+  SELECT ?property ?value WHERE {
+    { SELECT ?path (MIN(?ranked) AS ?picked) (SAMPLE(?u) AS ?unit) WHERE {
+        ?? ?path ?raw .
+        ?set cube:observation ?? .
+        ?cube cube:observationSet ?set ;
+              cube:observationConstraint/sh:property ?dim .
+        ?dim sh:path ?path ;
+             a cube:MeasureDimension .
+        OPTIONAL {
+          ?dim schema:name ?name .
+          BIND(IF(lang(?name) = visoto:dispLang, 1,
+               IF(lang(?name) = "en", 2,
+               IF(lang(?name) = "", 3, 4))) AS ?rank)
+          BIND(CONCAT(STR(?rank), "|", STR(?name)) AS ?ranked)
+        }
+        OPTIONAL { ?dim qudt:hasUnit ?unitIri .
+                   OPTIONAL { ?unitIri qudt:symbol ?sym }
+                   OPTIONAL { ?unitIri qudt:ucumCode ?ucum }
+                   BIND(COALESCE(?sym, ?ucum) AS ?u) }
+      } GROUP BY ?path }
+    ?? ?path ?raw .
+    BIND(COALESCE(SUBSTR(?picked, 3), STR(?path)) AS ?property)
+    # cube.link marks a missing reading explicitly, as an empty literal typed
+    # cube:Undefined, so a dimension can be declared (with a unit) yet carry no
+    # value on this observation. Shown as "no value (Rp./kWH)" rather than a
+    # bare em dash: an empty cell reads as a bug, a bare "Rp./kWH" reads as a
+    # broken number, and — critically — the grid's groupByValue merges rows that
+    # share a value string, so two identical em dashes would collapse into one
+    # row labelled "Messwesen, Tarif für das Messwesen". Naming the unit keeps
+    # each missing reading on its own row.
+    BIND(IF(STR(?raw) = "",
+            IF(BOUND(?unit), CONCAT("— ", STR(?unit)), "—"),
+         IF(!BOUND(?unit), ?raw,
+            CONCAT(STR(?raw), " ", STR(?unit)))) AS ?value)
+  } LIMIT 200
+</sparql-query>
+
+<!-- Anything the constraint does not classify as key or measure: cube:observedBy
+     (who published the reading), plus any predicate on the observation that the
+     cube's shape never declared. Kept in its own card so the two cards above
+     stay purely about the data point itself. -->
+<sparql-query id="observationContext">
+  SELECT ?property ?value WHERE {
+    ?? ?path ?value .
+    FILTER(?path != rdf:type)
+    FILTER NOT EXISTS {
+      ?set cube:observation ?? .
+      ?cube cube:observationSet ?set ;
+            cube:observationConstraint/sh:property ?dim .
+      ?dim sh:path ?path .
+      { ?dim a cube:KeyDimension } UNION { ?dim a cube:MeasureDimension }
+    }
+    BIND(?path AS ?property)
+  } LIMIT 200
+</sparql-query>
+
+{{ define "pageContent" }}
+<div>
+
+  <p class="text-secondary">{{ tHTML "type.observation.anObservationIs" "An <strong>Observation</strong> is a single data point of a cube: one combination of key dimensions (which canton, which year) together with the values measured for it. Its labels and units come from the owning cube's shape, not from the observation itself." }}</p>
+
+  <div class="row">
+    <!-- Key dimensions first: they answer "what is this a measurement of?",
+         which has to be settled before the numbers mean anything. -->
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.keyDimensions
+            "id" "keyDimensions"
+            "title" (t "card.keyDimensions" "Key Dimensions")
+            "icon" "ruler") }}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.measures
+            "id" "measures"
+            "title" (t "card.measures" "Measures")
+            "icon" "tag") }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Where this observation sits: the same set ← cube chain as the breadcrumb,
+       so it reuses cubeChain rather than re-querying.
+
+       Hand-rendered instead of going through sparqlGrid, because the generic
+       path labels a link from the IRI's last segment and LINDAS observation
+       sets are unlabelled IRIs ending in "/observation/" — which renders as the
+       useless word "observation". Naming the two links explicitly avoids that. -->
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <div class="card">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i data-lucide="boxes" style="width: 1.5em; height: 1.5em;"></i>
+            <h3 class="card-title mb-0">{{ t "card.partOf" "Part of" }}</h3>
+          </div>
+          <div class="card-body">
+            <div class="datagrid">
+              {{ if .QueryResults.cubeChain.Bindings }}
+                {{ $b := index .QueryResults.cubeChain.Bindings 0 }}
+                {{ $cube := index $b "cube" }}
+                {{ $set := index $b "set" }}
+                {{ if $cube.Value }}
+                  <div class="datagrid-item">
+                    <div class="datagrid-title text-uppercase">{{ t "card.cube" "Cube" }}</div>
+                    <div class="datagrid-content">
+                      <a href="/resource?iri={{ urlquery $cube.Value }}">{{ with (index $b "cubeName").Value }}{{ . }}{{ else }}{{ lastPathSegment $cube.Value }}{{ end }}</a>
+                    </div>
+                  </div>
+                {{ end }}
+                {{ if $set.Value }}
+                  <div class="datagrid-item">
+                    <div class="datagrid-title text-uppercase">{{ t "card.observationSet" "Observation set" }}</div>
+                    <div class="datagrid-content">
+                      <a href="/resource?iri={{ urlquery $set.Value }}">{{ t "type.observation.allObservationsOfThisCube" "All observations of this cube" }}</a>
+                    </div>
+                  </div>
+                {{ end }}
+              {{ end }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.observationContext
+            "id" "observationContext"
+            "title" (t "card.otherProperties" "Other Properties")
+            "icon" "tags") }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Incoming / outgoing connections, for the raw-triples view. Collapsed by
+       default here: the cards above already say everything an observation has,
+       so this is the escape hatch rather than the main event. -->
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

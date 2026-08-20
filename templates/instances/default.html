@@ -7,67 +7,12 @@
 
   {{ template "literals" . }}
 
-  <!-- relationships -->
-  <div class="row">
-
-    <!-- outgoing relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-async id="outgoing">
-          SELECT ?property ?destination ?type WHERE {
-            ?? ?property ?destination .
-            OPTIONAL { ?destination a ?type . }
-            FILTER (isIRI(?destination))
-            FILTER (?property != rdf:type)
-            FILTER (?property != rdfs:subClassOf)
-          } LIMIT 10000
-        </sparql-async>
-        <sparql-columns for="outgoing">
-          <sparql-column var="type" icon></sparql-column>
-        </sparql-columns>
-
-        {{ template "sparqlAsyncTable" (dict
-              "queryId" "outgoing"
-              "iri" .ResourceIRI
-              "title" (t "card.outgoingRelationships" "Outgoing Relationships")
-              "icon" "expand")
-        }}
-      </div>
-    </div>
-
-    <!-- incoming relationships -->
-    <div class="col-lg-6">
-      <div class="mb-3">
-        <sparql-async id="incoming">
-          SELECT ?type ?source ?property WHERE {
-            ?source ?property ?? .
-            FILTER (?property NOT IN (
-              rdf:type,
-              rdfs:subClassOf,
-              schema:rangeIncludes,
-              schema:domainIncludes,
-              rdfs:range,
-              rdfs:domain
-            ))
-            FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
-            FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
-            OPTIONAL { ?source a ?type . }
-          } LIMIT 10000
-        </sparql-async>
-        <sparql-columns for="incoming">
-          <sparql-column var="type" icon></sparql-column>
-        </sparql-columns>
-
-        {{ template "sparqlAsyncTable" (dict
-            "queryId" "incoming"
-            "iri" .ResourceIRI
-            "title" (t "card.incomingRelationships" "Incoming Relationships")
-            "icon" "shrink")
-        }}
-      </div>
-    </div>
-
-  </div>
+  <!-- Incoming / outgoing connections.
+       Shares templates/components/relationships.html with the curated instance
+       templates, so the two tables are defined once. Note this makes them
+       synchronous (LIMIT 1000) rather than the async LIMIT 10000 pair this
+       template previously hand-rolled. -->
+  {{ template "relationships" . }}
 
 </div>
 {{ end }}

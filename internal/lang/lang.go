@@ -29,19 +29,22 @@ const SiteLangHeader = "X-Site-Lang"
 // picker (static/js/language-switcher.js). The server never sets it.
 const CookieName = "site-lang"
 
-// Language is one configured UI language: the code carried on the wire, and the
-// label the picker shows for it. Mirrors config.Language, so this package stays
-// free of a dependency on the config loader.
+// Language is one configured UI language: the code carried on the wire, the
+// compact label the closed picker shows, and the full name its menu shows.
+// Mirrors config.Language, so this package stays free of a dependency on the
+// config loader. Name is optional; Options falls back to Label when it is empty.
 type Language struct {
 	Code  string
 	Label string
+	Name  string
 }
 
 // Option is one rendered entry of the language picker.
 type Option struct {
 	Code     string
-	Label    string
-	Selected bool // true for the language the page is being rendered in
+	Label    string // compact form, shown in the closed topbar control
+	Name     string // full language name, shown in the dropdown menu
+	Selected bool   // true for the language the page is being rendered in
 }
 
 // Set is the configured language set. Build it once at startup with New and
@@ -92,7 +95,11 @@ func New(langs []Language, def string) *Set {
 func (s *Set) Options(active string) []Option {
 	opts := make([]Option, 0, len(s.langs))
 	for _, l := range s.langs {
-		opts = append(opts, Option{Code: l.Code, Label: l.Label, Selected: l.Code == active})
+		name := l.Name
+		if name == "" {
+			name = l.Label
+		}
+		opts = append(opts, Option{Code: l.Code, Label: l.Label, Name: name, Selected: l.Code == active})
 	}
 	return opts
 }

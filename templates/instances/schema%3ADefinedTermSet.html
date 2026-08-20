@@ -1,0 +1,135 @@
+<!-- schema:DefinedTermSet Instance Template — one controlled vocabulary.
+
+     The page for a term set: what it is, who publishes it, and the terms it holds.
+     The member list IS the point of the page, so it is shown eagerly and expanded
+     rather than hidden behind a collapsed card.
+
+     Reached by the 181 sets that have no better template — the 124 TERMDAT sets
+     (TerminologyCollection / Glossary / TerminologyOffice) plus 57 politics and
+     culture vocabularies. skos:ConceptScheme and meta:SharedDimension both rank
+     above schema:DefinedTermSet in type_priority and keep their own templates. -->
+
+{{ template "pageHeader" . }}
+
+<!-- ?property/?value PAIRS via UNION — sparqlGrid needs that shape; parallel
+     OPTIONALs in a wide SELECT render a grid of empty labels.
+
+     ROW LABELS ARE PLAIN ENGLISH LITERALS, NOT TRANSLATION CALLS. The preprocessor
+     lifts the text of a <sparql-query> out of the file BEFORE Go executes the
+     template, so a translation action written inside one is shipped to the endpoint
+     verbatim and comes back as a 400 with an empty card. Only markup OUTSIDE the
+     query element (card titles, <sparql-column label=...>) is translatable. -->
+<sparql-query id="termSetIdentity">
+  SELECT ?property ?value WHERE {
+    { ?? schema:identifier ?value .      BIND("Identifier" AS ?property) }
+    UNION { ?? dct:publisher ?p .        BIND(STR(?p) AS ?value)
+                                         BIND("Publisher" AS ?property) }
+    UNION { ?? schema:validFrom ?value . BIND("Valid from" AS ?property) }
+    UNION { ?? schema:validUntil ?value . BIND("Valid until" AS ?property) }
+    UNION { ?? pav:version ?value .      BIND("Version" AS ?property) }
+    UNION { ?? adms:status ?s .          BIND(STR(?s) AS ?value)
+                                         BIND("Status" AS ?property) }
+    UNION { ?? schema:includedInDataCatalog ?c . BIND(STR(?c) AS ?value)
+                                         BIND("In catalog" AS ?property) }
+    UNION { ?? a ?t . FILTER(?t != schema:DefinedTermSet) BIND(STR(?t) AS ?value)
+                                         BIND("Also typed as" AS ?property) }
+  } LIMIT 100
+</sparql-query>
+
+<!-- All languages at once: these sets are named in the national languages and the
+     set of equivalents is content, not noise. STR(?v) drops the language tag from
+     the VALUE so the grid's groupByValue merges byte-identical strings (name and
+     skos:prefLabel are frequently the same literal). -->
+<sparql-query id="termSetLabels">
+  SELECT ?property ?value WHERE {
+    { ?? schema:name ?v .              BIND(CONCAT("name @", LANG(?v)) AS ?property)        BIND(STR(?v) AS ?value) }
+    UNION { ?? skos:prefLabel ?v .     BIND(CONCAT("prefLabel @", LANG(?v)) AS ?property)   BIND(STR(?v) AS ?value) }
+    UNION { ?? schema:description ?v . BIND(CONCAT("description @", LANG(?v)) AS ?property) BIND(STR(?v) AS ?value) }
+    UNION { ?? skos:definition ?v .    BIND(CONCAT("definition @", LANG(?v)) AS ?property)  BIND(STR(?v) AS ?value) }
+  } LIMIT 200
+</sparql-query>
+
+<!-- The members. NOTE the explicit LIMIT: this query has no "?x a ??" membership
+     triple (membership here is schema:inDefinedTermSet), so sparql.DeriveKeyVar
+     returns "" and the async handler renders it INLINE — the working-set path and
+     its defaultMaxWorkingSet=20000 never apply, and the `max` dict param is
+     ignored. Without a LIMIT in the SPARQL the largest set (TERMDAT ACH, 34,846
+     members) would return unbounded. 50000 covers every set complete, matching
+     the convention in instances/meta%3ASharedDimension.html.
+
+     One row per member: terms are multi-typed and multilingual, so SAMPLE and the
+     MIN-rank name pick collapse what would otherwise be several rows per term.
+     The rank must stay a SINGLE DIGIT — SUBSTR(?picked, 3) strips exactly "N|". -->
+<sparql-async id="termSetMembers">
+  SELECT ?member
+         (SUBSTR(MIN(?ranked_),3) AS ?name)
+         (SAMPLE(?identifier_) AS ?identifier)
+         (GROUP_CONCAT(DISTINCT ?typeName_; separator=", ") AS ?kind)
+  WHERE {
+    ?member schema:inDefinedTermSet ?? .
+    OPTIONAL { ?member schema:name ?nm_ .
+               BIND(IF(lang(?nm_) = visoto:dispLang, 1,
+                    IF(lang(?nm_) = "en", 2,
+                    IF(lang(?nm_) = "", 3, 4))) AS ?rk_)
+               BIND(CONCAT(STR(?rk_), "|", STR(?nm_)) AS ?ranked_) }
+    OPTIONAL { ?member schema:identifier ?identifier_ . }
+    OPTIONAL { ?member a ?t_ .
+               FILTER(?t_ != schema:DefinedTerm)
+               BIND(REPLACE(STR(?t_), "^.*[/#]", "") AS ?typeName_) }
+  }
+  GROUP BY ?member
+  LIMIT 50000
+</sparql-async>
+<sparql-columns for="termSetMembers" order>
+  <sparql-column var="member" label="{{ t "facet.term" "Term" }}" icon></sparql-column>
+  <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}" badge></sparql-column>
+  <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" width="140"></sparql-column>
+</sparql-columns>
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.termSetIdentity
+            "id" "termSetIdentity"
+            "title" (t "card.identity" "Identity")
+            "icon" "fingerprint") }}
+      </div>
+    </div>
+
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.termSetLabels
+            "id" "termSetLabels"
+            "title" (t "card.labels" "Labels & Languages")
+            "icon" "languages") }}
+      </div>
+    </div>
+  </div>
+
+  <!-- The main event: eager and expanded. An empty result auto-collapses itself
+       (see the $collapsed fallback in partials/sparql-table.html), so a set with
+       no members needs no special-casing here. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "termSetMembers"
+            "iri" .ResourceIRI
+            "title" (t "card.terms" "Terms")
+            "icon" "tag")
+        }}
+      </div>
+    </div>
+  </div>
+
+  {{ template "literals" . }}
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

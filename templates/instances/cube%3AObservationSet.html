@@ -2,7 +2,6 @@
 
 <sparql-query id="breadcrumbs"> SELECT ?cube { ?cube cube:observationSet ?? . } </sparql-query>
 {{ define "breadcrumb" }}
-  <li class="breadcrumb-item">{{ tHTML "type.observationSet.observationSets" "<a href=\"/resource?iri=cube:ObservationSet\">Observation Sets</a>" }}</li>
   {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
     <li class="breadcrumb-item">{{ render ((index $binding "cube")) }}</li>
   {{ end }}
@@ -31,44 +30,26 @@
 
     {{ template "literals" . }}
 
-    <!-- A bounded sample of observations, shown as predicate/value pairs.
+    <!-- The set's observations: one row per observation, one column per
+         dimension, exactly as on the owning cube's page.
 
-         Observations carry cube-specific dimension predicates — the ElCom set
-         uses .../dimension/period, /category, /total, /aidfee and so on — so
-         there is no fixed column set that works across sets. Pivoting to
-         predicate/value keeps the table honest for any cube.
+         This replaced a predicate/value pivot of 20 observations. The pivot was
+         honest for any cube but read nothing like a data table — a single
+         observation spread across 11 rows. sparqlCube derives the columns from
+         the cube's SHACL constraint server-side, which is the only way to get
+         them: dimension predicates are per-cube, and SPARQL cannot project a
+         variable named at query time.
 
-         LIMIT 20 observations, not the whole set: this is a sync table, and the
-         largest set holds 748,720 observations. The count metric above states
-         the true size; the full data belongs in the resource page's Data view,
-         which is built for exactly this. A working-set table is not an option
-         here — "?? cube:observation ?obs" is not a class-membership pattern, so
-         BuildWorkingSetQuery cannot rewrite it (see cube:Constraint for the 400
-         that produces). -->
-    <div class="row">
+         The partial accepts this set's IRI directly; /api/cube-table resolves
+         the constraint back through cube:observationSet. Bounds are the
+         partial's own: 15 columns, 1000 observations paged locally. -->
+    <div class="row" id="data">
         <div class="col-lg">
             <div class="mb-3">
-                <sparql-query id="observationSample">
-                    SELECT ?observation ?predicate ?value WHERE {
-                        { SELECT ?observation WHERE { ?? cube:observation ?observation . } LIMIT 20 }
-                        ?observation ?predicate ?value .
-                        FILTER (?predicate != rdf:type)
-                    }
-                </sparql-query>
-                <sparql-columns for="observationSample" order>
-                    <sparql-column var="observation" label="{{ t "facet.observation" "Observation" }}" icon
-                                   filter="text"></sparql-column>
-                    <sparql-column var="predicate" label="{{ t "facet.dimension" "Dimension" }}"
-                                   tip="{{ t "facet.tip.observationPredicate" "The cube dimension this value belongs to. Predicates are cube-specific, so they differ from set to set." }}"
-                                   filter></sparql-column>
-                    <sparql-column var="value" label="{{ t "facet.value" "Value" }}"
-                                   filter="text"></sparql-column>
-                </sparql-columns>
-
-                {{ template "sparqlTable" (dict
-                    "result" .QueryResults.observationSample
-                    "id" "observationSample"
-                    "title" (t "card.observationSample" "Observation Sample")
+                {{ template "sparqlCube" (dict
+                    "id" "observationSetData"
+                    "iri" .ResourceIRI
+                    "title" (t "card.dataPreview" "Data Preview")
                     "icon" "table")
                 }}
             </div>
