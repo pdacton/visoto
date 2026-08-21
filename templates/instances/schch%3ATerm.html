@@ -85,7 +85,7 @@
   SELECT ?domain WHERE { ?? schch:termDomain ?domain . } LIMIT 50
 </sparql-query>
 <sparql-columns for="termDomains">
-  <sparql-column var="domain" label="{{ t "facet.subjectDomain" "Subject domain" }}" icon></sparql-column>
+  <sparql-column var="domain" label="{{ t "facet.subjectDomain" "Subject domain" }}" icon filter></sparql-column>
 </sparql-columns>
 
 <!-- TERMDAT cites the term, its definition and its notes to separate sources.

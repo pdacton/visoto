@@ -35,7 +35,7 @@
           LIMIT 10000
         </sparql-async>
         <sparql-columns for="rdfPropertyInstances">
-          <sparql-column var="type" icon></sparql-column>
+          <sparql-column var="type" icon filter></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict

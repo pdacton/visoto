@@ -99,7 +99,7 @@
   } ORDER BY DESC(?municipalities)
 </sparql-async>
 <sparql-columns for="statsMunicipalitiesPerCanton">
-  <sparql-column var="canton" icon></sparql-column>
+  <sparql-column var="canton" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -184,7 +184,7 @@
   } ORDER BY DESC(?companies)
 </sparql-async>
 <sparql-columns for="statsZefixLegalForms">
-  <sparql-column var="legalForm" icon></sparql-column>
+  <sparql-column var="legalForm" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -270,7 +270,7 @@
   } ORDER BY DESC(?concepts) LIMIT 60
 </sparql-async>
 <sparql-columns for="statsI14yLargest">
-  <sparql-column var="scheme" icon></sparql-column>
+  <sparql-column var="scheme" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -312,7 +312,7 @@
   } ORDER BY DESC(?terms)
 </sparql-async>
 <sparql-columns for="statsSharedDimensions">
-  <sparql-column var="dim" icon></sparql-column>
+  <sparql-column var="dim" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">

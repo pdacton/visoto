@@ -106,7 +106,7 @@
   } ORDER BY DESC(?dangerLevel) ?region
 </sparql-async>
 <sparql-columns for="envFireDanger">
-  <sparql-column var="canton" icon></sparql-column>
+  <sparql-column var="canton" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -147,7 +147,7 @@
   } ORDER BY DESC(xsd:decimal(?waterTemperature))
 </sparql-async>
 <sparql-columns for="envHydroLive">
-  <sparql-column var="water" icon></sparql-column>
+  <sparql-column var="water" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -252,7 +252,7 @@
   } ORDER BY ?group DESC(xsd:decimal(?species))
 </sparql-async>
 <sparql-columns for="envRedList">
-  <sparql-column var="group" icon group></sparql-column>
+  <sparql-column var="group" icon group filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -299,7 +299,7 @@
   } ORDER BY DESC(?year) ?level DESC(xsd:decimal(?megatonnesCO2eq))
 </sparql-async>
 <sparql-columns for="envGreenhouseGases">
-  <sparql-column var="sector" icon></sparql-column>
+  <sparql-column var="sector" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">

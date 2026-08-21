@@ -66,9 +66,26 @@
     }
     OPTIONAL { ?instance schema:identifier ?identifier_ . }
     OPTIONAL { ?instance dct:publisher ?publisher_ . }
+    # rdfs:Class / owl:Class are meta-statements (a few sets are also declared as
+    # classes) and say nothing about the flavour of set, so they are filtered out.
+    #
+    # The type label is picked in the display language. This uses the plain inline
+    # FILTER (same idiom as classes/rdf%3AProperty.html) rather than the MIN-rank
+    # trick used for ?name above: ranking needs a GROUP BY per ?t_, and nesting that
+    # subquery here made the query time out on LINDAS. The inline filter is safe on
+    # THIS column because the multi-label risk is per-type, not per-instance — the
+    # ~10 distinct types here carry at most one label each, so it cannot produce the
+    # "Kupfer, Cuivre" doubling that forced ranking on ?name. If a type ever does
+    # carry several languages, ?kind shows both and the fix is the MIN-rank idiom.
+    #
+    # Falls back to the IRI local name for types with no label at all
+    # (skos:ConceptScheme, version.link/*, hydra:Resource — the LINDAS majority).
     OPTIONAL { ?instance a ?t_ .
-               FILTER(?t_ != schema:DefinedTermSet)
-               BIND(REPLACE(STR(?t_), "^.*[/#]", "") AS ?typeName_) }
+               FILTER(?t_ NOT IN (schema:DefinedTermSet, rdfs:Class, owl:Class))
+               OPTIONAL { ?t_ rdfs:label ?tLabel_ .
+                          FILTER(lang(?tLabel_) = visoto:dispLang || lang(?tLabel_) = "") }
+               BIND(COALESCE(?tLabel_,
+                    REPLACE(STR(?t_), "^.*[/#]", "")) AS ?typeName_) }
   }
   GROUP BY ?instance
   LIMIT 50000

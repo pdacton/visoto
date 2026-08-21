@@ -163,7 +163,7 @@
                 <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}" filter badge></sparql-column>
                 <sparql-column var="property" label="{{ t "facet.property" "Property" }}" filter></sparql-column>
                 <sparql-column var="graph" label="{{ t "facet.graph" "Graph" }}" filter></sparql-column>
-                <sparql-column var="type" icon></sparql-column>
+                <sparql-column var="type" icon filter></sparql-column>
               </sparql-columns>
               {{ template "sparqlAsyncTable" (dict
                     "queryId" "resourceTriples"
@@ -209,7 +209,7 @@
                 } LIMIT 5000
               </sparql-async>
               <sparql-columns for="schemaSubclasses">
-                <sparql-column var="subclass" icon></sparql-column>
+                <sparql-column var="subclass" icon filter></sparql-column>
               </sparql-columns>
 
               <sparql-async id="schemaSuperclasses">
@@ -220,7 +220,7 @@
                 } LIMIT 5000
               </sparql-async>
               <sparql-columns for="schemaSuperclasses">
-                <sparql-column var="superclass" icon></sparql-column>
+                <sparql-column var="superclass" icon filter></sparql-column>
               </sparql-columns>
 
               <sparql-async id="schemaOntology">

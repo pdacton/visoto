@@ -1,6 +1,6 @@
 <!-- JournalArticle Class Template — lists instances of fabio:JournalArticle in an async working-set table -->
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Journal Article{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Journal Article{{ end }}{{ end }}
 
@@ -34,7 +34,7 @@
     </sparql-async>
     <sparql-columns for="journalArticleInstances">
       <sparql-column var="JournalArticle" icon></sparql-column>
-      <sparql-column var="journal" badge></sparql-column>
+      <sparql-column var="journal" badge filter></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

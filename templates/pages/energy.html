@@ -144,7 +144,7 @@
   } ORDER BY xsd:decimal(?total)
 </sparql-async>
 <sparql-columns for="energyCantonPrices">
-  <sparql-column var="canton" icon></sparql-column>
+  <sparql-column var="canton" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -193,7 +193,7 @@
   } ORDER BY DESC(xsd:decimal(?total))
 </sparql-async>
 <sparql-columns for="energyOperatorPrices">
-  <sparql-column var="operator" icon></sparql-column>
+  <sparql-column var="operator" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -247,7 +247,7 @@
   } ORDER BY ?category
 </sparql-async>
 <sparql-columns for="energyProfileSpread">
-  <sparql-column var="category" icon></sparql-column>
+  <sparql-column var="category" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -301,7 +301,7 @@
   } ORDER BY DESC(?year) DESC(xsd:decimal(?terajoules)) LIMIT 400
 </sparql-async>
 <sparql-columns for="energyBalanceCarriers">
-  <sparql-column var="carrier" icon></sparql-column>
+  <sparql-column var="carrier" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">

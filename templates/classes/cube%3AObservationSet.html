@@ -111,7 +111,7 @@
                1975 rows — it is a link, not an identity, hence narrow and unfiltered.
                The Path column beside it is what tells the rows apart. -->
           <sparql-column var="set" label="{{ t "facet.observationSet" "Observation Set" }}" icon width="90"
-                         tip="{{ t "facet.tip.observationSet" "The observation set itself — click through to list its observations." }}"></sparql-column>
+                         tip="{{ t "facet.tip.observationSet" "The observation set itself — click through to list its observations." }}" filter></sparql-column>
           <!-- The identity column: the set's own path (see the BIND above), which is
                what actually differs between rows. Text filter — ~2000 distinct values
                would never infer a checkbox list, and substring matching over the path

@@ -15,6 +15,7 @@
 <sparql-query id="pageSubtitle">
   SELECT ?description WHERE {
     ?? visoto:description ?description .
+    FILTER (lang(?description) = visoto:dispLang || lang(?description) = "")
   } LIMIT 1
 </sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
@@ -244,7 +245,7 @@
           LIMIT 100
         </sparql-async>
         <sparql-columns for="cubeVersions">
-          <sparql-column var="status" badge></sparql-column>
+          <sparql-column var="status" badge filter></sparql-column>
         </sparql-columns>
         {{ template "sparqlAsyncTable" (dict
             "queryId" "cubeVersions"

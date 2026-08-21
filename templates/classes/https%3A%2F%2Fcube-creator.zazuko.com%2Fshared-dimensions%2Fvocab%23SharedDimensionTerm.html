@@ -74,7 +74,7 @@
           LIMIT 50000
         </sparql-async>
         <sparql-columns for="sharedDimensionTermInstances">
-          <sparql-column var="instance" icon></sparql-column>
+          <sparql-column var="instance" icon filter></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict

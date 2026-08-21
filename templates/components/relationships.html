@@ -17,7 +17,7 @@
   } LIMIT 1000
 </sparql-query>
 <sparql-columns for="outgoing">
-  <sparql-column var="destination" icon></sparql-column>
+  <sparql-column var="destination" icon filter></sparql-column>
 </sparql-columns>
 
 <!-- No ?type column: the icon on ?source comes from its rdf:type, which the
@@ -41,7 +41,7 @@
   } LIMIT 1000
 </sparql-query>
 <sparql-columns for="incoming">
-  <sparql-column var="source" icon></sparql-column>
+  <sparql-column var="source" icon filter></sparql-column>
 </sparql-columns>
 
 {{ define "relationships" }}

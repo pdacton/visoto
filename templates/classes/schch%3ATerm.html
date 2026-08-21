@@ -106,7 +106,7 @@
   <!-- No filter: free prose, and a text facet over it would be slower and less
        useful than the term search in the first column. -->
   <sparql-column var="definition" label="{{ t "facet.definition" "Definition" }}"
-                 tip="{{ t "facet.tip.definition" "The definition in the display language, where one exists." }}"></sparql-column>
+                 tip="{{ t "facet.tip.definition" "The definition in the display language, where one exists." }}" root="?instance" path="schema:description" filter="text"></sparql-column>
 </sparql-columns>
 
 {{ define "pageContent" }}
