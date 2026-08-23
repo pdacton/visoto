@@ -56,8 +56,12 @@ func IRITerm(s string) (string, error) {
 var varNameRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 // ValidateVarName reports whether name is safe to splice into a query as "?name".
-// The working-set routes accept a keyVar query param, which is interpolated as a
-// bare variable; without this an arbitrary string would inject query syntax.
+// Callers interpolate variable names as bare "?name" terms, so an unchecked string
+// would inject query syntax. The names now come from template declarations
+// (<sparql-column var=, root=) rather than from request params — the working-set
+// routes used to take keyVar off the query string and no longer do, deriving it
+// from the declared query instead — but they are still spliced, so they are still
+// checked at the point of use.
 func ValidateVarName(name string) error {
 	if !varNameRe.MatchString(name) {
 		return fmt.Errorf("invalid SPARQL variable name %q", name)

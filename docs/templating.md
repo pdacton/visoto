@@ -492,6 +492,51 @@ filter on the membership triple, before the `OPTIONAL`s run.
 Column declarations carry configuration, never content, and are hidden by a rule in
 `static/css/tabler_overrides.css` — they need no `class="d-none"`.
 
+#### When is a declaration actually required? {#filter-declaration-rule}
+
+Filtering works without any declaration far more often than the attribute table
+suggests. One question decides it: **can local filtering answer authoritatively?**
+
+Every column already carries a per-column header filter (the card header's *Show
+column filters*) and feeds the global search box, both of which run over the loaded
+rows. So whenever the loaded rows *are* the whole answer, no declaration is needed to
+filter — a `<sparql-column>` there only adds a `label`, a `tip`, or a `type` override.
+That covers `sparqlTable` always (it is entirely local), and `sparqlAsyncTable`
+whenever its working set holds the whole class.
+
+A declaration starts to matter only for an **incomplete** working set, where the rows
+on screen are a sample and the backend has to be reached for the truth:
+
+| Column shape | Needed |
+|---|---|
+| Plainly projected variable (including `OPTIONAL`, and a plain `BIND`) | Nothing. Column mode filters `?var` directly. |
+| The same, on a large class | `path=` — for cost, not correctness. |
+| `BIND` inside a `UNION` branch | Nothing, and `path=` is impossible — no property path reaches the value. |
+| Aggregate alias (`(GROUP_CONCAT(…) AS ?x)`, `SAMPLE`, `MIN`/`MAX`) | `root=` **and** `path=`. |
+| `COUNT` alias | Cannot be filtered at all — leave it unfiltered, sorting covers the need. |
+| Anchor is not the class-membership key | `root=` (with `path=` alone the key var is sniffed). |
+| Rows hanging off the page resource | `root="??"` (instance mode). |
+
+Two of those rows are worth spelling out.
+
+`path=` **on a large class is a performance declaration.** Without it the column-mode
+enumeration wraps and re-runs the entire base query to collect the dropdown's values;
+with it, values enumerate off the membership triple and the constraint injects as a
+`FILTER EXISTS` right after it, before the `OPTIONAL`s run. Both are correct; only one
+is fast.
+
+**An aggregate alias fails silently without `root=`+`path=`.** The alias exists only in
+the projection, so a `FILTER` naming it raises a per-row evaluation error, every row is
+dropped, and the store answers `200` with an empty result — indistinguishable from *no
+matches*. `internal/column` rejects this combination at startup for exactly that
+reason. Filter the underlying property instead, which is also better semantics on a
+multi-valued path.
+
+Finally, two things stay declaration-only whatever the query shape, because they are
+author intent rather than anything derivable from the data: `label` / `tip`, and a
+`type` override where `type` inference — which reads a single sample binding — would
+guess wrong and offer a range control that silently matches nothing.
+
 ### `sparqlGraph`
 
 Embeds an interactive RDF graph (Graph Explorer, an Ontodia fork) that draws and lays

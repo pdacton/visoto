@@ -641,7 +641,6 @@ func asyncTableHandler(c *gin.Context) {
 		if total > defaultMaxWorkingSet {
 			params["workingSet"] = true
 			params["iri"] = iri
-			params["keyVar"] = keyVar
 			// The fragment's Tabulator data fetches (/api/async-table-data) must
 			// carry the endpoint slug explicitly so the shared cache keys them per
 			// endpoint. This fragment is itself cached keyed by its own ?endpoint=,

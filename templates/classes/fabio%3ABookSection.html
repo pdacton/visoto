@@ -31,8 +31,14 @@
         OPTIONAL { ?section bibo:endPage ?endPage . }
       }
     </sparql-async>
+    <!-- 1180 instances, well under the 20k working-set threshold, so the loaded set
+         is the whole class and local filtering is authoritative — no root=/path=
+         needed here (a bare filter costs nothing and never reaches the backend). -->
     <sparql-columns for="bookSectionInstances">
-      <sparql-column var="BookSection" icon></sparql-column>
+      <sparql-column var="section" icon></sparql-column>
+      <sparql-column var="title" filter="text"></sparql-column>
+      <sparql-column var="creator" filter></sparql-column>
+      <sparql-column var="date" filter></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

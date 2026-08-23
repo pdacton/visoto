@@ -28,8 +28,12 @@
         OPTIONAL { ?figure fabio:hasRepresentation ?representation . }
       }
     </sparql-async>
+    <!-- 423k instances → always a working set, so the filter needs root=/path=.
+         ?representation is the image URL, one per figure — nothing to filter on,
+         so it stays a plain column. -->
     <sparql-columns for="figureInstances">
-      <sparql-column var="Figure" icon></sparql-column>
+      <sparql-column var="figure" icon></sparql-column>
+      <sparql-column var="description" filter="text" root="?figure" path="dc:description"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

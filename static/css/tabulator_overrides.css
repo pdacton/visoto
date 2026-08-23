@@ -523,10 +523,40 @@
 }
 
 /* Scrollable checkbox list inside a select facet. Long values wrap rather than
-   widening the menu past its max-width. */
-.vs-facet-menu .vs-select-menu {
+   widening the menu past its max-width.
+
+   The cap sits on the LIST, not on the enclosing .vs-select-menu: the menu also
+   holds the search box and (Select All), and capping the menu would scroll those
+   two out of reach — the opposite of what they are for. */
+.vs-facet-menu .vs-select-list {
     max-height: 18rem;
     overflow-y: auto;
+}
+
+/* Keeps a one-hit search from collapsing the menu to a sliver as the user types. */
+.vs-facet-menu .vs-select-list:not(:empty) {
+    min-height: 4rem;
+}
+
+.vs-facet-menu .vs-select-search {
+    margin-bottom: 0.375rem;
+}
+
+/* The magnifier is decorative — let clicks through to the input behind it. */
+.vs-facet-menu .vs-select-search .input-icon-addon {
+    pointer-events: none;
+}
+
+.vs-facet-menu .vs-select-search .input-icon-addon svg {
+    width: 0.9em;
+    height: 0.9em;
+}
+
+/* Native search-field affordances clash with the Tabler input; the Escape key
+   handler in faceted-table.js is the clear affordance. */
+.vs-facet-menu .vs-select-q::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .vs-facet-menu .form-check-label {

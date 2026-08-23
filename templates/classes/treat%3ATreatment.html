@@ -25,18 +25,27 @@
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-async id="treatmentInstances">
-      SELECT ?treatment ?title ?creator ?date ?publishedIn ?augmentsTaxonConcept
+      SELECT ?treatment ?title ?creator ?publishedIn ?augmentsTaxonConcept
       WHERE {
         ?treatment rdf:type ?? .
         OPTIONAL { ?treatment dc:title ?title . }
         OPTIONAL { ?treatment dc:creator ?creator . }
-        OPTIONAL { ?treatment dc:date ?date . }
         OPTIONAL { ?treatment treat:publishedIn ?publishedIn . }
         OPTIONAL { ?treatment treat:augmentsTaxonConcept ?augmentsTaxonConcept . }
       }
     </sparql-async>
+    <!-- ?date dropped: neither dc:date nor dct:date is used by this class in LINDAS
+         (measured zero), so the column could only ever render empty.
+
+         871k instances → always a working set, so every filter needs root=/path=. -->
     <sparql-columns for="treatmentInstances">
-      <sparql-column var="Treatment" icon></sparql-column>
+      <sparql-column var="treatment" icon></sparql-column>
+      <!-- All far past the 200-value enumeration cap (711k titles, 61k creators,
+           87k publications, 473k concepts), so text throughout. -->
+      <sparql-column var="title" filter="text" root="?treatment" path="dc:title"></sparql-column>
+      <sparql-column var="creator" filter="text" root="?treatment" path="dc:creator"></sparql-column>
+      <sparql-column var="publishedIn" filter="text" root="?treatment" path="treat:publishedIn"></sparql-column>
+      <sparql-column var="augmentsTaxonConcept" filter="text" root="?treatment" path="treat:augmentsTaxonConcept"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

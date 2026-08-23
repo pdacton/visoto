@@ -232,6 +232,10 @@
 
   // One .form-check checkbox row. muted=true dims the "(no value)" pseudo-option so it
   // reads as distinct from real values. onToggle fires after the box changes.
+  //
+  // The bare label is stashed on row.dataset.label for the value search to match on:
+  // the rendered text carries a " (count)" suffix, and matching against that would let
+  // a digit typed in the search box hit every row through its count.
   function checkRow(value, label, count, muted, onToggle) {
     var row = el('div', 'form-check');
     var input = el('input', 'form-check-input vs-check', { type: 'checkbox' });
@@ -243,6 +247,7 @@
     input.addEventListener('change', onToggle);
     row.appendChild(input);
     row.appendChild(lab);
+    row.dataset.label = label;
     return row;
   }
 
@@ -259,6 +264,147 @@
     row.appendChild(input);
     row.appendChild(lab);
     return row;
+  }
+
+  // ---- select-facet value search + (Select All) -----------------------------
+  //
+  // Both act ONLY on the option rows already loaded into .vs-select-list. The search
+  // is presentation-only: it hides rows, never removes them, so a value selected and
+  // then searched away still reads back from readSelection() — and it never calls
+  // onChange. "(Select All)" carries .vs-check-all rather than .vs-check, which keeps
+  // it out of readSelection()'s selection query for free.
+
+  // Every row (Select All) governs: the enumerated values plus the fixed "(no value)"
+  // pseudo-option, which lives up in the head but counts as an option all the same.
+  // Rows hidden by the search are skipped when visibleOnly is set, which is what
+  // scopes Select All to the visible subset.
+  function optionRows(menu, visibleOnly) {
+    var rows = [];
+    if (!menu) return rows;
+    menu.querySelectorAll('.vs-select-novalue, .vs-select-list .form-check').forEach(function (row) {
+      if (visibleOnly && row.style.display === 'none') return;
+      rows.push(row);
+    });
+    return rows;
+  }
+
+  function rowCheck(row) { return row.querySelector('.vs-check'); }
+
+  // Narrow the option list to rows whose label contains `term` (case-insensitive).
+  // Reads the live search box when term is omitted, so callers that re-render the
+  // list can simply re-apply whatever the user had typed.
+  function filterOptions(menu, term) {
+    if (!menu) return;
+    var box = menu.querySelector('.vs-select-q');
+    var q = (term === undefined ? (box ? box.value : '') : term).trim().toLowerCase();
+    var shown = 0;
+    // The search narrows the VALUE list only. "(no value)" is not a value one can
+    // spell, so it stays put and keeps its place in Select All's scope regardless of
+    // the term — hiding it would strand any member lacking a value behind a search
+    // that cannot name them.
+    menu.querySelectorAll('.vs-select-list .form-check').forEach(function (row) {
+      var hit = !q || String(row.dataset.label || '').toLowerCase().indexOf(q) !== -1;
+      row.style.display = hit ? '' : 'none';
+      if (hit) shown++;
+    });
+    // Distinguish "this facet has no values at all" (handled by renderValues) from
+    // "your search matched none of them".
+    var empty = menu.querySelector('.vs-select-empty');
+    if (empty) empty.style.display = (q && !shown) ? '' : 'none';
+    syncSelectAll(menu);
+  }
+
+  // Check or uncheck every VISIBLE option row. Rows the search has hidden keep their
+  // state, so narrowing the list and hitting Select All is an additive operation.
+  function toggleAll(menu, on) {
+    optionRows(menu, true).forEach(function (row) {
+      var chk = rowCheck(row);
+      if (chk) chk.checked = !!on;
+    });
+    syncSelectAll(menu);
+  }
+
+  // Drive the Select All box from the visible rows: checked when all are selected,
+  // indeterminate when some are.
+  //
+  // Writing `indeterminate` back after every option change is what makes a second
+  // click on a full Select All clear the list: the browser steps a click from
+  // indeterminate to checked, and from checked to unchecked, so the box only ever
+  // reads unchecked once nothing visible is selected.
+  function syncSelectAll(menu) {
+    if (!menu) return;
+    var all = menu.querySelector('.vs-check-all');
+    if (!all) return;
+    var rows = optionRows(menu, true);
+    var sel = 0;
+    rows.forEach(function (row) {
+      var chk = rowCheck(row);
+      if (chk && chk.checked) sel++;
+    });
+    all.checked = rows.length > 0 && sel === rows.length;
+    all.indeterminate = sel > 0 && sel < rows.length;
+    // Nothing to select all of (no values, or the search matched none). Counted off
+    // the VALUE rows, not `rows`: "(no value)" is always present and would otherwise
+    // keep the control alive over an empty list.
+    var visibleValues = menu.querySelectorAll('.vs-select-list .form-check').length &&
+      [].filter.call(menu.querySelectorAll('.vs-select-list .form-check'),
+        function (r) { return r.style.display !== 'none'; }).length;
+    var host = menu.querySelector('.vs-select-all');
+    if (host) host.style.display = visibleValues ? '' : 'none';
+  }
+
+  // The search box + "(Select All)" head of a select facet. Returns a fragment so the
+  // caller appends both in one go; they sit above the "(no value)" row and stay put
+  // while the value list scrolls under them (see .vs-select-head in the CSS).
+  function selectHead(onApply) {
+    var head = document.createDocumentFragment();
+
+    var search = el('div', 'vs-select-search');
+    var icon = el('div', 'input-icon');
+    var addon = el('span', 'input-icon-addon');
+    addon.innerHTML = '<i data-lucide="search"></i>';
+    var box = el('input', 'form-control form-control-sm vs-select-q',
+      { type: 'search', placeholder: vsT('js.facet.searchValues', 'Search…') });
+    icon.appendChild(addon);
+    icon.appendChild(box);
+    search.appendChild(icon);
+    head.appendChild(search);
+
+    // Per-keystroke is fine here — unlike the text FACET control, this only shows and
+    // hides rows that are already loaded. It must never call onApply: typing narrows
+    // the list, it does not change what is selected.
+    box.addEventListener('input', function () { filterOptions(box.closest('.vs-select-menu')); });
+    box.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      // Escape clears a non-empty search first; only an already-empty box falls
+      // through to closing the menu. The menu's capture-phase handler runs first and
+      // defers to this box while it holds text — see onDocKey in headerFormatter.
+      if (box.value) {
+        e.stopPropagation();
+        box.value = '';
+        filterOptions(box.closest('.vs-select-menu'));
+      }
+    });
+
+    var allRow = el('div', 'form-check vs-select-all');
+    var allChk = el('input', 'form-check-input vs-check-all', { type: 'checkbox' });
+    var allLab = el('label', 'form-check-label fw-medium');
+    allLab.textContent = vsT('js.facet.selectAll', '(Select All)');
+    allLab.style.cursor = 'pointer';
+    allLab.addEventListener('click', function () { allChk.click(); });
+    allChk.addEventListener('change', function () {
+      toggleAll(allChk.closest('.vs-select-menu'), allChk.checked);
+      onApply();
+    });
+    allRow.appendChild(allChk);
+    allRow.appendChild(allLab);
+    head.appendChild(allRow);
+    // No divider after Select All: it and "(no value)" are both things it selects,
+    // so a rule between them would imply a split that no longer exists. The single
+    // divider below "(no value)" separates the whole head from the value list.
+
+    if (window.lucide) lucide.createIcons({ nodes: [addon] });
+    return head;
   }
 
   // Build one facet control for a spec. `ctx` = { id, iri, onChange }. Returns a
@@ -292,36 +438,76 @@
       wrap.appendChild(noValueToggle(apply));
 
     } else { // select — a scrollable checkbox list
-      // Scroll cap and width live in CSS (.vs-facet-menu .vs-select-menu).
+      // Scroll cap and width live in CSS (.vs-facet-menu .vs-select-list).
       var menu = el('div', 'vs-select-menu');
       menu.dataset.loaded = '0';
-      // Fixed "(no value)" option — available even before the value list loads.
-      menu.appendChild(checkRow(NO_VALUE, vsT('js.facet.noValue', '(no value)'), 0, true, apply));
-      menu.appendChild(el('div', 'dropdown-divider'));
+      // Every option row re-derives (Select All) before delegating, so ticking the
+      // last unticked one fills the header box and unticking any one drops it to
+      // partial. "(no value)" counts here too — it is one of the rows Select All
+      // sweeps, so it has to be able to un-fill the box like any other.
+      var selectApply = function () { syncSelectAll(menu); apply(); };
+      // The search box and "(Select All)" head the menu and stay pinned; only the
+      // value list below them scrolls.
+      var head = el('div', 'vs-select-head');
+      head.appendChild(selectHead(apply));
+      // Fixed "(no value)" option — available even before the value list loads. It
+      // sits in the head rather than the scrolling list so it stays reachable, but
+      // .vs-select-novalue enrols it in Select All: selecting everything has to mean
+      // everything, members lacking a value included.
+      var noValueRow = checkRow(NO_VALUE, vsT('js.facet.noValue', '(no value)'), 0, true, selectApply);
+      noValueRow.classList.add('vs-select-novalue');
+      head.appendChild(noValueRow);
+      head.appendChild(el('div', 'dropdown-divider'));
+      menu.appendChild(head);
       var listHost = el('div', 'vs-select-list');
       var loading = el('div', 'text-secondary small px-1'); loading.textContent = vsT('js.facet.loading', 'Loading…');
       listHost.appendChild(loading);
       menu.appendChild(listHost);
+      // Shown only when a search matches none of the loaded values.
+      var noHits = el('div', 'text-secondary small px-1 vs-select-empty');
+      noHits.textContent = vsT('js.facet.noMatches', 'No matching values');
+      noHits.style.display = 'none';
+      menu.appendChild(noHits);
       wrap.appendChild(menu);
+      // Nothing to select all of until the values land.
+      syncSelectAll(menu);
       // Lazy-load the enumerated values the first time this control is opened; the
       // table calls loadFacetValues(wrap, ctx) from its header-menu open handler.
-      wrap._loadValues = function () { loadFacetValues(wrap, spec.name, ctx, apply); };
+      wrap._loadValues = function () { loadFacetValues(wrap, spec.name, ctx, selectApply); };
     }
     return wrap;
   }
 
   // Render an enumerated value list ({value,label,count}) into a .vs-select-list.
+  //
+  // The list is rebuilt wholesale, so the head has to be re-synced afterwards: any
+  // term already typed into the search box is re-applied to the fresh rows, and
+  // (Select All) is re-derived from them (filterOptions calls syncSelectAll). Without
+  // this the values would arrive unfiltered under a stale search term.
   function renderValues(list, values, onToggle) {
     if (!list) return;
+    var menu = list.closest ? list.closest('.vs-select-menu') : null;
     list.innerHTML = '';
     if (!values.length) {
       var none = el('div', 'text-secondary small px-1'); none.textContent = vsT('js.facet.noValues', 'No values');
       list.appendChild(none);
+      // "No values" is not an option row, so nothing is selectable: hide the head's
+      // search and Select All rather than offering controls over an empty list.
+      if (menu) {
+        var head = menu.querySelector('.vs-select-search');
+        if (head) head.style.display = 'none';
+        syncSelectAll(menu);
+      }
       return;
     }
     values.forEach(function (v) {
       list.appendChild(checkRow(v.value, v.label, v.count, false, onToggle));
     });
+    if (menu) {
+      var search = menu.querySelector('.vs-select-search');
+      if (search) search.style.display = '';
+      filterOptions(menu);
+    }
   }
 
   // Lazy-load the enumerated values for a select facet into its .vs-select-list.
@@ -479,9 +665,18 @@
         closeMenu();
       }
       function onDocKey(e) {
+        if (e.key !== 'Escape') return;
+        // A select facet's value search takes the first Escape to clear itself, so
+        // the key means "undo my search" before it means "close the menu". This
+        // handler has to make that call itself: it is registered on document in the
+        // CAPTURE phase, so it runs BEFORE the search box's own listener and no
+        // amount of stopPropagation() down there could pre-empt it.
+        var box = menu.querySelector('.vs-select-q');
+        if (box && box.value) return;
         // Escape closes the menu and returns focus to the funnel button, so
         // keyboard users aren't stranded in a detached (body-portaled) subtree.
-        if (e.key === 'Escape') { closeMenu(); btn.focus(); }
+        closeMenu();
+        btn.focus();
       }
       btn.addEventListener('click', function (e) {
         e.preventDefault();
@@ -523,8 +718,14 @@
   // in sparql-table.html) to avoid one backend fetch per control.
   function clearControl(wrap) {
     if (!wrap) return;
-    wrap.querySelectorAll('input[type="checkbox"]').forEach(function (chk) { chk.checked = false; });
-    wrap.querySelectorAll('.vs-min, .vs-max, .vs-text').forEach(function (inp) { inp.value = ''; });
+    wrap.querySelectorAll('input[type="checkbox"]').forEach(function (chk) {
+      chk.checked = false;
+      chk.indeterminate = false; // (Select All) — leaves no partial state behind
+    });
+    wrap.querySelectorAll('.vs-min, .vs-max, .vs-text, .vs-select-q').forEach(function (inp) { inp.value = ''; });
+    // Blanking the search box does not itself un-hide the rows it filtered out.
+    var menu = wrap.querySelector('.vs-select-menu');
+    if (menu) filterOptions(menu);
   }
 
   // Whether a selection actually constrains anything.
