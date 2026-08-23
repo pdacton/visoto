@@ -22,10 +22,9 @@
   <!-- Instances of schema:Person -->
   <div class="mb-3">
     <sparql-async id="personInstances">
-      SELECT ?type ?person ?givenName ?familyName ?gender ?email ?telephone
+      SELECT ?person ?givenName ?familyName ?gender ?email ?telephone
       WHERE {
-        BIND (?? AS ?type)
-        ?person rdf:type ?type .
+        ?person a ?? .
         OPTIONAL { ?person schema:givenName ?givenName . }
         OPTIONAL { ?person schema:familyName ?familyName . }
         OPTIONAL { ?person schema:gender ?gender . }
@@ -34,8 +33,18 @@
       }
       LIMIT 20000
     </sparql-async>
+    <!-- The icon sits on ?person, the column the reader actually scans. It used to
+         sit on a projected ?type bound by BIND(?? AS ?type) — the same class on
+         every row, so the column carried no information and (unlike Canton, which
+         marks its equivalent hidden) still showed a bare unfilterable header.
+         Dropping it also lets the membership triple be written "?person a ??", which
+         is what DeriveKeyVar looks for; "?s a schema:Person" returns the same 12291
+         instances as the old rdf:type form. No filter declarations: 12291 is well
+         inside the 20000 working-set cap, so the set always loads complete and the
+         built-in header filters and search box already answer authoritatively. -->
     <sparql-columns for="personInstances">
-      <sparql-column var="type" icon></sparql-column>
+      <sparql-column var="person" icon></sparql-column>
+      <sparql-column var="gender" icon></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

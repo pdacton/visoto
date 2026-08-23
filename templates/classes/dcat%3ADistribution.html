@@ -23,16 +23,21 @@
     <div class="col-lg">
       <div class="mb-3">
         <sparql-async id="dcatDistributionInstances">
-          SELECT ?type ?instance ?identifier ?format ?license WHERE {
-            BIND (?? AS ?type)
-            ?instance (rdf:type|owl:type) ?type .
+          SELECT ?instance ?identifier ?format ?license WHERE {
+            ?instance a ?? .
             OPTIONAL { ?instance dct:identifier ?identifier . }
             OPTIONAL { ?instance dct:format ?format . }
             OPTIONAL { ?instance dct:license ?license . }
           } LIMIT 50000
         </sparql-async>
+        <!-- Icon moved onto ?instance; the old ?type column was BIND(?? AS ?type),
+             identical on every row and left with a bare unfilterable header. The
+             plain "?instance a ??" form also gives DeriveKeyVar a key var, and is
+             lossless here — the owl:type leg adds nothing ("?s a dcat:Distribution"
+             returns the same 146 instances). No filter declarations needed: 146 rows
+             always load complete, so local filtering is already authoritative. -->
         <sparql-columns for="dcatDistributionInstances">
-          <sparql-column var="type" icon></sparql-column>
+          <sparql-column var="instance" icon></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict
