@@ -497,12 +497,20 @@ Column declarations carry configuration, never content, and are hidden by a rule
 Filtering works without any declaration far more often than the attribute table
 suggests. One question decides it: **can local filtering answer authoritatively?**
 
-Every column already carries a per-column header filter (the card header's *Show
-column filters*) and feeds the global search box, both of which run over the loaded
-rows. So whenever the loaded rows *are* the whole answer, no declaration is needed to
-filter — a `<sparql-column>` there only adds a `label`, a `tip`, or a `type` override.
-That covers `sparqlTable` always (it is entirely local), and `sparqlAsyncTable`
-whenever its working set holds the whole class.
+Whenever the loaded rows *are* the whole answer, **every column gets a funnel
+automatically** — its control inferred from the data (a select for a small controlled
+vocabulary, a range for numbers and dates, a text box otherwise) — and it filters those
+rows locally. Columns also feed the global search box, and Tabulator's own per-column
+input row is still there behind the card menu's *Show column filters*. So no declaration
+is needed to filter at all: a `<sparql-column>` there only adds a `label`, a `tip`, a
+`type` override, or a pinned control. That covers `sparqlTable` always (it is entirely
+local), and `sparqlAsyncTable` whenever its working set holds the whole class.
+
+The automatic funnel is deliberately withheld on an **incomplete** working set. An
+undeclared column has no `path=`, so its funnel could only ever filter the loaded
+sample while appearing to filter the whole class — so instead of offering one, the
+console names the column and asks for a declaration. Declared columns are unaffected:
+they keep their funnel and their backend tier everywhere.
 
 A declaration starts to matter only for an **incomplete** working set, where the rows
 on screen are a sample and the backend has to be reached for the truth:

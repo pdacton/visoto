@@ -350,6 +350,62 @@
       });
       facetByVar = {};
       facetSpecs.forEach(function (s) { facetByVar[s.name] = s; });
+      // The raw declarations by var, so a column that needs its control inferred can
+      // be re-resolved from its own declaration rather than from a bare stub.
+      var declDecls = {};
+      columnDecls.forEach(function (d) { declDecls[d.name] = d; });
+      // Every column gets a funnel, declared or not — EXCEPT where the loaded rows are
+      // only a sample of the class. An undeclared column has no path=, so its funnel
+      // can only ever filter what is loaded: FACET_FOR is empty unless some column
+      // carries a DECLARED filter (async_index.go), and faceted_table.go rejects
+      // undeclared vars. On a complete set that is the whole answer; on an incomplete
+      // one it would quietly answer from a subset, so the funnel is withheld there and
+      // the template writer is told what to declare instead.
+      //
+      // CFG.complete rather than wsBrowseComplete: this runs from the inline init
+      // BEFORE that variable is initialized (var-hoisted to undefined), which would
+      // read every complete table as a sample. It is the same server value
+      // wsBrowseComplete is seeded from, and is available from the start.
+      var sampleOnly = WORKING_SET && !CFG.complete;
+      (vars || []).forEach(function (varName) {
+        // The test is "carries no filter CONTROL", not "carries no declaration": a
+        // column declared only for its label, tip or icon is in the same position as
+        // an undeclared one, and denying it a funnel for having been named would be
+        // arbitrary (schema:Person's ?gender is declared `icon` and has two distinct
+        // values — a textbook select). A declared filter always wins.
+        var declared = facetByVar[varName];
+        if (declared && declared.control && declared.control !== 'none') return;
+        if (sampleOnly) {
+          console.warn('column "' + varName + '" has no filter and this table\'s ' +
+            'working set is incomplete — it holds a sample of the class, so an ' +
+            'undeclared column can only filter the loaded rows. Add <sparql-column ' +
+            'var="' + varName + '" filter path="…"> to filter the full class.');
+          return;
+        }
+        // Icon columns are NOT skipped. An icon cell still holds an IRI, and a select
+        // funnel over IRIs lists their labels — ?gender and ?canton are icon columns
+        // and both make good facets. The degenerate case, an icon on the row's own
+        // identity where every value is unique, needs no rule of its own: inferControl
+        // sends anything past 200 distinct IRIs to a text box, which is right for it.
+        // (Position cannot stand in for identity here — 14 icon columns across these
+        // templates are not the first projected var, several tables leading with a
+        // hidden ?type instead.)
+        //
+        // Resolve the EXISTING declaration when there is one, so label/tip/icon/width
+        // survive; only the absent filter kind is filled in from the data.
+        var base = declDecls[varName] || { name: varName };
+        var spec = window.VisotoFacets.resolveColumn(
+          Object.assign({}, base, { filter: 'auto' }), probeColumn(rows, varName));
+        if (declared) {
+          // Replace the earlier spec in place rather than pushing a duplicate.
+          for (var i = 0; i < facetSpecs.length; i++) {
+            if (facetSpecs[i].name === varName) { facetSpecs[i] = spec; break; }
+          }
+        } else {
+          facetSpecs.push(spec);
+        }
+        facetByVar[varName] = spec;
+      });
       // Warn (dev aid) about a declaration whose var isn't a column: it has nowhere
       // to live — no header to title, explain or hang a control off — so it is
       // silently skipped otherwise.
