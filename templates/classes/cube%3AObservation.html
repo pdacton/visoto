@@ -1,0 +1,222 @@
+<!-- cube:Observation Class Template — a single data point inside a cube.
+     Contrast with cube%3ACube.html, the catalog of ~2000 cubes: that table is
+     INLINE (whole class fits in one fetch, every filter local). This one cannot
+     be. There are ~13.2M observations, so the table is WORKING-SET: the
+     membership triple is written "?observation a ??" (what DeriveKeyVar looks
+     for), one bounded fetch loads 20000 rows, and the filters below are
+     backend-anchored with root=/path= so they re-query the full 13.2M rather
+     than the loaded slice. -->
+
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  <p class="text-secondary">{{ tHTML "type.observation.anObservationIs" "An <strong>Observation</strong> is one data point in a <a href=\"/resource?iri=https%3A%2F%2Fcube.link%2FCube\">Cube</a> — a single row of a statistical dataset. Unlike most classes, observations share almost no properties: each cube defines its <em>own</em> dimension predicates, so the measured values live under IRIs like <code>…/dimension/total</code> and differ from cube to cube. Only <code>cube:observedBy</code> is universal, which is why the table below identifies observations by publisher and parent cube rather than by a name — no observation carries one." }}</p>
+
+  {{ template "literals" . }}
+
+  <!-- Metric strip. Counts are queried live (LINDAS counts drift).
+
+       The two anomaly tiles name the co-type explicitly (a schema:Person, a
+       cube:Cube) instead of the general "?o a ?t FILTER(?t != cube:Observation)"
+       form. That is not cosmetic: the general shape has to walk all 13.2M
+       observations and takes ~36s, while naming the rare class lets the planner
+       start from the small side and answer in ~0.2s. -->
+  <sparql-async id="observationTotal">
+    SELECT (COUNT(?o) AS ?count) WHERE { ?o a cube:Observation . }
+  </sparql-async>
+  <sparql-async id="observationSets">
+    SELECT (COUNT(?set) AS ?count) WHERE { ?set a cube:ObservationSet . }
+  </sparql-async>
+  <sparql-async id="observationPersons">
+    SELECT (COUNT(?o) AS ?count) WHERE {
+      ?o a schema:Person ; a cube:Observation .
+    }
+  </sparql-async>
+  <sparql-async id="observationCubes">
+    SELECT (COUNT(?o) AS ?count) WHERE {
+      ?o a cube:Cube ; a cube:Observation .
+    }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "observationTotal"
+        "title" (t "card.observations" "Observations")
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
+        "icon" "/static/img/resource/Observation.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "observationSets"
+        "title" (t "card.observationSets" "Observation Sets")
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservationSet"
+        "icon" "/static/img/resource/ObservationSet.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "observationPersons"
+        "title" (t "card.alsoTypedPerson" "Also typed Person")
+        "href" "/resource?iri=http%3A%2F%2Fschema.org%2FPerson"
+        "icon" "/static/img/resource/Person.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "observationCubes"
+        "title" (t "card.alsoTypedCube" "Also typed Cube")
+        "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
+        "icon" "/static/img/resource/Cube.svg") }}
+  </div>
+
+  <!-- The main table: all ~13.2M observations.
+
+       Only three things can be shown for an arbitrary observation, because the
+       measured values live under per-cube dimension predicates that differ from
+       row to row and so cannot be projected into shared columns:
+         ?observation — the IRI (its path segments encode the dimension key),
+         ?observedBy  — cube:observedBy, the one property with 100% coverage,
+         ?cube        — reached by walking back up the observation set.
+
+       The ?cube join is an OPTIONAL over two inverse steps. It stays fast (20000
+       rows in ~1.2s) only because the bounded IRI subquery is not wrapped around
+       the rest of the pattern.
+
+       Write the membership as a PLAIN "?observation a ??" triple and let
+       BuildWorkingSetQuery insert that capped subquery itself. Writing the
+       "{ SELECT ?observation ... LIMIT 20000 }" subquery out by hand here looks
+       equivalent but breaks the page: the builder's fast path matches on the bare
+       membership triple, misses it, and falls back to wrapping the whole query in
+       "SELECT * WHERE { … }" — which puts this template's PREFIX line inside a
+       group and makes the endpoint reject the request with a 400. -->
+  <div class="mb-3">
+    <sparql-async id="observationInstances">
+      SELECT ?observation ?observedBy ?cube WHERE {
+        ?observation a ?? .
+        ?observation cube:observedBy ?observedBy .
+        OPTIONAL {
+          ?set cube:observation ?observation .
+          ?cube cube:observationSet ?set .
+        }
+      }
+    </sparql-async>
+
+    <!-- Backend-anchored filters. 13.2M rows do not fit the 20000 working-set
+         cap, so the loaded slice is NOT authoritative and a local-only filter
+         would silently answer from it. root="?observation" + path= let each
+         funnel re-query the full class through /api/faceted-table.
+
+         Both paths are the same ones the query walks, so a filter and the
+         displayed value can never disagree. ?cube's path is the inverse of the
+         OPTIONAL above; it is a valid FILTER EXISTS anchor (verified ~0.17s). -->
+    <sparql-columns for="observationInstances" order>
+      <!-- Text, not a checkbox list: 13.2M distinct IRIs would never infer one.
+           The IRI is the only identity an observation has — it carries no label,
+           so the cell shows the IRI itself and substring search over it is the
+           useful test (the path segments encode year / dimension keys).
+
+           No root=/path= here, unlike the two columns below: the value IS the
+           root, so there is nothing to walk to reach it and root= without a path
+           is rejected at startup. That makes this COLUMN mode, which filters the
+           projected variable directly — the right mode for an identity column. -->
+      <sparql-column var="observation" icon
+                     label="{{ t "facet.observation" "Observation" }}"
+                     tip="{{ t "facet.tip.observationIri" "The observation IRI; its path segments encode the dimension values that identify this data point." }}"
+                     filter="text"></sparql-column>
+      <!-- Text, not the checkbox list the ~20 publishers would suggest. Building
+           that list means enumerating values across the whole class, and the
+           enumeration query (?o a cube:Observation ; cube:observedBy ?v, grouped
+           with a per-value COUNT) is a full scan of all 13.2M observations: ~66s,
+           past the 60s timeout, so the funnel came back empty. Text search needs
+           no enumeration — it matches the publisher's label and anchors on the
+           same path, which stays fast. -->
+      <sparql-column var="observedBy" icon
+                     label="{{ t "facet.observedBy" "Observed by" }}"
+                     tip="{{ t "facet.tip.observedBy" "Organization that published the observation (cube:observedBy)." }}"
+                     root="?observation" path="cube:observedBy" filter="text"></sparql-column>
+      <!-- ~1982 observation sets, so ~2000 parent cubes: too many for a usable
+           checkbox list, and the cell shows the cube's resolved title, so text
+           matching on that title is what a reader wants. -->
+      <sparql-column var="cube" icon
+                     label="{{ t "facet.cube" "Cube" }}"
+                     tip="{{ t "facet.tip.parentCube" "The cube this observation belongs to, reached through its observation set." }}"
+                     root="?observation" path="^cube:observation/^cube:observationSet" filter="text"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "observationInstances"
+        "iri" .ResourceIRI
+        "title" (t "card.observations" "Observations")
+        "icon" "circle-dot")
+    }}
+  </div>
+
+  <!-- Multi-typed observations. Both groups are modelling quirks in the LINDAS
+       fch/apg (lobby register) graphs rather than ordinary data points, and they
+       look nothing like a normal observation, so they get their own small table
+       instead of polluting the main one:
+
+         • schema:Person  (~1516) — real people, and the ONLY observations that
+           carry schema:name/givenName/familyName/birthDate/gender. A normal
+           observation has no name at all (0 of 50000 sampled had schema:name).
+         • cube:Cube      (2)     — cubes mis-tagged as observations; they carry
+           schema:description, cube:observationSet and cube:observationConstraint,
+           i.e. cube metadata, not measured values.
+
+       Small and bounded (~1518 rows), so this table is INLINE: the class is
+       written out rather than "a ??", nothing reaches /api/faceted-table, and
+       every filter runs locally over the loaded rows. -->
+  <div class="mb-3">
+    <sparql-async id="observationAnomalies">
+      SELECT ?observation ?coType ?name ?observedBy WHERE {
+        {
+          ?observation a schema:Person ; a cube:Observation .
+          BIND("schema:Person" AS ?coType)
+        } UNION {
+          ?observation a cube:Cube ; a cube:Observation .
+          BIND("cube:Cube" AS ?coType)
+        }
+        OPTIONAL { ?observation schema:name ?name . }
+        OPTIONAL { ?observation cube:observedBy ?observedBy . }
+      }
+      ORDER BY ?coType ?name
+      LIMIT 5000
+    </sparql-async>
+
+    <sparql-columns for="observationAnomalies" order>
+      <sparql-column var="observation" icon
+                     label="{{ t "facet.observation" "Observation" }}"
+                     tip="{{ t "facet.tip.observation" "The multi-typed resource — click through to see its real properties." }}"
+                     filter="text"></sparql-column>
+      <!-- Derived by BIND, so no property path to declare. Two values → checkbox list. -->
+      <sparql-column var="coType" badge
+                     label="{{ t "facet.additionalType" "Also typed as" }}"
+                     tip="{{ t "facet.tip.additionalType" "The second rdf:type this resource carries besides cube:Observation." }}"
+                     filter width="140"></sparql-column>
+      <sparql-column var="name" label="{{ t "facet.name" "Name" }}"
+                     tip="{{ t "facet.tip.nameAnomaly" "Only these multi-typed resources carry a name; ordinary observations have none." }}"
+                     path="schema:name" filter="text"></sparql-column>
+      <sparql-column var="observedBy" icon
+                     label="{{ t "facet.observedBy" "Observed by" }}"
+                     tip="{{ t "facet.tip.observedBy" "Organization that published the observation (cube:observedBy)." }}"
+                     path="cube:observedBy" filter></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "observationAnomalies"
+        "title" (t "card.multiTypedObservations" "Multi-typed Observations")
+        "icon" "alert-triangle"
+        "collapsed" true)
+    }}
+  </div>
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}
