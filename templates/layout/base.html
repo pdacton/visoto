@@ -327,6 +327,18 @@
     <script src="https://unpkg.com/@tabler/core@1.4.0/dist/js/tabler.js" integrity="sha384-+L11I0K/7niuERIzrVf6fiTapgkBs8Nl5jnFIvMxDbjizGkKfqBOxjC3HkTMVAq5" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
     <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.5.2/dist/js/tabulator.min.js" integrity="sha384-ZlfxHB5fIn8MOAuKJe8YBMi7snQXYvhy+0b3K4rGBBY2UvrJwho2jciJ5NKt0WtC" crossorigin="anonymous"></script>
+    <!-- SheetJS is pinned at 0.18.5 because that is the last version ever
+         published to npm (2022-03-24); the project moved distribution to
+         cdn.sheetjs.com afterwards. 0.18.5 carries CVE-2023-30533 (prototype
+         pollution, fixed 0.19.3) and CVE-2024-22363 (ReDoS, fixed 0.20.2).
+         Both are in the *parser*. Nothing here parses a spreadsheet: this
+         library is loaded only so Tabulator's table.download("xlsx", ...) in
+         sparql-table.js can write one, and the single file input on the site
+         (topbar.html) accepts RDF formats only. So neither CVE is reachable,
+         but an audit tool will still flag the version.
+         To move off it, take the tarball from https://cdn.sheetjs.com/, host
+         it under /static or re-point this tag, and recompute the hash with
+         `openssl dgst -sha384 -binary <file> | openssl base64 -A`. -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/wunderbaum@0.14.1/dist/wunderbaum.umd.min.js" integrity="sha384-PXnlsX9aLAfpCyM4xQFMMm2hDxkXhCG4ec5Fqk2wf2eDGCph7+rc5y9cp21ykCw2" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.12.0/highlight.min.js" integrity="sha384-wjfDDhOPPdjtva8vWBhWeVprSpmxisEu5aYT3q1JyACqXpdKpo3PWZTMVq24MBix" crossorigin="anonymous"></script>

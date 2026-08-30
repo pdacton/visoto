@@ -1,0 +1,42 @@
+# CI already assumes Dependabot runs against this repo (see the concurrency
+# comment in workflows/ci.yml), but no configuration existed, so nothing was
+# ever opened. Everything below drifted far enough to need a manual sweep.
+#
+# Not covered: the frontend libraries. They are CDN <script>/<link> tags
+# pinned with SRI hashes in templates/layout/base.html, and there is no
+# package.json for Dependabot to read, so those stay a manual job. The
+# comment above the first tag in that file records how to recompute a hash.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      # golang.org/x/* move together and are almost always safe; one PR for
+      # the set keeps the queue readable.
+      golang-x:
+        patterns:
+          - golang.org/x/*
+      minor-and-patch:
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns:
+          - "*"
+
+  # Tracks both stages of the Dockerfile: the golang builder and the alpine
+  # runtime. golang:1.25-alpine already floats across patch releases, so in
+  # practice this is what keeps the alpine runtime base current.
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
