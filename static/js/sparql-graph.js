@@ -48,7 +48,7 @@
     // The graph-explorer bundle is NOT part of the global base layout (only /ontodia
     // loads it inline). Inject it once here and initialize once it's ready, so multiple
     // partial instances share a single script load.
-    var GE_SRC = 'https://cdn.jsdelivr.net/npm/graph-explorer@1.3.0/dist/graph-explorer-full.min.js';
+    var GE_SRC = 'https://cdn.jsdelivr.net/npm/graph-explorer@2.1.0/dist/graph-explorer-full.min.js';
 
     function whenGraphExplorerReady(cb) {
       // Ensure the single shared loader script exists (inject once, deduped by marker).
@@ -184,8 +184,16 @@
       class StandardTemplateWithIconUrl extends window.GraphExplorer.StandardTemplate {
         render() {
           var url = ICONS.resolve(this.props.iri || '', [], AVAILABLE_ICONS);
-          if (url) this.props = Object.assign({}, this.props, { iconUrl: url });
-          return super.render();
+          if (!url) return super.render();
+          // React 19 errors on a component reassigning this.props during render, so
+          // swap the patched props in only for the super.render() call and restore.
+          var original = this.props;
+          this.props = Object.assign({}, original, { iconUrl: url });
+          try {
+            return super.render();
+          } finally {
+            this.props = original;
+          }
         }
       }
 

@@ -201,26 +201,56 @@
                 {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
               </div>
 
+              <!-- Sub/superclasses are walked TRANSITIVELY (rdfs:subClassOf+), not one
+                   level as before: a class several levels down showed a single parent
+                   and no path to the root, which is the one thing a hierarchy card is
+                   for. ?depth counts the steps so the table can be read as a path —
+                   sorting by it puts the immediate parent first and the root last.
+
+                   Depth is computed with a second path expression rather than a
+                   counter (SPARQL 1.1 property paths cannot report their own length):
+                   the number of classes BETWEEN ?? and the ancestor, inclusive of the
+                   ancestor. That is one COUNT subquery per row, hence the LIMIT 200 —
+                   these hierarchies are tens of classes deep at most, and a runaway
+                   cyclic subClassOf graph must not turn this into a cross product.
+
+                   No sampling guard here (unlike the profile/relationship queries
+                   below): this walks the CLASS graph, which is small even on LINDAS,
+                   never the instance data. -->
               <sparql-async id="schemaSubclasses">
-                SELECT ?subclass ?description WHERE {
-                  ?subclass rdfs:subClassOf ?? .
+                SELECT ?subclass ?depth ?description WHERE {
+                  ?subclass rdfs:subClassOf+ ?? .
+                  {
+                    SELECT ?subclass (COUNT(?mid) AS ?depth) WHERE {
+                      ?subclass rdfs:subClassOf+ ?mid .
+                      ?mid rdfs:subClassOf* ?? .
+                    } GROUP BY ?subclass
+                  }
                   OPTIONAL { ?subclass visoto:description ?description .
                     FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
-                } LIMIT 5000
+                } ORDER BY ?depth ?subclass LIMIT 200
               </sparql-async>
               <sparql-columns for="schemaSubclasses">
                 <sparql-column var="subclass" icon filter></sparql-column>
+                <sparql-column var="depth" label="{{ t "facet.depth" "Depth" }}" badge filter></sparql-column>
               </sparql-columns>
 
               <sparql-async id="schemaSuperclasses">
-                SELECT ?superclass ?description WHERE {
-                  ?? rdfs:subClassOf ?superclass .
+                SELECT ?superclass ?depth ?description WHERE {
+                  ?? rdfs:subClassOf+ ?superclass .
+                  {
+                    SELECT ?superclass (COUNT(?mid) AS ?depth) WHERE {
+                      ?? rdfs:subClassOf+ ?mid .
+                      ?mid rdfs:subClassOf* ?superclass .
+                    } GROUP BY ?superclass
+                  }
                   OPTIONAL { ?superclass visoto:description ?description .
                     FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
-                } LIMIT 5000
+                } ORDER BY ?depth ?superclass LIMIT 200
               </sparql-async>
               <sparql-columns for="schemaSuperclasses">
                 <sparql-column var="superclass" icon filter></sparql-column>
+                <sparql-column var="depth" label="{{ t "facet.depth" "Depth" }}" badge filter></sparql-column>
               </sparql-columns>
 
               <sparql-async id="schemaOntology">
@@ -240,6 +270,71 @@
               </sparql-async>
               <sparql-columns for="schemaOntology">
                 <sparql-column var="subject" icon></sparql-column>
+              </sparql-columns>
+
+              <!-- Property profile: which predicates actually OCCUR on instances of
+                   this class, as opposed to the ones the ontology DECLARES (that is
+                   schemaOntology, below). The two routinely disagree on LINDAS, where
+                   much of the data has no ontology at all, and the disagreement is the
+                   informative part.
+
+                   The inner LIMIT 1000 is load-bearing, not a nicety: an ungrouped
+                   ?s a ?? ; ?property ?o over cube:Observation is 13M subjects and
+                   times out. Bounding the subject set first is the same shape
+                   schemaOntology and schemaShacl already use. It makes the counts a
+                   SAMPLE, which is why the card title says so — ?uses is "in this
+                   sample", never "in the class".
+
+                   ?kind separates literal from IRI predicates, which is what tells you
+                   whether a property is an attribute or a relationship; ?example is a
+                   sampled value so the column means something without drilling in.
+
+                   The class is bound with BIND(?? AS ?class) rather than written as
+                   "?s a ??" DELIBERATELY. A literal "?var a ??" is what DeriveKeyVar
+                   (internal/sparql/paging.go) looks for to classify a query as a
+                   class-instance TABLE, and the async-table handler then rewrites it
+                   into a working-set query — replacing this subquery with its own cap
+                   and stripping the trailing LIMIT, which around a GROUP BY produces
+                   SPARQL the endpoint rejects with a 400. This is an aggregate over a
+                   class, not a table of its instances, so it must not be paginated. -->
+              <sparql-async id="schemaPropertyProfile">
+                SELECT ?property ?kind (COUNT(*) AS ?uses) (COUNT(DISTINCT ?s) AS ?subjects) (SAMPLE(?o) AS ?example) WHERE {
+                  {
+                    SELECT ?s WHERE { BIND (?? AS ?class) ?s a ?class } LIMIT 1000
+                  }
+                  ?s ?property ?o .
+                  BIND(IF(isLiteral(?o), "literal", "iri") AS ?kind)
+                } GROUP BY ?property ?kind ORDER BY DESC(?uses) LIMIT 1000
+              </sparql-async>
+              <sparql-columns for="schemaPropertyProfile">
+                <sparql-column var="property" icon filter></sparql-column>
+                <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}" badge filter></sparql-column>
+              </sparql-columns>
+
+              <!-- Class-level relationships: the class IRI itself almost never has
+                   outgoing edges, so the useful question is aggregated one level up —
+                   which OTHER classes do instances of this class point at, over which
+                   predicate. This is the tabular, countable, sortable companion to the
+                   schemaGraph diagram at the top of this view.
+
+                   Same sampled-subject guard, same BIND-not-"?s a ??" reason as the
+                   profile above, and the same caveat. rdf:type is excluded because
+                   every row would otherwise be dominated by the class's own type
+                   triple, which the page already states. -->
+              <sparql-async id="schemaClassRelations">
+                SELECT ?property ?targetClass (COUNT(*) AS ?edges) (COUNT(DISTINCT ?s) AS ?subjects) WHERE {
+                  {
+                    SELECT ?s WHERE { BIND (?? AS ?class) ?s a ?class } LIMIT 1000
+                  }
+                  ?s ?property ?o .
+                  FILTER (isIRI(?o))
+                  FILTER (?property != rdf:type)
+                  ?o a ?targetClass .
+                } GROUP BY ?property ?targetClass ORDER BY DESC(?edges) LIMIT 1000
+              </sparql-async>
+              <sparql-columns for="schemaClassRelations">
+                <sparql-column var="property" icon filter></sparql-column>
+                <sparql-column var="targetClass" icon filter></sparql-column>
               </sparql-columns>
 
               <sparql-async id="schemaShacl">
@@ -306,6 +401,32 @@
                           "title" (t "card.shapeInformationSHACL" "Shape information (SHACL)")
                           "icon" "shapes"
                           "collapsed" true
+                          "trigger" "showSchema") }}
+                  </div>
+                </div>
+              </div>
+
+              <!-- The two derived-from-data cards. Both titles say "sampled" because
+                   their counts come from the bounded subject set, not the whole class;
+                   dropping that word would turn a sample into a claim about the data. -->
+              <div class="row">
+                <div class="col-lg-6">
+                  <div class="mb-3">
+                    {{ template "sparqlAsyncTable" (dict
+                          "queryId" "schemaPropertyProfile"
+                          "iri" .ResourceIRI
+                          "title" (t "card.propertyProfile" "Properties used by instances (sampled)")
+                          "icon" "tags"
+                          "trigger" "showSchema") }}
+                  </div>
+                </div>
+                <div class="col-lg-6">
+                  <div class="mb-3">
+                    {{ template "sparqlAsyncTable" (dict
+                          "queryId" "schemaClassRelations"
+                          "iri" .ResourceIRI
+                          "title" (t "card.classRelations" "Related classes (sampled)")
+                          "icon" "share-2"
                           "trigger" "showSchema") }}
                   </div>
                 </div>

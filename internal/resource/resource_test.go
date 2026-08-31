@@ -1,6 +1,8 @@
 package resource
 
 import (
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"hutzli.org/visoto/internal/config"
@@ -148,5 +150,45 @@ func TestNamedGraphsQuery(t *testing.T) {
 				t.Errorf("Query mismatch:\n  got:  %s\n  want: %s", query, tt.expected)
 			}
 		})
+	}
+}
+
+// TestNormalizeToFilenameBlocksTraversal pins the path-safety invariant that
+// dismisses CodeQL alert 2 (go/path-injection on the os.Stat in templateExists).
+// The IRI reaching normalizeToFilename comes from the user-controlled ?iri=
+// query parameter and the result is appended to a fixed templates/ prefix, so
+// the encoding is the only barrier against traversal. If someone swaps
+// url.QueryEscape for url.PathEscape — which leaves "/" unescaped — this fails.
+func TestNormalizeToFilenameBlocksTraversal(t *testing.T) {
+	hostile := []string{
+		"../../etc/passwd",
+		"../../../../etc/shadow",
+		"http://example.org/../../secret",
+		"..\\..\\windows\\system32",
+		"foo/bar/baz",
+		"/absolute/path",
+		"a\x00b",
+	}
+
+	for _, iri := range hostile {
+		got := normalizeToFilename(iri)
+
+		// A separator would let the joined path escape templates/classes/ or
+		// templates/instances/; nothing else about the encoding matters here.
+		if strings.ContainsAny(got, `/\`) {
+			t.Errorf("normalizeToFilename(%q) = %q, contains a path separator", iri, got)
+		}
+		if strings.Contains(got, "\x00") {
+			t.Errorf("normalizeToFilename(%q) = %q, contains a NUL byte", iri, got)
+		}
+		if !strings.HasSuffix(got, ".html") {
+			t.Errorf("normalizeToFilename(%q) = %q, want a .html suffix", iri, got)
+		}
+
+		// The real sink: the joined path must stay inside the template dir.
+		joined := filepath.Clean("templates/classes/" + got)
+		if !strings.HasPrefix(joined, "templates/classes/") {
+			t.Errorf("normalizeToFilename(%q) escaped the template dir: %q", iri, joined)
+		}
 	}
 }
