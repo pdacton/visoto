@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -35,7 +34,6 @@ const defaultMaxWorkingSet = 20000
 // Query params:
 //
 //	iri        class IRI (the ?? substitution value)
-//	keyVar     the class-membership key variable (e.g. "taxonName"); required
 //	max        optional working-set cap (default/clamped to defaultMaxWorkingSet)
 //	search     optional full-class search term (rebuilds the working set)
 //	searchProp optional name property IRI to search (default rdfs:label)
@@ -50,10 +48,10 @@ func asyncTableDataHandler(c *gin.Context) {
 	}
 
 	classIRI := c.Query("iri")
-	keyVar := strings.TrimPrefix(c.Query("keyVar"), "?")
-	if keyVar == "" {
-		keyVar = sparql.DeriveKeyVar(declared) // fall back to deriving it server-side
-	}
+	// Derived from the declared query, never taken from the request: the client
+	// could only ever echo back a value this same derivation produced, and keeping
+	// it server-side means no request input reaches the query as a variable name.
+	keyVar := sparql.DeriveKeyVar(declared)
 	if classIRI == "" || keyVar == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"data": []any{}, "total": 0, "complete": true,
 			"error": "iri and a derivable key variable are required for a working set"})

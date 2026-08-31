@@ -31,7 +31,7 @@
           LIMIT 10000
         </sparql-async>
         <sparql-columns for="owlClassInstances">
-          <sparql-column var="class" icon></sparql-column>
+          <sparql-column var="class" icon filter></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict

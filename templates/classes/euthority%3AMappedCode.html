@@ -32,7 +32,7 @@
           } LIMIT 50000
         </sparql-async>
         <sparql-columns for="mappedCodeInstances">
-          <sparql-column var="type" icon></sparql-column>
+          <sparql-column var="type" icon filter></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict

@@ -100,7 +100,7 @@
   } ORDER BY DESC(?recordSets)
 </sparql-async>
 <sparql-columns for="cultureRecordSetTypes">
-  <sparql-column var="type" icon></sparql-column>
+  <sparql-column var="type" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -132,7 +132,7 @@
   } ORDER BY DESC(?children)
 </sparql-async>
 <sparql-columns for="cultureTopDivisions">
-  <sparql-column var="division" icon></sparql-column>
+  <sparql-column var="division" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -255,7 +255,7 @@
   } ORDER BY DESC(xsd:integer(?holdings))
 </sparql-async>
 <sparql-columns for="cultureIsilInstitutions">
-  <sparql-column var="isil" icon></sparql-column>
+  <sparql-column var="isil" icon filter="text"></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">

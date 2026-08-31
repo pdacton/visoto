@@ -7,6 +7,21 @@
 
   {{ template "literals" . }}
 
+  <!-- Instance count. The table below stops at LIMIT 10000 with no indication
+       whether that is the whole class or a slice of 13 million, so the count is
+       what tells you which of the two you are looking at. Queried live rather
+       than cached: LINDAS counts drift between requests. -->
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
   <!-- instances of this class -->
   <div class="row">
     <div class="col-lg">
@@ -25,7 +40,7 @@
         </sparql-async>
         <sparql-columns for="instances">
           <sparql-column var="class" icon></sparql-column>
-          <sparql-column var="instance" icon></sparql-column>
+          <sparql-column var="instance" icon filter></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict

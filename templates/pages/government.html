@@ -99,7 +99,7 @@
   } ORDER BY DESC(?units)
 </sparql-async>
 <sparql-columns for="govDepartments">
-  <sparql-column var="dept" icon></sparql-column>
+  <sparql-column var="dept" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -128,7 +128,7 @@
   } ORDER BY DESC(?children)
 </sparql-async>
 <sparql-columns for="govTopLevel">
-  <sparql-column var="org" icon></sparql-column>
+  <sparql-column var="org" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -216,7 +216,7 @@
   } ORDER BY DESC(?versions)
 </sparql-async>
 <sparql-columns for="govVersionsPerIdentity">
-  <sparql-column var="identity" icon></sparql-column>
+  <sparql-column var="identity" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">
@@ -260,7 +260,7 @@
   } ORDER BY DESC(?terms)
 </sparql-async>
 <sparql-columns for="govTermDomains">
-  <sparql-column var="domain" icon></sparql-column>
+  <sparql-column var="domain" icon filter></sparql-column>
 </sparql-columns>
 
 <div class="mb-4">

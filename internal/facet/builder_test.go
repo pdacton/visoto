@@ -360,6 +360,113 @@ func TestBuildFacetedQueryRejectsAggregateAlias(t *testing.T) {
 	}
 }
 
+// A nested aggregate's own parentheses must not end the argument scan early: the
+// flat [^)]* this replaced stopped at the inner ")" and missed the alias, letting
+// through the exact shape the guard exists to catch.
+func TestAggregateAliasReMatchesNestedParens(t *testing.T) {
+	cases := []struct {
+		name    string
+		varName string
+		text    string
+	}{
+		{"count distinct", "municipalities", "(COUNT(DISTINCT ?municipality) AS ?municipalities)"},
+		{"group_concat separator", "postalCodes", `(GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)`},
+		{"sum of if", "paid", "(SUM(IF(?a, 1, 0)) AS ?paid)"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if !aggregateAliasRe(tc.varName).MatchString(tc.text) {
+				t.Errorf("aggregate alias not detected in %s", tc.text)
+			}
+		})
+	}
+}
+
+// An aggregate computed in a subquery is projected outward as an ordinary
+// variable, so a plain column FILTER on it is correct and must NOT be rejected.
+// This is the templates/classes/schch%3ACanton.html shape: the counts come from
+// "OPTIONAL { SELECT ... GROUP BY ?canton }" and no property path reaches them.
+func TestBuildFacetedQueryAllowsNestedAggregateAlias(t *testing.T) {
+	nested := `SELECT ?canton ?municipalities WHERE {
+	  ?canton a <http://example.org/Canton> .
+	  OPTIONAL {
+	    SELECT ?canton (COUNT(DISTINCT ?municipality) AS ?municipalities) WHERE {
+	      ?municipality schema:containedInPlace ?canton .
+	    } GROUP BY ?canton
+	  }
+	}`
+
+	con := FacetConstraint{
+		Spec:   FacetSpec{Var: "municipalities", Type: TypeNumber, Control: ControlRange},
+		Values: []string{"10", ""},
+	}
+	q, err := BuildFacetedQuery(nested, "canton", []FacetConstraint{con}, BaseFacetProvider{})
+	if err != nil {
+		t.Fatalf("nested aggregate should stay filterable in column mode: %v", err)
+	}
+	if !strings.Contains(q, "?municipalities") {
+		t.Errorf("expected a column filter on the projected alias:\n%s", q)
+	}
+	// The filter belongs inside the outer WHERE group, never appended after the
+	// subquery's GROUP BY — insertBeforeLastBrace's "}[^}]*$" anchor decides this.
+	if strings.Contains(q, "GROUP BY ?canton\n\t  }\n\t}\n  FILTER") {
+		t.Errorf("column filter escaped the outer WHERE group:\n%s", q)
+	}
+}
+
+// An outer-projection aggregate keeps failing loudly: rejection is the whole
+// point, since the store would answer 200 with zero rows instead.
+func TestBuildFacetedQueryStillRejectsOuterAggregateAlias(t *testing.T) {
+	aggQuery := `SELECT ?municipality (COUNT(DISTINCT ?postalCode) AS ?codes) WHERE {
+	  ?municipality a <http://example.org/M> .
+	  OPTIONAL { ?municipality schema:postalCode ?postalCode }
+	} GROUP BY ?municipality`
+
+	con := FacetConstraint{
+		Spec:   FacetSpec{Var: "codes", Type: TypeNumber, Control: ControlRange},
+		Values: []string{"3", ""},
+	}
+	_, err := BuildFacetedQuery(aggQuery, "municipality", []FacetConstraint{con}, BaseFacetProvider{})
+	if err == nil {
+		t.Fatal("expected an outer-projection aggregate alias to be rejected")
+	}
+	if !strings.Contains(err.Error(), "root=") {
+		t.Errorf("error should point at the root/path fix, got: %v", err)
+	}
+}
+
+// A query whose braces do not balance cannot be scoped, so the guard fails closed
+// — an over-strict error beats a silently empty result.
+func TestBuildFacetedQueryAggregateAliasUnreadableShapeRejects(t *testing.T) {
+	truncated := `SELECT ?m (COUNT(?p) AS ?codes) WHERE {
+	  ?m a <http://example.org/M> .
+	  OPTIONAL { ?m schema:postalCode ?p }`
+
+	con := FacetConstraint{
+		Spec:   FacetSpec{Var: "codes", Type: TypeNumber, Control: ControlRange},
+		Values: []string{"3", ""},
+	}
+	if _, err := BuildFacetedQuery(truncated, "m", []FacetConstraint{con}, BaseFacetProvider{}); err == nil {
+		t.Fatal("an unreadable query shape should keep the conservative rejection")
+	}
+}
+
+// Brace depth must ignore braces inside quoted literals, or a separator like "}"
+// would make an outer aggregate look nested and re-open the silent failure.
+func TestOuterProjectionAggregateIgnoresBracesInLiterals(t *testing.T) {
+	q := `SELECT ?m (GROUP_CONCAT(?p; separator="}") AS ?codes) WHERE {
+	  ?m a <http://example.org/M> .
+	} GROUP BY ?m`
+
+	isOuter, ok := outerProjectionAggregate(q, "codes")
+	if !ok {
+		t.Fatal("query should be readable")
+	}
+	if !isOuter {
+		t.Error("a brace inside a string literal must not count as nesting")
+	}
+}
+
 func TestFacetSpecValidate(t *testing.T) {
 	if err := (FacetSpec{Var: "x", Root: "?y"}).Validate(); err == nil {
 		t.Error("root without path should be rejected")

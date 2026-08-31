@@ -9,7 +9,7 @@
   <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "country") }}</li>
 {{ end}}
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
@@ -20,7 +20,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
@@ -97,11 +97,11 @@
         LIMIT 5000
       </sparql-query>
       <sparql-columns for="districts">
-        <sparql-column var="district" label="{{ t "facet.district" "District" }}" icon></sparql-column>
-        <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"></sparql-column>
-        <sparql-column var="municipalities" label="{{ t "facet.municipalityCount" "Municipalities" }}"></sparql-column>
-        <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}"></sparql-column>
-        <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}"></sparql-column>
+        <sparql-column var="district" label="{{ t "facet.district" "District" }}" filter icon></sparql-column>
+        <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" filter="text"></sparql-column>
+        <sparql-column var="municipalities" label="{{ t "facet.municipalityCount" "Municipalities" }}" filter="range" type="number"></sparql-column>
+        <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}" filter="range" type="date"></sparql-column>
+        <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}" filter="range" type="date"></sparql-column>
       </sparql-columns>
 
       {{ template "sparqlTable" (dict
@@ -131,11 +131,11 @@
         LIMIT 5000
       </sparql-query>
       <sparql-columns for="municipalities">
-        <sparql-column var="municipality" label="{{ t "facet.municipality" "Municipality" }}" icon></sparql-column>
-        <sparql-column var="district" label="{{ t "facet.district" "District" }}" icon></sparql-column>
-        <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"></sparql-column>
-        <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}"></sparql-column>
-        <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}"></sparql-column>
+        <sparql-column var="municipality" label="{{ t "facet.municipality" "Municipality" }}" filter icon></sparql-column>
+        <sparql-column var="district" label="{{ t "facet.district" "District" }}" filter icon></sparql-column>
+        <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" filter="text"></sparql-column>
+        <sparql-column var="validFrom" label="{{ t "facet.validFrom" "Valid from" }}" filter="range" type="date"></sparql-column>
+        <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}" filter="range" type="date"></sparql-column>
       </sparql-columns>
 
       {{ template "sparqlTable" (dict

@@ -1,6 +1,6 @@
 <!-- Book Class Template — lists instances of fabio:Book in an async working-set table -->
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Book{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Book{{ end }}{{ end }}
 
@@ -29,8 +29,13 @@
         OPTIONAL { ?book dc:date ?date . }
       }
     </sparql-async>
+    <!-- 160 instances: the loaded set is the whole class, so local filtering is
+         authoritative and no root=/path= is needed. -->
     <sparql-columns for="bookInstances">
-      <sparql-column var="Book" icon></sparql-column>
+      <sparql-column var="book" icon></sparql-column>
+      <sparql-column var="title" filter="text"></sparql-column>
+      <sparql-column var="creator" filter></sparql-column>
+      <sparql-column var="date" filter></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

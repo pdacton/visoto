@@ -1,6 +1,6 @@
 <!-- schema:Organization Class Template, listing all instances of this class -->
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
@@ -36,8 +36,46 @@
           FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
       }
     </sparql-async>
+    <!-- 818808 instances against a 20000-row working set (measured: 21847 loaded,
+         complete=false), so this table ALWAYS reaches the backend and every column
+         that should filter needs a declaration — local filtering would silently
+         answer from a ~2.7% sample. Same shape as classes/schch%3AZefixOrganisation.
+
+         Most columns declare a path=, which anchors the constraint on the membership
+         triple and injects it as FILTER EXISTS before the OPTIONALs run — the fast
+         shape at this size. ?companyUID is the deliberate exception; see below. -->
     <sparql-columns for="organizationInstances">
-      <sparql-column var="organization" icon></sparql-column>
+      <!-- schema:name covers 42683 of 42693 sampled orgs and rdfs:label none of them,
+           so the path names schema:name rather than the default label alternation. -->
+      <sparql-column var="organization" label="{{ t "facet.name" "Name" }}"
+                     path="schema:name" icon filter></sparql-column>
+
+      <!-- Column mode ON PURPOSE — no path=. Each org carries three identifier nodes
+           (CompanyUID, CompanyCHID, CompanyEHRAID), told apart only by the sibling
+           schema:name literal. A path= is spliced verbatim into `?key <path> ?fv` and
+           takes a property path only, so schema:identifier/schema:value cannot carry
+           the schema:name "CompanyUID" constraint — it would match all three and
+           return rows whose UID cell shows an unrelated value. The base query already
+           pins the right node, so filtering the projected ?companyUID is correct.
+           text is pinned so no dropdown is ever enumerated. -->
+      <sparql-column var="companyUID" label="{{ t "facet.companyUID" "Company UID" }}"
+                     filter="text" type="string"></sparql-column>
+
+      <!-- 50 distinct types — well inside the 200-value enumeration cap, so the
+           control is left to infer and becomes a select list. -->
+      <sparql-column var="additionalType" label="{{ t "facet.legalForm" "Legal form" }}"
+                     path="schema:additionalType" filter></sparql-column>
+
+      <!-- 5520 distinct localities, past the cap, so text rather than a dropdown.
+           The path ends at the locality literal itself. -->
+      <sparql-column var="addressLocality" label="{{ t "facet.locality" "Locality" }}"
+                     path="schema:address/schema:addressLocality"
+                     filter="text" type="string"></sparql-column>
+
+      <!-- Free text, unbounded key space: text is pinned so no enumeration is
+           attempted. An active free-text facet makes the response no-store by design. -->
+      <sparql-column var="description" label="{{ t "facet.description" "Description" }}"
+                     path="schema:description" filter="text" type="string"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

@@ -4,7 +4,7 @@
   <li class="breadcrumb-item">{{ tHTML "type.taxonConcept.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
 {{ end }}
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Concept{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Concept{{ end }}{{ end }}
 
@@ -37,9 +37,20 @@
         OPTIONAL { ?taxonConcept dwc:family ?family . }
       }
     </sparql-async>
+    <!-- 993k instances → always a working set, so every filter needs root=/path= to
+         see past the loaded sample. Coverage verified against LINDAS: 924k-993k
+         subjects on each path below. -->
     <sparql-columns for="taxonConceptInstances">
-      <sparql-column var="TaxonConcept" icon></sparql-column>
-      <sparql-column var="rank" badge></sparql-column>
+      <sparql-column var="taxonConcept" icon></sparql-column>
+      <sparql-column var="rank" badge filter root="?taxonConcept" path="dwc:rank"></sparql-column>
+      <!-- Inside the 200-value enumeration cap (16 / 155 / 446), so a checkbox list. -->
+      <sparql-column var="kingdom" filter root="?taxonConcept" path="dwc:kingdom"></sparql-column>
+      <sparql-column var="phylum" filter root="?taxonConcept" path="dwc:phylum"></sparql-column>
+      <sparql-column var="class" filter root="?taxonConcept" path="dwc:class"></sparql-column>
+      <!-- Past the cap (2049 orders, 11.7k families, 464k authorities) → text. -->
+      <sparql-column var="order" filter="text" root="?taxonConcept" path="dwc:order"></sparql-column>
+      <sparql-column var="family" filter="text" root="?taxonConcept" path="dwc:family"></sparql-column>
+      <sparql-column var="authority" filter="text" root="?taxonConcept" path="dwc:authority"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

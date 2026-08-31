@@ -14,7 +14,7 @@
   <li class="breadcrumb-item">{{ render (index (index .QueryResults.breadcrumbs.Bindings 0) "district") }}</li>
 {{ end}}
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
@@ -25,7 +25,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
 <sparql-query id="municipalityValidity">
   SELECT * WHERE {
     ?? vl:version ?version .
@@ -129,8 +129,8 @@
         } LIMIT 5000
       </sparql-query>
       <sparql-columns for="stationen">
-        <sparql-column var="station" label="{{ t "facet.station" "Station" }}" icon></sparql-column>
-        <sparql-column var="provider" label="{{ t "facet.provider" "Provider" }}" icon></sparql-column>
+        <sparql-column var="station" label="{{ t "facet.station" "Station" }}" icon filter></sparql-column>
+        <sparql-column var="provider" label="{{ t "facet.provider" "Provider" }}" icon filter></sparql-column>
       </sparql-columns>
 
       {{ template "sparqlTable" (dict
@@ -151,8 +151,8 @@
         } LIMIT 5000
       </sparql-query>
       <sparql-columns for="Organisationen">
-        <sparql-column var="zefix_Organisation" label="{{ t "facet.organisation" "Organisation" }}" icon></sparql-column>
-        <sparql-column var="form" label="{{ t "facet.legalForm" "Legal form" }}"></sparql-column>
+        <sparql-column var="zefix_Organisation" label="{{ t "facet.organisation" "Organisation" }}" icon filter></sparql-column>
+        <sparql-column var="form" label="{{ t "facet.legalForm" "Legal form" }}" filter></sparql-column>
       </sparql-columns>
 
       {{ template "sparqlTable" (dict

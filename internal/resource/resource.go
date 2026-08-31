@@ -205,7 +205,19 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 
 // ---internal Helper functions ----------------------------
 
-// normalizeToFilename converts an IRI to a URL-encoded filename
+// normalizeToFilename converts an IRI to a URL-encoded filename.
+//
+// The escaping here is load-bearing for path safety, not cosmetic. The IRI
+// originates in the user-controlled ?iri= query parameter and the result is
+// concatenated onto a fixed "templates/classes/" or "templates/instances/"
+// prefix, so this function is the only thing standing between a request and a
+// path traversal. url.QueryEscape percent-encodes the separator, turning
+// "../../etc/passwd" into the harmless flat filename "..%2F..%2Fetc%2Fpasswd.html".
+//
+// Do NOT swap this for url.PathEscape, which deliberately leaves "/" unescaped
+// and would make the traversal real. CodeQL flags the os.Stat in templateExists
+// as go/path-injection (alert 2) because it does not recognise QueryEscape as a
+// path sanitiser; the alert is dismissed on the strength of this invariant.
 func normalizeToFilename(iri string) string {
 	return url.QueryEscape(iri) + ".html"
 }

@@ -1,6 +1,6 @@
 <!-- Zefix Class Template, listing all instances of this class -->
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
@@ -36,22 +36,46 @@
     <!-- Columns for the instances table above. Each var is already SELECTed, which
          is what a header-attached control needs.
 
-         All three declare a path=, which is what routes the backend leg through a
-         single property and anchors it on the membership triple — the fast shape on
-         a class of ~790k. Without one, an IRI column's text search would still work
-         (it walks the generic label alternation) but would filter after the
-         OPTIONALs rather than before them. -->
+         ~790k organizations is far past the working-set cap, so this table is never
+         complete and every filter reaches the backend — declarations matter here.
+
+         Most columns declare a path=, which routes the backend leg through a single
+         property and anchors it on the membership triple — the fast shape at this
+         size. Without one, an IRI column's text search would still work (it walks
+         the generic label alternation) but would filter after the OPTIONALs rather
+         than before them. ?companyUID is the deliberate exception; see below. -->
     <sparql-columns for="zefixOrganisationInstances">
       <!-- Name search on the key column: ~790k organizations, far past the value
            enumeration cap, so a list is out and the path names the property that
            holds the name. Zefix orgs carry no rdfs:label at all — hence
            schema:name rather than the default label path. -->
       <sparql-column var="organization" label="Name" path="schema:name" filter icon></sparql-column>
+
+      <!-- Column mode ON PURPOSE — no path=. Every Zefix org carries THREE identifier
+           nodes (CompanyUID, CompanyCHID, CompanyEHRAID; 792268 of each, measured),
+           distinguished only by the sibling schema:name literal. A path= is spliced
+           verbatim into `?key <path> ?fv`, which admits a property path and nothing
+           else, so `schema:identifier/schema:value` cannot carry the
+           `schema:name "CompanyUID"` constraint that picks the right one — it would
+           match all three, and searching "CH" would return rows whose UID column
+           shows an unrelated value. Filtering the projected ?companyUID directly is
+           correct because the base query already applied that constraint. The cost is
+           that the backend leg re-runs the base query instead of enumerating off the
+           membership triple; text is pinned so no dropdown is ever enumerated. -->
+      <sparql-column var="companyUID" label="Company UID" filter="text" type="string"></sparql-column>
+
       <sparql-column var="rechtsform" label="Legal form" path="schema:additionalType" filter></sparql-column>
       <!-- ~2100 distinct municipalities, so a text search again; the path ends in
            schema:name so the backend matches the name rather than the IRI. -->
       <sparql-column var="municipality" label="Municipality"
                      path="schch:municipality/schema:name" filter></sparql-column>
+
+      <!-- 726400 distinct descriptions, so a select list is impossible (the
+           enumeration cap is 200) — text is pinned rather than inferred so the
+           frontend never offers a dropdown. Note the trade-off: an active free-text
+           facet makes the response no-store, by design (unbounded key space). -->
+      <sparql-column var="description" label="Description"
+                     path="schema:description" filter="text" type="string"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

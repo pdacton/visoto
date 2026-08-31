@@ -49,7 +49,14 @@
               { ?class a rdfs:Class } UNION { ?class a owl:Class } UNION { ?instance a ?class } .
             } GROUP BY ?class
           }
-          OPTIONAL { ?class a ?type }
+          # A class declared both rdfs:Class and owl:Class (e.g. cube:Observation) yields
+          # one row per declaration. That duplication is deliberate: it keeps ?type a
+          # single value so the table can be grouped by it. Spelled as a CURIE literal so
+          # the two declarations stay distinguishable in the column.
+          OPTIONAL { ?class a ?rawType }
+          BIND(IF(?rawType = rdfs:Class, "rdfs:Class",
+               IF(?rawType = owl:Class,  "owl:Class",
+               STR(?rawType))) AS ?type)
           BIND (STR(?class) AS ?iri)
           BIND(
             IF(CONTAINS(?iri, "http://") || CONTAINS(?iri, "https://"),
@@ -58,7 +65,7 @@
         }
       </sparql-async>
       <sparql-columns for="allClasses">
-        <sparql-column var="class" icon></sparql-column>
+        <sparql-column var="class" icon filter></sparql-column>
       </sparql-columns>
 
       {{ template "sparqlAsyncTable" (dict

@@ -50,14 +50,32 @@
     var RESOURCE_IRI = readIsland('-iri') || urlParams.get('iri');
     var CLASS_OVERRIDE = urlParams.get('class');
 
+    // setStatus takes MARKUP (callers wrap names in <code>); interpolated values
+    // must therefore be passed through escapeHtml first.
     function setStatus(html) {
       var el = document.getElementById(ID + '-status');
       if (el) el.innerHTML = html;
     }
+
+    // localName() decodeURIComponent's the IRI, but validIri() tested the RAW
+    // string — so "%3Cimg onerror=...%3E" passes validation and decodes back
+    // into live markup. Escape anything IRI-derived before it reaches innerHTML.
+    function escapeHtml(text) {
+      var d = document.createElement('div');
+      d.textContent = text;
+      return d.innerHTML;
+    }
+    // message is TEXT, never markup: it carries endpoint-supplied strings
+    // (err.message from the SPARQL fetch/parse path), so the alert wrapper is
+    // built as an element and the message set via textContent. Concatenating it
+    // into innerHTML let a hostile endpoint's error text execute script.
     function showError(message) {
       var container = document.getElementById(ID + '-root');
       if (container) {
-        container.innerHTML = '<div class="alert alert-danger m-3">' + message + '</div>';
+        var alert = document.createElement('div');
+        alert.className = 'alert alert-danger m-3';
+        alert.textContent = message;
+        container.replaceChildren(alert);
       }
       setStatus('');
     }
@@ -356,9 +374,9 @@
       var container = document.getElementById(ID + '-root');
       var summary = Object.keys(store.elements).length + ' classes, ' + store.links.length + ' relations';
       if (mode === 'class') {
-        setStatus('derived from up to 50 sampled instances of <code>' + localName(cls) + '</code> &mdash; ' + summary);
+        setStatus('derived from up to 50 sampled instances of <code>' + escapeHtml(localName(cls)) + '</code> &mdash; ' + summary);
       } else {
-        setStatus('derived from <code>' + localName(RESOURCE_IRI) + '</code> (anchored on <code>' + localName(cls) + '</code>) &mdash; ' + summary);
+        setStatus('derived from <code>' + escapeHtml(localName(RESOURCE_IRI)) + '</code> (anchored on <code>' + escapeHtml(localName(cls)) + '</code>) &mdash; ' + summary);
       }
 
       // Subclass of StandardTemplate that also checks the element's own IRI for
@@ -367,8 +385,16 @@
       class StandardTemplateWithIconUrl extends GE.StandardTemplate {
         render() {
           var url = window.VisotoIcons.resolve(this.props.iri || '', [], AVAILABLE_ICONS);
-          if (url) this.props = Object.assign({}, this.props, { iconUrl: url });
-          return super.render();
+          if (!url) return super.render();
+          // React 19 errors on a component reassigning this.props during render, so
+          // swap the patched props in only for the super.render() call and restore.
+          var original = this.props;
+          this.props = Object.assign({}, original, { iconUrl: url });
+          try {
+            return super.render();
+          } finally {
+            this.props = original;
+          }
         }
       }
 
@@ -472,7 +498,7 @@
     }
 
     // --- Guarded Graph Explorer CDN loader (shared with sparql-graph) ---------
-    var GE_SRC = 'https://cdn.jsdelivr.net/npm/graph-explorer@1.3.0/dist/graph-explorer-full.min.js';
+    var GE_SRC = 'https://cdn.jsdelivr.net/npm/graph-explorer@2.1.0/dist/graph-explorer-full.min.js';
 
     function whenGraphExplorerReady(cb) {
       if (!window.GraphExplorer && !document.querySelector('script[data-graph-explorer-loader]')) {

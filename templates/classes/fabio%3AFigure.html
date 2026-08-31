@@ -1,6 +1,6 @@
 <!-- Figure Class Template — lists instances of fabio:Figure in an async working-set table -->
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:description) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:description) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Figure{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Figure{{ end }}{{ end }}
 
@@ -28,8 +28,12 @@
         OPTIONAL { ?figure fabio:hasRepresentation ?representation . }
       }
     </sparql-async>
+    <!-- 423k instances → always a working set, so the filter needs root=/path=.
+         ?representation is the image URL, one per figure — nothing to filter on,
+         so it stays a plain column. -->
     <sparql-columns for="figureInstances">
-      <sparql-column var="Figure" icon></sparql-column>
+      <sparql-column var="figure" icon></sparql-column>
+      <sparql-column var="description" filter="text" root="?figure" path="dc:description"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

@@ -316,8 +316,10 @@ func staticPageHandler(c *gin.Context) {
 		return
 	}
 
-	// Get language preference from request
-	acceptLanguage := c.GetHeader("Accept-Language")
+	// activeLang, not the raw Accept-Language header: the UI language comes from
+	// the site-lang cookie (resolveLang), and the RDF data must follow the same
+	// choice, so visoto:dispLang resolves to the language the user is reading.
+	acceptLanguage := activeLang(c)
 
 	// Construct template paths
 	templatePath := "templates/pages/" + pageName
@@ -381,8 +383,10 @@ func resourcePageHandler(c *gin.Context) {
 	// extract iri from query param
 	iri := c.Query("iri")
 
-	// Get language preference from request
-	language := c.GetHeader("Accept-Language")
+	// activeLang, not the raw Accept-Language header: the UI language comes from
+	// the site-lang cookie (resolveLang), and the RDF data must follow the same
+	// choice, so visoto:dispLang resolves to the language the user is reading.
+	language := activeLang(c)
 
 	// log request
 	log := logger.Get()
@@ -456,9 +460,10 @@ func searchHandler(c *gin.Context) {
 		return
 	}
 
-	// Execute search
-	acceptLanguage := c.Request.Header.Get("Accept-Language")
-	result := searcher.Execute(c.Request.Context(), params, acceptLanguage)
+	// Execute search. activeLang, not the raw Accept-Language header: search hits
+	// carry labels, and those must follow the language picker like the rest of the
+	// page rather than the browser's own preference.
+	result := searcher.Execute(c.Request.Context(), params, activeLang(c))
 
 	// Name the provider that actually produced the rows. The FTS provider often
 	// finds nothing on properties its index does not cover, and the CONTAINS
@@ -636,7 +641,6 @@ func asyncTableHandler(c *gin.Context) {
 		if total > defaultMaxWorkingSet {
 			params["workingSet"] = true
 			params["iri"] = iri
-			params["keyVar"] = keyVar
 			// The fragment's Tabulator data fetches (/api/async-table-data) must
 			// carry the endpoint slug explicitly so the shared cache keys them per
 			// endpoint. This fragment is itself cached keyed by its own ?endpoint=,

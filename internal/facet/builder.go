@@ -102,14 +102,102 @@ var countProjectionRe = regexp.MustCompile(`(?i)(\?count\b|\bAS\s+\?count\b)`)
 
 // aggregateAliasRe reports whether varName is produced by an aggregate alias, e.g.
 // "(GROUP_CONCAT(?postalCode; separator=\", \") AS ?postalCodes)".
+//
+// The argument list tolerates ONE level of nesting. A flat [^)]* stops at the
+// first ")", so a nested call like "SUM(IF(?a, 1, 0))" never matched and the alias
+// slipped past the guard into the silent-empty-result failure below. Plain forms
+// ("COUNT(DISTINCT ?x)", a GROUP_CONCAT separator) carry no inner parens and
+// matched either way.
 func aggregateAliasRe(varName string) *regexp.Regexp {
-	return regexp.MustCompile(`(?i)\b(COUNT|SUM|AVG|MIN|MAX|SAMPLE|GROUP_CONCAT)\s*\([^)]*\)\s+AS\s+\?` +
+	return regexp.MustCompile(`(?i)\b(COUNT|SUM|AVG|MIN|MAX|SAMPLE|GROUP_CONCAT)\s*\((?:[^()]|\([^()]*\))*\)\s+AS\s+\?` +
 		regexp.QuoteMeta(varName) + `\b`)
 }
 
-// checkFilterable rejects a COLUMN-mode constraint on an aggregate alias.
+// outerProjectionAggregate reports whether varName is bound by an aggregate alias
+// in the OUTERMOST select's projection — the only position where the alias exists
+// solely in the projection and a WHERE-level FILTER on it misfires.
 //
-// This is the one failure in faceted search that is otherwise SILENT: an aggregate
+// An aggregate nested inside a subquery is a different story: the subquery
+// computes it and projects it outward, so by the time the outer WHERE runs, the
+// variable is an ordinary bound solution binding and an ordinary FILTER on it is
+// correct. templates/classes/schch%3ACanton.html is exactly that shape — its
+// ?districts/?municipalities counts come from "OPTIONAL { SELECT ... GROUP BY }"
+// subqueries — and there is no property path from ?canton to a computed count, so
+// rejecting it would leave the author no way forward at all.
+//
+// Depth is tracked by brace counting, skipping quoted literals so a separator like
+// "}" cannot shift it. ok=false means the query could not be read confidently
+// (unbalanced braces); the caller then keeps the conservative rejection rather
+// than guessing.
+func outerProjectionAggregate(fullQuery, varName string) (isOuter, ok bool) {
+	re := aggregateAliasRe(varName)
+	depth := 0
+	for i := 0; i < len(fullQuery); i++ {
+		switch c := fullQuery[i]; c {
+		case '"', '\'':
+			// Skip the literal. An unterminated one means we cannot trust the
+			// depths that follow, so fail closed rather than mis-scoping.
+			j := i + 1
+			for j < len(fullQuery) && fullQuery[j] != c {
+				if fullQuery[j] == '\\' {
+					j++
+				}
+				j++
+			}
+			if j >= len(fullQuery) {
+				return false, false
+			}
+			i = j
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth < 0 {
+				return false, false
+			}
+		}
+	}
+	if depth != 0 {
+		return false, false
+	}
+	// Re-scan for the alias, reporting the brace depth at each match.
+	for _, loc := range re.FindAllStringIndex(fullQuery, -1) {
+		if braceDepthAt(fullQuery, loc[0]) == 0 {
+			return true, true
+		}
+	}
+	return false, true
+}
+
+// braceDepthAt returns the brace nesting depth at byte offset pos, skipping
+// quoted literals. Callers must have already validated that the query's braces
+// balance (see outerProjectionAggregate).
+func braceDepthAt(q string, pos int) int {
+	depth := 0
+	for i := 0; i < pos && i < len(q); i++ {
+		switch c := q[i]; c {
+		case '"', '\'':
+			j := i + 1
+			for j < len(q) && q[j] != c {
+				if q[j] == '\\' {
+					j++
+				}
+				j++
+			}
+			i = j
+		case '{':
+			depth++
+		case '}':
+			depth--
+		}
+	}
+	return depth
+}
+
+// checkFilterable rejects a COLUMN-mode constraint on an aggregate alias that the
+// outermost select produces.
+//
+// This is the one failure in faceted search that is otherwise SILENT: such an
 // alias exists only in the projection, so a WHERE-level FILTER naming it raises a
 // per-row evaluation error, every row is excluded, and the store answers 200 with
 // an empty result. Nothing distinguishes that from "no matches" (verified against
@@ -118,16 +206,26 @@ func aggregateAliasRe(varName string) *regexp.Regexp {
 // The fix an author wants is almost always root+path: filter the underlying
 // property existentially instead of the concatenated value, which is both correct
 // and better semantics on a multi-valued path. So the error says that.
+//
+// Scope is what separates the two cases, and it has to be measured rather than
+// pattern-matched: an aggregate computed in a SUBQUERY reaches the outer query as
+// an ordinary variable, filters correctly, and must be let through — see
+// outerProjectionAggregate.
 func checkFilterable(fullQuery string, spec FacetSpec) error {
 	if strings.TrimSpace(spec.Path) != "" {
 		return nil // routed through a property path — the alias is never named
 	}
-	if aggregateAliasRe(spec.Var).MatchString(fullQuery) {
-		return fmt.Errorf("facet %q: cannot filter an aggregate alias — it exists only in the projection, "+
-			"so a FILTER on it silently matches nothing; add root=\"?key\" path=\"<property>\" to filter the "+
-			"underlying property instead", spec.Var)
+	if !aggregateAliasRe(spec.Var).MatchString(fullQuery) {
+		return nil // not an aggregate at all
 	}
-	return nil
+	// Unreadable query shape (ok=false) falls through to the rejection: the
+	// silent-empty-result failure is worse than an over-strict error.
+	if isOuter, ok := outerProjectionAggregate(fullQuery, spec.Var); ok && !isOuter {
+		return nil // computed in a subquery, projected outward — a plain FILTER works
+	}
+	return fmt.Errorf("facet %q: cannot filter an aggregate alias — it exists only in the projection, "+
+		"so a FILTER on it silently matches nothing; add root=\"?key\" path=\"<property>\" to filter the "+
+		"underlying property instead", spec.Var)
 }
 
 // BuildInstanceValuesQuery builds the INSTANCE-mode enumeration: the values

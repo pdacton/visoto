@@ -298,6 +298,15 @@ func findColumn(src, baseID, varName string) (column.Spec, bool) {
 // Every per-column role comes from the declarations and nowhere else — no dict
 // param or query-string key is left to lose to. facetFor is derived rather than
 // declared: a table is faceted exactly when one of its columns carries a filter.
+//
+// facetFor turns on the BACKEND filter tier, not filtering as such. Leaving it
+// empty does not take a column's funnel away: the frontend falls back to the table
+// id to read the declarations, renders every declared control, and filters the
+// loaded rows locally. What facetFor adds is the escalation to /api/faceted-table
+// and /api/facet-values, which only an incomplete working set needs. That is why
+// nothing here is missing for synchronously-rendered tables, which never reach this
+// function: their result is embedded whole, so local filtering is already complete.
+// See the COLUMN_FOR / FACET_FOR note in static/js/sparql-table.js.
 func applyColumnParams(params map[string]any, src, id string) {
 	cols := findColumns(src, id)
 	if len(cols) == 0 {

@@ -4,7 +4,7 @@
   <li class="breadcrumb-item">{{ tHTML "type.taxonName.org%2Fontologies%2Foa%2FdwcFP%23TaxonName.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
 {{ end }}
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Name{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Taxon Name{{ end }}{{ end }}
 
@@ -38,9 +38,27 @@
         OPTIONAL { ?taxonName dwc:species ?species . }
       }
     </sparql-async>
+    <!-- 918k instances, so this table is always a working set: local filtering only
+         ever sees the loaded sample and every column needs root=/path= to reach the
+         full class. The paths are the same triples the OPTIONALs above use, which is
+         also the cheap shape — enumeration anchors on the membership triple instead
+         of re-running the base query. Coverage verified against LINDAS: every path
+         below binds 758k-918k subjects. -->
     <sparql-columns for="taxonNameInstances">
-      <sparql-column var="TaxonName" icon></sparql-column>
-      <sparql-column var="rank" badge></sparql-column>
+      <sparql-column var="taxonName" icon></sparql-column>
+      <sparql-column var="rank" badge filter root="?taxonName" path="dwc:rank"></sparql-column>
+      <!-- 16 kingdoms, 155 phyla, 447 classes: comfortably inside the 200-value
+           enumeration cap, so these offer a checkbox list. -->
+      <sparql-column var="kingdom" filter root="?taxonName" path="dwc:kingdom"></sparql-column>
+      <sparql-column var="phylum" filter root="?taxonName" path="dwc:phylum"></sparql-column>
+      <sparql-column var="class" filter root="?taxonName" path="dwc:class"></sparql-column>
+      <!-- Past the cap (2051 orders, 11k families, 119k genera, 223k species), so
+           these are pinned to text: a truncated dropdown would silently hide most
+           of the vocabulary. -->
+      <sparql-column var="order" filter="text" root="?taxonName" path="dwc:order"></sparql-column>
+      <sparql-column var="family" filter="text" root="?taxonName" path="dwc:family"></sparql-column>
+      <sparql-column var="genus" filter="text" root="?taxonName" path="dwc:genus"></sparql-column>
+      <sparql-column var="species" filter="text" root="?taxonName" path="dwc:species"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

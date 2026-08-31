@@ -11,7 +11,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle">SELECT ?description { ?? visoto:description ?description . }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 
@@ -24,19 +24,51 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
+        <!-- The membership triple is written "?instance a ??" ON PURPOSE.
+
+             It used to read "BIND (?? AS ?class) . ?instance (rdf:type|owl:type)
+             ?class", which hid the class behind a BIND. Two things follow from that
+             shape, and both hurt at 458236 instances: DeriveKeyVar finds no
+             "?var a ??" so there is no key variable, and MembershipTriplePattern has
+             no triple to swap for the capped IRI subquery. Working-set mode needs
+             BOTH, so the table fell back to rendering the whole LIMIT 50000 result
+             inline — a measured 8.1 MB fragment holding 50093 cells.
+
+             Dropping the owl:type leg is lossless here: "?s owl:type skos:Concept"
+             with no "?s a skos:Concept" returns 0 rows on LINDAS, and plain
+             "?s a skos:Concept" returns the same 458236. Note this is why a root=
+             on the column declarations could not fix it on its own — root= is read
+             by the facet enumerator, never by the working-set loader. -->
         <sparql-async id="skosConceptInstances">
           SELECT ?instance ?description WHERE {
-            BIND (?? AS ?class)
-            ?instance (rdf:type|owl:type) ?class .
+            ?instance a ?? .
             OPTIONAL { ?instance schema:description ?description .
               FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
-          } LIMIT 50000
+          }
         </sparql-async>
+
+        <!-- 458236 instances against a 20000-row working set, so the set is always
+             incomplete and both filters have to reach the backend. -->
+        <sparql-columns for="skosConceptInstances">
+          <!-- skos:prefLabel is the label these concepts actually carry (schema:name
+               trails it and rdfs:label is nearly absent), so the path names it
+               rather than the default label alternation. Far past the 200-value
+               enumeration cap, hence text. -->
+          <sparql-column var="instance" label="{{ t "facet.name" "Name" }}"
+                         path="skos:prefLabel" filter="text" type="string" icon></sparql-column>
+
+          <!-- Free text, unbounded key space: pinned to text so no dropdown is
+               enumerated. An active free-text facet makes the response no-store. -->
+          <sparql-column var="description" label="{{ t "facet.description" "Description" }}"
+                         path="schema:description" filter="text" type="string"></sparql-column>
+        </sparql-columns>
+
         {{ template "sparqlAsyncTable" (dict
             "queryId" "skosConceptInstances"
             "iri" .ResourceIRI
             "title" (t "card.availableSKOSConcepts" "Available SKOS Concepts")
-            "icon" "circle-dot")
+            "icon" "circle-dot"
+            "searchProp" "http://www.w3.org/2004/02/skos/core#prefLabel")
         }}
       </div>
     </div>

@@ -25,7 +25,7 @@
         }
       </sparql-async>
       <sparql-columns for="namedGraphsList">
-        <sparql-column var="graph" group></sparql-column>
+        <sparql-column var="graph" group filter></sparql-column>
       </sparql-columns>
       {{ template "sparqlAsyncTable" (dict
           "queryId" "namedGraphsList"

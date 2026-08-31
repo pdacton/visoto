@@ -67,6 +67,26 @@
     //
     // FACET_FOR stays the id the /api/facet-values and /api/faceted-table routes are
     // addressed by, and is empty for a table whose columns declare no filter.
+    //
+    // AN EMPTY facetFor DOES NOT MEAN "FILTERS ARE OFF". This has been misread more
+    // than once, so, explicitly: the two constants below name two different things.
+    //
+    //   COLUMN_FOR  which declarations this table reads. Falls back to the table id,
+    //               so a table ALWAYS finds its own <sparql-column> elements —
+    //               labels, tips and funnel controls included.
+    //   FACET_FOR   whether filtering may escalate to the BACKEND. Empty = local only.
+    //
+    // So an empty FACET_FOR still renders every declared funnel, and every one of
+    // them filters the loaded rows (applyLocalFilter). What it withholds is the
+    // second tier: /api/faceted-table for full-class truth and /api/facet-values for
+    // option lists. That tier exists only for an INCOMPLETE working set, where the
+    // loaded rows are a sample and local filtering would answer from a subset.
+    //
+    // Only the async fragment handlers set facetFor (applyColumnParams, derived from
+    // the declarations). A synchronously-rendered table therefore always has it
+    // empty — correct, not a gap: a sync table embeds its whole result inline, so
+    // the loaded rows ARE the full population and local filtering is already the
+    // complete answer. Nothing is missing to fix there.
     var COLUMN_FOR = CFG.facetFor || CFG.id;
     var FACET_FOR = CFG.facetFor || "";
     var columnDecls = window.VisotoFacets ? window.VisotoFacets.readColumns(COLUMN_FOR) : [];
@@ -75,6 +95,12 @@
     // which is the first point where rows exist to resolve against.
     var facetSpecs = [];
     var facetByVar = {};
+
+    // Below this the row holder is collapsed rather than merely short — no real
+    // row fits, so any height under it means Tabulator sized the holder for an
+    // empty table. Used by the renderComplete repair below; a comfortable floor
+    // under one row (~49px), not a layout constant to tune.
+    var ROW_MIN_HEIGHT = 30;
 
     // Probe the loaded rows for what a declaration left implicit: the first BOUND
     // binding for the column, and how many distinct values it holds. Row 0 is not
@@ -187,8 +213,13 @@
     // reload only bypasses the HTTP cache for browser-initiated requests, so
     // JS fetches would otherwise keep serving data cached for up to 6h (see
     // the long note in static/js/faceted-table.js). VisotoFacets owns the
-    // shared implementation; plain (non-faceted) tables don't load that file,
-    // hence the inline fallback.
+    // shared implementation.
+    //
+    // The inline fallback is for ORDERING, not for absence: base.html loads
+    // faceted-table.js on every page, but this file's <script> sits inside the
+    // rendered card, above the shared scripts at the end of <body>, so
+    // VisotoFacets may not be defined yet when this line runs. Same reason the
+    // templateSetName/endpoint/lang readers at the top are guarded.
     var dataFetchOptions = (window.VisotoFacets && window.VisotoFacets.fetchOptions)
       ? window.VisotoFacets.fetchOptions
       : (function () {
@@ -319,6 +350,62 @@
       });
       facetByVar = {};
       facetSpecs.forEach(function (s) { facetByVar[s.name] = s; });
+      // The raw declarations by var, so a column that needs its control inferred can
+      // be re-resolved from its own declaration rather than from a bare stub.
+      var declDecls = {};
+      columnDecls.forEach(function (d) { declDecls[d.name] = d; });
+      // Every column gets a funnel, declared or not — EXCEPT where the loaded rows are
+      // only a sample of the class. An undeclared column has no path=, so its funnel
+      // can only ever filter what is loaded: FACET_FOR is empty unless some column
+      // carries a DECLARED filter (async_index.go), and faceted_table.go rejects
+      // undeclared vars. On a complete set that is the whole answer; on an incomplete
+      // one it would quietly answer from a subset, so the funnel is withheld there and
+      // the template writer is told what to declare instead.
+      //
+      // CFG.complete rather than wsBrowseComplete: this runs from the inline init
+      // BEFORE that variable is initialized (var-hoisted to undefined), which would
+      // read every complete table as a sample. It is the same server value
+      // wsBrowseComplete is seeded from, and is available from the start.
+      var sampleOnly = WORKING_SET && !CFG.complete;
+      (vars || []).forEach(function (varName) {
+        // The test is "carries no filter CONTROL", not "carries no declaration": a
+        // column declared only for its label, tip or icon is in the same position as
+        // an undeclared one, and denying it a funnel for having been named would be
+        // arbitrary (schema:Person's ?gender is declared `icon` and has two distinct
+        // values — a textbook select). A declared filter always wins.
+        var declared = facetByVar[varName];
+        if (declared && declared.control && declared.control !== 'none') return;
+        if (sampleOnly) {
+          console.warn('column "' + varName + '" has no filter and this table\'s ' +
+            'working set is incomplete — it holds a sample of the class, so an ' +
+            'undeclared column can only filter the loaded rows. Add <sparql-column ' +
+            'var="' + varName + '" filter path="…"> to filter the full class.');
+          return;
+        }
+        // Icon columns are NOT skipped. An icon cell still holds an IRI, and a select
+        // funnel over IRIs lists their labels — ?gender and ?canton are icon columns
+        // and both make good facets. The degenerate case, an icon on the row's own
+        // identity where every value is unique, needs no rule of its own: inferControl
+        // sends anything past 200 distinct IRIs to a text box, which is right for it.
+        // (Position cannot stand in for identity here — 14 icon columns across these
+        // templates are not the first projected var, several tables leading with a
+        // hidden ?type instead.)
+        //
+        // Resolve the EXISTING declaration when there is one, so label/tip/icon/width
+        // survive; only the absent filter kind is filled in from the data.
+        var base = declDecls[varName] || { name: varName };
+        var spec = window.VisotoFacets.resolveColumn(
+          Object.assign({}, base, { filter: 'auto' }), probeColumn(rows, varName));
+        if (declared) {
+          // Replace the earlier spec in place rather than pushing a duplicate.
+          for (var i = 0; i < facetSpecs.length; i++) {
+            if (facetSpecs[i].name === varName) { facetSpecs[i] = spec; break; }
+          }
+        } else {
+          facetSpecs.push(spec);
+        }
+        facetByVar[varName] = spec;
+      });
       // Warn (dev aid) about a declaration whose var isn't a column: it has nowhere
       // to live — no header to title, explain or hang a control off — so it is
       // silently skipped otherwise.
@@ -495,6 +582,39 @@
     // hoisted function declaration, so it exists by the time this event fires.
     table.on("dataFiltered", function() { renderStatus(); });
 
+    // Repair for the same zero-height trap the collapsed-card guard below
+    // handles, reached a different way. When a filter combination matches
+    // NOTHING (say district=Lugano plus canton=Bern) Tabulator stamps an INLINE
+    // height on the row holder — "height: 20px" — sized to the empty table.
+    // Widening the filter again refills the data but leaves that inline height
+    // in place, so the rows render into a 20px window and the table reads
+    // "104 rows" while showing none.
+    //
+    // Driven off renderComplete rather than the geometry: the stuck height never
+    // CHANGES once written, so a ResizeObserver never fires for it, and no
+    // single filter event reliably sees the final state (the emptying and the
+    // refill are separate passes whose order varies with click speed).
+    // renderComplete fires after every pass, so the bad state is caught whenever
+    // it is reached. redraw(true) is what clears the stale inline height.
+    (function() {
+      var repairing = false;
+      table.on("renderComplete", function() {
+        if (repairing) return; // our own redraw re-enters here — don't recurse
+        var host = document.getElementById(ID + "-table");
+        var holder = host && host.querySelector(".tabulator-tableholder");
+        if (!holder || holder.clientHeight >= ROW_MIN_HEIGHT) return;
+        // A flat holder is correct when there is genuinely nothing to show.
+        if (!table.getData("active").length) return;
+        repairing = true;
+        // Deferred: redraw() inside a render callback is undone by the pass that
+        // is still finishing. On a later task the remeasure sticks.
+        setTimeout(function() {
+          table.redraw(true);
+          repairing = false;
+        }, 0);
+      });
+    })();
+
     // Tabulator 6.5.2 keeps a shown tooltip open after the mouse leaves the
     // cell (its mouseoutCheck only cancels pending tooltips); hide it via the
     // tooltip module's own cleanup path.
@@ -526,9 +646,11 @@
     // src is the exception: it names the template set the query id is scoped to,
     // which is a property of the page rather than of this fragment, so it is read
     // live instead of being carried in the config.
+    // No keyVar: the server derives the class-membership key from the declared
+    // query it is already looking up by (id, src). Sending it back would be the
+    // client echoing a value it only ever received from the server.
     var wsBaseUrl = "/api/async-table-data/" + encodeURIComponent(ID) +
       "?iri=" + encodeURIComponent(CFG.iri || "") +
-      "&keyVar=" + encodeURIComponent(CFG.keyVar || "") +
       "&max=" + encodeURIComponent(CFG.max || "") +
       "&src=" + encodeURIComponent(templateSetName());
     if (CFG.searchProp) wsBaseUrl += "&searchProp=" + encodeURIComponent(CFG.searchProp);

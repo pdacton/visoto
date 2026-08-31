@@ -34,7 +34,12 @@ var deriveKeyVarRe = regexp.MustCompile(`(?s)\?([A-Za-z_][A-Za-z0-9_]*)\s+(?:a|r
 // instance query — the ?var in "?var a ??" / "?var rdf:type ??". It returns ""
 // when no such triple exists, which signals the query is NOT a class-instance
 // table (e.g. the BIND(?? AS ?s) attribute/relationship queries) and must never
-// be paginated. Replaces the formerly author-supplied sortVar.
+// be paginated.
+//
+// This is the ONLY source of the key var. It was author-supplied once (as sortVar),
+// then derived here but still echoed to the client and accepted back as a query
+// param; both of those are gone. Every caller derives it from the declared query,
+// so no request input can name a variable that gets spliced into SPARQL.
 func DeriveKeyVar(declared string) string {
 	m := deriveKeyVarRe.FindStringSubmatch(declared)
 	if m == nil {

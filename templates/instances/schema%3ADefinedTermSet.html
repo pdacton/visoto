@@ -81,9 +81,9 @@
   LIMIT 50000
 </sparql-async>
 <sparql-columns for="termSetMembers" order>
-  <sparql-column var="member" label="{{ t "facet.term" "Term" }}" icon></sparql-column>
-  <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}" badge></sparql-column>
-  <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" width="140"></sparql-column>
+  <sparql-column var="member" label="{{ t "facet.term" "Term" }}" icon filter></sparql-column>
+  <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}" badge root="?member" path="rdf:type" filter></sparql-column>
+  <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}" width="140" root="?member" path="schema:identifier" filter="text"></sparql-column>
 </sparql-columns>
 
 {{ define "pageContent" }}

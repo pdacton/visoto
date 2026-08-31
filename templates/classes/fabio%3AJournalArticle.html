@@ -1,6 +1,6 @@
 <!-- JournalArticle Class Template — lists instances of fabio:JournalArticle in an async working-set table -->
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name|dc:title) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Journal Article{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Journal Article{{ end }}{{ end }}
 
@@ -32,9 +32,17 @@
         OPTIONAL { ?article bibo:startPage ?startPage . }
       }
     </sparql-async>
+    <!-- 85k instances → past the 20k working-set threshold, so filters need
+         root=/path= to reach the full class rather than the loaded sample. -->
     <sparql-columns for="journalArticleInstances">
-      <sparql-column var="JournalArticle" icon></sparql-column>
-      <sparql-column var="journal" badge></sparql-column>
+      <sparql-column var="article" icon></sparql-column>
+      <!-- 942 journals and 5403 volumes are past the 200-value enumeration cap;
+           180 distinct dates are inside it, so only ?date offers a list. -->
+      <sparql-column var="journal" badge filter="text" root="?article" path="bibo:journal"></sparql-column>
+      <sparql-column var="date" filter root="?article" path="dc:date"></sparql-column>
+      <sparql-column var="title" filter="text" root="?article" path="dc:title"></sparql-column>
+      <sparql-column var="creator" filter="text" root="?article" path="dc:creator"></sparql-column>
+      <sparql-column var="volume" filter="text" root="?article" path="bibo:volume"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

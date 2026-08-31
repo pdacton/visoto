@@ -11,7 +11,7 @@
 {{ end }}
 
 {{ define "pageScripts" }}
-<script src="https://cdn.jsdelivr.net/npm/graph-explorer@1.3.0/dist/graph-explorer-full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/graph-explorer@2.1.0/dist/graph-explorer-full.min.js"></script>
 <template id="available-icons">{{ iconNames | toJSON }}</template>
 <!-- Endpoint URL resolved server-side from the selectedEndpoint cookie (see staticPageHandler),
      so Graph Explorer queries the same endpoint chosen in the header. -->
@@ -114,15 +114,23 @@
     // here we override the render method to inject our custom icon logic
     // before calling the original rendering
     render() {
-      // if (!this.props.iconUrl) {
-        var name = iriToName(this.props.iri || '');
-        if (AVAILABLE_ICONS[name]) {
-          this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.svg' });
-        } else if (AVAILABLE_ICONS[name + '.fallback']) {
-          this.props = Object.assign({}, this.props, { iconUrl: '/static/img/resource/' + name + '.fallback.svg' });
-        }
-      // }
-      return super.render();
+      var name = iriToName(this.props.iri || '');
+      var iconUrl = null;
+      if (AVAILABLE_ICONS[name]) {
+        iconUrl = '/static/img/resource/' + name + '.svg';
+      } else if (AVAILABLE_ICONS[name + '.fallback']) {
+        iconUrl = '/static/img/resource/' + name + '.fallback.svg';
+      }
+      if (!iconUrl) return super.render();
+      // React 19 errors on a component reassigning this.props during render, so
+      // swap the patched props in only for the super.render() call and restore.
+      var original = this.props;
+      this.props = Object.assign({}, original, { iconUrl: iconUrl });
+      try {
+        return super.render();
+      } finally {
+        this.props = original;
+      }
     }
   }
 

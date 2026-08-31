@@ -105,7 +105,7 @@
        rather than from a query declared in the templates, so there is no
        <sparql-query id="search-results"> for the container to name. */}}
   <sparql-columns for="search-results" external>
-    <sparql-column var="type" icon></sparql-column>
+    <sparql-column var="type" icon filter></sparql-column>
   </sparql-columns>
   {{ if .SearchResults }}
   <div class="row">

@@ -4,7 +4,7 @@
   <li class="breadcrumb-item">{{ tHTML "type.materialCitation.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
 {{ end }}
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
 {{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Material Citation{{ end }}{{ end }}
 {{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Material Citation{{ end }}{{ end }}
 
@@ -25,21 +25,34 @@
   <!-- instances of this class -->
   <div class="mt-0">
     <sparql-async id="materialCitationInstances">
-      SELECT ?materialCitation ?catalogNumber ?scientificName ?typeStatus ?country ?locality ?recordedBy ?collectionCode
+      SELECT ?materialCitation ?catalogNumber ?typeStatus ?locality ?recordedBy ?collectionCode
       WHERE {
         ?materialCitation rdf:type ?? .
         OPTIONAL { ?materialCitation dwc:catalogNumber ?catalogNumber . }
-        OPTIONAL { ?materialCitation dwc:scientificName ?scientificName . }
         OPTIONAL { ?materialCitation dwc:typeStatus ?typeStatus . }
-        OPTIONAL { ?materialCitation dwc:country ?country . }
         OPTIONAL { ?materialCitation dwc:locality ?locality . }
         OPTIONAL { ?materialCitation dwc:recordedBy ?recordedBy . }
         OPTIONAL { ?materialCitation dwc:collectionCode ?collectionCode . }
       }
     </sparql-async>
+    <!-- dwc:scientificName and dwc:country are NOT used by this class in LINDAS
+         (measured: zero subjects for both), so their columns were dropped rather
+         than left to render permanently empty. dwc:countryCode does exist but
+         binds only 1937 of 1.5M — too sparse to earn a column. -->
+
+    <!-- 1.5M instances → always a working set, so every filter needs root=/path=
+         to reach past the loaded sample. -->
     <sparql-columns for="materialCitationInstances">
-      <sparql-column var="MaterialCitation" icon></sparql-column>
-      <sparql-column var="typeStatus" badge></sparql-column>
+      <sparql-column var="materialCitation" icon></sparql-column>
+      <!-- 338 type-status values: just past the 200 enumeration cap, so text
+           rather than a list that would silently truncate. -->
+      <sparql-column var="typeStatus" badge filter="text" root="?materialCitation" path="dwc:typeStatus"></sparql-column>
+      <!-- All high-cardinality (70k collection codes, 301k recorders, 347k
+           localities, 313k catalog numbers) → text throughout. -->
+      <sparql-column var="collectionCode" filter="text" root="?materialCitation" path="dwc:collectionCode"></sparql-column>
+      <sparql-column var="catalogNumber" filter="text" root="?materialCitation" path="dwc:catalogNumber"></sparql-column>
+      <sparql-column var="recordedBy" filter="text" root="?materialCitation" path="dwc:recordedBy"></sparql-column>
+      <sparql-column var="locality" filter="text" root="?materialCitation" path="dwc:locality"></sparql-column>
     </sparql-columns>
 
     {{ template "sparqlAsyncTable" (dict

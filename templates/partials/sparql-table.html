@@ -28,7 +28,6 @@
     - workingSet: true  → Tabulator loads a bounded set once from
                           /api/async-table-data/:id, then pages/sorts/searches it
                           locally. No rows are embedded inline.
-    - keyVar:     class-membership key variable (pagination/ordering anchor)
     - total:      exact instance count of the class (for the banner)
     - complete:   whether the loaded set is the whole in-scope population
     - searchProp: optional name property IRI used by the "Search all" rebuild
@@ -57,7 +56,18 @@
   {{/* facetFor (set by the handler for faceted tables) = base query id; the header
        controls are read from the page's sparql-column elements whose for= matches it.
        Spelled without angle brackets: a Go template comment is not an HTML comment,
-       so a tag written here with attributes would be indexed as a real declaration. */}}
+       so a tag written here with attributes would be indexed as a real declaration.
+
+       Note there is deliberately NO columnFacetFor lookup beside the three above,
+       and its absence does NOT disable filtering on a sync table. facetFor gates
+       only the BACKEND filter tier (/api/faceted-table, /api/facet-values); the
+       funnel controls themselves are read client-side under the table id when
+       facetFor is empty, and filter the loaded rows locally. A sync table embeds
+       its complete result inline, so local filtering is the whole truth and the
+       backend tier has nothing to add. Contrast the icon/badge/group lookups, which
+       ARE needed here: those roles are rendered server-side from the declarations,
+       so without a lookup a sync table really would lose them. See the COLUMN_FOR /
+       FACET_FOR note in static/js/sparql-table.js. */}}
   {{ $facetFor := or .facetFor "" }}
   {{/* Only the INITIAL grouping. A choice the user made earlier is restored from
        localStorage and overrides this — including an explicit "no grouping". */}}
@@ -68,7 +78,6 @@
        not embedded inline. "complete" = the set is the whole in-scope population;
        when false, a banner + "Search all" rebuild appear. */}}
   {{ $workingSet := .workingSet }}
-  {{ $keyVar := .keyVar }}
   {{ $searchProp := .searchProp }}
   {{ $total := .total }}
   {{ $complete := .complete }}
@@ -217,7 +226,6 @@
       "endpoint"     $result.Endpoint
       "workingSet"   $workingSet
       "facetFor"     $facetFor
-      "keyVar"       $keyVar
       "searchProp"   $searchProp
       "endpointSlug" .endpointSlug
       "lang"         .lang

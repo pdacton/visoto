@@ -94,8 +94,8 @@ func pick(sets map[string]*template.Template, code string) (*template.Template, 
 // the pre-render path passes via {{ template "sparqlTable" (dict ...) }} — e.g.
 // "result", "id", "title", "icon", plus the "iconVars"/"badgeVars" the handler
 // folded in from the <sparql-column> declarations. For large classes the
-// async-table handler adds the working-set params "workingSet", "iri", "keyVar",
-// "total", "complete", "searchProp", "max" (see the partial's header comment).
+// async-table handler adds the working-set params "workingSet", "iri", "total",
+// "complete", "searchProp", "max" (see the partial's header comment).
 func RenderSparqlTable(code string, params map[string]any) (template.HTML, error) {
 	tmpl, err := pick(sparqlTableSets, code)
 	if err != nil {
