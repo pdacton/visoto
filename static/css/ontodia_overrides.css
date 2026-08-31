@@ -357,6 +357,17 @@
   stroke-width: 8px !important;
 }
 
+/* The toolbar panel itself. GE2 introduced this container styling (1.3.0 drew
+ * no panel at all): surface, border, radius and --ge-shadow-md, which is a
+ * two-layer 6px/16px floating-panel shadow at ~10%/6% opacity. Next to Tabler's
+ * flat cards that reads as far too heavy, and the panel already has a border to
+ * separate it from the canvas. Drop to the Tabler card shadow and radius. */
+.graph-explorer-toolbar {
+  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius) !important;
+  box-shadow: var(--tblr-box-shadow) !important;
+}
+
 /* ===== CANVAS TOOLBAR — Tabler .btn-group of compact .btn-icon buttons =====
  * The library renders the toolbar as
  *   .graph-explorer-toolbar > .graph-explorer-btn-group(.-sm)
@@ -372,6 +383,10 @@
 .graph-explorer-toolbar .graph-explorer-btn-group {
   display: inline-flex !important;
   vertical-align: middle;
+  /* GE2 ships gap:2px on this group (1.3.0 had no rule at all). That fights the
+   * -1px margin below, so the buttons never actually share a border and every
+   * divider renders as a doubled line. A connected btn-group needs no gap. */
+  gap: 0 !important;
 }
 
 /* Each toolbar button = Tabler compact icon button. Height 28px, tight
