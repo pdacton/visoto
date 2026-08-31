@@ -144,6 +144,28 @@
           settings
         );
 
+        // Stamp each element's own-IRI icon onto the model as data.image.
+        //
+        // typeStyleResolver() below covers instances, whose rdf:type names a real
+        // class. It cannot cover a CLASS node (a class resource page puts one at the
+        // centre): its type is owl:Class, so every class would resolve to the same
+        // generic icon. GE 1.3.0 let a StandardTemplate subclass patch iconUrl into
+        // this.props before super.render(); in 2.x props are rebuilt from the model
+        // on every render, so that patch is discarded (and React 19 makes props
+        // read-only besides). data.image survives because it IS the model, and
+        // renderThumbnail() prefers it over iconUrl.
+        var innerElementInfo = dataProvider.elementInfo.bind(dataProvider);
+        dataProvider.elementInfo = function (params) {
+          return innerElementInfo(params).then(function (dict) {
+            Object.keys(dict).forEach(function (iri) {
+              if (dict[iri].image) return; // a real image from the data wins
+              var url = ICONS.resolve(iri, [], AVAILABLE_ICONS);
+              if (url) dict[iri].image = url;
+            });
+            return dict;
+          });
+        };
+
         var model = workspace.getModel();
         model.importLayout({
           dataProvider: dataProvider,
@@ -177,29 +199,8 @@
         return { icon: ICONS.resolve('', types, AVAILABLE_ICONS) || '/static/img/resource/defaultClass.svg' };
       }
 
-      // StandardTemplateWithIcon: subclass of StandardTemplate that also checks the element's own IRI
-      // This handles class nodes (e.g. schema:DefinedTerm) whose rdf:type is owl:Class —
-      // typeStyleResolver gets types=[...] before data loads, so it can't help them.
-      // By subclassing StandardTemplate we get its render() for free and only patch the props.
-      class StandardTemplateWithIconUrl extends window.GraphExplorer.StandardTemplate {
-        render() {
-          var url = ICONS.resolve(this.props.iri || '', [], AVAILABLE_ICONS);
-          if (!url) return super.render();
-          // React 19 errors on a component reassigning this.props during render, so
-          // swap the patched props in only for the super.render() call and restore.
-          var original = this.props;
-          this.props = Object.assign({}, original, { iconUrl: url });
-          try {
-            return super.render();
-          } finally {
-            this.props = original;
-          }
-        }
-      }
-
-      function elementTemplateResolver(_types) {
-        return StandardTemplateWithIconUrl;
-      }
+      // No element template override: icons ride on data.image (see above), which
+      // StandardTemplate.renderThumbnail() renders directly.
 
       // linkTemplateResolver: style all edges with Tabler-palette neutrals instead of
       // the library's default black arrowheads / per-type colors.
@@ -271,7 +272,6 @@
       var props = {
         ref: onWorkspaceMounted,
         typeStyleResolver: typeStyleResolver,
-        elementTemplateResolver: elementTemplateResolver,
         linkTemplateResolver: linkTemplateResolver,
         languages: [
           { code: 'en', label: 'English' },

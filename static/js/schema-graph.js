@@ -226,6 +226,18 @@
         if (el.label.values.length === 0) {
           el.label.values.push({ value: localName(iri), language: '' });
         }
+        // A class node's rdf:type is the generic rdfs:Class, so typeStyleResolver()
+        // -- which Graph Explorer hands nothing but the type array -- can only ever
+        // return the generic class icon. The node's identity is its own IRI.
+        //
+        // GE 1.3.0 let a StandardTemplate subclass patch iconUrl into this.props
+        // before super.render(). That silently stopped working in 2.x: props are
+        // rebuilt from the model on every render, so the patched copy is discarded
+        // (and React 19 makes props read-only besides). Instead, put the icon on the
+        // element model itself -- renderThumbnail() prefers data.image over iconUrl,
+        // and it survives the props rebuild because it IS the model.
+        var icon = window.VisotoIcons.resolve(iri, [], AVAILABLE_ICONS);
+        if (icon) el.image = icon;
       });
 
       return { elements: elements, links: links };
@@ -379,25 +391,6 @@
         setStatus('derived from <code>' + escapeHtml(localName(RESOURCE_IRI)) + '</code> (anchored on <code>' + escapeHtml(localName(cls)) + '</code>) &mdash; ' + summary);
       }
 
-      // Subclass of StandardTemplate that also checks the element's own IRI for
-      // an icon (class nodes' rdf:type is rdfs:Class, so typeStyleResolver can't
-      // help).
-      class StandardTemplateWithIconUrl extends GE.StandardTemplate {
-        render() {
-          var url = window.VisotoIcons.resolve(this.props.iri || '', [], AVAILABLE_ICONS);
-          if (!url) return super.render();
-          // React 19 errors on a component reassigning this.props during render, so
-          // swap the patched props in only for the super.render() call and restore.
-          var original = this.props;
-          this.props = Object.assign({}, original, { iconUrl: url });
-          try {
-            return super.render();
-          } finally {
-            this.props = original;
-          }
-        }
-      }
-
       function onWorkspaceMounted(workspace) {
         if (!workspace) return;
         currentWorkspace = workspace;
@@ -435,7 +428,8 @@
       GE.renderTo(GE.Workspace, container, {
         ref: onWorkspaceMounted,
         typeStyleResolver: typeStyleResolver,
-        elementTemplateResolver: function () { return StandardTemplateWithIconUrl; },
+        // No element template override: the icon rides on element.data.image,
+        // which StandardTemplate.renderThumbnail() renders directly.
         linkTemplateResolver: function () { return LINK_DEFAULT; },
         languages: [{ code: 'en', label: 'English' }],
         language: 'en',
