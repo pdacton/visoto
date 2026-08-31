@@ -699,11 +699,15 @@
     background-color: var(--tblr-bg-surface) !important;
   }
 
-  /* Toolbar background and borders */
+  /* Toolbar background and borders. --tblr-bg-surface, NOT -secondary: in dark
+   * mode those are gray-800 (#1f2937) and gray-900 (#111827), and -secondary
+   * rendered the toolbar visibly darker than the halo bar above a node, which
+   * sits on the plain surface like every Tabler card. Both panels float over the
+   * same canvas, so they take the same surface token. */
   .graph-explorer-toolbar,
   .graph-explorer-toolbar__layout,
   .graph-explorer-toolbar__command-bar {
-    background-color: var(--tblr-bg-surface-secondary) !important;
+    background-color: var(--tblr-bg-surface) !important;
     border-color: var(--tblr-border-color) !important;
   }
 
