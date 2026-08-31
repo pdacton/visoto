@@ -377,23 +377,27 @@
  * above). We restyle it to match the Tabler toolbar btn-group: a single
  * connected group, 28px tall, light-grey icons, rounded OUTER corners only. */
 
-/* The group itself: flex row so buttons connect with no gaps. The library
- * ships it as `display:inline-block`, which lets the buttons keep their own
- * box model; flex lets us collapse the doubled inner borders cleanly. */
+/* The group itself: a plain flex row. Tabler's .btn-actions is `display:flex`
+ * and nothing more; spacing comes from the buttons' own padding, so GE2's
+ * gap:2px is dropped rather than replaced. */
 .graph-explorer-toolbar .graph-explorer-btn-group {
   display: inline-flex !important;
+  align-items: center !important;
   vertical-align: middle;
-  /* GE2 ships gap:2px on this group (1.3.0 had no rule at all). That fights the
-   * -1px margin below, so the buttons never actually share a border and every
-   * divider renders as a doubled line. A connected btn-group needs no gap. */
   gap: 0 !important;
 }
 
-/* Each toolbar button = Tabler compact icon button. Height 28px, tight
- * horizontal padding (text buttons like "Clear All"/"PNG" keep a little room),
- * light-grey icon via `color` (the .fa mask paints with currentColor), and a
- * single shared Tabler border. Square corners here; the outer corners get
- * rounded by the first/last-child rules below (btn-group convention). */
+/* Each toolbar button = Tabler .btn-action: transparent background, NO border,
+ * no shadow, secondary-grey icon; hover darkens the glyph and lays a subtle
+ * --tblr-active-bg pill behind it. Mirrors Tabler's own rule set:
+ *   .btn-action        { --tblr-border-color: transparent; color: var(--tblr-secondary);
+ *                        border-radius: var(--tblr-border-radius);
+ *                        background: transparent; box-shadow: none; }
+ *   .btn-action:hover  { color: var(--tblr-body-color); background: var(--tblr-active-bg);
+ *                        border-color: transparent; }
+ * The earlier connected-btn-group styling (shared 1px borders, negative margins,
+ * outer-corner rounding) is gone with it — a boxed run reads much heavier than
+ * the rest of the UI, and the enclosing toolbar panel already frames the group. */
 .graph-explorer-toolbar .graph-explorer-btn {
   height: 28px !important;
   min-width: 28px !important;
@@ -405,29 +409,12 @@
   font-size: 13px !important;
   line-height: 1 !important;
   color: var(--tblr-secondary) !important;
-  background-color: var(--tblr-bg-surface, #fff) !important;
-  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
-  border-radius: 0 !important;
-  /* Collapse the doubled border between adjacent buttons (Tabler btn-group). */
-  margin-left: calc(-1 * var(--tblr-border-width)) !important;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out !important;
-}
-
-/* Round only the group's outer corners and drop the leading negative margin
- * on the first button so the group edge stays flush. */
-.graph-explorer-toolbar .graph-explorer-btn-group > .graph-explorer-btn:first-child {
+  background: transparent !important;
+  border: var(--tblr-border-width) solid transparent !important;
+  border-radius: var(--tblr-border-radius) !important;
+  box-shadow: none !important;
   margin-left: 0 !important;
-  border-top-left-radius: var(--tblr-border-radius) !important;
-  border-bottom-left-radius: var(--tblr-border-radius) !important;
-}
-/* Round the right end of the button run. The group's actual :last-child is the
- * language-selector <span>, not a button, so target BOTH the last button in the
- * group AND the button directly before the language selector — whichever ends
- * the visual button run gets the rounded right corners. */
-.graph-explorer-toolbar .graph-explorer-btn-group > .graph-explorer-btn:last-child,
-.graph-explorer-toolbar .graph-explorer-btn:has(+ .graph-explorer-toolbar__language-selector) {
-  border-top-right-radius: var(--tblr-border-radius) !important;
-  border-bottom-right-radius: var(--tblr-border-radius) !important;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out !important;
 }
 
 /* The language selector starts a fresh control, so give it a small gap from
@@ -442,9 +429,8 @@
 .graph-explorer-toolbar .graph-explorer-btn:hover,
 .graph-explorer-toolbar .graph-explorer-btn:focus {
   color: var(--tblr-body-color) !important;
-  background-color: var(--tblr-bg-surface-secondary, #f8fafc) !important;
-  position: relative;
-  z-index: 1;
+  background: var(--tblr-active-bg) !important;
+  border-color: transparent !important;
 }
 
 /* Icon glyphs sit at ~18px (Tabler .icon size) inside the 28px button. */
@@ -601,18 +587,21 @@
     border-color: var(--tblr-border-color) !important;
   }
 
-  /* Toolbar buttons and controls */
-  .graph-explorer-btn,
-  .graph-explorer-toolbar button,
+  /* Buttons OUTSIDE the toolbar (connections-menu "Add", dialog buttons) keep a
+   * surface + border in dark mode. The toolbar's own buttons must not: they are
+   * Tabler .btn-action (transparent, borderless) in both themes, and a fill here
+   * would reinstate exactly the boxed look that styling removes. Scoped with
+   * :not(.graph-explorer-toolbar *) — a descendant combinator is illegal inside
+   * :not(), but the universal-descendant form is valid and well supported. */
+  .graph-explorer-btn:not(.graph-explorer-toolbar *),
   .graph-explorer-toolbar__language-selector select {
     background-color: var(--tblr-bg-surface-secondary) !important;
     color: var(--tblr-body-color) !important;
     border-color: var(--tblr-border-color) !important;
   }
 
-  .graph-explorer-btn:hover,
   .graph-explorer-toolbar button:hover {
-    background-color: var(--tblr-bg-surface-tertiary) !important;
+    background: var(--tblr-active-bg) !important;
   }
 
   /* Panels and sidebars */
