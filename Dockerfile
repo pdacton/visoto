@@ -20,7 +20,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -o visoto ./cmd/visoto
 
 # Runtime stage
-FROM alpine:3.21
+FROM alpine:3.24
 
 # Install ca-certificates for HTTPS requests to LINDAS
 RUN apk add --no-cache ca-certificates
