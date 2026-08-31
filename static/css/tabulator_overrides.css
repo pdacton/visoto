@@ -46,6 +46,23 @@
     background: var(--tblr-bg-surface-tertiary);
 }
 
+/* Match Tabler's `.table thead th` exactly. The color has to be set HERE rather
+   than on .tabulator-header: the library styles the column and its inner title
+   element directly, so a color inherited from the header is overridden and the
+   text came out at full body brightness (#e5e7eb) instead of the muted
+   --tblr-secondary (#9ca3af) Tabler uses. letter-spacing and line-height were
+   simply missing.
+
+     .table thead th { font-size: .75rem; font-weight: var(--tblr-font-weight-medium);
+                       text-transform: uppercase; letter-spacing: .04em;
+                       line-height: 1rem; color: var(--tblr-secondary); } */
+.tabulator .tabulator-header .tabulator-col,
+.tabulator .tabulator-header .tabulator-col .tabulator-col-title {
+    color: var(--tblr-secondary);
+    letter-spacing: 0.04em;
+    line-height: 1rem;
+}
+
 /* Sortable column styling */
 .tabulator .tabulator-header .tabulator-col.tabulator-sortable {
     cursor: pointer;
