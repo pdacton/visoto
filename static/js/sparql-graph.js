@@ -144,6 +144,18 @@
           settings
         );
 
+        // Set data.image from an element's own IRI, preserving the rest of its
+        // data. setData replaces the model wholesale, so the existing fields are
+        // carried over; GE re-renders from the model, so this survives.
+        function stampIcon(element, iri) {
+          if (!element) return;
+          var url = ICONS.resolve(iri, [], AVAILABLE_ICONS);
+          if (!url) return;
+          var data = element.data || {};
+          if (data.image) return; // a real image from the data wins
+          element.setData(Object.assign({}, data, { id: data.id || iri, iri: iri, image: url }));
+        }
+
         // Stamp each element's own-IRI icon onto the model as data.image.
         //
         // typeStyleResolver() below covers instances, whose rdf:type names a real
@@ -174,12 +186,22 @@
         });
 
         // Load each starting element and fetch its data.
+        //
+        // The icon is stamped on at creation, BEFORE requestElementData, because
+        // elementInfo cannot be relied on to return anything: a class IRI is
+        // often only implied by its instances' rdf:type and carries no triples
+        // of its own (https://schema.ld.admin.ch/Canton has zero), so the query
+        // comes back empty and the element keeps the placeholder data GE built
+        // from the IRI. The elementInfo wrapper below then has no dictionary
+        // entry to enrich. Resolving from the IRI here needs no data at all --
+        // which is the whole point, since the IRI is all that exists.
         var x = 400;
         startIris.forEach(function(startIRI) {
           var element = model.createElement(startIRI);
           if (element) {
             element.setPosition({ x: x, y: 300 });
             x += 200;
+            stampIcon(element, startIRI);
           }
         });
         model.requestElementData(startIris);
