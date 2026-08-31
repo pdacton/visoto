@@ -582,3 +582,47 @@
     width: 0.9em;
     height: 0.9em;
 }
+
+/* ===== DARK MODE =====
+   Tabulator paints its inner row container opaque white
+   (.tabulator-table { background-color: #fff }) in both 6.3.1 and 6.5.2, and
+   its bootstrap5 theme has no dark rule for that element — 6.5.2 added
+   [data-bs-theme=dark] rules for the tableholder and for .table-striped rows,
+   but not for this one, and our tables carry no .table-striped class. The rows
+   themselves are transparent, so that white showed straight through the whole
+   table body while the header, footer and card around it were correctly dark.
+
+   Inherit the card surface instead. Rows and cells stay transparent, so this
+   single declaration is enough for the whole body; striping and hover states
+   are unaffected because they set their own backgrounds on the row. */
+[data-bs-theme="dark"] .tabulator .tabulator-tableholder .tabulator-table {
+    background-color: var(--tblr-bg-surface);
+    color: var(--tblr-body-color);
+}
+
+/* Tabulator 6.5.x ships its own dark rules, but they are written against
+   BOOTSTRAP's variables:
+
+     html[data-bs-theme="dark"] .tabulator .tabulator-row {
+       background-color: var(--bs-body-bg);
+       border-color: var(--bs-border-color);
+       color: var(--bs-body-color);
+     }
+
+   Tabler defines --tblr-* and never populates the --bs-* names, so every one of
+   those declarations resolves to nothing and is dropped — leaving the library's
+   own light default (border 1px solid #dee2e6) to paint the row separators,
+   which read far too bright against a dark card.
+
+   Rather than restate each rule, point the handful of --bs-* names Tabulator
+   asks for at their Tabler equivalents, scoped to the table. Its dark rules then
+   work as written, including the ones we do not override (selected rows, groups,
+   the data-tree control, footer calc rows). */
+[data-bs-theme="dark"] .tabulator {
+    --bs-body-bg: var(--tblr-bg-surface);
+    --bs-body-color: var(--tblr-body-color);
+    --bs-border-color: var(--tblr-border-color);
+    --bs-secondary-bg: var(--tblr-bg-surface-secondary);
+    --bs-tertiary-bg: var(--tblr-bg-surface-tertiary);
+    --bs-emphasis-color: var(--tblr-body-color);
+}
