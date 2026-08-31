@@ -55,9 +55,10 @@
     {{ if eq .EndpointTag "lindas" }}
     <div class="nav-item dropdown flex-shrink-0" id="theme-menu">
       <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" role="button" aria-expanded="false" aria-label="{{ t "topbar.themes" "Themes" }}" data-bs-original-title="{{ t "topbar.themes" "Themes" }}">
-        <!-- Inline rather than data-lucide: the pinned lucide@1.24.0 bundle has no
-             3x3-dot glyph, and an unknown icon name fails silently, leaving an
-             empty box. currentColor keeps it in step with the other topbar icons. -->
+        <!-- Inline rather than data-lucide: lucide's "grip" uses this same 3x3
+             grid but draws it as r=1 stroked dots, which reads too light next to
+             the other topbar icons; these are filled at r=2. currentColor keeps
+             it in step with them. -->
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 1.25rem; height: 1.25rem;" aria-hidden="true" focusable="false">
           <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
           <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
