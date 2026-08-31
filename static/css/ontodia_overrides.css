@@ -119,8 +119,7 @@
 .graph-explorer-halo__add-to-filter,
 .graph-explorer-halo__remove {
   opacity: 1 !important;
-  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
-              outline-color 0.15s ease-in-out !important;
+  transition: color 0.15s ease-in-out !important;
 }
 
 .graph-explorer-halo__folow:hover,
@@ -129,16 +128,36 @@
 .graph-explorer-halo__add-to-filter:hover,
 .graph-explorer-halo__remove:hover {
   color: var(--tblr-body-color) !important;
-  /* The pill is inflated past the 20px glyph box to Tabler's ~28px action-button
-   * size with a 4px `outline` in the same tint, NOT padding (which would shift
-   * the glyph) and not a box-shadow spread (whose corners flatten). outline
-   * follows border-radius and never affects layout, so the cluster geometry is
-   * untouched — the buttons stay 20px, and the fixed ±28px offsets and the
-   * ::before bar width above still line up. */
-  background: var(--tblr-active-bg) !important;
-  border-radius: var(--tblr-border-radius) !important;
-  outline: 4px solid var(--tblr-active-bg) !important;
-  outline-offset: 0 !important;
+}
+
+/* The hover pill, drawn as a ::before backing layer so it is a REAL rounded
+ * box like the toolbar buttons' background — an `outline` was tried first and
+ * its corners do not round the same way, which made the halo pill read as a
+ * squarer shape than the toolbar's despite both using --tblr-active-bg.
+ *
+ * inset:-4px inflates the 20px glyph box to Tabler's ~28px action size without
+ * touching layout (the element stays 20px, so the fixed ±28px cluster offsets
+ * and the 148px ::before bar still line up). It renders behind the ::after
+ * glyph because ::before paints first among the element's own layers. */
+.graph-explorer-halo__folow::before,
+.graph-explorer-halo__navigate::before,
+.graph-explorer-halo__expand::before,
+.graph-explorer-halo__add-to-filter::before,
+.graph-explorer-halo__remove::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  border-radius: var(--tblr-border-radius);
+  background: transparent;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.graph-explorer-halo__folow:hover::before,
+.graph-explorer-halo__navigate:hover::before,
+.graph-explorer-halo__expand:hover::before,
+.graph-explorer-halo__add-to-filter:hover::before,
+.graph-explorer-halo__remove:hover::before {
+  background: var(--tblr-active-bg);
 }
 
 /* Replace Font Awesome icons with Lucide icons using mask-image */
