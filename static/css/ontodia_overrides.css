@@ -454,6 +454,26 @@
   stroke-width: 8px !important;
 }
 
+/* Canvas dot grid: paint it from the origin of the scrollable area.
+ *
+ * GE2 sets background-position inline to the paper-area's padding
+ * (paddingX + originX*scale), and that padding is one full viewport on each
+ * side — the slack that lets you pan past the content. But the layer uses
+ * background-attachment:local, so the pattern is laid out against the CONTENT
+ * box and simply starts that one viewport in, leaving the right and bottom
+ * padding bare. Measured: position 807px 557px on an 807x557 viewport, dots
+ * painted only from x=807 to x=3114, so the last ~807x557 of scrollable canvas
+ * had no grid — visible as a hard vertical edge with empty canvas beyond it.
+ *
+ * Pinning the origin to 0 0 tiles the pattern across the whole area. The dots
+ * are a uniform 24px lattice with no landmark, so nothing about the graph reads
+ * differently for having shifted the phase; they still pan with the content
+ * because attachment:local is untouched. !important is required — GE rewrites
+ * the inline background-position on every zoom and pan. */
+.graph-explorer-paper-area__area {
+  background-position: 0 0 !important;
+}
+
 /* Center the toolbar over the canvas. GE2 pins its wrapper to the top-left
  * (.graph-explorer__toolbar-widget { position:absolute; top:10px; left:10px }).
  *
