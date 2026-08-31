@@ -473,7 +473,7 @@
           col.tooltip = function(e, cell) {
             var el = cell.getElement();
             // "" suppresses the tooltip; false would render a literal "false"
-            // (Tabulator 6.3.1 treats false as content, see its loadTooltip)
+            // (Tabulator 6.5.2 treats false as content, see its loadTooltip)
             if (el.scrollHeight <= el.clientHeight + 1) return "";
             return plainValueAccessor(cell.getValue());
           };
@@ -524,7 +524,7 @@
     // (fitData* measures every cell and janks). Inline (small) tables use
     // fitDataStretch: content-sized columns, last column stretches to fill the
     // card. NOT fitDataFill — it re-runs layout on mouseup and discards manual
-    // column resizes (Tabulator 6.3.1).
+    // column resizes (Tabulator 6.5.2).
     function baseConfig(layout) {
       return {
         layout: layout,
@@ -615,7 +615,7 @@
       });
     })();
 
-    // Tabulator 6.3.1 keeps a shown tooltip open after the mouse leaves the
+    // Tabulator 6.5.2 keeps a shown tooltip open after the mouse leaves the
     // cell (its mouseoutCheck only cancels pending tooltips); hide it via the
     // tooltip module's own cleanup path.
     table.on("cellMouseOut", function() {

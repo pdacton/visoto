@@ -58,10 +58,9 @@
     <!-- CDN assets are version-pinned with SRI hashes; when bumping a version,
          recompute: curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A -->
     <link rel="stylesheet" href="https://unpkg.com/@tabler/core@1.4.0/dist/css/tabler.css" integrity="sha384-XpUSnjkXlA07hV1j91nGSKOORHBS/tq5PL2KFmoE5YU7NiHhUiTy4CJZ2OI5Tcps" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" integrity="sha384-XGjxtQfXaH2tnPFa9x+ruJTuLE3Aa6LhHSWRr1XeTyhezb4abCG4ccI5AkVDxqC+" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css" integrity="sha384-9/lguyjxX4X2JRIrcVvJakGfMwhYLJtS4Wx9uTDPdiR6+RrD2dxUUR+1kAFa2cNQ" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@6.5.2/dist/css/tabulator_bootstrap5.min.css" integrity="sha384-jLY9tX1VvsF9WItIHuMydr6YXzOYzrAlp4DiS+SkLazNIL1q2PnfORgAAWgggkU7" crossorigin="anonymous">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/wunderbaum@0.14.1/dist/wunderbaum.css" integrity="sha384-82MpovyB83ouHTPksVC1IFarT2nlj8sT03wv5b63VRDlFbiRZxYRm3DbGTTPbOMN" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css" integrity="sha384-4Y0nObtF3CbKnh+lpzmAVdAMtQXl+ganWiiv73RcGVdRdfVIya8Cao1C8ZsVRRDz" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.12.0/styles/default.min.css" integrity="sha384-4Y0nObtF3CbKnh+lpzmAVdAMtQXl+ganWiiv73RcGVdRdfVIya8Cao1C8ZsVRRDz" crossorigin="anonymous">
 
     <!-- overrides -->
     <link rel="stylesheet" href="/static/css/tabler_overrides.css">
@@ -448,12 +447,24 @@
 
     <script src="https://unpkg.com/@tabler/core@1.4.0/dist/js/tabler.js" integrity="sha384-+L11I0K/7niuERIzrVf6fiTapgkBs8Nl5jnFIvMxDbjizGkKfqBOxjC3HkTMVAq5" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.10/dist/htmx.min.js" integrity="sha384-H5SrcfygHmAuTDZphMHqBJLc3FhssKjG7w/CeCpFReSfwBWDTKpkzPP8c+cLsK+V" crossorigin="anonymous"></script>
-    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.3.1/dist/js/tabulator.min.js" integrity="sha384-SKSq3cuuVWdfrjtLz9wNlqE0bMc903yMS5zGnFtwvfddplgxa1hywtiLyw1CbSHO" crossorigin="anonymous"></script>
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@6.5.2/dist/js/tabulator.min.js" integrity="sha384-ZlfxHB5fIn8MOAuKJe8YBMi7snQXYvhy+0b3K4rGBBY2UvrJwho2jciJ5NKt0WtC" crossorigin="anonymous"></script>
+    <!-- SheetJS is pinned at 0.18.5 because that is the last version ever
+         published to npm (2022-03-24); the project moved distribution to
+         cdn.sheetjs.com afterwards. 0.18.5 carries CVE-2023-30533 (prototype
+         pollution, fixed 0.19.3) and CVE-2024-22363 (ReDoS, fixed 0.20.2).
+         Both are in the *parser*. Nothing here parses a spreadsheet: this
+         library is loaded only so Tabulator's table.download("xlsx", ...) in
+         sparql-table.js can write one, and the single file input on the site
+         (topbar.html) accepts RDF formats only. So neither CVE is reachable,
+         but an audit tool will still flag the version.
+         To move off it, take the tarball from https://cdn.sheetjs.com/, host
+         it under /static or re-point this tag, and recompute the hash with
+         `openssl dgst -sha384 -binary <file> | openssl base64 -A`. -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/wunderbaum@0.14.1/dist/wunderbaum.umd.min.js" integrity="sha384-PXnlsX9aLAfpCyM4xQFMMm2hDxkXhCG4ec5Fqk2wf2eDGCph7+rc5y9cp21ykCw2" crossorigin="anonymous"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js" integrity="sha384-RH2xi4eIQ/gjtbs9fUXM68sLSi99C7ZWBRX1vDrVv6GQXRibxXLbwO2NGZB74MbU" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.12.0/highlight.min.js" integrity="sha384-wjfDDhOPPdjtva8vWBhWeVprSpmxisEu5aYT3q1JyACqXpdKpo3PWZTMVq24MBix" crossorigin="anonymous"></script>
     <script type="module" src="/static/js/mermaid-init.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js" integrity="sha384-yc/c2Lk1s2V2ir1rxvjo8YyVD9PlOlYTqpNr3Wm1WIuAA30GlDYNx6U5104OiavY" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.2/dist/svg-pan-zoom.min.js" integrity="sha384-GGX4llYprEPGp9w5caepn95YWAEflHnsA5ewt+Y+cBEb95og5cXKllnWKSELlzbx" crossorigin="anonymous"></script>
     <script src="/static/js/darkmode.js"></script>
     <script src="/static/js/sidebar.js"></script>
     <script src="/static/js/bookmarks.js"></script>
@@ -489,7 +500,7 @@
     <script src="/static/js/cache-purge.js"></script>
 
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/lucide@1.37.0/dist/umd/lucide.min.js" integrity="sha384-Q+SBuMPu2+Rlj/ENVdxcp5LNmVj4xEw5M3/6aY4Uf0yd4NQSO/OyjkvdzTnDCxpr" crossorigin="anonymous"></script>
     <!-- Tooltip, highlight.js and Lucide initialisation (was three inline blocks) -->
     <script src="/static/js/page-init.js"></script>
 

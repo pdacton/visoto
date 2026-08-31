@@ -1,6 +1,6 @@
 
 /* Tabulator bootstrap 5 CSS overrides, we override settings from
-   "https://unpkg.com/tabulator-tables@6.3.1/dist/css/tabulator_bootstrap5.min.css"
+   "https://unpkg.com/tabulator-tables@6.5.2/dist/css/tabulator_bootstrap5.min.css"
    to match tabler formatting. Overriding makes it easier for later migrations, if tabulator should change their CSS.
 */
 
