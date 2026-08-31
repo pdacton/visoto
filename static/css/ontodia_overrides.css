@@ -102,21 +102,25 @@
 .graph-explorer-halo__add-to-filter { transform: translateX(calc(-50% + 28px)) !important; }
 .graph-explorer-halo__remove        { transform: translateX(calc(-50% + 56px)) !important; }
 
-/* Tabler .btn-action hover, color half only. Tabler action icons rest at
- * --tblr-secondary (set above) and on hover darken to --tblr-body-color +
- * gain a --tblr-active-bg pill. We take the color darken (the visible part)
- * but SKIP the pill: our halo buttons are bare 20px `mask` boxes, so a
- * `background` would be clipped to the glyph shape (no pill) unless we add a
- * ::before backing layer and re-do the cluster geometry — out of scope here,
- * and --tblr-active-bg is only ~4% alpha anyway. Also drop the library's
- * opacity:.5→1 fade so hover reads as a crisp color change, not a fade-in. */
+/* Tabler .btn-action hover, both halves: the glyph darkens to --tblr-body-color
+ * AND gains a --tblr-active-bg pill, matching the canvas toolbar buttons.
+ *
+ * The pill needs the glyph mask to live on ::after rather than on the button
+ * itself (see the icon rules further down). A mask clips everything the element
+ * renders, pseudo-elements included, so while the button carried the mask any
+ * background on it was clipped to the glyph outline and no pill was possible.
+ * With the mask moved to ::after, the button is a plain 20px box again and can
+ * paint the pill behind its own icon.
+ *
+ * Also drops the library's opacity:.5→1 fade so hover reads as a crisp change. */
 .graph-explorer-halo__folow,
 .graph-explorer-halo__navigate,
 .graph-explorer-halo__expand,
 .graph-explorer-halo__add-to-filter,
 .graph-explorer-halo__remove {
   opacity: 1 !important;
-  transition: color 0.15s ease-in-out !important;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
+              outline-color 0.15s ease-in-out !important;
 }
 
 .graph-explorer-halo__folow:hover,
@@ -125,6 +129,16 @@
 .graph-explorer-halo__add-to-filter:hover,
 .graph-explorer-halo__remove:hover {
   color: var(--tblr-body-color) !important;
+  /* The pill is inflated past the 20px glyph box to Tabler's ~28px action-button
+   * size with a 4px `outline` in the same tint, NOT padding (which would shift
+   * the glyph) and not a box-shadow spread (whose corners flatten). outline
+   * follows border-radius and never affects layout, so the cluster geometry is
+   * untouched — the buttons stay 20px, and the fixed ±28px offsets and the
+   * ::before bar width above still line up. */
+  background: var(--tblr-active-bg) !important;
+  border-radius: var(--tblr-border-radius) !important;
+  outline: 4px solid var(--tblr-active-bg) !important;
+  outline-offset: 0 !important;
 }
 
 /* Replace Font Awesome icons with Lucide icons using mask-image */
@@ -229,7 +243,6 @@
 
 /* redesign ontodia menu icons with Lucide icons using mask-image */ 
 
-.graph-explorer-halo__remove,
 .graph-explorer-dialog__close-button {
   background-image: none;
   background-color: currentColor;
@@ -243,8 +256,36 @@
   mask-position: center;
 }
 
+.graph-explorer-halo__remove {
+  background-image: none;
+  background-color: transparent;
+}
+
+.graph-explorer-halo__remove::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+
 .graph-explorer-halo__navigate {
   background-image: none;
+  background-color: transparent;
+}
+
+.graph-explorer-halo__navigate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background-color: currentColor;
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 15 6 6'/%3E%3Cpath d='m15 9 6-6'/%3E%3Cpath d='M21 16v5h-5'/%3E%3Cpath d='M21 8V3h-5'/%3E%3Cpath d='M3 16v5h5'/%3E%3Cpath d='m3 21 6-6'/%3E%3Cpath d='M3 8V3h5'/%3E%3Cpath d='M9 9 3 3'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 15 6 6'/%3E%3Cpath d='m15 9 6-6'/%3E%3Cpath d='M21 16v5h-5'/%3E%3Cpath d='M21 8V3h-5'/%3E%3Cpath d='M3 16v5h5'/%3E%3Cpath d='m3 21 6-6'/%3E%3Cpath d='M3 8V3h5'/%3E%3Cpath d='M9 9 3 3'/%3E%3C/svg%3E");
@@ -256,11 +297,19 @@
   mask-position: center;
 }
 
+
 /* __folow = "Jump to resource" — Lucide external-link. Converted to a
  * currentColor mask (was the library's own background-image) so it takes the
  * shared Tabler-secondary color like the other halo icons. */
 .graph-explorer-halo__folow {
   background-image: none;
+  background-color: transparent;
+}
+
+.graph-explorer-halo__folow::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background-color: currentColor;
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M10 14 21 3'/%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M10 14 21 3'/%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E");
@@ -272,10 +321,18 @@
   mask-position: center;
 }
 
+
 /* __expand = "reveal additional properties" — Lucide chevrons-down. Same
  * currentColor-mask conversion so it shares the Tabler-secondary color. */
 .graph-explorer-halo__expand {
   background-image: none;
+  background-color: transparent;
+}
+
+.graph-explorer-halo__expand::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background-color: currentColor;
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 6 5 5 5-5'/%3E%3Cpath d='m7 13 5 5 5-5'/%3E%3C/svg%3E");
   mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 6 5 5 5-5'/%3E%3Cpath d='m7 13 5 5 5-5'/%3E%3C/svg%3E");
@@ -287,7 +344,7 @@
   mask-position: center;
 }
 
-.graph-explorer-halo__add-to-filter,
+
 .link-in-popup-menu__filter-button {
   background-image: none;
   background-color: currentColor;
@@ -300,6 +357,27 @@
   -webkit-mask-position: center;
   mask-position: center;
 }
+
+.graph-explorer-halo__add-to-filter {
+  background-image: none;
+  background-color: transparent;
+}
+
+.graph-explorer-halo__add-to-filter::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.354 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l1.218-1.348'/%3E%3Cpath d='M16 6h6'/%3E%3Cpath d='M19 3v6'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.354 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l1.218-1.348'/%3E%3Cpath d='M16 6h6'/%3E%3Cpath d='M19 3v6'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
 
 .linkInToolBox__filter-button {
   background-image: none;
