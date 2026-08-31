@@ -454,6 +454,29 @@
   stroke-width: 8px !important;
 }
 
+/* Center the toolbar over the canvas. GE2 pins its wrapper to the top-left
+ * (.graph-explorer__toolbar-widget { position:absolute; top:10px; left:10px }).
+ *
+ * left:50% + translateX(-50%) is NOT used: the wrapper's offset parent is
+ * .graph-explorer-paper-area__widgets, which is `position:absolute; top:0;
+ * left:0` with NO width, so a percentage left would resolve against a zero-width
+ * box and land at the canvas's left edge. Instead stretch the wrapper across the
+ * paper area (left:0; right:0) and center its contents with flex — the wrapper
+ * is a plain div whose only child is the toolbar, so it can become the centering
+ * row. pointer-events is handed back to the toolbar so the stretched, otherwise
+ * transparent wrapper never swallows clicks or drags on the canvas beneath it. */
+.graph-explorer__toolbar-widget {
+  left: 0 !important;
+  right: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  pointer-events: none !important;
+}
+
+.graph-explorer__toolbar-widget > * {
+  pointer-events: auto;
+}
+
 /* The toolbar panel itself. GE2 introduced this container styling (1.3.0 drew
  * no panel at all): surface, border, radius and --ge-shadow-md, which is a
  * two-layer 6px/16px floating-panel shadow at ~10%/6% opacity. Next to Tabler's
