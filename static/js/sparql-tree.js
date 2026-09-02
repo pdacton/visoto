@@ -46,7 +46,11 @@
 
         // Extra vars go directly on the source node object (not nested under "data").
         // Wunderbaum exposes non-reserved source properties as e.node.data[varName].
-        var node = { title: nodeBinding.DisplayText || key, key: key, _iri: key };
+        // icon:false suppresses Wunderbaum's per-node folder/document glyph, which
+        // would otherwise hold an empty 20px box beside every title. Only the
+        // literal false skips the element; "" does not, and an iconMap entry is not
+        // consulted for this. Same as the lazy tree (cmd/visoto/lazy_tree.go).
+        var node = { title: nodeBinding.DisplayText || key, key: key, _iri: key, icon: false };
         for (var varName in binding) {
           if (varName === "node" || varName === "parent") continue;
           var b = binding[varName];
@@ -119,6 +123,9 @@
       source: treeData,
       columns: columns,
       rowHeightPx: 44, // static row height required by wunderbaum, must be same as --wb-header-height CSS variable in css override file
+      // Lucide icons instead of Wunderbaum's Bootstrap Icons default, which this
+      // project does not load — see static/js/wunderbaum-icons.js.
+      iconMap: window.visotoWunderbaumIcons,
       filter: {
         autoApply: true,
         mode: "hide"

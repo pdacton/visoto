@@ -143,3 +143,171 @@ div.wunderbaum.wb-grid:not(:focus-within) div.wb-node-list div.wb-row,
 div.wunderbaum.wb-grid:not(:focus) div.wb-node-list div.wb-row {
     border-bottom: 0px;
 }
+/* ---------------------------------------------------------------------------
+   Lazy tree (templates/partials/sparql-lazy-tree.html)
+
+   The eager sparqlTree sets an explicit pixel height from its row count, which it
+   can do because it knows every row up front. A lazy tree does not: at first paint
+   it has one level, and more arrive as the user expands.
+
+   So it takes a fixed working height instead — enough to browse a hierarchy
+   without the card resizing under the cursor every time a level loads, which is
+   what a content-sized box would do. 600px matches the cap the eager tree grows
+   to, so the two trees read as the same component.
+
+   An author who wants a different height wraps the tree in a sized element and
+   adds .vs-lazy-tree-fill (a full-height sidebar column, say).
+   --------------------------------------------------------------------------- */
+div.wunderbaum.vs-lazy-tree {
+    height: 600px;
+    max-height: 80vh;   /* never taller than the viewport on a short window */
+}
+
+/* Sized to the viewport instead of the default 600px, for a tree that occupies a
+   column of its own (a sticky sidebar beside page content).
+
+   height:100% was the obvious spelling and does not work: percentage heights
+   resolve against the PARENT's height, and the parent here is a card that sizes to
+   its content — so the tree asked for 100% of a box that was itself waiting on the
+   tree, and settled at its minimum. An explicit viewport height has no such
+   circularity. The subtraction covers the topbar (56px), the page gutter, and the
+   card's own header and breadcrumb.
+
+   The tree scrolls internally, so a hierarchy of any size stays inside its box. */
+.vs-lazy-tree-fill div.wunderbaum.vs-lazy-tree {
+    height: calc(100vh - 56px - 11rem);
+    min-height: 18rem;
+    max-height: none;
+}
+
+/* Stacked below lg the tree sits ABOVE the content, where a full-height tree would
+   fill the screen and bury what the user came to read. Ten rows is enough to
+   navigate from while leaving the content visible underneath. */
+@media (max-width: 991.98px) {
+    .vs-lazy-tree-fill div.wunderbaum.vs-lazy-tree {
+        height: calc(10 * var(--wb-header-height, 44px));
+        min-height: 0;
+    }
+}
+
+/* Per-node level error (LT-19): the failure is shown ON the node, so one bad
+   level never blanks the tree or the page. */
+div.wunderbaum.vs-lazy-tree div.wb-row.wb-error span.wb-title {
+    color: var(--tblr-danger);
+}
+
+/* ---------------------------------------------------------------------------
+   Expander and leaf icons
+
+   The icons are real Lucide SVG, handed to Wunderbaum through its iconMap
+   (static/js/wunderbaum-icons.js) rather than styled onto its Bootstrap Icons
+   elements from out here. That markup reproduces Wunderbaum's own <i> — it
+   hit-tests clicks by looking for .wb-expander on the clicked element — with the
+   SVG nested inside. What is left for CSS is size, colour and motion.
+   --------------------------------------------------------------------------- */
+
+/* The icon, centred on the title's line.
+
+   The row is a line box (line-height 42px) and .wb-title sits in it with
+   vertical-align: top, spanning the full line and centring its text at the row's
+   middle. An icon with vertical-align: middle instead lands on the TEXT midline —
+   baseline plus half an x-height — which measured ~1.3px below that centre. The
+   offset below puts it back on the title's centre line. */
+div.wunderbaum span.wb-node i.vs-wb-icon,
+div.wunderbaum i.vs-wb-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--wb-icon-outer-width);
+    height: var(--wb-icon-outer-height);
+    padding: 0;
+    box-sizing: border-box;
+    vertical-align: top;
+    position: relative;
+    top: calc((var(--wb-header-height, 44px) - 2px - var(--wb-icon-outer-height)) / 2);
+    color: var(--tblr-secondary);
+    flex: 0 0 auto;
+    transition: color .15s ease-in-out;
+}
+
+/* The SVG is decoration inside the <i>; every click must land on the <i>, which
+   is what Wunderbaum hit-tests for .wb-expander. */
+div.wunderbaum i.vs-wb-icon > svg {
+    width: var(--wb-icon-width);
+    height: var(--wb-icon-height);
+    display: block;
+    pointer-events: none;
+}
+
+/* An expander is clickable; a leaf marker is not, so only the former offers the
+   hover affordance. */
+div.wunderbaum i.vs-wb-expander {
+    cursor: pointer;
+}
+
+div.wunderbaum i.vs-wb-expander:hover {
+    color: var(--tblr-primary);
+}
+
+/* The leaf marker is the one icon CSS still draws.
+
+   A leaf gets no iconMap lookup at all: when a node is not expandable the renderer
+   sets `className = "wb-expander wb-indent"` and returns, so the noData entry is
+   never consulted and there is no element to replace. The dot is therefore masked
+   onto that empty <i>.
+
+   Lucide's dot is a 2-unit circle on a 24-unit canvas — a speck at icon size — so
+   the mask is scaled well past its box to read at roughly the chevron's stroke
+   weight, and kept a shade lighter so it does not compete with the branch
+   chevrons. */
+div.wunderbaum i.wb-expander.wb-indent {
+    cursor: default;
+}
+
+div.wunderbaum span.wb-node i.wb-expander.wb-indent::before,
+div.wunderbaum i.wb-expander.wb-indent::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-color: var(--tblr-secondary);
+    opacity: .75;
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%221%22%2F%3E%3C%2Fsvg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2212%22%20r%3D%221%22%2F%3E%3C%2Fsvg%3E");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: 1.6rem 1.6rem;
+    mask-size: 1.6rem 1.6rem;
+}
+
+/* That <i> needs the same box and centring the replaced SVGs get. */
+div.wunderbaum span.wb-node i.wb-expander.wb-indent,
+div.wunderbaum i.wb-expander.wb-indent {
+    position: relative;
+    display: inline-block;
+    width: var(--wb-icon-outer-width);
+    height: var(--wb-icon-outer-height);
+    padding: 0;
+    vertical-align: top;
+    top: calc((var(--wb-header-height, 44px) - 2px - var(--wb-icon-outer-height)) / 2);
+}
+
+/* Loading a level: the spinner turns ON that node, so a slow level is visible
+   where it is happening rather than only in the status line. */
+div.wunderbaum i.vs-wb-spin > svg {
+    animation: vs-wb-spin .7s linear infinite;
+}
+
+@keyframes vs-wb-spin {
+    to { transform: rotate(360deg); }
+}
+
+/* A failed level is reported on its own node (LT-19), never by blanking the tree. */
+div.wunderbaum i.vs-wb-error {
+    color: var(--tblr-danger);
+}
+
+/* Node icons are suppressed at the source (folder/doc: false in the iconMap), so
+   Wunderbaum skips the element entirely instead of rendering an empty 20px box
+   that would push every title away from its chevron. Nothing to do here. */
