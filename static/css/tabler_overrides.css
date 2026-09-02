@@ -442,7 +442,9 @@ body.resizing {
 sparql-query,
 sparql-async,
 sparql-columns,
-sparql-column { display: none; }
+sparql-column,
+sparql-tree-queries,
+sparql-tree-query { display: none; }
 
 /* --- Topbar theme menu (app launcher) --- */
 
@@ -530,3 +532,238 @@ sparql-column { display: none; }
     width: 40px;
     height: 40px;
 }
+
+/* --- Split layout (.vs-split) --------------------------------------------
+
+   A page divided into a narrow navigation column and a wide content column —
+   a hierarchy tree beside the resource it navigates, on the SKOS Concept and
+   ConceptScheme pages.
+
+   Named "split" rather than "sidebar" because the app already has a sidebar (the
+   left nav, #sidebar-panel-nav), and because nothing here fixes the panel to the
+   left: an author who wants it mirrored reorders the two columns and the CSS
+   still holds. Nothing in this block is specific to trees, so any page wanting a
+   navigation column beside its content can use it.
+
+   The columns themselves are ordinary Bootstrap (col-lg-4 / col-lg-8), so below
+   lg they stack for free — aside first, which is the right reading order on a
+   phone: navigate, then read. Everything below applies only from lg up. */
+
+@media (min-width: 992px) {
+
+    /* A sticky child can only travel within its own parent, so the row must be
+       taller than the aside or there is no slack to move in.
+
+       Bootstrap's .row is display:flex with the default align-items:stretch, which
+       makes both columns the same height — and since the aside is a fixed
+       viewport-height box, the ROW ends up exactly as tall as the aside. Sticky
+       then has zero room and the column scrolls away as if it were static, which
+       is a maddening thing to debug because every individual rule looks right.
+
+       flex-start lets each column take its own height, so the row is as tall as
+       the content beside the tree. */
+    .vs-split {
+        align-items: flex-start;
+        /* One place to change the divider's hit area; both columns subtract it. */
+        --vs-split-handle-w: 0.75rem;
+
+        /* The decisive fix for the wrap.
+
+           .row is flex-wrap: wrap, so the moment aside + handle + main exceeds the
+           row by even a fraction of a pixel, the main column is pushed onto a new
+           line — where it lands on top of the sticky aside and reads as an overlap
+           bug. Subtracting the handle from the columns gets the arithmetic close,
+           but Bootstrap's own row margins and column padding leave a few pixels
+           over, and chasing that exactly would be fragile at every zoom level and
+           font size.
+
+           nowrap removes the failure mode rather than tuning around it: the three
+           items stay on one line by definition, and flex distributes any rounding
+           difference instead of reflowing. */
+        flex-wrap: nowrap;
+    }
+
+    /* --- Resizable columns ----------------------------------------------
+
+       The widths come from --vs-split-width rather than the col-lg-4/col-lg-8
+       fractions, so the divider can move them. The grid classes stay on the
+       markup as the below-lg fallback: this whole block is inside a min-width
+       media query, so on a phone the columns go back to being plain Bootstrap
+       and stack as before.
+
+       flex-basis rather than width, because these are flex children of .row and
+       basis is what actually sizes them. */
+    .vs-split-aside {
+        /* The handle's width comes out of the aside's share, so the three items
+           total exactly 100% and the row never wraps. */
+        flex: 0 0 calc(var(--vs-split-width, 33.333%) - var(--vs-split-handle-w));
+        max-width: calc(var(--vs-split-width, 33.333%) - var(--vs-split-handle-w));
+
+        /* The aside stays put while the main column scrolls, which is the whole
+           point: the tree must never scroll out of reach while the user reads a
+           concept. The offset clears the sticky topbar (56px) plus the page
+           gutter. No ancestor sets overflow or transform — either would silently
+           disable sticky. */
+        position: sticky;
+        top: calc(56px + 1rem);
+        max-height: calc(100vh - 56px - 2rem);
+    }
+
+    .vs-split-main {
+        flex: 1 1 auto;
+        max-width: calc(100% - var(--vs-split-width, 33.333%));
+        min-width: 0;   /* a flex item will not shrink below its content otherwise */
+    }
+
+    /* The divider itself.
+
+       A 2px line in a wider hit area: the line is what the eye needs, the padding
+       is what the hand needs, and they are not the same size. It sits between the
+       two columns, sticky like the aside so it stays reachable while the content
+       scrolls.
+
+       Its width is a variable because the two columns have to subtract it: .row is
+       flex-wrap: wrap, so aside + handle + main exceeding 100% silently pushes the
+       main column onto a NEW LINE, where it lands on top of the sticky aside. That
+       reads as an overlap bug rather than an arithmetic one. */
+    .vs-split-handle {
+        flex: 0 0 auto;
+        width: var(--vs-split-handle-w);
+        cursor: col-resize;
+        position: sticky;
+        top: calc(56px + 1rem);
+        height: calc(100vh - 56px - 2rem);
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* Removes the 300ms tap delay and stops the drag from scrolling the page
+           on a trackpad or touch screen. */
+        touch-action: none;
+    }
+
+    .vs-split-handle::before {
+        content: "";
+        width: 2px;
+        height: 100%;
+        border-radius: 1px;
+        background-color: var(--tblr-border-color);
+        transition: background-color .15s ease;
+    }
+
+    .vs-split-handle:hover::before,
+    .vs-split-handle:focus-visible::before,
+    .vs-split.vs-split-dragging .vs-split-handle::before {
+        background-color: var(--tblr-primary);
+    }
+
+    .vs-split-handle:focus-visible {
+        outline: none;   /* the line itself is the focus indicator */
+    }
+
+    /* While dragging, the pointer owns the page: no text selection, and one
+       resize cursor everywhere rather than whatever each element would show. */
+    .vs-split.vs-split-dragging {
+        user-select: none;
+        cursor: col-resize;
+    }
+
+    /* The tree re-measures on drag, and an iframe or embed would swallow the
+       pointer events mid-drag. */
+    .vs-split.vs-split-dragging iframe,
+    .vs-split.vs-split-dragging embed {
+        pointer-events: none;
+    }
+
+
+
+    /* --- Narrow-column reflow (container query) --------------------------
+
+       Bootstrap's breakpoints are VIEWPORT-relative: col-lg-6 asks "is the window
+       at least 992px", not "is my container". So a component built for full width
+       keeps its side-by-side split inside this column — two relationship tables
+       come out about 395px each on a 1440px screen — and only stacks if the whole
+       browser is shrunk below lg, by which point the split layout is gone anyway.
+
+       A container query asks the question the components actually mean. Declaring
+       the main column a container lets them reflow to their own width, so the
+       shared components stay shared: no narrow-column variants to keep in step.
+
+       The threshold (56rem / 896px) sits just above the column's width at a
+       1440px window with the tree open — the common case — so the reflow applies
+       whenever the tree is taking its third of the page, and the side-by-side
+       split returns once the tree is collapsed. It is a container's own number,
+       not a Bootstrap breakpoint. */
+    .vs-split-main {
+        container-type: inline-size;
+        container-name: vs-split-main;
+    }
+
+    /* --- Collapsed state -------------------------------------------------
+       The aside folds away and the main column takes the full width, for reading
+       a resource without the navigator. Toggled by static/js/split-layout.js,
+       which also persists the choice. */
+
+    .vs-split.vs-split-collapsed .vs-split-aside {
+        display: none;
+    }
+
+    .vs-split.vs-split-collapsed .vs-split-handle {
+        display: none;
+    }
+
+    .vs-split.vs-split-collapsed .vs-split-main {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+}
+
+/* Components inside a narrow container column go full-width.
+
+   Scoped to the named container so this cannot leak into ordinary full-width
+   pages: only a descendant of .vs-split-main is affected, and only while that
+   column is actually narrow. Any component built with Bootstrap columns gets this
+   for free — relationships (col-lg-6) and sparqlMetric (col-sm-6 col-lg-3) today,
+   anything added later without further work. */
+@container vs-split-main (max-width: 56rem) {
+    /* Anything that was a half goes full width — the relationship tables this
+       rule exists for. */
+    .vs-split-main .row > [class*="col-lg-6"],
+    .vs-split-main .row > [class*="col-md-6"] {
+        flex: 0 0 100%;
+        max-width: 100%;
+        width: 100%;
+    }
+
+    /* Anything narrower than a half goes to a half rather than all the way to full
+       width: a row of four metric cards reads perfectly well two-up, and stacking
+       it four-deep would just push the content below it off the screen. */
+    .vs-split-main .row > [class*="col-lg-3"],
+    .vs-split-main .row > [class*="col-lg-4"] {
+        flex: 0 0 50%;
+        max-width: 50%;
+        width: 50%;
+    }
+}
+
+/* Below lg the columns stack, so neither the divider nor the reopen button has
+   anything to act on. Scoped to the breakpoint rather than declared unscoped and
+   re-enabled above it: an unscoped display:none sits later in the file than the
+   desktop block and silently wins, which hides the handle everywhere. */
+@media (max-width: 991.98px) {
+    .vs-split-handle {
+        display: none;
+    }
+}
+
+.vs-split-reopen {
+    display: none;
+}
+
+
+@media (min-width: 992px) {
+    .vs-split.vs-split-collapsed .vs-split-reopen {
+        display: inline-flex;
+    }
+}
+

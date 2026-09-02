@@ -1353,3 +1353,24 @@
 "facet.tip.status" = "Publikationsstatus: Entwurf, Publiziert oder Abgelaufen."
 "facet.tip.modified" = "Datum der letzten Änderung des Cubes (schema:dateModified)."
 "facet.tip.version" = "„current“, sofern der Cube kein Ablaufdatum trägt — dieses markiert ihn als durch eine neuere Version abgelöst."
+
+# Lazy tree (static/js/sparql-lazy-tree.js)
+"js.lazyTree.nameColumn" = "BEZEICHNUNG"
+"js.lazyTree.loadFailed" = "Die Hierarchie konnte nicht geladen werden."
+"js.lazyTree.loadMore" = "Die ersten {n} werden angezeigt — weiter aufklappen, um mehr zu laden."
+"js.lazyTree.showingNofM" = "{n} von vielen werden angezeigt."
+"js.lazyTree.localFilter" = "Es werden nur geladene Knoten gefiltert. Ab {n} Zeichen wird die gesamte Hierarchie durchsucht."
+"js.lazyTree.localFilterOnly" = "Es werden nur geladene Knoten durchsucht."
+"js.lazyTree.searching" = "Suche läuft…"
+"js.lazyTree.searchFailed" = "Die Suche ist fehlgeschlagen."
+"js.lazyTree.noResults" = "Keine Treffer."
+"js.lazyTree.flatHits" = "{n} Treffer, als flache Liste angezeigt."
+"js.lazyTree.moreHits" = "Es gibt weitere Treffer."
+"js.lazyTree.hierarchicalHits" = "{n} Treffer."
+"js.lazyTree.partialReveal" = "{n} Treffer. Die ersten {shown} werden in der Hierarchie gezeigt — für alle zur flachen Liste wechseln."
+
+# Split layout (tree beside content)
+"split.hideTree" = "Hierarchie ausblenden"
+"split.showTree" = "Hierarchie einblenden"
+"split.resize" = "Breite der Hierarchie-Spalte ändern"
+"split.resizeHint" = "Ziehen zum Anpassen, Doppelklick zum Zurücksetzen"

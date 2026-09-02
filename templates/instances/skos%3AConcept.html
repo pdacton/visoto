@@ -12,35 +12,93 @@
 
 {{ define "pageContent" }}
 
-    {{ template "literals" . }}
+  <!-- Split layout: the hierarchy on the left, this concept on the right.
+       The tree is a navigator — every node is a link to that concept's own page —
+       so it stays put (sticky, see .vs-split-aside) while the content beside it
+       scrolls, and the user can keep clicking through without scrolling back up.
+       Below lg the two columns stack, tree first. -->
+  <div class="row vs-split">
 
-    <!-- concept hierarchy tree -->
-    <div class="row">
-        <div class="col">
-            <div class="mb-3">
-                <sparql-query id="conceptTree">
-                    SELECT ?node ?parent ?code WHERE {
-                        # which concept scheme does this node belong to?
-                        ?? skos:inScheme ?conceptScheme .
-                        # all nodes from this concept scheme
-                        ?node skos:inScheme ?conceptScheme .
-                        ?node a skos:Concept .
-                        OPTIONAL { ?node skos:broader ?parent . }
-                        OPTIONAL { ?node skos:notation ?code . }
-                    }
-                </sparql-query>
-                {{ template "sparqlTree" (dict
-                    "result" .QueryResults.conceptTree
-                    "id" "conceptTree"
-                    "title" (t "card.hierarchy" "Hierarchy")
-                    "icon" "list-tree"
-                    "treeExpanded" false
-                    "ResourceIRI" .ResourceIRI)
-                }}
-            </div>
-        </div>
+    <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
+      <div class="mb-3">
+                <sparql-tree-queries for="conceptTree">
+                    <sparql-tree-query role="roots">
+                        SELECT ?node ?label ?code ?hasChildren WHERE {
+                            ?? skos:inScheme ?conceptScheme .
+                            ?node skos:inScheme ?conceptScheme .
+                            ?node a skos:Concept .
+                            OPTIONAL { ?node skos:prefLabel ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+                            OPTIONAL { ?node skos:notation ?code . }
+                            FILTER NOT EXISTS { ?node skos:broader ?anyParent . ?anyParent skos:inScheme ?conceptScheme . }
+                            BIND (EXISTS { ?child skos:broader ?node } AS ?hasChildren)
+                        } ORDER BY ?label
+                    </sparql-tree-query>
+                    <sparql-tree-query role="children">
+                        SELECT ?node ?label ?code ?hasChildren WHERE {
+                            ?? skos:inScheme ?conceptScheme .
+                            ?node skos:broader ?parent .
+                            ?node skos:inScheme ?conceptScheme .
+                            OPTIONAL { ?node skos:prefLabel ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+                            OPTIONAL { ?node skos:notation ?code . }
+                            BIND (EXISTS { ?child skos:broader ?node } AS ?hasChildren)
+                        } ORDER BY ?label
+                    </sparql-tree-query>
+                    <sparql-tree-query role="parents">
+                        SELECT ?node ?parent WHERE {
+                            ?? skos:inScheme ?conceptScheme .
+                            ?node skos:broader ?parent .
+                            ?parent skos:inScheme ?conceptScheme .
+                        }
+                    </sparql-tree-query>
+                    <sparql-tree-query role="search">
+                        SELECT ?node ?label WHERE {
+                            ?? skos:inScheme ?conceptScheme .
+                            ?node skos:inScheme ?conceptScheme .
+                            ?node a skos:Concept .
+                            ?node skos:prefLabel ?label .
+                            FILTER (CONTAINS(LCASE(STR(?label)), LCASE(STR(?__token__))))
+                        } ORDER BY ?label
+                    </sparql-tree-query>
+                </sparql-tree-queries>
+
+        {{ template "sparqlLazyTree" (dict
+            "queryId" "conceptTree"
+            "iri" .ResourceIRI
+            "ResourceIRI" .ResourceIRI
+            "title" (t "card.hierarchy" "Hierarchy")
+            "icon" "list-tree"
+            "breadcrumb" true
+            "splitToggle" true)
+        }}
+      </div>
     </div>
 
-    {{ template "relationships" . }}
+    <div class="vs-split-handle" role="separator" tabindex="0"
+         aria-orientation="vertical"
+         aria-valuemin="15" aria-valuemax="60" aria-valuenow="33"
+         aria-label="{{ t "split.resize" "Resize the hierarchy column" }}"
+         title="{{ t "split.resizeHint" "Drag to resize, double-click to reset" }}"></div>
+
+    <div class="col-lg-8 vs-split-main">
+      <!-- Shown only while the aside is collapsed; brings the tree back. No
+           spacing wrapper: an empty .mb-3 would keep applying its bottom margin
+           while the button is hidden and push this column out of line with the
+           tree card beside it. -->
+      <button type="button" class="btn btn-sm mb-3 vs-split-reopen" data-vs-split-reopen>
+        <i data-lucide="panel-left-open"></i>
+        {{ t "split.showTree" "Show hierarchy" }}
+      </button>
+
+      {{ template "literals" . }}
+
+      <!-- The shared component, unchanged: a container query on .vs-split-main
+           (see tabler_overrides.css) reflows its col-lg-6 pair to full width
+           inside this narrower column. -->
+      {{ template "relationships" . }}
+    </div>
+
+  </div>
+
+  <script src="/static/js/split-layout.js" defer></script>
 
 {{ end }}

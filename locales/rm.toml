@@ -32,3 +32,24 @@
 "facet.validThrough" = "Valaivel fin"
 "facet.postalCode" = "Numer postal"
 "facet.country" = "Pajais"
+
+# Lazy tree (static/js/sparql-lazy-tree.js)
+"js.lazyTree.nameColumn" = "DENOMINAZIUN"
+"js.lazyTree.loadFailed" = "La hierarchia na pudeva betg vegnir chargiada."
+"js.lazyTree.loadMore" = "Ils emprims {n} vegnan mussads — sviluppar vinavant per chargiar dapli."
+"js.lazyTree.showingNofM" = "{n} da blers vegnan mussads."
+"js.lazyTree.localFilter" = "Mo ils nuds chargiads vegnan filtrads. Tippar {n} caracters per tschertgar en tut la hierarchia."
+"js.lazyTree.localFilterOnly" = "La tschertga cumpiglia mo ils nuds chargiads."
+"js.lazyTree.searching" = "Tschertgar…"
+"js.lazyTree.searchFailed" = "La tschertga è fallida."
+"js.lazyTree.noResults" = "Nagins resultats."
+"js.lazyTree.flatHits" = "{n} resultats, mussads sco glista sempla."
+"js.lazyTree.moreHits" = "I dat ulteriurs resultats."
+"js.lazyTree.hierarchicalHits" = "{n} resultats."
+"js.lazyTree.partialReveal" = "{n} resultats. Ils emprims {shown} vegnan mussads en la hierarchia — midar a la glista sempla per ils vesair tuts."
+
+# Split layout (tree beside content)
+"split.hideTree" = "Zuppair la hierarchia"
+"split.showTree" = "Mussar la hierarchia"
+"split.resize" = "Midar la largezza da la colonna da la hierarchia"
+"split.resizeHint" = "Tirar per adattar, dubel-click per redefinir"

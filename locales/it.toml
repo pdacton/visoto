@@ -1352,3 +1352,24 @@
 "facet.tip.status" = "Stato di pubblicazione: bozza, pubblicato o scaduto."
 "facet.tip.modified" = "Data dell'ultima modifica del cube (schema:dateModified)."
 "facet.tip.version" = "«current», a meno che il cube non abbia una data di scadenza, che lo segna come sostituito da una versione più recente."
+
+# Lazy tree (static/js/sparql-lazy-tree.js)
+"js.lazyTree.nameColumn" = "DENOMINAZIONE"
+"js.lazyTree.loadFailed" = "Non è stato possibile caricare la gerarchia."
+"js.lazyTree.loadMore" = "Vengono mostrati i primi {n} — espandi ulteriormente per caricarne altri."
+"js.lazyTree.showingNofM" = "Vengono mostrati {n} di molti."
+"js.lazyTree.localFilter" = "Vengono filtrati solo i nodi caricati. Digita {n} caratteri per cercare in tutta la gerarchia."
+"js.lazyTree.localFilterOnly" = "Ricerca limitata ai nodi caricati."
+"js.lazyTree.searching" = "Ricerca in corso…"
+"js.lazyTree.searchFailed" = "La ricerca non è riuscita."
+"js.lazyTree.noResults" = "Nessun risultato."
+"js.lazyTree.flatHits" = "{n} risultati, mostrati come elenco semplice."
+"js.lazyTree.moreHits" = "Esistono altri risultati."
+"js.lazyTree.hierarchicalHits" = "{n} risultati."
+"js.lazyTree.partialReveal" = "{n} risultati. I primi {shown} sono mostrati nella gerarchia — passa all'elenco semplice per vederli tutti."
+
+# Split layout (tree beside content)
+"split.hideTree" = "Nascondi la gerarchia"
+"split.showTree" = "Mostra la gerarchia"
+"split.resize" = "Ridimensiona la colonna della gerarchia"
+"split.resizeHint" = "Trascina per ridimensionare, doppio clic per reimpostare"

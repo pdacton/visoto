@@ -51,3 +51,18 @@
 "js.theme.enableLight" = "Enable light mode"
 "js.theme.switchToDark" = "Switch to dark mode"
 "js.theme.switchToLight" = "Switch to light mode"
+
+# Lazy tree (static/js/sparql-lazy-tree.js)
+"js.lazyTree.nameColumn" = "NAME"
+"js.lazyTree.loadFailed" = "The hierarchy could not be loaded."
+"js.lazyTree.loadMore" = "Showing the first {n} — expand further to load more."
+"js.lazyTree.showingNofM" = "Showing {n} of many."
+"js.lazyTree.localFilter" = "Filtering loaded nodes only. Type {n} characters to search the whole hierarchy."
+"js.lazyTree.localFilterOnly" = "Searching loaded nodes only."
+"js.lazyTree.searching" = "Searching…"
+"js.lazyTree.searchFailed" = "The search failed."
+"js.lazyTree.noResults" = "No matches."
+"js.lazyTree.flatHits" = "{n} matches, shown as a flat list."
+"js.lazyTree.moreHits" = "More matches exist."
+"js.lazyTree.hierarchicalHits" = "{n} matches."
+"js.lazyTree.partialReveal" = "{n} matches. Showing the first {shown} in the hierarchy — switch to the flat list to see them all."

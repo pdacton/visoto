@@ -2,6 +2,10 @@
      Renders outgoing and incoming relationship tables (collapsed by default).
      Usage: {{ template "relationships" . }}
      Note: use inline sparql-query elements instead if you need different FILTERs or collapsed=false.
+
+     In a narrow container (a page with a sidebar column) the two tables reflow to
+     full width on their own — see the container query on .vs-split-main in
+     static/css/tabler_overrides.css. No variant of this component is needed.
 -->
 
 <sparql-query id="outgoing">
