@@ -62,7 +62,7 @@ Inside `pageContent`, you compose the page from components (which carry their ow
 
 **Components** (`literals`, `relationships`, `pageHeader`) — pass `.` (full context), they issue their own SPARQL queries internally.
 
-**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlGrid`, `sparqlTree`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
+**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
 
 ---
 
@@ -387,6 +387,114 @@ Hierarchical tree display powered by Wunderbaum. The SPARQL result **must** have
 | `title` | `string` | — | Card heading. |
 | `treeExpanded` | `bool` | `true` | Whether all nodes start expanded. |
 | `ResourceIRI` | `string` | — | IRI of the node to scroll to and highlight on load. |
+
+The whole hierarchy is fetched by one query and embedded in the page, so this is
+right for a **bounded** hierarchy and wrong for a large one. Above a few thousand
+nodes use [`sparqlLazyTree`](#sparqllazytree) instead.
+
+### `sparqlLazyTree` {#sparqllazytree}
+
+The same Wunderbaum tree, loading **one level at a time** from
+`/api/lazy-tree/:id/:role`. The page carries no node payload at all, so its size is
+independent of the hierarchy's, and cost scales with what the user expands rather
+than with what exists.
+
+**Choosing between the two**
+
+| | `sparqlTree` | `sparqlLazyTree` |
+|---|---|---|
+| Hierarchy size | up to a few thousand nodes | unbounded |
+| Query | one, synchronous, blocks first paint | one per level, after paint |
+| Page weight | grows with the hierarchy | constant (~230 bytes) |
+| Filtering | complete, local | local below the search threshold, server search above |
+| Declaration | pass a `QueryResult` | declare role queries |
+
+A 24,726-concept scheme is ~6 MB of JSON eagerly, and 230 bytes lazily.
+
+**Declaring the queries.** The result does not exist at render time, so the queries
+are declared rather than passed in — one `<sparql-tree-query>` per role inside a
+`<sparql-tree-queries for="...">` container:
+
+```html
+<sparql-tree-queries for="conceptTree">
+  <sparql-tree-query role="roots">
+    SELECT ?node ?label ?hasChildren WHERE {
+      ?node skos:inScheme ?? ; skos:prefLabel ?label .
+      FILTER NOT EXISTS { ?node skos:broader ?p . ?p skos:inScheme ?? . }
+      BIND (EXISTS { ?c skos:broader ?node } AS ?hasChildren)
+    } ORDER BY ?label
+  </sparql-tree-query>
+  <sparql-tree-query role="children">
+    SELECT ?node ?label ?hasChildren WHERE {
+      ?node skos:broader ?parent ; skos:prefLabel ?label .
+      BIND (EXISTS { ?c skos:broader ?node } AS ?hasChildren)
+    } ORDER BY ?label
+  </sparql-tree-query>
+  <sparql-tree-query role="parents">
+    SELECT ?node ?parent WHERE { ?node skos:broader ?parent }
+  </sparql-tree-query>
+</sparql-tree-queries>
+
+{{ template "sparqlLazyTree" (dict
+      "queryId" "conceptTree"
+      "iri"     .ResourceIRI
+      "title"   (t "card.concepts" "Concepts")
+      "icon"    "list-tree") }}
+```
+
+| Role | Required | Purpose |
+|---|---|---|
+| `roots` | ✔ | The top level. Binds nothing. |
+| `children` | ✔ | One level below `?parent`, which the **server** binds. |
+| `parents` | — | ONE upward step, applied repeatedly to walk to the roots. Needed for focus and for hierarchical search hits. |
+| `search` | — | Hits anywhere in the hierarchy, matching `?__token__`. |
+| `node-data` | — | Extra bindings for a batch of visible nodes. |
+
+**Reserved variables.** `?node` (every role), `?parent` (children) and `?__token__`
+(search) are bound by the server with a prepended `VALUES` clause. Leave them
+**free** — a role query that binds one itself is rejected at startup, because the
+`VALUES` would then intersect with it rather than parameterise it, silently
+returning the wrong level.
+
+`??` is the page's resource IRI, as everywhere else.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `queryId` | `string` | required | Matches `<sparql-tree-queries for="…">`. |
+| `iri` | `string` | — | Page resource IRI, substituted for `??`. |
+| `title` / `icon` | `string` | — | Card heading and Lucide icon. |
+| `collapsed` | `bool` | `false` | Card starts collapsed. |
+| `ResourceIRI` | `string` | — | Node to expand to and focus. Needs a `parents` role. |
+| `limit` | `int` | 200 / 10000 | Per-level page size or hard cap; see below. |
+| `minSearchLength` | `int` | `3` | Below this, only loaded nodes are filtered. |
+| `flatSearch` | `bool` | `false` | Show search hits as a flat list. |
+| `flatSearchToggle` | `bool` | `false` | Offer the hierarchical/flat switch. |
+| `placeholder` | `string` | — | Search box placeholder. |
+| `restoreState` | `bool` | `true` | Restore expanded branches across navigation. |
+| `breadcrumb` | `bool` | `false` | Render the ancestor breadcrumb above the tree. |
+
+**Limit modes.** With an `ORDER BY` in the level query the limit is a **page size**
+and "load more" is offered; without one, row order is arbitrary, so it is a **hard
+cap** and the tree reports "showing N of many" instead.
+
+> **Ordering trap.** Labels are resolved in a *second* batch query after the level
+> query returns. So `ORDER BY ?label` **without projecting `?label`** sorts by
+> whatever the endpoint has (usually the IRI), takes that page of rows, and only
+> then relabels them — silently the wrong nodes, in an order that looks arbitrary.
+> **When you use a limit with an `ORDER BY`, project the variable you order by.**
+> Startup logs a warning otherwise.
+
+**Scoping roots to the scheme.** A root is a node with no parent *inside the
+hierarchy you are showing*, which is not the same as a node with no parent at all: a
+scheme that extends another (CH-ISCO-19 extends ISCO) gives every one of its
+concepts a `skos:broader`, so `FILTER NOT EXISTS { ?node skos:broader ?p }` returns
+an empty tree. Constrain the parent to the scheme, as in the example above.
+
+**No height parameter.** The tree takes a fixed working height (600px, matching
+the cap the eager tree grows to) rather than sizing to content — a lazy tree knows
+only one level at first paint, so a content-sized box would resize under the cursor
+as levels load. To size it yourself, wrap it in a sized element and add the class
+`vs-lazy-tree-fill`.
 
 ### `sparqlMermaidFlow`
 

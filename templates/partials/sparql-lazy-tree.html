@@ -1,0 +1,202 @@
+<!--
+  Partial template for a lazily-loaded hierarchy tree (Wunderbaum).
+
+  The eager sibling, sparqlTree, takes a QueryResult: one query returns the WHOLE
+  hierarchy, the page render blocks on it, and every row is serialised into a JSON
+  island. That is right for a bounded hierarchy (the SharedDimensionTerm tree is
+  462 terms) and stays available for one.
+
+  This partial loads ONE LEVEL at a time from /api/lazy-tree/:id/:role, so the page
+  ships no node payload at all and cost scales with what the user expands rather
+  than with the size of the hierarchy. Use it when the hierarchy is large enough
+  that a single query would time out, or large enough to bloat the page.
+
+  The queries are DECLARED, not passed in — the result does not exist at render
+  time. One <sparql-tree-queries> block holds one <sparql-tree-query> per role:
+
+    <sparql-tree-queries for="conceptTree">
+      <sparql-tree-query role="roots">
+        SELECT ?node ?label ?hasChildren WHERE {
+          ?node skos:topConceptOf ?? ; skos:prefLabel ?label .
+          BIND(EXISTS { ?c skos:broader ?node } AS ?hasChildren)
+        } ORDER BY ?label
+      </sparql-tree-query>
+      <sparql-tree-query role="children">
+        SELECT ?node ?label ?hasChildren WHERE {
+          ?node skos:broader ?parent ; skos:prefLabel ?label .
+          BIND(EXISTS { ?c skos:broader ?node } AS ?hasChildren)
+        } ORDER BY ?label
+      </sparql-tree-query>
+      <sparql-tree-query role="parents">
+        SELECT ?node ?parent WHERE { ?node skos:broader ?parent }
+      </sparql-tree-query>
+    </sparql-tree-queries>
+
+    {{ template "sparqlLazyTree" (dict
+          "queryId" "conceptTree"
+          "iri"     .ResourceIRI
+          "title"   (t "card.concepts" "Concepts")
+          "icon"    "git-branch") }}
+
+  ROLES
+    roots     (required) the top level; binds nothing
+    children  (required) one level below ?parent, which the SERVER binds
+    parents   (optional) ONE upward step; the ancestor walk applies it repeatedly.
+              Required for focus (ResourceIRI) and for hierarchical search hits.
+    search    (optional) hits anywhere in the hierarchy, matching ?__token__
+    node-data (optional) extra bindings for a batch of visible nodes
+
+  RESERVED VARIABLES
+    ?node       the node a row describes (every role)
+    ?parent     bound by the server on the children query
+    ?__token__  bound by the server to the search term
+  These are bound with a prepended VALUES clause, so leave them FREE in the query
+  — a role query that binds one itself is rejected at startup, because the VALUES
+  would then intersect with it rather than parameterise it.
+
+  ?? is the page's resource IRI, as everywhere else, so a children query can be
+  scoped to the concept scheme the page is about.
+
+  ORDERING TRAP
+    Labels are resolved in a SECOND batch query after the level query returns. So a
+    level query that says ORDER BY ?label WITHOUT projecting ?label sorts by
+    whatever the endpoint has (usually the IRI), takes that page of rows, and only
+    then relabels them — silently the wrong nodes. When you use a limit with an
+    ORDER BY, PROJECT the variable you order by. Startup logs a warning otherwise.
+
+  Parameters (via dict):
+    - queryId:         (required) matches <sparql-tree-queries for="...">
+    - iri:             (optional) page resource IRI, substituted for ??
+    - title:           (optional) card title
+    - icon:            (optional) Lucide icon name for the card header
+    - collapsed:       (optional) card starts collapsed
+    - ResourceIRI:     (optional) node to expand to and focus; needs a parents role
+    - limit:           (optional) level page size / hard cap; see LIMIT MODES
+    - minSearchLength: (optional) below this, filter loaded nodes only (default 3)
+    - flatSearch:      (optional) show search hits as a flat list by default
+    - flatSearchToggle:(optional) offer the hierarchical/flat switch
+    - placeholder:     (optional) search box placeholder
+    - restoreState:    (optional) restore expanded branches across navigation
+                       (default true)
+    - breadcrumb:      (optional) render the ancestor breadcrumb above the tree
+    - splitToggle:     (optional) add a control that collapses the surrounding
+                       .vs-split-aside column; only meaningful inside a split
+                       layout (see static/js/split-layout.js)
+
+  LIMIT MODES
+    With an ORDER BY in the level query the limit is a PAGE SIZE and the level
+    loads incrementally ("load more"). Without one, row order is arbitrary, so the
+    limit is a HARD CAP and the tree reports "showing N of M" instead — loading
+    more would return an arbitrary different subset.
+
+  HEIGHT
+    There is no height parameter. The tree takes a fixed working height (600px,
+    matching the cap the eager tree grows to) rather than sizing to content: a
+    lazy tree only knows one level at first paint, so a content-sized box would
+    resize under the cursor every time a level loaded.
+
+    To size it yourself — a full-height sidebar column in a two-column instance
+    template, say — wrap it in a sized element and add the class
+    vs-lazy-tree-fill, and the tree fills that box instead.
+
+  Wunderbaum documentation:
+  https://mar10.github.io/wunderbaum/
+-->
+
+{{ define "sparqlLazyTree" }}
+
+  {{ $queryId := .queryId }}
+  {{ $id := printf "lazytree-%s" $queryId }}
+  {{ $title := .title }}
+  {{ $icon := .icon }}
+  {{ $collapsed := .collapsed }}
+  {{ $placeholder := .placeholder }}
+
+  <div class="card">
+
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <div class="d-flex align-items-center gap-2">
+        {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+        {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
+      </div>
+      <div class="ms-auto d-flex align-items-center gap-2">
+        <input type="text" id="search-{{ $id }}"
+               class="form-control form-control-sm"
+               style="min-width: 150px; max-width: 300px;"
+               placeholder="{{ if $placeholder }}{{ $placeholder }}{{ else }}{{ t "tree.filterPlaceholder" "Filter tree..." }}{{ end }}"
+               aria-label="{{ t "tree.filterPlaceholder" "Filter tree..." }}">
+        {{ if .flatSearchToggle }}
+          <div class="form-check form-switch mb-0" id="flat-toggle-{{ $id }}" hidden>
+            <input class="form-check-input" type="checkbox" role="switch" id="flat-{{ $id }}"
+                   {{ if .flatSearch }}checked{{ end }}>
+            <label class="form-check-label small text-muted" for="flat-{{ $id }}">
+              {{ t "tree.flatResults" "Flat list" }}
+            </label>
+          </div>
+        {{ end }}
+        <div class="btn-actions">
+          {{ if .splitToggle }}
+            <!-- Folds the whole column away in a split layout, giving the full
+                 width to the content beside it. Behaviour and persistence live in
+                 static/js/split-layout.js; this only marks the control. -->
+            <a class="btn-action" href="#" data-vs-split-toggle aria-expanded="true"
+               title="{{ t "split.hideTree" "Hide hierarchy" }}"
+               aria-label="{{ t "split.hideTree" "Hide hierarchy" }}">
+              <i data-lucide="panel-left-close"></i>
+            </a>
+          {{ end }}
+          <a id="collapse-tree-{{ $id }}" class="btn-action" href="#"
+             title="{{ t "tree.collapseAll" "Collapse all" }}"
+             aria-label="{{ t "tree.collapseAll" "Collapse all" }}">
+            <i data-lucide="list-chevrons-down-up"></i>
+          </a>
+          <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse"
+             data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+            <i data-lucide="chevron-up"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
+      {{ if .breadcrumb }}
+        <div class="card-body py-2 border-bottom" id="breadcrumb-{{ $id }}" hidden>
+          <nav aria-label="{{ t "tree.breadcrumb" "Position in hierarchy" }}">
+            <ol class="breadcrumb breadcrumb-arrows mb-0 small"></ol>
+          </nav>
+        </div>
+      {{ end }}
+      <div class="card-body p-0">
+        <!-- Status line: level errors, "showing N of M", and the local-filter note.
+             Kept outside the tree element so a failure never blanks the tree. -->
+        <div id="status-{{ $id }}" class="px-3 py-2 small text-muted border-bottom" hidden></div>
+
+        <!-- Wunderbaum renders here. No node payload travels with the page: the
+             tree asks /api/lazy-tree for one level at a time. -->
+        <div id="{{ $id }}-tree" class="vs-lazy-tree wb-skeleton wb-initializing wb-fade-expander"
+             data-sparql-lazy-tree
+             data-sparql-lazy-tree-id="{{ $id }}"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Config island. Behaviour lives in static/js/sparql-lazy-tree.js; the partial
+       emits markup and this JSON only, never an inline script with interpolated
+       template values. -->
+  <template id="{{ $id }}-config">{{ toJSON (dict
+      "treeId"          $queryId
+      "iri"             .iri
+      "resourceIRI"     .ResourceIRI
+      "limit"           .limit
+      "minSearchLength" .minSearchLength
+      "flatSearch"      .flatSearch
+      "flatSearchToggle" .flatSearchToggle
+      "restoreState"    .restoreState
+      "breadcrumb"      .breadcrumb
+    ) }}</template>
+
+  <script src="/static/js/wunderbaum-icons.js" defer></script>
+      <script src="/static/js/sparql-lazy-tree.js" defer></script>
+
+{{ end }}

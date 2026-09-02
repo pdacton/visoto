@@ -898,6 +898,8 @@ func main() {
 	// so the ?iri= alone determines the response.
 	router.GET("/api/cube-table/:id", epFromURL, langFromURL, cubeTableHandler)
 	router.GET("/api/faceted-table/:id", epFromURL, langFromURL, facetedTableHandler)
+	// The lazy tree's level fetches. One route for every role — see lazy_tree.go.
+	router.GET("/api/lazy-tree/:id/:role", epFromURL, langFromURL, lazyTreeHandler)
 	router.GET("/api/facet-values/:id/:var", epFromURL, langFromURL, facetValuesHandler)
 	router.GET("/resource", epFromURL, resourcePageHandler)
 	router.GET("/resource/*path", legacyResourceRedirectHandler)

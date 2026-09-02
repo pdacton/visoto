@@ -25,19 +25,22 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 
 	"hutzli.org/visoto/internal/column"
 	"hutzli.org/visoto/internal/parser"
 	"hutzli.org/visoto/internal/sparql"
 	"hutzli.org/visoto/internal/templates"
+	"hutzli.org/visoto/internal/tree"
 )
 
 // asyncIndex answers "which query does this id mean, for a request that came
 // from this template set".
 type asyncIndex struct {
-	queries map[string]map[string]string       // set name → query id → query text
-	columns map[string]map[string]column.Table // set name → base query id → declared columns, in document order
+	queries map[string]map[string]string             // set name → query id → query text
+	columns map[string]map[string]column.Table       // set name → base query id → declared columns, in document order
+	trees   map[string]map[string]parser.TreeQueries // set name → tree id → role queries
 }
 
 // asyncIdx is the process-wide index. Non-nil from the start so a lookup before
@@ -53,6 +56,7 @@ type fileDecls struct {
 	columns    []parser.ExtractedElement
 	containers []parser.ExtractedElement
 	facets     []parser.ExtractedElement // legacy <sparql-facet>, kept only to reject
+	trees      []parser.TreeQueries      // <sparql-tree-queries>: the lazy tree's role queries
 }
 
 // initAsyncIndex builds the index from the template sets under templatesDir and
@@ -88,6 +92,7 @@ func initAsyncIndex(templatesDir string) error {
 	idx := &asyncIndex{
 		queries: make(map[string]map[string]string, len(sets)),
 		columns: make(map[string]map[string]column.Table, len(sets)),
+		trees:   make(map[string]map[string]parser.TreeQueries, len(sets)),
 	}
 	for set, files := range sets {
 		queries := make(map[string]string)
@@ -178,9 +183,36 @@ func initAsyncIndex(templatesDir string) error {
 			}
 		}
 
+		// Lazy tree declarations. A separate namespace from queries: a tree id and an
+		// async id may coincide without ambiguity, since the two are addressed by
+		// different routes. (Unlike <sparql-column for=>, which had to reject
+		// collisions because a column has to decorate exactly one table.)
+		trees := make(map[string]parser.TreeQueries)
+		treeDeclaredIn := make(map[string]string)
+		for _, path := range files {
+			for _, block := range parsed[path].trees {
+				if prev, dup := treeDeclaredIn[block.ID]; dup {
+					return fmt.Errorf("duplicate <sparql-tree-queries for=%q> in template set %s: declared in %s and %s",
+						block.ID, set, prev, path)
+				}
+				treeDeclaredIn[block.ID] = path
+				warnings, err := tree.Validate(block.ID, block.Roles)
+				if err != nil {
+					return fmt.Errorf("%s: %w", path, err)
+				}
+				for _, w := range warnings {
+					slog.Warn("lazy tree declaration", "file", path, "set", set, "warning", w)
+				}
+				trees[block.ID] = block
+			}
+		}
+
 		idx.queries[set] = queries
 		if len(columns) > 0 {
 			idx.columns[set] = columns
+		}
+		if len(trees) > 0 {
+			idx.trees[set] = trees
 		}
 	}
 
@@ -220,7 +252,11 @@ func parseDecls(path string) (fileDecls, error) {
 	if err != nil {
 		return fileDecls{}, fmt.Errorf("%s: extract facet elements: %w", path, err)
 	}
-	return fileDecls{async: async, sync: sync, columns: columns, containers: containers, facets: facets}, nil
+	trees, err := parser.ExtractTreeQueries(string(content))
+	if err != nil {
+		return fileDecls{}, fmt.Errorf("%s: extract tree queries: %w", path, err)
+	}
+	return fileDecls{async: async, sync: sync, columns: columns, containers: containers, facets: facets, trees: trees}, nil
 }
 
 // rejectLegacyFacets fails startup on a <sparql-facet> that still carries
@@ -264,6 +300,14 @@ func rejectMisplacedColumnAttrs(path string, els []parser.ExtractedElement) erro
 func findAsyncQuery(src, id string) (string, bool) {
 	q, ok := asyncIdx.queries[src][id]
 	return q, ok
+}
+
+// findTreeQueries returns the lazy tree declaration named by id, as visible to
+// template set src. Scoped exactly like findAsyncQuery: an id declared by another
+// set is not found.
+func findTreeQueries(src, id string) (parser.TreeQueries, bool) {
+	block, ok := asyncIdx.trees[src][id]
+	return block, ok
 }
 
 // findColumns returns the columns declared for a base query id within one
