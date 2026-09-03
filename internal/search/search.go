@@ -120,7 +120,7 @@ func (s *Searcher) Execute(ctx context.Context, params SearchParams, acceptLangu
 			slog.String("sparql", query))
 
 		// Execute via SPARQL preprocessor with label enrichment enabled (empty endpoint = use default)
-		queryResult, execErr = s.preprocessor.ExecuteQueryWithContext(ctx, query, true, acceptLanguage, "")
+		queryResult, execErr = s.preprocessor.ExecuteQueryWithContext(ctx, query, true, acceptLanguage, "", sparql.WithTypes())
 		if execErr != nil {
 			log.Error("search query execution failed",
 				slog.String("error", execErr.Error()),
@@ -155,7 +155,7 @@ func (s *Searcher) Execute(ctx context.Context, params SearchParams, acceptLangu
 	if execErr != nil || len(queryResult.Bindings) == 0 {
 		fallbackProvider := &SparqlQueryProvider{}
 		if fallbackQuery, buildErr := fallbackProvider.BuildQuery(params); buildErr == nil {
-			if fallbackResult, fbErr := s.preprocessor.ExecuteQueryWithContext(ctx, fallbackQuery, true, acceptLanguage, ""); fbErr == nil && len(fallbackResult.Bindings) > 0 {
+			if fallbackResult, fbErr := s.preprocessor.ExecuteQueryWithContext(ctx, fallbackQuery, true, acceptLanguage, "", sparql.WithTypes()); fbErr == nil && len(fallbackResult.Bindings) > 0 {
 				result.Results = fallbackResult
 				result.FallbackUsed = true
 				log.Debug("FTS returned no results, used sparql-query fallback",

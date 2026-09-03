@@ -3,10 +3,10 @@ package sparql
 // options.go carries the per-query switches that only some callers want.
 //
 // Variadic on purpose. ExecuteQuery / ExecuteQueryWithContext have a dozen call
-// sites across two packages, and only the three table handlers need type
-// resolution — search and the MCP tools resolve labels but have no icon column
-// and must not pay for a second round trip. A variadic option leaves every other
-// call site compiling untouched.
+// sites across two packages, and only the callers that render an icon column
+// need type resolution — the MCP tools resolve labels but have nothing to draw
+// icons on and must not pay for a second round trip. A variadic option leaves
+// every other call site compiling untouched.
 
 // Option adjusts how a single query is executed.
 type Option func(*options)
