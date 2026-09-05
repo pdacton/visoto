@@ -27,11 +27,28 @@ import (
 // (R-NFR-3), and a smaller batch costs only request overhead.
 const flushEveryQuads = 5000
 
+// Store is the job state a harvest run needs.
+//
+// It is an interface, and narrow on purpose. state.Store (SQLite) is the only
+// implementation today, and it is the right one for a single machine: the queue
+// has one writer and lives beside the worker. The interface is where a shared
+// backend goes when one run no longer fits on one machine — the claim/lease
+// primitive in state.ClaimBatch is already shaped for PostgreSQL's
+// SELECT ... FOR UPDATE SKIP LOCKED, so scaling out replaces what is behind this
+// interface and nothing in front of it.
+type Store interface {
+	Watermark(source string) (time.Time, error)
+	SetWatermark(source string, t time.Time) error
+	StartRun(source string, now time.Time) (*state.Run, error)
+	FinishRun(run *state.Run, status state.RunStatus, message string, endedAt time.Time) error
+	UpsertDistributions(source string, dists []source.Distribution, now time.Time) (int64, error)
+}
+
 // Runner executes harvest runs.
 type Runner struct {
 	cfg    *config.PipelineConfig
 	target *config.SparqlEndpoint
-	store  *state.Store
+	store  Store
 	minter *rdf.Minter
 	log    *slog.Logger
 
@@ -53,7 +70,7 @@ var errLimit = errors.New("dataset limit reached")
 //
 // target may be nil when the configured loader writes files rather than talking
 // to an endpoint; a loader that needs one says so when it is built.
-func NewRunner(cfg *config.PipelineConfig, target *config.SparqlEndpoint, store *state.Store) *Runner {
+func NewRunner(cfg *config.PipelineConfig, target *config.SparqlEndpoint, store Store) *Runner {
 	return &Runner{
 		cfg:    cfg,
 		target: target,

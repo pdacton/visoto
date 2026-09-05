@@ -1,6 +1,7 @@
 package state
 
 import (
+	"database/sql"
 	"path/filepath"
 	"testing"
 	"time"
@@ -190,5 +191,59 @@ func TestDistributionUnknown(t *testing.T) {
 	}
 	if ok {
 		t.Error("unknown distribution reported as found")
+	}
+}
+
+func TestOpenMigratesAnOlderDatabase(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "old.sqlite")
+
+	// The distributions table exactly as the previous build created it — every
+	// column except the two the claim/lease work added.
+	db, err := sql.Open("sqlite", path)
+	if err != nil {
+		t.Fatalf("sql.Open: %v", err)
+	}
+	_, err = db.Exec(`
+		CREATE TABLE distributions (
+			iri             TEXT PRIMARY KEY,
+			dataset_iri     TEXT NOT NULL,
+			source          TEXT NOT NULL,
+			download_url    TEXT,
+			declared_media  TEXT,
+			declared_format TEXT,
+			byte_size       INTEGER NOT NULL DEFAULT 0,
+			licence         TEXT,
+			modified        INTEGER NOT NULL DEFAULT 0,
+			stage           TEXT NOT NULL,
+			etag            TEXT,
+			last_modified   TEXT,
+			content_hash    TEXT,
+			detected_media  TEXT,
+			structure_hash  TEXT,
+			attempts        INTEGER NOT NULL DEFAULT 0,
+			last_error      TEXT,
+			first_seen      INTEGER NOT NULL,
+			last_seen       INTEGER NOT NULL
+		);
+		INSERT INTO distributions (iri, dataset_iri, source, stage, first_seen, last_seen)
+		VALUES ('https://example.org/d/1', 'ds', 'src', 'discovered', 1, 1);`)
+	if err != nil {
+		t.Fatalf("seed old schema: %v", err)
+	}
+	db.Close()
+
+	s, err := Open(path)
+	if err != nil {
+		t.Fatalf("Open on an older database: %v", err)
+	}
+	defer s.Close()
+
+	// The claim path must work, and the existing row must have survived.
+	claimed, err := s.ClaimBatch("worker", "src", StageDiscovered, 5, time.Minute, time.Unix(1000, 0))
+	if err != nil {
+		t.Fatalf("ClaimBatch after migration: %v", err)
+	}
+	if len(claimed) != 1 || claimed[0].IRI != "https://example.org/d/1" {
+		t.Errorf("claimed %+v, want the pre-existing row", claimed)
 	}
 }

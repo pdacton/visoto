@@ -233,9 +233,18 @@ func showStatus(cfg *config.Config, sourceName string) error {
 	if err != nil {
 		return err
 	}
+	inFlight, err := store.Claimed(sourceName, time.Now())
+	if err != nil {
+		return err
+	}
+	signatures, err := store.CountSignatures()
+	if err != nil {
+		return err
+	}
 
 	fmt.Printf("state db: %s\n", store.Path())
-	fmt.Printf("distributions: %d\n\n", total)
+	fmt.Printf("distributions: %d (%d in flight)\n", total, inFlight)
+	fmt.Printf("field signatures: %d\n\n", signatures)
 
 	if len(counts) > 0 {
 		w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)

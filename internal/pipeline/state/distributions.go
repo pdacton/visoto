@@ -126,16 +126,20 @@ func (s *Store) Pending(sourceName string, stage Stage, limit int) ([]Distributi
 // the attempt on failure. Attempt counting is what keeps a permanently broken
 // URL from being retried forever.
 func (s *Store) SetStage(iri string, stage Stage, errMsg string) error {
+	// Advancing a stage also drops the claim: the work this lease covered is done,
+	// and holding it would idle the row until the lease expired.
 	if stage == StageFailed {
 		_, err := s.db.Exec(`
 			UPDATE distributions
-			   SET stage = ?, last_error = ?, attempts = attempts + 1
+			   SET stage = ?, last_error = ?, attempts = attempts + 1,
+			       claimed_by = NULL, claimed_until = 0
 			 WHERE iri = ?`, string(stage), errMsg, iri)
 		return err
 	}
 	_, err := s.db.Exec(`
-		UPDATE distributions SET stage = ?, last_error = NULL WHERE iri = ?`,
-		string(stage), iri)
+		UPDATE distributions
+		   SET stage = ?, last_error = NULL, claimed_by = NULL, claimed_until = 0
+		 WHERE iri = ?`, string(stage), iri)
 	return err
 }
 

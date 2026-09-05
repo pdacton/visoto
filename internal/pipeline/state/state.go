@@ -115,13 +115,69 @@ func (s *Store) migrate() error {
 			attempts        INTEGER NOT NULL DEFAULT 0,
 			last_error      TEXT,
 			first_seen      INTEGER NOT NULL,
-			last_seen       INTEGER NOT NULL
+			last_seen       INTEGER NOT NULL,
+			claimed_by      TEXT,
+			claimed_until   INTEGER NOT NULL DEFAULT 0
 		);
-		CREATE INDEX IF NOT EXISTS idx_dist_stage  ON distributions(source, stage);
 		CREATE INDEX IF NOT EXISTS idx_dist_datset ON distributions(dataset_iri);
 	`)
 	if err != nil {
 		return fmt.Errorf("migrate state db: %w", err)
+	}
+
+	// CREATE TABLE IF NOT EXISTS is a no-op on a database created by an older
+	// build, so columns added later have to be added explicitly. Without this a
+	// state file from a previous version fails at query time rather than at open
+	// time, which is the worst place to find out.
+	for _, c := range addedColumns {
+		if err := s.ensureColumn(c.table, c.column, c.ddl); err != nil {
+			return err
+		}
+	}
+
+	// Indexes over added columns come last, since on an older database the
+	// columns do not exist until the step above has run.
+	if _, err := s.db.Exec(`
+		CREATE INDEX IF NOT EXISTS idx_dist_stage ON distributions(source, stage, claimed_until);
+	`); err != nil {
+		return fmt.Errorf("create distribution indexes: %w", err)
+	}
+	return s.migrateSignatures()
+}
+
+// addedColumns are columns introduced after the initial schema. Append here when
+// adding one; never rewrite an existing entry.
+var addedColumns = []struct{ table, column, ddl string }{
+	{"distributions", "claimed_by", "TEXT"},
+	{"distributions", "claimed_until", "INTEGER NOT NULL DEFAULT 0"},
+}
+
+// ensureColumn adds a column when the table does not already have it.
+func (s *Store) ensureColumn(table, column, ddl string) error {
+	rows, err := s.db.Query(`SELECT name FROM pragma_table_info(?)`, table)
+	if err != nil {
+		return fmt.Errorf("inspect %s: %w", table, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return err
+		}
+		if name == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	// Table and column names are compile-time constants from addedColumns, never
+	// user input, so interpolating them is safe — and ALTER TABLE takes no
+	// placeholders for identifiers.
+	if _, err := s.db.Exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + ddl); err != nil {
+		return fmt.Errorf("add column %s.%s: %w", table, column, err)
 	}
 	return nil
 }

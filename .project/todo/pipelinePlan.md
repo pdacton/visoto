@@ -1,6 +1,6 @@
 # Data Structure Harvesting Pipeline — Requirements
 
-**Status:** Draft (2026-09-05)
+**Status:** Draft (2026-09-05) — M1 implemented
 **Component:** new — `cmd/visoto-harvest/`, `internal/pipeline/*`
 **Type:** feature / new component
 **Depends on:** `internal/config`, `internal/sparql`, a writable QLever endpoint
@@ -274,6 +274,59 @@ type Profiler interface {
   `[[application.sparqlEndpoints]]` entry with its own `slug` and `tag`, so
   templates can branch on `.EndpointTag`.
 
+### 5.10 Statelessness and scaling out
+
+The question this section answers: can the modularity above be run stateless, and
+can it scale beyond one machine?
+
+**Workers can be stateless. The queue cannot.** A worker holds nothing that is not
+recoverable, by construction:
+
+| Property | Why it holds | Consequence |
+|---|---|---|
+| Minted IRIs are content-derived (R-CAT-3, R-SIG-2) | `Minter` hashes inputs, never a counter or a clock | Two workers processing the same distribution produce byte-identical triples — no coordination needed to allocate identity |
+| Blobs are content-addressed (R-FET-1) | Path is the SHA-256 | Any worker can find, verify or re-derive a blob |
+| Stage transitions are recorded before their side effect (R-ARCH-2) | `SetStage` precedes the work | A crash re-does at most one item |
+| Loads are graph-scoped and idempotent (R-LOD-3) | `BeginGraph` + `Append` per graph | A repeated load is a no-op, not a duplicate |
+
+So a worker is disposable: kill it mid-fetch and another produces the same result.
+What is irreducibly stateful is the queue — something must record who is working
+on what, and what the watermark is.
+
+- **R-SCALE-1** Work is claimed under a **lease**, not a lock: `ClaimBatch`
+  hands out rows with an expiry, and a lease that runs out is reclaimed. A lock
+  held by a dead process is a stuck queue; a lease is self-healing. An expired
+  lease costs duplicate work, never corruption, because of the properties above.
+- **R-SCALE-2** The runner takes its job store as an **interface**
+  (`harvest.Store`), so the backend is replaceable without touching the stages.
+- **R-SCALE-3** The claim is written as SELECT-then-UPDATE inside a transaction.
+  Under SQLite the transaction suffices (one writer); the same shape is what
+  PostgreSQL implements as `SELECT … FOR UPDATE SKIP LOCKED`. Moving to a shared
+  queue therefore replaces one method body, not the pipeline.
+
+**What is single-node today, and what each would cost to lift:**
+
+| Component | Today | To scale out |
+|---|---|---|
+| Job queue | SQLite, node-local | Swap `harvest.Store` for PostgreSQL; `ClaimBatch` already has the right shape |
+| Blob store | Local directory | Object storage behind the same content-addressed key |
+| Bulk-file loader | Writes one local file | Shared volume, or per-worker files merged before re-index |
+| Rate limiter | In-process, per source | Shared token bucket — otherwise N workers means N× the request rate, and the portal blocks us (R-FET-5) |
+| Catalogue harvest | One goroutine per source | Stays that way: paging a catalogue is inherently sequential, and it is not the bottleneck. **Fetch and profile are the parallel stages** |
+
+- **R-SCALE-4** Distributing the fetch stage without first making the rate limiter
+  shared is a defect, not an optimization: it converts a scaling change into a
+  ban. The limiter is per-source by design so this stays a single seam.
+- **R-SCALE-5** Sources are harvested independently and a failing source never
+  blocks another (R-NFR-5), so per-source parallelism is available before any of
+  the above is done. That is the cheap 80 %: two portals harvest concurrently on
+  one machine today.
+
+The honest summary: the design is **horizontally scalable in shape and
+single-node in deployment**. Nothing above the job store assumes one machine, and
+the two seams that do — the store interface and the limiter — are named here so
+they are not discovered late.
+
 ## 6. Data model
 
 ### 6.1 Namespaces
@@ -387,7 +440,8 @@ expensive mistake. Listed again in §11 as an open decision.
 
 ### 6.4 Field signatures — what they are and why now
 
-*(This answers the open question from the design discussion.)*
+**Decided: in scope from v1** (confirmed 2026-09-05). The sketch is computed in
+the profiling pass and persisted from the first run.
 
 **The problem.** After profiling 50 000 distributions you hold roughly a million
 field descriptions, each sealed inside its own distribution. Nothing in the graph
@@ -442,6 +496,18 @@ reaches the triplestore.
   post-load batch job over the sketch table, not inline per distribution.
 - **R-SIG-4** Signature membership and similarity thresholds are configurable and
   recorded on the run, since results are not comparable across threshold changes.
+- **R-SIG-5** Identity has two levels, because neither works alone: an **exact
+  key** over (normalized name, datatype, pattern class, cardinality class) gives
+  precision and costs nothing, and the **MinHash similarity link** gives recall
+  across publishers who never agreed on a column name. The exact key alone would
+  never connect `bfs_nr` to `gemeinde_id`; the sketch alone would connect every
+  small integer column in the corpus.
+- **R-SIG-6** Repeated observations of one signature **merge** their sketches
+  (MinHash union is element-wise minimum), so a signature accumulates the value
+  universe of the concept rather than of whichever file was seen first.
+- **R-SIG-7** Sketching costs ~210 ns per value. On a 1M-row, 30-column CSV that
+  is ~6 s, which is affordable but not free: sketches are computed over the
+  sampled rows (R-PRF-2), not necessarily over every row.
 
 ## 7. Non-functional requirements
 
@@ -536,10 +602,15 @@ accommodate them.
 
 ## 10. Delivery phases
 
-**M1 — Skeleton and catalogue (G1).** `cmd/visoto-harvest`, SQLite state, the
-`Source` interface with the `dcat-sparql` and `ckan` adapters, catalogue graphs
-loaded into QLever. *Done when:* a SPARQL query against the pipeline endpoint lists
-opendata.swiss datasets with publishers and distributions.
+**M1 — Skeleton and catalogue (G1). ✅ implemented.** `cmd/visoto-harvest`, SQLite
+state with lease-based claims, the `Source` interface with the `dcat-sparql` and
+`ckan` adapters, the `Loader` interface with `bulk-file` and `sparql-update`, and
+catalogue graphs plus run provenance written into the triplestore. The signature
+sketch and its persistence landed here too, ahead of the profiler that will feed
+them, because they gate M3 and cannot be retrofitted.
+*Remaining to close:* a live harvest against opendata.swiss — the adapter is
+covered by fixture tests, but the portal has not been reached from this
+environment.
 
 **M2 — Fetch and CSV/RDF structure (G2, G3).** Blob store, sniffing, the CSV and
 RDF profilers, minting, `bulk-file` loader. *Done when:* a distribution's columns,
@@ -566,12 +637,22 @@ Formats beyond phase 1 (§9) slot in after M2 without interface changes.
 | # | Decision | Options | Leaning |
 |---|---|---|---|
 | D1 | Blob retention after profiling | keep all / keep hash only / LRU cache with a size cap | LRU cache: re-profiling without re-downloading is worth real disk, unbounded storage is not — and it sidesteps the redistribution question |
-| D2 | Base IRI | `visoto.hutzli.org/id/` / a purl / a dedicated domain | decide before M2; migration later is expensive |
+| D2 | Base IRI | `visoto.hutzli.org/id/` / a purl / a dedicated domain | **decide before M2.** Configurable as `base_iri`, defaulting to `https://visoto.hutzli.org/id/`; changing it after the first load re-mints every IRI in the store |
 | D3 | Sample values in the graph | top-k with values / frequencies only / values only for low-cardinality fields | third option: it keeps code lists legible while limiting how much content is republished |
 | D4 | Similarity job placement | in-pipeline batch / separate binary / SPARQL-side | in-pipeline batch for M3 |
 | D5 | DuckDB dependency | required / optional fast path / not used | optional fast path (R-PRF-7) |
 | D6 | Own QLever instance vs. an existing endpoint | dedicated / shared with LINDAS mirror | dedicated: re-index cadence differs sharply |
 | D7 | Whether the web UI ever triggers a harvest | never / admin-only / open | out of scope for v1, but affects whether state needs multi-writer safety |
+| D8 | When to move the job queue off SQLite | never / when one machine is too slow / now | when needed, not now: the seam is in place (R-SCALE-2), and a shared queue without a shared rate limiter (R-SCALE-4) would be a regression |
+
+**Resolved**
+
+| # | Decision | Outcome |
+|---|---|---|
+| — | Catalogue source | **Both, behind a `Source` interface.** Adapters normalize to DCAT-AP; `dcat-sparql` and `ckan` ship in M1 |
+| — | Field signatures in v1 | **Yes.** Persisted from the first run (§6.4); they cannot be retrofitted without re-downloading the corpus |
+| — | Ingest DCAT into the triplestore | **Yes.** Catalogue graphs per source and run, with structure hanging off the same `dcat:Distribution` IRIs (§5.3) |
+| — | Format scope | **Roadmapped** (§9). Phase 1 is CSV/TSV and RDF |
 
 ## 12. Risks
 
