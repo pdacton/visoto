@@ -32,6 +32,7 @@ type Config struct {
 	Logging     LoggingConfig     `toml:"logging"`
 	MCP         MCPConfig         `toml:"mcp"`
 	Ontologies  []OntologyEntry   `toml:"ontologies"`
+	Pipeline    PipelineConfig    `toml:"pipeline"`
 }
 
 // MCPConfig holds MCP server settings
@@ -187,6 +188,13 @@ func Load(configPath string) (*Config, error) {
 	// list, would silently render half-translated pages — fail fast instead.
 	if err := cfg.Application.validateLanguages(); err != nil {
 		return cfg, fmt.Errorf("invalid language config in %s: %w", configPath, err)
+	}
+
+	// The pipeline is validated only when enabled, so a half-written [pipeline]
+	// block never blocks the web server from starting.
+	cfg.Pipeline.applyDefaults()
+	if err := cfg.Pipeline.validate(); err != nil {
+		return cfg, fmt.Errorf("invalid pipeline config in %s: %w", configPath, err)
 	}
 
 	// The PORT env var, when set, overrides the port from the config file.

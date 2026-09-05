@@ -237,3 +237,84 @@ port = 8070
 level = "DEBUG"   # DEBUG, INFO, WARN, ERROR
 format = "text"  # json, text
 output = "stdout" # stdout, stderr, or file path
+
+# ---------------------------------------------------------------------------
+# Harvesting pipeline (cmd/visoto-harvest)
+#
+# Harvests DCAT catalogues from open data portals, derives dataset structure from
+# the actual files, and writes both into a triplestore. Requirements and data
+# model: .project/todo/pipelinePlan.md
+#
+# The web server ignores this block entirely — an absent [pipeline] section, or
+# enabled = false, leaves it unaffected. The block is only validated when the
+# pipeline is enabled, so a half-written config cannot stop the site from booting.
+# ---------------------------------------------------------------------------
+# [pipeline]
+# enabled = true
+#
+# # Slug of the [[application.sparqlEndpoints]] entry the pipeline writes into.
+# # A slug rather than a URL, so credentials stay defined in one place.
+# # Required for loader = "sparql-update"; unused by "bulk-file".
+# target_endpoint = "qlever-local"
+#
+# work_dir = "./pipeline/work"          # blobs and staged N-Quads
+# state_db = "./pipeline/state.sqlite"  # job queue, watermarks, run history
+#
+# workers            = 8
+# max_download_bytes = 536870912        # 512 MB; larger distributions are recorded as skipped
+# sample_rows        = 200000           # profiling cap; beyond it a structure is marked sampled
+# top_k              = 10               # sample values kept per field
+#
+# # How quads reach the triplestore:
+# #   "bulk-file"     stage N-Quads under work_dir for a QLever re-index (default)
+# #   "sparql-update" write over the SPARQL protocol, visible immediately
+# # Bulk-file is the default because heavy UPDATE volume degrades QLever query
+# # performance — see the note in scripts/qlever-start-dev.sh. Use sparql-update
+# # for incremental top-ups between re-indexes, not for a full harvest.
+# loader = "bulk-file"
+# update_batch_quads = 5000
+#
+# # Standard-vocabulary projections emitted alongside the viso: spine. Each
+# # roughly doubles triple count for the structures it covers, so they are
+# # individually switchable.
+# emit_csvw  = true    # csvw:Table / csvw:Column for tabular distributions
+# emit_shacl = true    # sh:NodeShape / sh:property, making structure executable
+# emit_void  = true    # void: partitions for RDF distributions
+#
+# keep_runs = 3        # run-scoped graphs retained per distribution
+#
+# # Roots every minted IRI. FREEZE THIS BEFORE THE FIRST LOAD: changing it later
+# # re-mints every IRI in the store, which is a migration, not a config change.
+# base_iri   = "https://visoto.hutzli.org/id/"
+# user_agent = "visoto-harvest/1.0 (+https://visoto.hutzli.org)"
+
+# Each source is one catalogue. `type` selects a registered adapter; run
+# `visoto-harvest sources` to list the adapters compiled in. Adapters normalize
+# whatever the portal speaks into DCAT-AP, so nothing downstream is CKAN- or
+# SPARQL-specific.
+#
+# name       — stable identifier; it reaches graph IRIs and job state, so
+#              renaming a source starts it over
+# rate_limit — "N/s", "N/m" or "N/h". Not optional in practice: an unpaced
+#              worker pool gets the harvester blocked by the portal.
+# page_size  — datasets per request
+
+# [[pipeline.sources]]
+# name       = "opendata-swiss"
+# type       = "ckan"
+# url        = "https://ckan.opendata.swiss/api/3/action"
+# enabled    = true
+# rate_limit = "2/s"
+# page_size  = 500
+# # Dataset IRIs are minted under this base. Set it explicitly whenever the API
+# # host is not the public portal host, so IRIs never depend on where the API
+# # happened to be reached.
+# dataset_iri_base = "https://opendata.swiss/dataset"
+
+# [[pipeline.sources]]
+# name       = "data-europa"
+# type       = "dcat-sparql"
+# url        = "https://data.europa.eu/sparql"
+# enabled    = false
+# rate_limit = "1/s"
+# page_size  = 500
