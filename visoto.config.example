@@ -209,6 +209,11 @@ type_priority = [
 # The key "dispLang" is reserved and cannot be used here.
 [rdf.magic_properties]
 description = "rdfs:comment|schema:description|dct:description|dc:description"
+# Used by the default class template. Both are cross-vocabulary on purpose: the
+# schema: spellings dominate on LINDAS, the dct: ones on Fedlex, so a single
+# predicate would leave the column blank on half the configured endpoints.
+identifier = "dct:identifier|schema:identifier|skos:notation|adms:identifier"
+modified = "dct:modified|schema:dateModified|dct:issued|schema:datePublished"
 
 # Well-known ontologies available for one-click loading in the Upload modal.
 # Each entry requires: name (display label), url (fetch source), graph (target named graph URI).

@@ -1317,6 +1317,7 @@
 "page.statistics.zefixUid" = "La sua caratteristica portante è l'<strong>IDI</strong>, il numero d'identificazione delle imprese, che ogni ente possiede. Questo unico identificatore permette di riconoscere un'impresa attraverso set di dati altrimenti scollegati — i gestori della rete elettrica nel tema <a href=\"/energy.html\">energia</a> portano il proprio IDI, che si risolve qui, nella persona giuridica. Ogni iscrizione contiene inoltre una forma giuridica secondo lo standard <code>eCH-0097</code>, un indirizzo iscritto, il comune di sede e, nella maggior parte dei casi, lo scopo sociale dell'impresa per esteso."
 
 # ── Facet labels ──────────────────────────────────────────────────
+"facet.description" = "Descrizione"
 "facet.familyName" = "Cognome"
 "facet.givenName" = "Nome"
 "facet.graph" = "Grafo"

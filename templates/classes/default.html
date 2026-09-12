@@ -7,10 +7,10 @@
 
   {{ template "literals" . }}
 
-  <!-- Instance count. The table below stops at LIMIT 10000 with no indication
-       whether that is the whole class or a slice of 13 million, so the count is
-       what tells you which of the two you are looking at. Queried live rather
-       than cached: LINDAS counts drift between requests. -->
+  <!-- Instance count. Above defaultMaxWorkingSet (20000) the table below loads a
+       bounded working set rather than the class, so its row count is a slice of
+       the population and this metric is what tells you the size of the whole.
+       Queried live rather than cached: LINDAS counts drift between requests. -->
   <sparql-async id="instanceCount">
     SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
   </sparql-async>
@@ -26,21 +26,61 @@
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
+        <!-- ?identifier and ?modified are magic properties (see [rdf.magic_properties]
+             in visoto.config), each an alternation across vocabularies rather than a
+             single predicate. That is deliberate: schema:identifier covers LINDAS
+             (455k of 458k skos:Concepts carry one) while Fedlex has none of it and
+             uses dct: throughout (211k of 212k jolux:Acts carry dct:modified). A
+             single spelling would leave the column empty on half the endpoints.
+
+             No label column: the ?instance cell already resolves one, through
+             rdfs:label / skos:prefLabel / schema:name / dct:title / dc:title /
+             rico:title (internal/sparql/labels.go). A separate column would repeat
+             the text that is already the link.
+
+             All three are OPTIONAL, so an instance missing them still lists — the
+             point of this table is that it works for a class nobody wrote a
+             template for. Tabulator hides a column that is empty for every row.
+
+             NO LIMIT here on purpose. The cap belongs to the server, which picks
+             one of two modes by instance count (asyncTableHandler): at or under
+             defaultMaxWorkingSet (20000) it runs this query inline, and above that
+             it rewrites it into a bounded working set, stripping any trailing
+             LIMIT anyway (StripTrailingLimitOffset). So a LIMIT here only ever bit
+             on the inline path, where it silently truncated every class between
+             its value and 20000 — jolux:TreatyProcess (19933 instances) listed
+             exactly 10000 rows and said "of 10000", with nothing marking the cut.
+
+             Each column still declares filter + path= because the working-set mode
+             above 20000 rows loads a SAMPLE, and an undeclared column's funnel
+             could only filter the rows that happened to load (sparql-table.js warns
+             about exactly this). A declared path is spliced into `?key <path> ?fv`
+             and so constrains the WHOLE class. The visoto: tokens survive that
+             splice — expansion happens in FinalizeQuery over the assembled query
+             and is parenthesized, so an alternation stays one path
+             (internal/sparql/query.go). -->
         <sparql-async id="instances">
-          SELECT DISTINCT ?class ?instance ?description WHERE {
-            BIND (?? AS ?class) .
-            ?instance a ?class .
+          SELECT DISTINCT ?instance ?identifier ?description ?modified WHERE {
+            ?instance a ?? .
+            OPTIONAL { ?instance visoto:identifier ?identifier . }
             OPTIONAL {
               ?instance visoto:description ?description .
               FILTER (lang(?description) = visoto:dispLang || lang(?description) = "")
             }
+            OPTIONAL { ?instance visoto:modified ?modified . }
           }
           ORDER BY ?instance
-          LIMIT 10000
         </sparql-async>
         <sparql-columns for="instances">
-          <sparql-column var="class" icon></sparql-column>
           <sparql-column var="instance" icon filter></sparql-column>
+          <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"
+                         path="visoto:identifier" filter></sparql-column>
+          <!-- filter="text": a description is free prose, so a select funnel would
+               list thousands of one-off values. -->
+          <sparql-column var="description" label="{{ t "facet.description" "Description" }}"
+                         path="visoto:description" filter="text" type="string"></sparql-column>
+          <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}"
+                         path="visoto:modified" filter></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict

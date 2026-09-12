@@ -1317,6 +1317,7 @@
 "page.statistics.zefixUid" = "Sa caractéristique porteuse est l'<strong>IDE</strong>, le numéro d'identification des entreprises, que porte chaque entité. Cet identifiant unique permet de reconnaître une entreprise à travers des jeux de données par ailleurs sans lien — les gestionnaires de réseau électrique du thème <a href=\"/energy.html\">énergie</a> portent leur IDE, qui se résout ici vers la personne morale. Chaque inscription contient également une forme juridique issue de la norme <code>eCH-0097</code>, une adresse inscrite, la commune de siège et, dans la plupart des cas, le but social de l'entreprise rédigé en toutes lettres."
 
 # ── Facet labels ──────────────────────────────────────────────────
+"facet.description" = "Description"
 "facet.familyName" = "Nom"
 "facet.givenName" = "Prénom"
 "facet.graph" = "Graphe"

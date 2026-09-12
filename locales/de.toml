@@ -1318,6 +1318,7 @@
 "page.statistics.zefixUid" = "Sein tragendes Merkmal ist die <strong>UID</strong>, die Unternehmens-Identifikationsnummer, die jede Einheit führt. Dieser eine Identifikator erlaubt es, ein Unternehmen über ansonsten unverbundene Datensätze hinweg wiederzuerkennen — die Stromnetzbetreiber im Thema <a href=\"/energy.html\">Energie</a> tragen ihre UID, und sie löst hierhin auf, zur juristischen Person. Jeder Eintrag enthält zudem eine Rechtsform nach dem Standard <code>eCH-0097</code>, eine eingetragene Adresse, die Sitzgemeinde und in den meisten Fällen den Gesellschaftszweck in ausformulierter Prosa."
 
 # ── Facet labels ──────────────────────────────────────────────────
+"facet.description" = "Beschreibung"
 "facet.familyName" = "Nachname"
 "facet.givenName" = "Vorname"
 "facet.graph" = "Graph"
