@@ -42,7 +42,7 @@
     <!-- classes (lazy-loaded so the page shell renders before the heavy count query) -->
     <div class="mb-3">
       <sparql-async id="allClasses">
-        SELECT ?class ?type ?instances ?iri ?domain WHERE {
+        SELECT DISTINCT ?class ?type ?instances ?iri ?domain WHERE {
           {
             # subquery to count instances
             SELECT DISTINCT ?class (COUNT(?instance) AS ?instances) WHERE {
@@ -53,6 +53,14 @@
           # one row per declaration. That duplication is deliberate: it keeps ?type a
           # single value so the table can be grouped by it. Spelled as a CURIE literal so
           # the two declarations stay distinguishable in the column.
+          #
+          # The outer SELECT is DISTINCT because of a SECOND, unwanted source of rows:
+          # the same a-triple asserted in several named graphs. The default graph is
+          # their union, so this OPTIONAL matches once PER GRAPH and emits identical
+          # rows. Fedlex shows it plainly — skos:Concept a owl:Class lives in three
+          # graphs (jolux, skos/core, skos-xl), which listed the class three times.
+          # DISTINCT collapses those; the rdfs:/owl: pair above survives it, since
+          # those rows differ in ?type.
           OPTIONAL { ?class a ?rawType }
           BIND(IF(?rawType = rdfs:Class, "rdfs:Class",
                IF(?rawType = owl:Class,  "owl:Class",
