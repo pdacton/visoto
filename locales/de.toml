@@ -174,6 +174,7 @@
 "card.accessDownloadURLs" = "Zugriffs- & Download-URLs"
 "card.accessService" = "Zugriffsdienst"
 "card.address" = "Adresse"
+"card.allGovernmentOrganizations" = "Alle Verwaltungseinheiten"
 "card.allTriples" = "Alle Tripel"
 "card.attributes" = "Attribute"
 "card.augmentedByTreatments" = "Ergänzt durch Behandlungen"
@@ -275,6 +276,7 @@
 "card.schemaInformationDomainRange" = "Schema-Informationen (Domain / Range)"
 "card.sharedDimensions" = "Geteilte Dimensionen"
 "card.stops" = "Haltestellen"
+"card.subOrganizations" = "Untergeordnete Organisationen"
 "card.subclassesOfThisClass" = "Unterklassen dieser Klasse"
 "card.superclassesOfThisClass" = "Oberklassen dieser Klasse"
 "card.taxa" = "Taxa"
@@ -1318,6 +1320,7 @@
 "page.statistics.zefixUid" = "Sein tragendes Merkmal ist die <strong>UID</strong>, die Unternehmens-Identifikationsnummer, die jede Einheit führt. Dieser eine Identifikator erlaubt es, ein Unternehmen über ansonsten unverbundene Datensätze hinweg wiederzuerkennen — die Stromnetzbetreiber im Thema <a href=\"/energy.html\">Energie</a> tragen ihre UID, und sie löst hierhin auf, zur juristischen Person. Jeder Eintrag enthält zudem eine Rechtsform nach dem Standard <code>eCH-0097</code>, eine eingetragene Adresse, die Sitzgemeinde und in den meisten Fällen den Gesellschaftszweck in ausformulierter Prosa."
 
 # ── Facet labels ──────────────────────────────────────────────────
+"facet.alternateName" = "Abkürzung"
 "facet.description" = "Beschreibung"
 "facet.familyName" = "Nachname"
 "facet.givenName" = "Vorname"
@@ -1340,6 +1343,7 @@
 "facet.districtCount" = "Bezirke"
 "facet.municipality" = "Gemeinde"
 "facet.name" = "Name"
+"facet.subUnits" = "Untereinheiten"
 "facet.validFrom" = "Gültig ab"
 "facet.identifier" = "Kennung"
 "facet.validThrough" = "Gültig bis"

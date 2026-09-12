@@ -174,6 +174,7 @@
 "card.accessDownloadURLs" = "URL d'accès & de téléchargement"
 "card.accessService" = "Service d'accès"
 "card.address" = "Adresse"
+"card.allGovernmentOrganizations" = "Toutes les unités administratives"
 "card.allTriples" = "Tous les triplets"
 "card.attributes" = "Attributs"
 "card.augmentedByTreatments" = "Enrichi par des traitements"
@@ -275,6 +276,7 @@
 "card.schemaInformationDomainRange" = "Informations sur le schéma (domaine / portée)"
 "card.sharedDimensions" = "Dimensions partagées"
 "card.stops" = "Arrêts"
+"card.subOrganizations" = "Organisations subordonnées"
 "card.subclassesOfThisClass" = "Sous-classes de cette classe"
 "card.superclassesOfThisClass" = "Super-classes de cette classe"
 "card.taxa" = "Taxons"
@@ -1317,6 +1319,7 @@
 "page.statistics.zefixUid" = "Sa caractéristique porteuse est l'<strong>IDE</strong>, le numéro d'identification des entreprises, que porte chaque entité. Cet identifiant unique permet de reconnaître une entreprise à travers des jeux de données par ailleurs sans lien — les gestionnaires de réseau électrique du thème <a href=\"/energy.html\">énergie</a> portent leur IDE, qui se résout ici vers la personne morale. Chaque inscription contient également une forme juridique issue de la norme <code>eCH-0097</code>, une adresse inscrite, la commune de siège et, dans la plupart des cas, le but social de l'entreprise rédigé en toutes lettres."
 
 # ── Facet labels ──────────────────────────────────────────────────
+"facet.alternateName" = "Abréviation"
 "facet.description" = "Description"
 "facet.familyName" = "Nom"
 "facet.givenName" = "Prénom"
@@ -1339,6 +1342,7 @@
 "facet.districtCount" = "Districts"
 "facet.municipality" = "Commune"
 "facet.name" = "Nom"
+"facet.subUnits" = "Sous-unités"
 "facet.validFrom" = "Valable dès"
 "facet.identifier" = "Identifiant"
 "facet.validThrough" = "Valable jusqu'au"

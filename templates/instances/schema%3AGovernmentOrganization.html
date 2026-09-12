@@ -46,6 +46,53 @@
   }
 </sparql-query>
 
+<!-- The postal address, resolved one hop through the schema:PostalAddress node.
+
+     sparqlGrid renders ONE ROW PER ?property/?value PAIR — that is the shape the
+     partial reads (see its datagrid-title/datagrid-content), not one row of many
+     columns. Hence the UNION: each arm contributes one field, and the arms fix the
+     reading order (street, postal code, locality, country) rather than leaving it
+     to the store. ?ord exists only for that ORDER BY and is not projected.
+
+     ?property is bound to the PREDICATE IRI, not to a label. The grid renders it
+     through `render`, which resolves an IRI to its label in the display language,
+     so the field names translate with no work here. A literal label would also
+     have to come from {{ t }}, and a template action inside a <sparql-query> body
+     is NOT executed — it is shipped to the endpoint verbatim, which answers 400.
+
+     These four are all the Staatskalender models: 9,809 of the 11,536
+     organizations carry an address, addressCountry reaching all 9,809 and
+     streetAddress 9,749. postOfficeBoxNumber, email and telephone are modelled by
+     schema.org but appear on ZERO addresses here, so they are not projected.
+     Exactly one address per organization — no org in the graph has two.
+
+     Scoped to the Staatskalender graph like every other query on this page.
+
+     Sync rather than async: four indexed lookups returning short literals, sitting
+     above the fold beside the attributes they belong with. sparqlGrid collapses
+     itself when the result is empty, so the 1,727 organizations without an address
+     get a muted, folded card rather than four blank rows. -->
+<sparql-query id="postalAddress">
+  SELECT ?property ?value WHERE {
+    GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+      ?? schema:address ?address .
+      {
+        ?address schema:streetAddress ?value .
+        BIND(schema:streetAddress AS ?property) BIND(1 AS ?ord)
+      } UNION {
+        ?address schema:postalCode ?value .
+        BIND(schema:postalCode AS ?property) BIND(2 AS ?ord)
+      } UNION {
+        ?address schema:addressLocality ?value .
+        BIND(schema:addressLocality AS ?property) BIND(3 AS ?ord)
+      } UNION {
+        ?address schema:addressCountry ?value .
+        BIND(schema:addressCountry AS ?property) BIND(4 AS ?ord)
+      }
+    }
+  } ORDER BY ?ord
+</sparql-query>
+
 {{ template "pageHeader" . }}
 
 {{ define "pageContent" }}
@@ -162,6 +209,14 @@
 
       {{ template "literals" . }}
 
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.postalAddress
+            "id" "postalAddress"
+            "title" (t "card.address" "Address")
+            "icon" "map-pin") }}
+      </div>
+
       <!-- People holding a role in this organization. The Staatskalender models
            this as a two-hop reification rather than a direct link:
              org -schema:member-> OrganizationRole -schema:member-> Person
@@ -217,10 +272,77 @@
         }}
       </div>
 
-      <!-- The shared component, unchanged: a container query on .vs-split-main
-           (see tabler_overrides.css) reflows its col-lg-6 pair to full width
-           inside this narrower column. -->
-      {{ template "relationships" . }}
+      <!-- The units directly below this one — one level, not the whole subtree,
+           which is what the tree beside the page is for. Bundeskanzlei lists its
+           seven: Stab Bundeskanzler, the five Bereiche, and the EDÖB.
+
+           Scoped to the Staatskalender graph like every other query on this page:
+           schema:parentOrganization is used outside it too, and an unscoped query
+           would mix in edges from the five other graphs that this page's tree
+           deliberately excludes.
+
+           ?subUnits is a COUNT in its own subquery. It says which rows lead
+           somewhere deeper — 3,595 of the 11,526 organizations with a parent have
+           children of their own — so the table hints at the hierarchy without
+           expanding it. A bare EXISTS would only say yes or no; the number tells
+           you how much is down there.
+
+           Locality is worth a column (9,794 of 11,526 carry one) but identifier is
+           not: NO child organization in this graph has schema:identifier.
+
+           NO ORDER BY, deliberately. Sorting is the table's job, not the query's:
+           Tabulator holds these rows locally (sortMode "local") and every column
+           header sorts on the RESOLVED LABEL — the text the cell shows — which a
+           query-side ORDER BY cannot reach without an extra OPTIONAL to re-fetch a
+           name the cell renderer already has. The endpoint is spared the sort, and
+           the rows arrive in whatever order it returns them until the reader picks
+           a column. (The partials expose no sort parameter; if a default sort is
+           ever wanted it belongs there, as a column declaration alongside
+           icon/badge/group, not as an ORDER BY in one template.) -->
+      <div class="mb-3">
+        <sparql-async id="organizationSubUnits">
+          SELECT ?organization ?alternateName ?addressLocality ?subUnits WHERE {
+            GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+              ?organization schema:parentOrganization ?? .
+              # The dispLang filter is REQUIRED here, not a refinement: all 1,505
+              # sub-organizations that carry an alternateName carry one in EACH of
+              # de, fr and it (16 also in en). Unfiltered, every such row would be
+              # multiplied three or four times over. At most one per language, so
+              # the filter leaves exactly one row per organization. These are the
+              # short forms — BK, BR, DTI, EDOEB — which is what makes the column
+              # worth having beside the full name.
+              OPTIONAL {
+                ?organization schema:alternateName ?alternateName .
+                FILTER (lang(?alternateName) = visoto:dispLang || lang(?alternateName) = "")
+              }
+              OPTIONAL { ?organization schema:address/schema:addressLocality ?addressLocality . }
+              {
+                SELECT ?organization (COUNT(DISTINCT ?grandChild) AS ?subUnits) WHERE {
+                  ?organization schema:parentOrganization ?? .
+                  OPTIONAL { ?grandChild schema:parentOrganization ?organization . }
+                } GROUP BY ?organization
+              }
+            }
+          }
+        </sparql-async>
+        <!-- Bounded by one parent (seven rows for Bundeskanzlei, and no
+             organization in this graph has many more), so the set loads complete
+             and the built-in header filters answer authoritatively — no filter=
+             declarations needed, per the declaration rule. -->
+        <sparql-columns for="organizationSubUnits">
+          <sparql-column var="organization" label="{{ t "facet.name" "Name" }}" icon></sparql-column>
+          <sparql-column var="alternateName" label="{{ t "facet.alternateName" "Abbreviation" }}"></sparql-column>
+          <sparql-column var="addressLocality" label="{{ t "facet.locality" "Locality" }}"></sparql-column>
+          <sparql-column var="subUnits" label="{{ t "facet.subUnits" "Sub-units" }}" badge></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "organizationSubUnits"
+            "iri" .ResourceIRI
+            "title" (t "card.subOrganizations" "Sub-organizations")
+            "icon" "network")
+        }}
+      </div>
+
     </div>
 
   </div>
