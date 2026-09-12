@@ -1,5 +1,7 @@
 ## Visoto
 
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+
 Visoto is a Go web application for browsing and visualizing RDF linked data resources via SPARQL endpoints. It renders resource pages using type-specific templates, supports full-text search, and exposes an MCP server for AI assistant integration.
 
 You can find a demo at https://visoto.hutzli.org.
@@ -187,3 +189,14 @@ automatically — see [Async query scope](docs/templating.md#async-query-scope).
 ![Catalog class page in dark mode](docs/screenshot2.png)
 
 ![Graph Explorer — version flow for Municipality](docs/screenshot3.png)
+
+### License
+
+Visoto is licensed under the [Apache License 2.0](LICENSE).
+
+Third-party components — the browser libraries loaded from a CDN and the Go
+modules pinned in `go.sum` — remain under their own licenses, attributed in
+[NOTICE](NOTICE).
+
+Contributions are welcome. By submitting a pull request you agree that your
+contribution is licensed under the same terms, per section 5 of the license.

@@ -1,0 +1,43 @@
+Visoto
+Copyright 2026 The Visoto Authors
+
+This product includes software developed by the Visoto Authors and is
+licensed under the Apache License, Version 2.0. See the LICENSE file.
+
+--------------------------------------------------------------------------------
+Third-party components
+--------------------------------------------------------------------------------
+
+Visoto depends on the following third-party software. None of it is
+redistributed in this repository: Go modules are fetched by the toolchain
+(see go.mod / go.sum) and the browser libraries below are loaded from a public
+CDN at runtime. Each remains under its own license, listed here for
+attribution.
+
+Front-end libraries (loaded from a CDN at runtime)
+
+  Tabler                  1.4.0    MIT         https://tabler.io
+  Tabulator               6.5.2    MIT         https://tabulator.info
+  Graph Explorer          2.1.0    LGPL-2.1    https://github.com/zazuko/graph-explorer
+    A fork of Ontodia, Copyright (c) metaphacts GmbH. Loaded unmodified from
+    the CDN as a separate work; Visoto links to it from the browser and does
+    not incorporate or modify its source.
+  htmx                    2.0.10   BSD-2-Clause  https://htmx.org
+  Lucide                  1.37.0   ISC         https://lucide.dev
+  Chart.js                4.5.1    MIT         https://www.chartjs.org
+  chartjs-adapter-date-fns 3.0.0   MIT         https://github.com/chartjs/chartjs-adapter-date-fns
+  Wunderbaum              0.14.1   MIT         https://mar10.github.io/wunderbaum/
+  highlight.js            11.12.0  BSD-3-Clause  https://highlightjs.org
+  SheetJS (xlsx)          0.18.5   Apache-2.0  https://sheetjs.com
+  svg-pan-zoom            3.6.2    BSD-2-Clause  https://github.com/bumbu/svg-pan-zoom
+
+Go modules
+
+  Direct and transitive dependencies are declared in go.mod and pinned in
+  go.sum. They are predominantly MIT- and BSD-licensed; run
+  `go list -m all` to enumerate the full set.
+
+Ontologies
+
+  The RDF vocabularies under ontologies/ (RDF, RDFS, OWL, Dublin Core) are
+  published by the W3C and DCMI under their respective open terms.
