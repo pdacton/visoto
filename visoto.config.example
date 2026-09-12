@@ -183,6 +183,21 @@ prefixes = [
 # if a resource has several rdf:type this list is used to prioritize the matching templates
 type_priority = [
   "https://schema.ld.admin.ch/ZefixOrganisation",
+
+  # Person beats cube:Observation for the 1,517 extra-parliamentary-commission
+  # people, who carry BOTH types. cube:Observation is UNLISTED but HAS an instance
+  # template, so without this line the winner among the two depends on map
+  # iteration order — and a person rendered as a cube observation loses the roles
+  # table that is the whole point of the Person template.
+  "http://schema.org/Person",                                                     #  12,292
+
+  # The Staatskalender hierarchy. MORE SPECIFIC than schema:Organization below it:
+  # 168 of the 12,292 government organizations carry both types, and schema:
+  # Organization is listed, so without this line those 168 would fall to the
+  # generic Organization template and lose the hierarchy tree. A further 91 also
+  # carry schema:DefinedTerm, listed further down, for the same reason.
+  "http://schema.org/GovernmentOrganization",                                     #  12,292
+
   "http://schema.org/Organization",
   "http://schema.org/DefinedTerm"
 ]

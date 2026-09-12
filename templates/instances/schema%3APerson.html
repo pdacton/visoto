@@ -1,0 +1,106 @@
+<!-- schema:Person Instance Template
+
+     12,292 people on LINDAS, spread over four graphs that model the SAME person
+     concept very differently:
+
+       staatskalender  6,843  givenName/familyName 100%, gender 52%, memberOf 51%,
+                              telephone 41% — and NO schema:name at all
+       curia           3,609  name/identifier/givenName/familyName/memberOf/gender
+                              all 100%, birthDate 99%, deathDate 75%
+       extra-parl-com  1,517  + occupation 81%, honorificPrefix 72%, worksFor 70%
+       federal-council   143  the richest: image 86%, hasOccupation, successorOf /
+                              predecessorOf ~90%, homeLocation, addressRegion,
+                              birthDate/deathDate, description
+
+     One template covers all four: every card below is driven by OPTIONALs, so a
+     person from a sparse graph simply renders fewer of them rather than erroring.
+
+     schema: is http://schema.org/ here — the https namespace has no instances. -->
+
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Roles. The point of this template, and the reason it is not just the
+       default page: a person's roles are the one thing worth assembling by hand,
+       because LINDAS reaches them through FOUR different shapes and the generic
+       relationship cards show only the opaque intermediate node.
+
+         1. staatskalender   person -memberOf-> OrganizationRole -memberOf-> org
+                             title on the role node's own schema:name
+         2. curia            person -memberOf-> Role -memberOf-> org
+                             title on schema:additionalType -> schema:name, NOT on
+                             the role's own name (it has none)
+         3. federal-council  person -memberOf-> party/organization DIRECTLY
+                             no role node, so no title
+         4. federal-council  person -hasOccupation-> Role
+                             title on schema:roleName, org via schema:organizer
+
+       The UNION covers the two entry predicates; the COALESCEs collapse the three
+       title spellings and the two org links. The IF() guards matter:
+
+       - ?org falls back to ?role ONLY for shape 3, where the "role" IS the
+         organization. Detected by nothing else being bound — without the guard,
+         shapes 1/2/4 with no org (federal president, councillor) would print
+         their opaque role IRI in the Organisation column.
+       - ?roleName drops ?rn when the role IS the org (shape 3), so a party does
+         not appear as its own member's job title.
+
+       Ordered newest first; roles with no dates sort last. -->
+  <div class="mb-3">
+    <sparql-async id="personRoles">
+      SELECT ?org ?roleName ?start ?end WHERE {
+        { ?? schema:memberOf ?role } UNION { ?? schema:hasOccupation ?role }
+        OPTIONAL { ?role schema:memberOf ?viaMember }
+        OPTIONAL { ?role schema:organizer ?viaOrganizer }
+        OPTIONAL { ?role schema:roleName ?rname }
+        OPTIONAL { ?role schema:additionalType/schema:name ?at .
+                   FILTER (lang(?at) = visoto:dispLang || lang(?at) = "") }
+        OPTIONAL { ?role schema:name ?rn .
+                   FILTER (lang(?rn) = visoto:dispLang || lang(?rn) = "") }
+        BIND (IF(BOUND(?viaMember) || BOUND(?viaOrganizer) || BOUND(?rname) || BOUND(?at),
+                 COALESCE(?viaMember, ?viaOrganizer), ?role) AS ?org)
+        BIND (IF(BOUND(?viaMember) || BOUND(?viaOrganizer),
+                 COALESCE(?rn, ?at, ?rname), COALESCE(?at, ?rname)) AS ?roleName)
+        OPTIONAL { ?role schema:startDate ?start }
+        OPTIONAL { ?role schema:endDate ?end }
+      } ORDER BY DESC(?start)
+    </sparql-async>
+    <!-- Bounded by one person — the busiest person on LINDAS has 18 roles — so the
+         set always loads complete and filtering/sorting is answerable locally.
+         Per the declaration rule those columns need no filter=; these declarations
+         exist only for the row icon and the labels. -->
+    <sparql-columns for="personRoles">
+      <sparql-column var="org" label="{{ t "facet.organisation" "Organization" }}" icon></sparql-column>
+      <sparql-column var="roleName" label="{{ t "facet.role" "Role" }}"></sparql-column>
+      <sparql-column var="start" label="{{ t "facet.validFrom" "From" }}"></sparql-column>
+      <sparql-column var="end" label="{{ t "facet.validThrough" "Until" }}"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "personRoles"
+        "iri" .ResourceIRI
+        "title" (t "card.roles" "Roles")
+        "icon" "briefcase")
+    }}
+  </div>
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

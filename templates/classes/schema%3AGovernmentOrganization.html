@@ -1,0 +1,169 @@
+<!-- schema:GovernmentOrganization Class Template, listing all instances of this class
+
+     This file also FIXES A ROUTING SIDE EFFECT. Resource.ResolveTemplate tries
+     templates/classes/<IRI>.html first and templates/instances/<IRI>.html second
+     (see internal/resource/resource.go). So once the instance template existed,
+     the CLASS page — /resource?iri=schema:GovernmentOrganization, the entry point
+     into the Staatskalender — fell through to step 2 and rendered as if the class
+     IRI were an organization: a People table querying its members, and no
+     instance list at all. A class template at step 1 is what keeps the two pages
+     apart.
+
+     schema: is http://schema.org/ here — NOT the https namespace. -->
+
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
+{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+
+{{ define "pageContent" }}
+
+<!-- Same split layout as the instance page (instances/schema%3AGovernmentOrganization.html):
+     the hierarchy navigates on the left, the content sits on the right. Here the
+     content is the exhaustive instance table rather than one organization, which
+     is the whole contrast the page offers — the tree is the structured way in,
+     the table is the complete one.
+
+     Unconditional, unlike the instance page: that page has to ask whether the
+     resource it is showing is in the Staatskalender graph at all, but the class
+     page always shows the same tree, so there is no $inTree branch here and the
+     aside always renders.
+
+     The handle, the collapse toggle and the reopen button are the same markup
+     contract split-layout.js expects (see its header comment). -->
+<div class="row vs-split">
+
+  <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
+    <div class="mb-3">
+
+      <!-- The queries are duplicated from instances/schema%3AGovernmentOrganization.html
+           rather than shared: <sparql-tree-queries> ids are scoped to the TEMPLATE SET,
+           and a class page and an instance page are different sets. Keep the two in
+           step — same graph scope, same dispLang filters. See that file for why the
+           graph IRI's angle brackets must be written &lt; &gt; (the component parser
+           strips a literal <https://…> as an HTML tag) and why the scope exists at all
+           (unscoped, roots returns 617 nodes instead of 10). -->
+      <sparql-tree-queries for="governmentOrganizationTree">
+        <sparql-tree-query role="roots">
+          SELECT ?node ?label ?hasChildren WHERE {
+            GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+              ?node a schema:GovernmentOrganization .
+              OPTIONAL { ?node schema:name ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+              FILTER NOT EXISTS { ?node schema:parentOrganization ?anyParent . }
+              BIND (EXISTS { ?child schema:parentOrganization ?node } AS ?hasChildren)
+            }
+          } ORDER BY ?label
+        </sparql-tree-query>
+        <sparql-tree-query role="children">
+          SELECT ?node ?label ?hasChildren WHERE {
+            GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+              ?node schema:parentOrganization ?parent .
+              ?node a schema:GovernmentOrganization .
+              OPTIONAL { ?node schema:name ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+              BIND (EXISTS { ?child schema:parentOrganization ?node } AS ?hasChildren)
+            }
+          } ORDER BY ?label
+        </sparql-tree-query>
+        <sparql-tree-query role="parents">
+          SELECT ?node ?parent WHERE {
+            GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+              ?node schema:parentOrganization ?parent .
+            }
+          }
+        </sparql-tree-query>
+        <sparql-tree-query role="search">
+          SELECT ?node ?label WHERE {
+            GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+              ?node a schema:GovernmentOrganization .
+              ?node schema:name ?label .
+              FILTER (lang(?label) = visoto:dispLang || lang(?label) = "")
+              FILTER (CONTAINS(LCASE(STR(?label)), LCASE(STR(?__token__))))
+            }
+          } ORDER BY ?label
+        </sparql-tree-query>
+      </sparql-tree-queries>
+
+      <!-- No "iri"/"ResourceIRI": there is no node to focus on a class page, and
+           passing the class IRI would send the focus walk looking for an ancestor
+           chain that does not exist. The tree opens at its 10 roots. With no
+           focused node there is no breadcrumb either, so only splitToggle is on. -->
+      {{ template "sparqlLazyTree" (dict
+          "queryId" "governmentOrganizationTree"
+          "title" (t "card.hierarchy" "Hierarchy")
+          "icon" "list-tree"
+          "splitToggle" true)
+      }}
+    </div>
+  </div>
+
+  <div class="vs-split-handle" role="separator" tabindex="0"
+       aria-orientation="vertical"
+       aria-valuemin="15" aria-valuemax="60" aria-valuenow="33"
+       aria-label="{{ t "split.resize" "Resize the hierarchy column" }}"
+       title="{{ t "split.resizeHint" "Drag to resize, double-click to reset" }}"></div>
+
+  <div class="col-lg-8 vs-split-main">
+
+    <!-- Shown only while the aside is collapsed; brings the tree back. No spacing
+         wrapper: an empty .mb-3 would keep applying its bottom margin while the
+         button is hidden and push this column out of line with the tree card
+         beside it. -->
+    <button type="button" class="btn btn-sm mb-3 vs-split-reopen" data-vs-split-reopen>
+      <i data-lucide="panel-left-open"></i>
+      {{ t "split.showTree" "Show hierarchy" }}
+    </button>
+
+    <!-- All instances, including the ~750 outside the Staatskalender that the tree
+         beside it deliberately excludes (rvov, the extra-parliamentary commissions,
+         foag/system-map, federal-council, meta). -->
+    <div class="mb-3">
+      <sparql-async id="governmentOrganizationInstances">
+        SELECT ?organization ?parentOrganization ?addressLocality WHERE {
+          ?organization a ?? .
+          OPTIONAL { ?organization schema:parentOrganization ?parentOrganization . }
+          OPTIONAL { ?organization schema:address/schema:addressLocality ?addressLocality . }
+        }
+      </sparql-async>
+      <!-- 12,292 instances against the 20,000-row working-set cap, so the set loads
+           COMPLETE and the built-in header filters and search box already answer
+           authoritatively — no filter= declarations needed (the declaration rule:
+           locally-answerable ⇒ none). Contrast classes/schema%3AOrganization.html,
+           where 818k instances force every column to declare.
+
+           The membership triple is written "?organization a ??", the shape
+           DeriveKeyVar looks for. -->
+      <sparql-columns for="governmentOrganizationInstances">
+        <sparql-column var="organization" label="{{ t "facet.name" "Name" }}" icon></sparql-column>
+        <sparql-column var="parentOrganization" label="{{ t "facet.parentOrganization" "Part of" }}"></sparql-column>
+        <sparql-column var="addressLocality" label="{{ t "facet.locality" "Locality" }}"></sparql-column>
+      </sparql-columns>
+
+      {{ template "sparqlAsyncTable" (dict
+          "queryId" "governmentOrganizationInstances"
+          "iri" .ResourceIRI
+          "title" (t "card.organizations" "Organizations")
+          "icon" "building"
+          "searchProp" "http://schema.org/name")
+      }}
+    </div>
+
+    <!-- The shared component, unchanged: a container query on .vs-split-main
+         (see tabler_overrides.css) reflows its col-lg-6 pair to full width inside
+         this narrower column. -->
+    {{ template "relationships" . }}
+  </div>
+
+</div>
+
+<script src="/static/js/split-layout.js" defer></script>
+
+{{ end }}

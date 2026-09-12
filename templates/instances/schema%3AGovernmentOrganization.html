@@ -1,0 +1,232 @@
+<!-- schema:GovernmentOrganization Instance Template
+
+     The Swiss Staatskalender: 11,536 government organizations in one connected
+     hierarchy under 10 roots (Bundesrat, Bundesgericht, the federal courts,
+     Parlamentsdienste, Bundesanwaltschaft, and a "Kantone und Fürstentum
+     Liechtenstein" grouping node with 28 children), nested at least five levels
+     deep. Structurally the same shape as skos:Concept, so this page is the same
+     split layout: the lazy tree navigates on the left, this organization's own
+     content on the right.
+
+     schema: is http://schema.org/ here — NOT the https namespace. The whole
+     Staatskalender uses the http form; https://schema.org/Organization has zero
+     instances on LINDAS. -->
+
+<sparql-query id="breadcrumbs">
+  SELECT ?parentOrganization { ?? schema:parentOrganization ?parentOrganization . }
+</sparql-query>
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.organization.government" "<a href=\"/resource?iri=schema:GovernmentOrganization\">Government Organization</a>" }}</li>
+  {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
+    <li class="breadcrumb-item">{{ render ((index $binding "parentOrganization")) }}</li>
+  {{ end }}
+{{ end }}
+
+<!-- Is THIS organization part of the tree the aside shows?
+
+     The tree is scoped to the Staatskalender graph (see the role queries below),
+     but schema:GovernmentOrganization also covers ~750 organizations in five other
+     graphs — Nationalrat and Ständerat in fch/rvov, the extra-parliamentary
+     commissions, foag/system-map, federal-council, meta. Those pages still get
+     this template, and rendering the Staatskalender beside a resource that is not
+     in it reads as a bug: the tree looks like it should contain the thing you are
+     looking at, and no amount of expanding will ever reveal it.
+
+     So the aside renders only when the page resource is actually a node of the
+     tree. Everything else falls back to a single full-width column. One indexed
+     ASK-shaped lookup, cheap enough to run synchronously in the page render.
+
+     EXISTS yields the STRING "true"/"false", and "false" is a non-empty string —
+     truthy in Go templates. Hence the explicit eq, not a bare `if`. -->
+<sparql-query id="inHierarchy">
+  SELECT ?inTree WHERE {
+    BIND(EXISTS { GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+      ?? a schema:GovernmentOrganization
+    } } AS ?inTree)
+  }
+</sparql-query>
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  {{ $inTree := eq (firstValue .QueryResults.inHierarchy "inTree") "true" }}
+
+  <!-- Split layout: the hierarchy on the left, this organization on the right.
+       The tree is a navigator — every node links to that organization's own page —
+       so it stays put (sticky, see .vs-split-aside) while the content beside it
+       scrolls. Below lg the two columns stack, tree first.
+
+       Without the tree the row carries .vs-split-collapsed — the state the
+       collapse toggle already uses — rather than a col-12 on the main column: the
+       width is owned by CSS (.vs-split-main pins max-width to 100% minus the
+       aside), so a Bootstrap column class cannot widen it. Reusing the collapsed
+       state also keeps .vs-split-main in place, and with it the container query
+       that reflows the relationship cards. -->
+  <div class="row vs-split{{ if not $inTree }} vs-split-collapsed{{ end }}">
+
+    {{ if $inTree }}
+    <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
+      <div class="mb-3">
+
+        <!-- Every role query is scoped to the Staatskalender graph ON PURPOSE.
+             schema:GovernmentOrganization has 12,292 instances across six graphs,
+             and the five graphs outside the Staatskalender (extra-parliamentary
+             commissions, rvov, foag/system-map, federal-council, meta) are separate
+             flat or shallow sets whose members have no parent. Unscoped, the roots
+             query returns 617 nodes instead of 10 — the real hierarchy buried under
+             600-odd unrelated top-level entries. There is no scoping PREDICATE on
+             these organizations (no inScheme equivalent), so the graph IS the
+             scope.
+
+             The VALUES clause the server prepends lands just inside the outer
+             WHERE, alongside the GRAPH block rather than inside it, which joins
+             correctly — ?parent and ?node are bound in the same group the GRAPH
+             pattern is evaluated against.
+
+             The graph IRI's angle brackets MUST be written &lt; &gt;, as
+             everywhere else a template embeds a GRAPH clause (see
+             pages/health.html). Written literally, the component parser reads
+             <https://…> as an HTML tag and strips it, leaving a bare "GRAPH {"
+             that the endpoint rejects with a 400 naming nothing. -->
+        <sparql-tree-queries for="organizationTree">
+          <sparql-tree-query role="roots">
+            SELECT ?node ?label ?hasChildren WHERE {
+              GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+                ?node a schema:GovernmentOrganization .
+                OPTIONAL { ?node schema:name ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+                FILTER NOT EXISTS { ?node schema:parentOrganization ?anyParent . }
+                BIND (EXISTS { ?child schema:parentOrganization ?node } AS ?hasChildren)
+              }
+            } ORDER BY ?label
+          </sparql-tree-query>
+          <sparql-tree-query role="children">
+            SELECT ?node ?label ?hasChildren WHERE {
+              GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+                ?node schema:parentOrganization ?parent .
+                ?node a schema:GovernmentOrganization .
+                OPTIONAL { ?node schema:name ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+                BIND (EXISTS { ?child schema:parentOrganization ?node } AS ?hasChildren)
+              }
+            } ORDER BY ?label
+          </sparql-tree-query>
+          <sparql-tree-query role="parents">
+            SELECT ?node ?parent WHERE {
+              GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+                ?node schema:parentOrganization ?parent .
+              }
+            }
+          </sparql-tree-query>
+          <sparql-tree-query role="search">
+            SELECT ?node ?label WHERE {
+              GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
+                ?node a schema:GovernmentOrganization .
+                ?node schema:name ?label .
+                FILTER (lang(?label) = visoto:dispLang || lang(?label) = "")
+                FILTER (CONTAINS(LCASE(STR(?label)), LCASE(STR(?__token__))))
+              }
+            } ORDER BY ?label
+          </sparql-tree-query>
+        </sparql-tree-queries>
+
+        {{ template "sparqlLazyTree" (dict
+            "queryId" "organizationTree"
+            "iri" .ResourceIRI
+            "ResourceIRI" .ResourceIRI
+            "title" (t "card.hierarchy" "Hierarchy")
+            "icon" "list-tree"
+            "breadcrumb" true
+            "splitToggle" true)
+        }}
+      </div>
+    </div>
+
+    <div class="vs-split-handle" role="separator" tabindex="0"
+         aria-orientation="vertical"
+         aria-valuemin="15" aria-valuemax="60" aria-valuenow="33"
+         aria-label="{{ t "split.resize" "Resize the hierarchy column" }}"
+         title="{{ t "split.resizeHint" "Drag to resize, double-click to reset" }}"></div>
+    {{ end }}
+
+    <div class="col-lg-8 vs-split-main">
+      {{ if $inTree }}
+      <!-- Shown only while the aside is collapsed; brings the tree back. No
+           spacing wrapper: an empty .mb-3 would keep applying its bottom margin
+           while the button is hidden and push this column out of line with the
+           tree card beside it. -->
+      <button type="button" class="btn btn-sm mb-3 vs-split-reopen" data-vs-split-reopen>
+        <i data-lucide="panel-left-open"></i>
+        {{ t "split.showTree" "Show hierarchy" }}
+      </button>
+      {{ end }}
+
+      {{ template "literals" . }}
+
+      <!-- People holding a role in this organization. The Staatskalender models
+           this as a two-hop reification rather than a direct link:
+             org -schema:member-> OrganizationRole -schema:member-> Person
+           The role node carries the job title (schema:name, e.g.
+           "Pressesprecher/in"), so neither hop can be collapsed without losing
+           it. 6,843 people and 3,567 role nodes in the graph.
+
+           Async because the hop count makes it the slowest query on the page,
+           and it is the one part that is dispensable at first paint.
+
+           The role name COALESCEs to German. Role names are properly language
+           tagged, but coverage is uneven: 3,299 roles each in de/fr/it and only
+           2,958 in en, so ~341 roles (the Bundesrat's "Mitglied" among them) have
+           no English name and the dispLang filter alone leaves the cell blank.
+           Falling back to de shows a real job title instead of nothing. -->
+
+      <div class="mb-3">
+        <sparql-async id="organizationMembers">
+          SELECT ?person ?givenName ?familyName ?role WHERE {
+            ?? schema:member ?roleNode .
+            ?roleNode a schema:OrganizationRole .
+            ?roleNode schema:member ?person .
+            OPTIONAL { ?person schema:givenName ?givenName . }
+            OPTIONAL { ?person schema:familyName ?familyName . }
+            OPTIONAL { ?roleNode schema:name ?roleDisp . FILTER (lang(?roleDisp) = visoto:dispLang || lang(?roleDisp) = "") }
+            OPTIONAL { ?roleNode schema:name ?roleDe . FILTER (lang(?roleDe) = "de") }
+            BIND (COALESCE(?roleDisp, ?roleDe) AS ?role)
+          }
+        </sparql-async>
+        <!-- Declared only for the row icon. This table is bounded by one
+             organization (a handful of rows), so it loads complete and every
+             filter and sort is answerable locally — per docs/templating.md's
+             declaration rule those columns need no filter=, and none carries one.
+             The <sparql-column> elements exist because `icon` and the labels have
+             no dict-param shorthand.
+
+             Staatskalender people carry NO schema:name — only givenName and
+             familyName, both at 100% coverage — which is why the person cell
+             would otherwise fall back to the IRI's last segment ("p-5413565").
+             Both parts are their own column rather than a concatenation so each
+             sorts independently; family name is the useful sort. -->
+        <sparql-columns for="organizationMembers">
+          <sparql-column var="person" label="{{ t "facet.person" "Person" }}" icon></sparql-column>
+          <sparql-column var="givenName" label="{{ t "facet.givenName" "First name" }}"></sparql-column>
+          <sparql-column var="familyName" label="{{ t "facet.familyName" "Last name" }}"></sparql-column>
+          <sparql-column var="role" label="{{ t "facet.role" "Role" }}"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "organizationMembers"
+            "iri" .ResourceIRI
+            "title" (t "card.persons" "People")
+            "icon" "users")
+        }}
+      </div>
+
+      <!-- The shared component, unchanged: a container query on .vs-split-main
+           (see tabler_overrides.css) reflows its col-lg-6 pair to full width
+           inside this narrower column. -->
+      {{ template "relationships" . }}
+    </div>
+
+  </div>
+
+  {{ if $inTree }}
+  <script src="/static/js/split-layout.js" defer></script>
+  {{ end }}
+
+{{ end }}
