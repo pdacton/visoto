@@ -716,6 +716,27 @@ sparql-tree-query { display: none; }
         flex: 0 0 100%;
         max-width: 100%;
     }
+
+    /* The same three rules, keyed off a root class the inline script in
+       layout/base.html sets BEFORE the first paint.
+
+       split-layout.js is deferred, so it cannot add .vs-split-collapsed until
+       parsing has finished — by which time the browser has already painted the
+       aside expanded, and applying the stored state then reads as a twitch. The
+       root class carries the stored answer early, when .vs-split itself does not
+       exist yet to carry it.
+
+       Both selectors stay: this one is the head start, and split-layout.js still
+       toggles .vs-split-collapsed on the row for every later change. */
+    :root.vs-split-preload-collapsed .vs-split .vs-split-aside,
+    :root.vs-split-preload-collapsed .vs-split .vs-split-handle {
+        display: none;
+    }
+
+    :root.vs-split-preload-collapsed .vs-split .vs-split-main {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
 }
 
 /* Components inside a narrow container column go full-width.

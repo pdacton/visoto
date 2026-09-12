@@ -211,6 +211,20 @@
       split.__visotoSplitInit = true;
       initSplit(split);
     });
+
+    // Hand over from the pre-paint head start (layout/base.html sets this root
+    // class before the first paint, so a collapsed aside is never painted
+    // expanded). The real state now lives on each row, where the toggle can
+    // change it; leaving the root class set would keep the aside hidden through a
+    // later reopen, since that selector knows nothing about the click.
+    //
+    // Dropped here rather than in initSplit so it happens even on a page with no
+    // .vs-split at all — the class is set on every page, and a stale one would
+    // then collapse the first split page reached by an HTMX swap.
+    //
+    // Width needs no handover: both write the same custom property, and
+    // initSplit's applyWidth has just restated it on the row, which wins.
+    document.documentElement.classList.remove('vs-split-preload-collapsed');
   }
 
   if (document.readyState === 'loading') {

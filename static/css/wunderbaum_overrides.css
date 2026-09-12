@@ -158,7 +158,12 @@ div.wunderbaum.wb-grid:not(:focus) div.wb-node-list div.wb-row {
    An author who wants a different height wraps the tree in a sized element and
    adds .vs-lazy-tree-fill (a full-height sidebar column, say).
    --------------------------------------------------------------------------- */
-div.wunderbaum.vs-lazy-tree {
+/* Matched WITHOUT div.wunderbaum on purpose. Wunderbaum adds that class itself at
+   init, roughly a second after first paint on a cold load — so a rule that needs it
+   leaves the container at height 0 until then, and the card snaps from nothing to
+   full height once the widget is ready. Reserving the box on .vs-lazy-tree alone,
+   which the server renders, keeps the space from the very first frame. */
+.vs-lazy-tree {
     height: 600px;
     max-height: 80vh;   /* never taller than the viewport on a short window */
 }
@@ -174,7 +179,7 @@ div.wunderbaum.vs-lazy-tree {
    card's own header and breadcrumb.
 
    The tree scrolls internally, so a hierarchy of any size stays inside its box. */
-.vs-lazy-tree-fill div.wunderbaum.vs-lazy-tree {
+.vs-lazy-tree-fill .vs-lazy-tree {
     height: calc(100vh - 56px - 11rem);
     min-height: 18rem;
     max-height: none;
@@ -184,7 +189,7 @@ div.wunderbaum.vs-lazy-tree {
    fill the screen and bury what the user came to read. Ten rows is enough to
    navigate from while leaving the content visible underneath. */
 @media (max-width: 991.98px) {
-    .vs-lazy-tree-fill div.wunderbaum.vs-lazy-tree {
+    .vs-lazy-tree-fill .vs-lazy-tree {
         height: calc(10 * var(--wb-header-height, 44px));
         min-height: 0;
     }

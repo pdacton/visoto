@@ -29,6 +29,36 @@
       })();
     </script>
 
+    <!-- Split-layout width and collapsed state, for the same reason as the theme
+         above: both are stored per visitor, and split-layout.js is deferred, so it
+         cannot run until parsing finishes. Left to it alone the browser paints the
+         CSS default first — aside expanded at 33.333% — and the stored values then
+         snap it to another width a frame later, which reads as the page twitching.
+
+         Setting them on <html> instead of on the .vs-split row is what makes this
+         possible: the row does not exist yet this early. The CSS var inherits down
+         to it, and .vs-split-collapsed is matched through the same root class by a
+         :root rule, so the first paint is already correct.
+
+         Keys and shapes are split-layout.js's (STORAGE_KEY, WIDTH_KEY, MIN/MAX);
+         that file stays the owner of the behaviour and rewrites both on every
+         change. This is only the head start. Wrapped in try/catch because
+         localStorage throws outright in some privacy modes, and a page that fails
+         to render is a far worse outcome than one that twitches. -->
+    <script>
+      (function() {
+        try {
+          var w = parseFloat(localStorage.getItem('visoto-split-width'));
+          if (!isNaN(w) && w >= 15 && w <= 60) {
+            document.documentElement.style.setProperty('--vs-split-width', w + '%');
+          }
+          if (localStorage.getItem('visoto-split-collapsed') === '1') {
+            document.documentElement.classList.add('vs-split-preload-collapsed');
+          }
+        } catch (e) { /* private mode: fall back to the CSS default */ }
+      })();
+    </script>
+
     <!-- UI strings for static/js, read through window.vsT (see i18n.js).
          An island rather than a fetch: the strings then live inside the response
          body, so they are covered by its ETag and can never be one language out
