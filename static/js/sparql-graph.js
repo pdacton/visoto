@@ -135,11 +135,42 @@
           schemaLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
         });
 
+        // POST, not GET: GET puts the whole query in the URL, and the edge query
+        // is the one that outgrows it.
+        //
+        // Graph Explorer's linksInfoQuery asks "which of these nodes link to
+        // which" by listing EVERY seed IRI TWICE:
+        //
+        //     SELECT ?source ?type ?target WHERE {
+        //         VALUES (?source) {${ids}}
+        //         VALUES (?target) {${ids}}
+        //     }
+        //
+        // With 41 seeds (the Agate page) plus GE's ~700-char PREFIX header that
+        // is an 8,727-character URL, and LINDAS answers
+        // "431 Request Header Fields Too Large" — measured cliff on
+        // cached.lindas.admin.ch: 7,506 chars still 200, 8,006 already 431
+        // (past ~8.2 KB it turns into a 400). The links request fails, and the
+        // graph renders every node with no edge between any of them. Small
+        // graphs stayed under the limit, which is why this only showed up on the
+        // most connected resources.
+        //
+        // The SPARQL itself is fine — the same query sent by POST returns its 42
+        // rows from both cached.lindas.admin.ch and ld.admin.ch. This is a
+        // transport limit, not the query-shape problem some stores have with the
+        // double-VALUES cross product.
+        //
+        // GE posts the raw query with Content-Type: application/sparql-query
+        // (not form-encoded); both configured LINDAS endpoints accept that form.
+        // The trade-off is that POSTed queries are not cached by intermediaries
+        // the way GETs are, so the graph loses some benefit of the "cached"
+        // endpoint — worth it against edges that silently vanish above a size
+        // nobody can predict from the page.
         var dataProvider = new GE.SparqlDataProvider(
           {
             endpointUrl: ENDPOINT_URL,
             acceptBlankNodes: false,
-            queryMethod: GE.SparqlQueryMethod.GET,
+            queryMethod: GE.SparqlQueryMethod.POST,
           },
           settings
         );
@@ -179,10 +210,31 @@
         };
 
         var model = workspace.getModel();
+        // data-sparql-graph-hide-type-edges hides rdf:type / rdfs:subClassOf
+        // edges. GE loads those alongside the data relations, and on a diagram
+        // whose point is the architecture they are pure noise: one edge per node
+        // fanning into a handful of class boxes, drowning the consumes/operates
+        // /contains edges the reader came for.
+        //
+        // Off by default — on an ordinary resource graph "what type is this"
+        // is worth seeing, and linkTemplateResolver already draws it dashed to
+        // set it apart. Hiding is opt-in per instance.
+        //
+        // linkTypeOptions is GE's own mechanism (importLayout -> setLinkSettings),
+        // so the edges are never requested rather than fetched and then hidden.
+        var linkTypeOptions;
+        if (root.getAttribute('data-sparql-graph-hide-type-edges') === 'true') {
+          linkTypeOptions = [
+            { property: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type', visible: false },
+            { property: 'http://www.w3.org/2000/01/rdf-schema#subClassOf', visible: false },
+          ];
+        }
+
         model.importLayout({
           dataProvider: dataProvider,
           preloadedElements: {},
           layoutData: undefined,
+          diagram: linkTypeOptions ? { linkTypeOptions: linkTypeOptions } : undefined,
         });
 
         // Load each starting element and fetch its data.
@@ -195,20 +247,78 @@
         // from the IRI. The elementInfo wrapper below then has no dictionary
         // entry to enrich. Resolving from the IRI here needs no data at all --
         // which is the whole point, since the IRI is all that exists.
-        var x = 400;
-        startIris.forEach(function(startIRI) {
+        // Seed positions are a RING, not a row.
+        //
+        // A single row (every node at the same y, x stepping right) is fine for
+        // the one-node case the base layout uses, but it is a degenerate starting
+        // state for a force layout: with no vertical displacement between any two
+        // nodes there is almost no vertical force to separate them, so a
+        // multi-node seed settles back into a flat band that zoomToFit then
+        // squeezes into an unreadable strip. Distributing the seed around a
+        // circle gives the simulation a 2D starting spread and it resolves into
+        // an actual graph.
+        //
+        // The radius grows with the node count so the ring stays roughly evenly
+        // spaced instead of overlapping as the seed set gets larger.
+        var CENTER_X = 400;
+        var CENTER_Y = 300;
+        var radius = Math.max(200, startIris.length * 30);
+        startIris.forEach(function(startIRI, index) {
           var element = model.createElement(startIRI);
           if (element) {
-            element.setPosition({ x: x, y: 300 });
-            x += 200;
+            var angle = (2 * Math.PI * index) / startIris.length;
+            element.setPosition({
+              x: CENTER_X + radius * Math.cos(angle),
+              y: CENTER_Y + radius * Math.sin(angle),
+            });
             stampIcon(element, startIRI);
           }
         });
-        model.requestElementData(startIris);
-        setTimeout(function() {
+        // requestElementData fetches each element's OWN data (labels, types,
+        // properties) but NOT the edges between them — those are a separate
+        // round trip via requestLinksOfType. Without it a multi-IRI seed draws as
+        // unconnected boxes: every node present, no line between any two.
+        //
+        // The gap went unnoticed for as long as the only caller was the resource
+        // page's Graph view in layout/base.html, which seeds ONE IRI and so has
+        // no edges to miss. A seed set built from a query (the dependency graph
+        // on the SoftwareApplication pages) is the case that needs it.
+        //
+        // The two calls MUST be sequenced. Both register link types as they go,
+        // and the model throws "Link type '<iri>' already exists" if the second
+        // registration lands while the first is still in flight — which aborts
+        // link loading entirely and leaves the graph edgeless, the very symptom
+        // this call is here to fix. Chaining off requestElementData's promise
+        // (rather than firing both at once) keeps the registrations ordered.
+        //
+        // The layout runs AFTER the links land, not on a bare timer. forceLayout
+        // positions nodes by their edges, so laying out while the graph is still
+        // edgeless just spreads the seed row evenly — the nodes keep the flat
+        // line they were created on and never regroup once the edges arrive.
+        //
+        // relayout() is called from both the success and the failure path (and
+        // from a timer, in case neither promise ever settles) so an endpoint that
+        // refuses the links query still gets a laid-out, if edgeless, graph. It
+        // guards against running twice, which would otherwise re-scatter a graph
+        // the reader may already have started dragging.
+        var didLayout = false;
+        function relayout() {
+          if (didLayout) return;
+          didLayout = true;
           workspace.forceLayout();
           workspace.zoomToFit();
-        }, 1000);
+        }
+
+        var elementsLoaded = model.requestElementData(startIris);
+        if (elementsLoaded && elementsLoaded.then && model.requestLinksOfType) {
+          elementsLoaded
+            .then(function() { return model.requestLinksOfType(); })
+            .then(relayout)
+            .catch(relayout);
+        }
+        // Fallback: fires only if the chain above never settles (or was never
+        // started, on a build whose model lacks requestLinksOfType).
+        setTimeout(relayout, 4000);
       }
 
       // Icon resolution is shared with schema-graph.js and mirrors internal/icon

@@ -25,6 +25,7 @@ var funcMap = template.FuncMap{
 	"toJSONRaw":       toJSONRaw,
 	"toJSONPretty":    toJSONPretty,
 	"firstValue":      firstValue,
+	"columnValues":    columnValues,
 	"lastPathSegment": lastPathSegment,
 	"groupByValue":    groupByValue,
 	"safeURL":         safeURL,
@@ -189,4 +190,30 @@ func firstValue(result sparql.QueryResult, varName string) string {
 		return binding.Value
 	}
 	return ""
+}
+
+// columnValues extracts every non-empty value of one variable from a QueryResult,
+// in row order and de-duplicated, as a plain []string.
+//
+// It exists so a synchronous <sparql-query> can feed a partial that wants a list
+// of IRIs rather than a result object — sparqlGraph's `iris` parameter being the
+// case it was written for. firstValue covers the single-value case; this is the
+// same idea for a whole column.
+//
+// Usage: {{ columnValues .QueryResults.dependencies "neighbour" }}
+func columnValues(result sparql.QueryResult, varName string) []string {
+	values := make([]string, 0, len(result.Bindings))
+	seen := make(map[string]struct{}, len(result.Bindings))
+	for _, binding := range result.Bindings {
+		value := binding[varName].Value
+		if value == "" {
+			continue
+		}
+		if _, duplicate := seen[value]; duplicate {
+			continue
+		}
+		seen[value] = struct{}{}
+		values = append(values, value)
+	}
+	return values
 }
