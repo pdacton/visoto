@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -288,5 +289,46 @@ func TestName(t *testing.T) {
 	// a malformed ":pages/home.html" lookup.
 	if got := Name("", "pages/home.html"); got != lang.Key("")+":pages/home.html" {
 		t.Errorf("Name(\"\") = %q", got)
+	}
+}
+
+// TestBreadcrumbOverridesAreNotBlank guards a silent html/template trap: a
+// {{ define }} whose body is empty or whitespace-only is discarded as no
+// definition at all, so the {{ block }} default in layout/header.html renders
+// instead. An empty define therefore looks like "show no breadcrumb" while
+// actually showing the default one, and nothing reports the discrepancy.
+//
+// Such a define is always a mistake: it is either dead scaffolding (which is what
+// schema:Country's turned out to be — written when the block default was itself
+// empty, so it never suppressed anything) or an opt-out that does not work. A
+// template that genuinely needs no class crumb should suppress it in resource.go,
+// where TemplateType is decided, so the reason is stated once and actually holds.
+func TestBreadcrumbOverridesAreNotBlank(t *testing.T) {
+	dirs := []string{"../../templates/instances", "../../templates/classes", "../../templates/pages"}
+	re := regexp.MustCompile(`(?s)\{\{-?\s*define\s+"breadcrumb"\s*-?\}\}(.*?)\{\{-?\s*end\s*-?\}\}`)
+	comments := regexp.MustCompile(`(?s)\{\{/\*.*?\*/\}\}`)
+
+	for _, dir := range dirs {
+		entries, err := filepath.Glob(filepath.Join(dir, "*.html"))
+		if err != nil {
+			t.Fatalf("glob %s: %v", dir, err)
+		}
+		for _, path := range entries {
+			src, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("read %s: %v", path, err)
+			}
+			m := re.FindSubmatch(src)
+			if m == nil {
+				continue // no override: it gets the default, which is the point
+			}
+			body := strings.TrimSpace(string(comments.ReplaceAll(m[1], nil)))
+			if body == "" {
+				t.Errorf("%s defines an empty \"breadcrumb\" block, which html/template "+
+					"discards — the layout default renders instead, so this suppresses nothing. "+
+					"Delete it, or suppress the crumb in resource.go.",
+					filepath.Base(path))
+			}
+		}
 	}
 }

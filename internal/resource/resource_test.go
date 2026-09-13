@@ -192,3 +192,46 @@ func TestNormalizeToFilenameBlocksTraversal(t *testing.T) {
 		}
 	}
 }
+
+// TestBreadcrumbTypeFilters covers the two filters that decide whether a class
+// earns a breadcrumb segment. Both guard the same crumb, so they are tested
+// together: a blank node would render a link to nowhere, and a class-of-a-class
+// would restate what the page title already says.
+func TestBreadcrumbTypeFilters(t *testing.T) {
+	blankNodes := []string{
+		"genid-af5f0e435d1d4706b40d2a133faec1e9990627-D6BCC8E87704C661A86A6B3F51381002",
+		"_:b0",
+		"",
+	}
+	for _, v := range blankNodes {
+		if !isBlankNodeType(v) {
+			t.Errorf("isBlankNodeType(%q) = false, want true", v)
+		}
+	}
+
+	realClasses := []string{
+		"https://schema.ld.admin.ch/ZefixOrganisation",
+		"http://schema.org/Person",
+		"http://www.w3.org/2000/01/rdf-schema#Class",
+	}
+	for _, v := range realClasses {
+		if isBlankNodeType(v) {
+			t.Errorf("isBlankNodeType(%q) = true, want false", v)
+		}
+	}
+
+	// rdfs:Class and owl:Class name the kind of page, not its subject.
+	for _, v := range []string{
+		"http://www.w3.org/2000/01/rdf-schema#Class",
+		"http://www.w3.org/2002/07/owl#Class",
+	} {
+		if !uninformativeCrumbTypes[v] {
+			t.Errorf("uninformativeCrumbTypes[%q] = false, want true", v)
+		}
+	}
+	// Everything else must keep its crumb — ZefixOrganisation especially, which is
+	// the case this whole default exists for.
+	if uninformativeCrumbTypes["https://schema.ld.admin.ch/ZefixOrganisation"] {
+		t.Error("ZefixOrganisation must keep its breadcrumb segment")
+	}
+}

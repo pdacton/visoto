@@ -17,6 +17,7 @@ type TemplateData struct {
 	ShortIRI             string                        // Prefixed IRI (e.g. schema:Person), empty if no prefix match
 	NamedGraphs          []NamedGraph                  // Named graphs containing the resource as subject
 	TemplateName         string                        // Name of the template used to render this page (for debugging)
+	TemplateType         string                        // IRI of the class this page is rendered as; "" when the template matched on the resource's own IRI or nothing matched. The breadcrumb's default segment.
 	QueryResults         map[string]sparql.QueryResult // Results indexed by query ID defined in template
 	SparqlEndpoints      []config.SparqlEndpoint       // SPARQL endpoints for menu (no sensitive data)
 	SelectedEndpointName string                        // Name of the active endpoint, so the topbar can server-render <option selected> (don't rely on JS/cookie timing)

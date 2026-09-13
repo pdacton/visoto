@@ -28,6 +28,7 @@ type Resource struct {
 	ShortIRI     string              // short IRI with prefix
 	TemplateName string              // template file associated with the resource
 	TemplatePath string              // full path to the template file
+	TemplateType string              // IRI of the class this page is rendered as (see ResolveTemplate)
 	Data         parser.TemplateData // data returned by the queries for this resource (SPARQL web result format with Head, Bindings)
 }
 
@@ -122,6 +123,16 @@ func namedGraphsQuery(iri string) (string, bool) {
 // 2. Direct IRI match in templates/instances/ (tries both full IRI and short IRI)
 // 3. rdf:type match in templates/instances/ (with type priority)
 // 4. Fallback to templates/pages/resource.html
+//
+// It also records TemplateType: the class this page is rendered *as*, which the
+// breadcrumb names so the trail describes the page rather than guessing from the
+// resource's types. A multi-typed resource has no single "the" class — the Zefix
+// companies carry four — so the only non-arbitrary answer is the one that decided
+// the template, which is what this function computes anyway.
+//
+// It stays empty for the direct-IRI matches (steps 1-2), where the template was
+// chosen by the resource's own IRI and no class was involved, and the breadcrumb
+// then simply omits the segment.
 func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriority []string, prefixes []config.Prefix) error {
 
 	log := logger.Get()
@@ -168,6 +179,13 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 				shortTyp := shortenIRI(typ, prefixes)
 				if tryTemplate("templates/instances/", normalizeToFilename(shortTyp), "via RDF type match") ||
 					tryTemplate("templates/instances/", normalizeToFilename(typ), "via RDF type match") {
+					// This is the class the page is rendered as: it beat the other
+					// types to a template, so it is the one the breadcrumb names.
+					// Suppressed for the class-of-a-class types, which name the kind
+					// of page rather than its subject.
+					if !uninformativeCrumbTypes[typ] {
+						r.TemplateType = typ
+					}
 					return nil
 				}
 			}
@@ -186,6 +204,23 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 		// subClassOf + incoming rdf:type check (ignore error → treated as false)
 		isClass, _ = preprocessor.QueryIsClass(r.IRI)
 	}
+	// No template matched, but the ranking still holds: types is already sorted by
+	// sortTypesByPriority above, so the first entry is the best description of the
+	// page even though nothing renders it specially. Taking it from here rather than
+	// sampling the separate, unordered pageClasses query is what stops the
+	// breadcrumb contradicting the resolver on the very same page. Resources with
+	// no types at all (plenty of them) leave this empty and get no segment.
+	//
+	// Blank-node types are skipped because QueryTypes does not filter them (the
+	// system-map applications each carry two genid- ones), and they would land in
+	// the trail as a crumb linking nowhere.
+	for _, typ := range sortTypesByPriority(types, typePriority) {
+		if !isBlankNodeType(typ) && !uninformativeCrumbTypes[typ] {
+			r.TemplateType = typ
+			break
+		}
+	}
+
 	if isClass {
 		if tryTemplate("templates/classes/", "default.html", "via default class template") {
 			return nil
@@ -220,6 +255,30 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 // path sanitiser; the alert is dismissed on the strength of this invariant.
 func normalizeToFilename(iri string) string {
 	return url.QueryEscape(iri) + ".html"
+}
+
+// uninformativeCrumbTypes are classes that never earn a breadcrumb segment.
+//
+// rdfs:Class and owl:Class describe the *kind* of page rather than its subject:
+// the title of such a page is already a class name, so "Home / Class /
+// PostalAddress" spends a crumb restating that a class page is a class. Every
+// other type says something the title does not.
+var uninformativeCrumbTypes = map[string]bool{
+	"http://www.w3.org/2000/01/rdf-schema#Class": true,
+	"http://www.w3.org/2002/07/owl#Class":        true,
+}
+
+// isBlankNodeType reports whether a type from QueryTypes is a blank node rather
+// than a real class IRI.
+//
+// QueryTypes returns the raw binding value and drops the SPARQL "type" field that
+// would say so outright, so the test is structural: a blank node arrives without a
+// scheme ("genid-af5f...", "_:b0"), an IRI always has one. Checking for an
+// absolute IRI rather than matching "genid-" keeps this independent of the naming
+// each triple store happens to use.
+func isBlankNodeType(typ string) bool {
+	u, err := url.Parse(typ)
+	return err != nil || !u.IsAbs()
 }
 
 // templateExists checks if a template file exists on the filesystem

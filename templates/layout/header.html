@@ -2,7 +2,25 @@
 <div class="d-flex align-items-center justify-content-between gap-3">
   <ol class="breadcrumb mb-0" aria-label="{{ t "header.breadcrumbs" "breadcrumbs" }}">
     <li class="breadcrumb-item"><a href="/">{{ t "header.home" "Home" }}</a></li>
+    {{/* Default trail segment: the class this page is rendered as (TemplateType,
+         set by resource.ResolveTemplate). A template that needs a richer trail —
+         an ancestor chain, a site section — overrides it with its own
+         {{ define "breadcrumb" }}, and every other template gets this segment
+         automatically, including ones added later.
+
+         Empty when the template matched on the resource's own IRI, when the
+         resource carries no rdf:type, and for the class-of-a-class types, which
+         name the kind of page rather than its subject (resource.go decides).
+
+         Do NOT try to suppress the segment with an empty
+         "{{ define "breadcrumb" }}{{ end }}": html/template discards a define whose
+         body is empty or whitespace-only, so the default below renders anyway and
+         the override silently does nothing (a test enforces this). A class that
+         should never appear as a crumb belongs in resource.go instead. */}}
     {{ block "breadcrumb" . }}
+      {{ with .TemplateType }}
+        <li class="breadcrumb-item"><a href="{{ resourceHref . }}">{{ lastPathSegment . }}</a></li>
+      {{ end }}
     {{ end }}
     <li class="breadcrumb-item active">{{ template "pageTitle" . }}</li>
   </ol>

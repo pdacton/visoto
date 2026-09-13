@@ -426,6 +426,7 @@ func resourcePageHandler(c *gin.Context) {
 	stampEndpointData(c, &r.Data)
 	r.Data.ShortIRI = r.ShortIRI
 	r.Data.TemplateName = r.TemplateName
+	r.Data.TemplateType = r.TemplateType
 
 	// List the named graphs containing this resource (shown in the IRI dropdown)
 	r.FetchNamedGraphs(c.Request.Context(), preprocessor, cfg.RDF.ParsedPrefixes)

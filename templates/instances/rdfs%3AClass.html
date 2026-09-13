@@ -2,6 +2,11 @@
 
 {{ template "pageHeader" . }}
 
+<!-- No breadcrumb override needed: rdfs:Class and owl:Class are suppressed as
+     crumbs in resource.go (uninformativeCrumbTypes), since the title of a class
+     page is already the class name. -->
+
+
 {{ define "pageContent" }}
 <div>
 

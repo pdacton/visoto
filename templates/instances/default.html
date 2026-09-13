@@ -2,25 +2,11 @@
 
 {{ template "pageHeader" . }}
 
-<!-- Breadcrumb: Home / <class> / <this instance>.
-
-     LIMIT 1, not the full type list: an instance routinely carries several types
-     (a municipality has four) and rendering them all side by side would read as a
-     hierarchy the data does not have. isBlank is filtered out because render()
-     links only "uri" bindings — a blank node (the system-map applications each
-     carry two genid- ones) would land in the trail as unclickable text.
-
-     Its own query rather than pageHeader's pageClasses, which is unfiltered and
-     unordered; ORDER BY keeps the crumb stable across requests when an instance
-     has more than one named type. -->
-<sparql-query id="breadcrumbClass">
-  SELECT ?class { ?? (rdf:type|owl:type) ?class . FILTER(!isBlank(?class)) } ORDER BY ?class LIMIT 1
-</sparql-query>
-{{ define "breadcrumb" }}
-  {{ range $binding := .QueryResults.breadcrumbClass.Bindings }}
-    <li class="breadcrumb-item">{{ render (index $binding "class") }}</li>
-  {{ end }}
-{{ end }}
+<!-- No breadcrumb override: layout/header.html's default renders the class crumb
+     from .TemplateType, which ResolveTemplate has already picked from the same
+     sorted type list it used to choose this template — so the crumb cannot
+     disagree with the page, and the extra per-page type query this template used
+     to run is gone. Blank-node types are filtered there too. -->
 
 {{ define "pageContent" }}
 <div>
