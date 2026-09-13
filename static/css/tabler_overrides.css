@@ -160,6 +160,38 @@ header.navbar.sticky-top.is-scrolled {
     }
 }
 
+/* Pre-paint head start for a collapsed sidebar, the same trick as
+   .vs-split-preload-collapsed below and for the same reason: the collapsed state
+   is stored per visitor, sidebar.js is deferred, and left to it alone the browser
+   paints the sidebar open and it slides shut a frame later — so every navigation
+   flashes the sidebar the visitor had closed.
+
+   layout/base.html sets this root class from localStorage before the first paint;
+   sidebar.js drops it on boot and takes over with the inline margins it already
+   owns, so a later reopen is not held shut by a selector that knows nothing about
+   the click. Desktop only: on mobile the sidebar is an overlay that always starts
+   closed, and these margins are not how it hides.
+
+   The sidebar has no declared width — 240px is intrinsic, from its content — so
+   there is no Tabler variable to reuse here and the offset has to be named. This
+   is that one name: sidebar.js reads it as its own fallback when it cannot measure
+   the element, so the pre-paint offset and the script's can never drift apart.
+   The measured width still wins once the script runs; this only has to hold for
+   the first frame. */
+:root {
+    --vs-sidebar-width: 240px;
+}
+
+@media (min-width: 992px) {
+    :root.vs-sidebar-preload-collapsed .navbar-vertical {
+        margin-left: calc(-1 * var(--vs-sidebar-width));
+    }
+
+    :root.vs-sidebar-preload-collapsed .page-wrapper {
+        margin-left: 0;
+    }
+}
+
 /* The nav is longer than the viewport on most screens, and the sidebar is fixed,
    so the list is clipped flush at the bottom edge with nothing to suggest it
    scrolls. Pad the end of the list and fade the last few pixels out against the

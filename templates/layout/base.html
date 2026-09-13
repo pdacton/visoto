@@ -55,6 +55,13 @@
           if (localStorage.getItem('visoto-split-collapsed') === '1') {
             document.documentElement.classList.add('vs-split-preload-collapsed');
           }
+          // Same head start for the left sidebar, whose collapsed state is also
+          // stored per visitor (key owned by sidebar.js). Without it the CSS
+          // default paints the sidebar open and sidebar.js slides it shut a frame
+          // later, so every navigation flashes the sidebar the visitor closed.
+          if (localStorage.getItem('visoto-sidebar-collapsed') === '1') {
+            document.documentElement.classList.add('vs-sidebar-preload-collapsed');
+          }
         } catch (e) { /* private mode: fall back to the CSS default */ }
       })();
     </script>

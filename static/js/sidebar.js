@@ -17,8 +17,37 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // Set initial state
   let sidebarOpen = true;
-  const sidebarWidth = sidebar.offsetWidth || 250;
+  // Measured width, falling back to the same custom property the pre-paint rule
+  // in tabler_overrides.css uses, so the two offsets cannot drift apart.
+  const sidebarWidth = sidebar.offsetWidth || (parseInt(
+    getComputedStyle(document.documentElement).getPropertyValue('--vs-sidebar-width'), 10
+  ) || 240);
   const MOBILE_BREAKPOINT = 992;
+
+  // The desktop collapsed state is remembered across page loads, so closing the
+  // sidebar survives a navigation instead of reopening on the next page. Only the
+  // collapsed state is stored: open is the default, so it is the absence of a key.
+  // layout/base.html reads the same key before the first paint to avoid a flash;
+  // tabler_overrides.css documents that handoff.
+  const COLLAPSED_KEY = 'visoto-sidebar-collapsed';
+  const PRELOAD_CLASS = 'vs-sidebar-preload-collapsed';
+
+  // Wrapped because localStorage throws outright in some privacy modes, where the
+  // sidebar should still work — just without remembering.
+  function readCollapsed() {
+    try {
+      return localStorage.getItem(COLLAPSED_KEY) === '1';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function writeCollapsed(collapsed) {
+    try {
+      if (collapsed) localStorage.setItem(COLLAPSED_KEY, '1');
+      else localStorage.removeItem(COLLAPSED_KEY);
+    } catch (e) { /* private mode: this visit just will not be remembered */ }
+  }
 
   function isMobile() {
     return window.innerWidth < MOBILE_BREAKPOINT;
@@ -98,12 +127,20 @@ document.addEventListener('DOMContentLoaded', function () {
         sidebarMenu.classList.remove('show');
       }
       sidebarOpen = false;
+    } else if (readCollapsed()) {
+      closeSidebarDesktop();
     } else {
       openSidebarDesktop();
     }
   }
 
   initializeSidebar();
+
+  // Hand over from the pre-paint head start in layout/base.html: the inline
+  // margins just set by initializeSidebar are the real state from here on, and
+  // leaving the root class in place would keep the sidebar shut through a later
+  // reopen, since that selector knows nothing about the click.
+  document.documentElement.classList.remove(PRELOAD_CLASS);
 
   // Toggle handler
   sidebarToggle.addEventListener('click', function (e) {
@@ -120,6 +157,9 @@ document.addEventListener('DOMContentLoaded', function () {
       } else {
         openSidebarDesktop();
       }
+      // Desktop only: the mobile overlay always starts closed on a fresh page, so
+      // opening it there is a gesture for that page, not a remembered preference.
+      writeCollapsed(!sidebarOpen);
     }
   });
 
