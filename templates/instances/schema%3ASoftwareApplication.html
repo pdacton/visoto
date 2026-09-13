@@ -1,0 +1,251 @@
+<!-- schema:SoftwareApplication Instance Template
+
+     All 150 instances of schema:SoftwareApplication on LINDAS come from ONE
+     dataset: the agriculture system map (https://agriculture.ld.admin.ch/system-map/),
+     an inventory of the IT systems in and around Swiss agriculture — Agate,
+     LAWIS, Acorda, the Tierverkehrsdatenbank, and the cantonal and private
+     applications around them. No other graph uses the class, so this template can
+     safely be written around that dataset's vocabulary.
+
+     Two vocabularies carry the dependencies, and they are NOT interchangeable:
+
+       svc: (http://purl.org/ontology/service#)
+         app  svc:consumes  service      an application depends on a service
+         svc  svc:providedBy app         the service is delivered by an application
+         app  svc:provides   service     the converse of providedBy, also asserted
+
+         Note the asymmetry: `svc:consumedBy` exists in the ontology but is
+         asserted only FIVE times in the whole endpoint, so the reverse of
+         `consumes` must be queried as `?consumer svc:consumes ?service`, never as
+         `?service svc:consumedBy ?consumer`.
+
+       sm: (https://agriculture.ld.admin.ch/system-map/)
+         app  sm:operatedBy   organization   who runs it (the converse sm:operates
+                                             is the one actually counted: 535 triples)
+         app  sm:developedBy  organization   who built it (Zefix companies)
+         app  sm:contains     dataset        the data it holds (dcat:Dataset nodes)
+         app  sm:hasLegalBasis fedlex-article the law that mandates it
+
+     Neither prefix is in visoto.config's rdf.prefixes, so every query below
+     declares them itself. That is the established pattern for dataset-local
+     vocabularies (see schch%3ACanton.html, which declares wdt: and wd:).
+
+     dct:hasPart / dct:isPartOf also appear (8 triples each) and model application
+     suites — a parent system and its modules. They are included in the graph seed
+     because when present they are exactly the "and other objects" part of the
+     dependency picture.
+-->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.softwareApplication" "<a href=\"/resource?iri=schema:SoftwareApplication\">Software Application</a>" }}</li>
+{{ end }}
+
+<!-- The IRIs the dependency graph is drawn from.
+
+     This is a SYNCHRONOUS query, unlike most of the heavy lifting on a resource
+     page, because sparqlGraph's `iris` parameter takes a plain []string that must
+     exist at render time — the partial draws and lays out its starting set at
+     mount and has no mechanism for adding nodes from a later fetch. It is one
+     bounded query over indexed predicates, so the cost is small.
+
+     The five UNION arms are the five ways a system-map node is a dependency of
+     this application:
+
+       1. everything this application points at (services it consumes, the
+          organizations that run and built it, the datasets it holds, its legal
+          basis, its parent or child systems);
+       2. everything that points at this application the same way — the systems
+          that contain it, the suites it belongs to;
+       3. the applications BEHIND the services it consumes
+          (consumes/providedBy) — the real upstream systems, one hop past the
+          service node that names the interface;
+       4. the applications that consume the services THIS one provides — its
+          downstream dependents, expressed as ?consumer svc:consumes rather than
+          svc:consumedBy, per the note above;
+       5. the same for services reached through svc:provides, which some records
+          assert instead of the providedBy converse.
+
+     NO LIMIT, deliberately: the graph shows the dependencies that exist, not a
+     readable sample of them. An arbitrary cut is worse than a busy picture,
+     because nothing on the page tells the reader that edges are missing.
+
+     The size is bounded by the data anyway. Every application in the dataset but
+     one has 16 neighbours or fewer; Agate is the single outlier at 66, because it
+     provides the central authentication service most of the landscape consumes.
+     That page IS dense — it is also the honest shape of that system, and Graph
+     Explorer pans, zooms and re-lays-out.
+
+     This only became safe once the graph's data provider moved to POST (see
+     static/js/sparql-graph.js). Graph Explorer's edge query lists every seed IRI
+     TWICE, so 67 nodes is a 12,113-character request: over GET that exceeded
+     LINDAS's ~8 KB limit and came back 431, drawing every node with no edges at
+     all. By POST the same query answers 200 with its 68 rows.
+
+     The page resource itself is NOT selected here: sparqlGraph appends it via the
+     `iri` parameter, which also makes it the node the layout centres on. -->
+<sparql-query id="dependencyGraph">
+  PREFIX sm:  &lt;https://agriculture.ld.admin.ch/system-map/&gt;
+  PREFIX svc: &lt;http://purl.org/ontology/service#&gt;
+  SELECT DISTINCT ?neighbour WHERE {
+    {
+      ?? svc:consumes|svc:provides|sm:operatedBy|sm:developedBy|sm:contains|sm:hasLegalBasis|sm:isPartOf|dct:hasPart|dct:isPartOf ?neighbour .
+    } UNION {
+      ?neighbour svc:consumes|svc:provides|sm:contains|sm:isPartOf|dct:hasPart|dct:isPartOf ?? .
+    } UNION {
+      ?? svc:consumes/svc:providedBy ?neighbour .
+    } UNION {
+      ?providedService svc:providedBy ?? .
+      ?neighbour svc:consumes ?providedService .
+    } UNION {
+      ?? svc:provides ?offeredService .
+      ?neighbour svc:consumes ?offeredService .
+    }
+    FILTER (isIRI(?neighbour))
+  }
+</sparql-query>
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+  {{ template "literals" . }}
+
+  <!-- The dependency graph.
+
+       Drawn from the seed set above plus this application itself. NOT lazy: the
+       card sits in the default (Table) view of the page rather than behind the
+       header's Graph toggle, so its container is visible at mount and Graph
+       Explorer can measure it. The page-level graph in layout/base.html is the
+       lazy one, and the two coexist — sparqlGraph's CDN loader is guarded, so the
+       Graph Explorer bundle is fetched once and shared.
+
+       A distinct `id` is REQUIRED: without it this instance and the base layout's
+       graph would both claim the default "sparql-graph" DOM id and collide on
+       every island lookup.
+
+       600px rather than the viewport-height default, because this graph is one
+       card among several on a scrolling page, not the whole view. -->
+  <div class="mb-3">
+    {{ template "sparqlGraph" (dict
+        "id" "dependencyGraph"
+        "iri" .ResourceIRI
+        "iris" (columnValues .QueryResults.dependencyGraph "neighbour")
+        "endpointUrl" .EndpointURL
+        "title" (t "card.dependencyGraph" "Dependencies")
+        "icon" "workflow"
+        "height" "600px") }}
+  </div>
+
+  <!-- Services consumed, and the application behind each one.
+
+       The service node names an interface ("Zentraler Authentifizierungs- und
+       Rollenverwaltungsdienst"); the application behind it is what the reader
+       actually wants to know ("Agate"). Both columns, so the row reads as a
+       dependency rather than as a bare interface name.
+
+       ?provider is OPTIONAL: not every service in the dataset declares a
+       providing application.
+
+       The dispLang filter is required on both names — system-map labels are
+       tagged de/fr/it/en and an unfiltered OPTIONAL multiplies each row four
+       times over. Async: the table is below the graph and dispensable at first
+       paint. -->
+  <div class="mb-3">
+    <sparql-async id="consumedServices">
+      PREFIX svc: &lt;http://purl.org/ontology/service#&gt;
+      SELECT ?service ?provider ?description WHERE {
+        ?? svc:consumes ?service .
+        OPTIONAL { ?service svc:providedBy ?provider . }
+        OPTIONAL {
+          ?service visoto:description ?description .
+          FILTER (lang(?description) = visoto:dispLang || lang(?description) = "")
+        }
+      }
+    </sparql-async>
+    <!-- Bounded by one application (at most a handful of services), so the set
+         loads complete and every header filter is answerable locally — no filter=
+         per the declaration rule. These exist only for the icons and labels. -->
+    <sparql-columns for="consumedServices">
+      <sparql-column var="service" label="{{ t "facet.service" "Service" }}" icon></sparql-column>
+      <sparql-column var="provider" label="{{ t "facet.providedBy" "Provided by" }}" icon></sparql-column>
+      <sparql-column var="description" label="{{ t "facet.description" "Description" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "consumedServices"
+        "iri" .ResourceIRI
+        "title" (t "card.consumedServices" "Services used")
+        "icon" "plug") }}
+  </div>
+
+  <!-- The other direction: who depends on THIS application.
+
+       One row per (service, consumer) pair — the service column says through
+       which interface the dependency runs, which matters when an application
+       offers several. Both arms of the UNION are needed because the dataset
+       asserts the provider link in both directions (svc:providedBy on the
+       service, svc:provides on the application) and neither is complete on its
+       own. DISTINCT collapses the overlap where both are present.
+
+       This is the table that carries Agate's ~70 dependents, which the graph
+       above deliberately caps. -->
+  <div class="mb-3">
+    <sparql-async id="dependentApplications">
+      PREFIX svc: &lt;http://purl.org/ontology/service#&gt;
+      SELECT DISTINCT ?consumer ?service WHERE {
+        { ?service svc:providedBy ?? . } UNION { ?? svc:provides ?service . }
+        ?consumer svc:consumes ?service .
+      }
+    </sparql-async>
+    <sparql-columns for="dependentApplications">
+      <sparql-column var="consumer" label="{{ t "facet.application" "Application" }}" icon></sparql-column>
+      <sparql-column var="service" label="{{ t "facet.viaService" "Via service" }}" icon></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dependentApplications"
+        "iri" .ResourceIRI
+        "title" (t "card.dependentApplications" "Used by")
+        "icon" "share-2") }}
+  </div>
+
+  <!-- Operators and developers, in one table with a role column rather than two
+       cards: both are organizations, the rows are few, and a single sorted list
+       reads better than a pair of two-row tables. ?role is bound to the PREDICATE
+       IRI so the grid resolves it to a label in the display language — the same
+       trick the Staatskalender address grid uses, and the reason it must not be a
+       literal string (a translation action inside a query body is shipped to the
+       endpoint verbatim and answers 400).
+
+       sm:operatedBy is the direction asserted ON the application; sm:operates is
+       its converse, asserted on the organization, and is the one with 535 triples.
+       Both arms are queried because coverage differs between them. -->
+  <div class="mb-3">
+    <sparql-async id="responsibleOrganizations">
+      PREFIX sm: &lt;https://agriculture.ld.admin.ch/system-map/&gt;
+      SELECT DISTINCT ?organization ?role WHERE {
+        {
+          { ?? sm:operatedBy ?organization . } UNION { ?organization sm:operates ?? . }
+          BIND (sm:operatedBy AS ?role)
+        } UNION {
+          { ?? sm:developedBy ?organization . } UNION { ?organization sm:develops ?? . }
+          BIND (sm:developedBy AS ?role)
+        }
+      }
+    </sparql-async>
+    <sparql-columns for="responsibleOrganizations">
+      <sparql-column var="organization" label="{{ t "facet.organization" "Organization" }}" icon></sparql-column>
+      <sparql-column var="role" label="{{ t "facet.role" "Role" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "responsibleOrganizations"
+        "iri" .ResourceIRI
+        "title" (t "card.responsibleOrganizations" "Operators and developers")
+        "icon" "building") }}
+  </div>
+
+  <!-- Everything else touching this resource, unfiltered. The curated tables
+       above cover the dependency vocabulary; this catches the rest (sm:contains
+       datasets, sm:hasLegalBasis articles, containedIn collection nodes) without
+       a card per predicate. -->
+  {{ template "relationships" . }}
+
+{{ end }}

@@ -1,0 +1,157 @@
+<!-- schema:SoftwareApplication Class Template
+
+     This file exists to KEEP THE CLASS PAGE OFF THE INSTANCE TEMPLATE.
+
+     Template resolution (docs/templating.md#template-resolution) checks
+     instances/<short-IRI>.html for the requested resource ITSELF at step 5,
+     before it ever reaches the rdf:type lookup at step 7. So the moment
+     instances/schema%3ASoftwareApplication.html was added, the CLASS node
+     http://schema.org/SoftwareApplication started rendering with it: an empty
+     dependency graph, three empty dependency tables, and no instance listing —
+     because the class is not itself an application and matches none of those
+     queries. classes/ is checked at step 3 and wins, which is what this file is
+     for.
+
+     The content is the default class page (instance count + instance list +
+     relationships), kept in step with templates/classes/default.html, plus the
+     System diagram at the bottom — the whole agriculture system map in one
+     picture, which is the class-level counterpart to the per-application
+     dependency graph on the instance template.
+-->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Live count rather than the 150 measured while writing this template:
+       LINDAS counts drift between requests, so a number in prose goes stale. -->
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <!-- Instances of this class. Same query and column declarations as
+       classes/default.html — see the long note there on why there is no LIMIT and
+       why every column declares filter + path=. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <sparql-async id="instances">
+          SELECT DISTINCT ?instance ?identifier ?description ?modified WHERE {
+            ?instance a ?? .
+            OPTIONAL { ?instance visoto:identifier ?identifier . }
+            OPTIONAL {
+              ?instance visoto:description ?description .
+              FILTER (lang(?description) = visoto:dispLang || lang(?description) = "")
+            }
+            OPTIONAL { ?instance visoto:modified ?modified . }
+          }
+          ORDER BY ?instance
+        </sparql-async>
+        <sparql-columns for="instances">
+          <sparql-column var="instance" icon filter></sparql-column>
+          <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"
+                         path="visoto:identifier" filter></sparql-column>
+          <sparql-column var="description" label="{{ t "facet.description" "Description" }}"
+                         path="visoto:description" filter="text" type="string"></sparql-column>
+          <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}"
+                         path="visoto:modified" filter></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "instances"
+            "iri" .ResourceIRI
+            "title" (t "card.instances" "Instances")
+            "icon" "circle-dot")
+        }}
+      </div>
+    </div>
+  </div>
+
+  <!-- The whole agriculture system map as one diagram.
+
+       Where an instance page answers "what does THIS application depend on",
+       this answers "what is the landscape" — every node of the map at once,
+       below the instance table that lists the applications in it.
+
+       SCOPE: the five types that carry the IT architecture, drawn together
+       because the interesting edges run BETWEEN them (an application consumes a
+       service, contains a dataset, uses master data, and is mandated by a legal
+       article):
+
+         schema:SoftwareApplication  150   the systems themselves
+         dcat:Dataset                121   the data they hold
+         schema:Legislation           19   the legal basis for each
+         svc:Service                  10   the interfaces between systems
+         sm:MasterData                 6   the shared reference data
+
+       300 nodes. ORGANIZATIONS ARE DELIBERATELY EXCLUDED. The 225 of them
+       carried 342 of the ~1,009 edges in the earlier six-type version
+       (operatedBy/operates alone), and those edges say who is responsible rather
+       than how the systems fit together — they swamped the picture without
+       adding to it. Who runs a given system is on that system's own page, in the
+       "Operators and developers" table. The same reasoning drops
+       schema:GovernmentOrganization and the three sm: organization subclasses
+       (PrivateOrganization, CantonalOrganization, FederalOrganization), whose
+       instances all carry schema:Organization anyway.
+
+       Scoped to the system-map GRAPH, not to the types alone. dcat:Dataset has
+       far more instances across LINDAS than the system map holds; unscoped, this
+       query would try to draw a good part of the triplestore. The graph IS the
+       boundary of "the system map" — there is no scoping predicate on these
+       nodes.
+
+       hideTypeEdges hides the rdf:type edges. GE loads them with the data
+       relations, and at one per node they fan into a few class boxes and bury
+       the consumes/contains/usesMasterData edges this diagram exists to show.
+
+       This only works because the graph's data provider POSTs (see
+       static/js/sparql-graph.js). Graph Explorer's edge query names every node
+       TWICE, so even 300 nodes is a ~38,000-character request — far over the
+       ~8 KB limit a GET survives, and it would come back 431 with every node
+       drawn and not one edge. -->
+  <sparql-query id="systemDiagram">
+    PREFIX sm:  &lt;https://agriculture.ld.admin.ch/system-map/&gt;
+    PREFIX svc: &lt;http://purl.org/ontology/service#&gt;
+    SELECT DISTINCT ?node WHERE {
+      GRAPH &lt;https://lindas.admin.ch/foag/system-map&gt; {
+        ?node a ?nodeType .
+        VALUES ?nodeType {
+          schema:SoftwareApplication
+          svc:Service
+          sm:MasterData
+          dcat:Dataset
+          schema:Legislation
+        }
+      }
+    }
+  </sparql-query>
+
+  <div class="mb-3">
+    <!-- No `iri`: the class node is not itself part of the system map, and
+         passing it would add one disconnected box to the middle of the diagram.
+         Taller than the instance-page graph (800px vs 600px) because it has
+         30x the nodes to place. -->
+    {{ template "sparqlGraph" (dict
+        "id" "systemDiagram"
+        "iris" (columnValues .QueryResults.systemDiagram "node")
+        "endpointUrl" .EndpointURL
+        "title" (t "card.systemDiagram" "System diagram")
+        "icon" "workflow"
+        "hideTypeEdges" true
+        "height" "800px") }}
+  </div>
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}
