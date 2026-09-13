@@ -1,6 +1,10 @@
 <!-- Page Header -->
 <div class="d-flex align-items-center justify-content-between gap-3">
-  <ol class="breadcrumb mb-0" aria-label="{{ t "header.breadcrumbs" "breadcrumbs" }}">
+  <nav aria-label="{{ t "header.breadcrumbs" "breadcrumbs" }}">
+  <ol class="breadcrumb mb-0">
+    {{/* The whole trail, so a page that is its own root (the homepage) can
+         replace it wholesale with {{ define "breadcrumbs" }}. */}}
+    {{ block "breadcrumbs" . }}
     <li class="breadcrumb-item"><a href="/">{{ t "header.home" "Home" }}</a></li>
     {{/* Default trail segment: the class this page is rendered as (TemplateType,
          set by resource.ResolveTemplate). A template that needs a richer trail —
@@ -22,8 +26,10 @@
         <li class="breadcrumb-item"><a href="{{ resourceHref . }}">{{ lastPathSegment . }}</a></li>
       {{ end }}
     {{ end }}
-    <li class="breadcrumb-item active">{{ template "pageTitle" . }}</li>
+    <li class="breadcrumb-item active" aria-current="page">{{ template "pageTitle" . }}</li>
+    {{ end }}
   </ol>
+  </nav>
   {{ if .ResourceIRI }}
   <div class="btn-group btn-group-sm ms-auto flex-shrink-0" role="group" aria-label="{{ t "header.viewMode" "View mode" }}">
     <input type="radio" class="btn-check" name="resource-view" id="resource-view-table" data-view="table" autocomplete="off" checked>

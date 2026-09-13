@@ -2,6 +2,7 @@
 {{ define "pageSubtitle" }}{{ if eq .EndpointTag "lindas" }}{{ t "page.home.subtitleLindas" "Welcome to visoto, exploring LINDAS – the Swiss Federal Linked Data Service." }}{{ else if eq .EndpointTag "stadtzuerich" }}{{ t "page.home.subtitleStadtzuerich" "Welcome to visoto, exploring the open data of the City of Zürich." }}{{ else }}{{ t "page.home.subtitle" "Welcome to visoto, the adaptive knowledge graph explorer." }}{{ end }}{{ end }}
 {{ define "pageIcon" }}<img src="/static/img/visoto_light.svg" alt="{{ t "page.home.pageIcon" "Page icon" }}" width="48" height="48">{{ end }}
 {{ define "metaIcon" }}/static/img/visoto_light.svg{{ end }}
+{{ define "breadcrumbs" }}<li class="breadcrumb-item active" aria-current="page">{{ t "header.home" "Home" }}</li>{{ end }}
 
 {{ define "pageContent" }}
   <style>
