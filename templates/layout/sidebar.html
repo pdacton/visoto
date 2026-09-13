@@ -250,7 +250,23 @@
                 <span class="nav-link-title">{{ t "nav.definedTermSets" "Defined Term Sets" }}</span>
               </a>
             </li>
-            
+
+            <!-- Information Systems -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/InformationSystem.svg" alt="{{ t "nav.informationSystem" "Information System" }}">
+                </span>
+                <span class="nav-link-title">{{ t "nav.informationSystems" "Information Systems" }}</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=schema:SoftwareApplication">{{ t "nav.softwareApplications" "Software Applications" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FFMIS">{{ t "nav.fmis" "Farm Management (FMIS)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fpurl.org%2Fontology%2Fservice%23Service">{{ t "nav.itService" "Services" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FMasterData">{{ t "nav.masterData" "Master Data" }}</a>
+              </div>
+            </li>
+
           {{ else if eq .EndpointTag "stadtzuerich" }}
 
             <!-- Stadt Zürich: placeholder, to be customized -->
