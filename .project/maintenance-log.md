@@ -16,6 +16,7 @@ say what changed.
 | `xlsx@0.18.5` | Keep, do not bump or re-flag | Two CVEs, both in the spreadsheet *parser*. Nothing in Visoto parses a spreadsheet — the library only serves Tabulator's `download("xlsx")`, and the one file input accepts RDF only. Unreachable. Migration path documented above the tag in `base.html`. |
 | SRI on the 3 JS-loader files | Not a maintenance task | `mermaid-init.js` cannot express `integrity` on a bare ES module import. `sparql-graph.js` / `schema-graph.js` build their script tag dynamically — adding it is a code change; propose via `audit`. |
 | Major version bumps | Always deferred by default | The boot smoke test only proves the server starts. A Tabler/Tabulator major could break layout or tables silently. Needs a human with a browser. |
+| `govulncheck` pinned to v1.7.0 in CI | Keep pinned; bump only with the toolchain | `setup-go` sets `GOTOOLCHAIN=local`, so the scanner must build under the Go in `go.mod`. v1.8.0 needs Go >= 1.26 and fails the step. v1.7.0 is the newest that builds against 1.25. **Local runs can hide this** — an unpinned toolchain silently downloads 1.26.x, so `@latest` passes locally and fails in CI. Verify with `GOTOOLCHAIN=go<go.mod version>`. |
 
 ## Outstanding — found 2026-09-14, not yet actioned
 
@@ -25,8 +26,9 @@ Surfaced while auditing CLAUDE.md; none of these have been applied.
   the MCP tool surface.
 - **`github.com/golang/protobuf`** — deprecated, pulled in transitively.
   Check whether anything still requires it or if it drops with another bump.
-- **Go toolchain** — `go.mod` says `1.25.14`; `govulncheck` pulled `1.26.8` to
-  run. Consider bumping the directive.
+- **Go toolchain** — `go.mod` says `1.25.14`. Bumping the directive would also
+  let CI move `govulncheck` off the v1.7.0 pin (see standing deferrals); do both
+  in the same change, and re-verify with `GOTOOLCHAIN=go<new version>`.
 - **`klauspost/compress v1.17.6 → v1.20.0`** — several majors behind,
   transitive.
 - **graph-explorer 2.1.0 duplicated** in `sparql-graph.js:51` and
