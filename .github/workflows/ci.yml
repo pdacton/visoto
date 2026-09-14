@@ -46,6 +46,19 @@ jobs:
       - name: Vet
         run: go vet ./...
 
+      # go.mod/go.sum drift: a dependency added without tidying leaves entries
+      # that no import needs, which is how a stale module lingers for months.
+      # -diff exits non-zero and prints the patch rather than rewriting files.
+      - name: Check go mod tidy
+        run: go mod tidy -diff
+
+      # Known vulnerabilities, checked on every PR rather than in a periodic
+      # sweep: a CVE lands when it lands. govulncheck is call-graph aware, so
+      # it only fails on advisories this code can actually reach -- an
+      # unreachable one in a required module is reported without failing.
+      - name: Vulnerability scan
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
       - name: Build
         run: go build ./...
 

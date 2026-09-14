@@ -1,102 +1,130 @@
 # Agent Instructions for this Project
 
-## Project Overview
-- This project is written in Go and uses Go's `html/template` package for server-side rendering.
-- The frontend uses the [Tabler](https://tabler.io/) CSS and JavaScript framework for UI components and layout, which is based on Bootstrap 5.
-- For interactive data tables, the project uses the [Tabulator](https://tabulator.info/docs/6.3/quickstart) library.
+Visoto is a Go server that renders RDF resources from SPARQL endpoints as HTML
+pages. No database — every page is built from SPARQL queries embedded in its
+template.
 
-## Key Guidelines
+## Build & run
 
-### Skills
-Available skills in `.claude/skills/`:
-- **graph-explorer** - Reference guide for customizing Graph Explorer (Ontodia fork) - source files, CSS classes, API, and customization patterns
-- **branding** - Apply Visoto brand guidelines for RDF visualization tool including visual identity, voice, technical conventions, and code standards
-- **instanceTemplate** - Generate Visoto template files for RDF instances showing attributes, relationships, and connections
-- **classTemplate** - Generate Visoto template files for RDF classes showing instances and class hierarchy
-- **iconGeneration** - Generate resource icons (squircle + Lucide icon + accent color) into static/img/resource/
+- Build: `go build ./...` — Test: `go test ./...`
+- Run: `go run ./cmd/visoto/` (port from `visoto.config`, currently 8060).
+  `PORT=8061 go run ./cmd/visoto/` overrides it — use a different port than the
+  one the user is already running on.
+- `templates/`, `static/` and `locales/` load from disk at startup, not
+  `go:embed`. **Restart the server after adding or changing a template.**
+- A new runtime asset directory must be added to both `Dockerfile` and
+  `deploy.sh`, or production crash-loops.
 
-Use these skills when working on related tasks.
+## Templates
 
-### Go Backend
-- Use idiomatic Go for all backend logic.
-- Templates are rendered using Go's `template.Template`. Shared templates like base, header, footer are located in the `templates/layout/` directory. Templates for specific resources are located in the `templates/pages/` subfolder).
-- Static assets (CSS, JS, images) are served from the `/static` directory.
-- Prefer member function (method) coding style over standalone functions when working with structs. Define methods with receiver types to encapsulate behavior and improve code organization. Example: func (u *User) SendEmail(message string) error { }
+Templates live in `templates/`:
 
-### Templates
-- All HTML templates are based on the Bootstrap 5 framework and should use Bootstrap 5 classes and components for layout and styling.
-- Reuse Bootstrap 5 CSS and JavaScript as much as possible for consistency and maintainability.
-- Extend or include the base layout, and use Tabler classes for additional styling.
-- When adding new pages, create a new template in the appropriate folder and ensure it is loaded by the Go server.
-- Use Go template syntax (`{{ ... }}`) for dynamic content.
+| Dir | Purpose |
+|---|---|
+| `layout/` | base, topbar, sidebar, header, footer |
+| `partials/` | `sparqlTable`, `sparqlAsyncTable`, `sparqlGraph`, tree, metric, … |
+| `components/` | `pageHeader`, `literals`, `relationships` |
+| `pages/` | standalone pages (`/about.html`, `/politics.html`, …) |
+| `classes/` | per-RDF-class pages |
+| `instances/` | per-instance-type pages |
 
-### Tabler Integration
-- Use Tabler's CSS classes for layout, navigation, and UI components.
-- Include Tabler's JS via CDN or local assets as needed.
-- For dark/light mode, ensure the correct `data-bs-theme` attribute is set and toggled.
+A template does not "extend" a layout — it **defines blocks** (`pageTitle`,
+`pageSubtitle`, `pageIcon`, `pageContent`, …) that the base layout renders.
+`{{ template "pageHeader" . }}` fills the whole header from SPARQL.
 
-### Tabulator Integration
-- When creating data tables, use the Tabulator library as described in the [Tabulator Quickstart Guide](https://tabulator.info/docs/6.3/quickstart).
-- Include Tabulator's CSS and JS in your templates where tables are used.
-- Initialize Tabulator tables in a `<script>` block or external JS file after the DOM is ready.
+**Read `docs/templating.md` before writing or editing a template.** It is the
+authoritative authoring guide (page shell, custom tags, partial parameters).
 
-### General
-- Keep code modular and organized.
-- Follow best practices for accessibility (ARIA attributes, semantic HTML).
-- Document any custom logic or non-obvious code in comments.
+### Custom SPARQL tags
 
-### Data Layer
-- The project uses a **SPARQL endpoint** for data access, configured in the `visoto.config` file.
-- All RDF data queries go through the SPARQL endpoint (currently https://ld.admin.ch/query/).
-- No traditional database layer - all data is retrieved via SPARQL queries.
+Queries are written directly in the markup and preprocessed at startup by
+`internal/parser`; results land in `.QueryResults.<id>`:
 
-### Testing
-- **Go backend**: Unit tests using Go's standard testing package (`*_test.go` files).
-- **Templates**: Template testing approach is currently undefined.
+- `<sparql-query id="x">` — query executed during page render
+- `<sparql-async id="x">` — lazily loaded over HTMX after paint (use for slow
+  or large queries)
+- `<sparql-column>` / `<sparql-columns>` — declare table columns; a column
+  carrying `filter` makes the table faceted
+- `<sparql-tree-query>` / `<sparql-tree-queries>` — hierarchy trees
 
-### Debugging
-- **Playwright MCP** is configured via `.mcp.json` in the project root (gitignored).
-- Use Playwright MCP tools (`browser_navigate`, `browser_snapshot`, `browser_take_screenshot`, `browser_click`, etc.) to inspect and interact with the running site.
-- The server must be running first: `go run ./cmd/visoto/` (serves on port 8060).
-- Playwright runs Chromium headlessly in WSL — no visible browser window.
+Go template actions (`{{ t }}`, `{{ if }}`) **must not** appear inside a query
+body — the text is sent to the endpoint verbatim.
 
-### Deployment
-- Deployment is managed via the `deploy.sh` script in the project root.
-- **Environment variables**: Currently none in use.
+`visoto:<key>` in a query expands to a property path from
+`[rdf.magic_properties]` in `visoto.config`. Any query selecting a label or
+description needs the `visoto:dispLang` filter.
 
-### Graph Explorer Integration
-- The project uses [Graph Explorer](https://github.com/zazuko/graph-explorer) (a fork of Ontodia) for RDF graph visualization.
-- Graph Explorer is loaded from CDN: `graph-explorer@1.3.0`
-- Local files:
-  - `templates/pages/ontodia.html` - Main Graph Explorer page
-  - `static/css/ontodia_overrides.css` - Custom CSS overrides
-- **For API reference and configuration options**, see `/docs/ontodia-graph-explorer-references.md`
-- **For customization guidance**, see the `graph-explorer` skill in `.claude/skills/graph-explorer/`
+### i18n
 
-## References
+Every user-facing string goes through `{{ t "key" "English default" }}` or
+`{{ tHTML ... }}`. Catalogs live in `locales/*.toml` (de, en, fr, it, rm).
+Pages resolve language from the `site-lang` cookie; `/api/*` reads `?lang=`
+from the URL only.
 
-### External Documentation
-- [Tabler Documentation](https://tabler.io/docs/)
-- [Tabler SCSS Variables](https://github.com/tabler/tabler/blob/dev/core/scss/_variables.scss) - Box shadows, colors, spacing
-- [Tabulator Documentation](https://tabulator.info/docs/6.3/quickstart)
-- [Go Templates Documentation](https://pkg.go.dev/html/template)
-- [Bootstrap 5 Documentation](https://getbootstrap.com/docs/5.0/getting-started/introduction/)
-- [Graph Explorer Repository](https://github.com/zazuko/graph-explorer)
+### Frontend
 
-### Internal Documentation
-- `/docs/ontodia-graph-explorer-references.md` - Complete Graph Explorer/Ontodia API reference and configuration options
+Tabler 1.4 (Bootstrap 5) + Tabulator 6.5 + HTMX 2 + Lucide, loaded via CDN in
+`templates/layout/base.html`. Use Bootstrap/Tabler classes rather than custom
+CSS; overrides go in `static/css/*_overrides.css`.
 
----
-For any new features, follow the established structure and use Bootstrap 5, Tabler, and Tabulator for UI consistency.
+Templates emit markup and `<template>` config islands only — **no inline JS**.
+Behaviour lives in `static/js/`, keyed off a `data-<name>` marker.
+
+## Go backend
+
+- Idiomatic Go; prefer methods on structs over standalone functions.
+- Entry point `cmd/visoto/`, everything else under `internal/`
+  (`sparql`, `templates`, `parser`, `column`, `facet`, `search`, `i18n`,
+  `lang`, `cache`, `mcp`, `resource`, `tree`, `upload`, `monitor`).
+- Tests are standard `*_test.go` alongside the code.
+
+## Data layer
+
+SPARQL endpoints are configured in `visoto.config` under
+`[[application.sparqlEndpoints]]`; each has a **slug**, which is the only
+identifier on the wire (`/resource?iri=<IRI>&endpoint=<slug>`). Default is
+LINDAS prod cached (`https://cached.lindas.admin.ch/query`).
+
+Cacheable routes (`/resource`, `/api/*`) must stay pure functions of the URL —
+never read the endpoint cookie in them.
+
+Build resource links with `sparql.ResourceHref` (Go) or `visotoResourceHref`
+(JS), never by hand.
+
+Note: LINDAS instance counts drift between calls — query counts live with
+`<sparql-async>`, never hard-code them in prose.
+
+## Graph Explorer
+
+RDF graph visualization via [Graph Explorer](https://github.com/zazuko/graph-explorer)
+2.1.0 from CDN. Embed it with `{{ template "sparqlGraph" (dict ...) }}`
+(`templates/partials/sparql-graph.html`); styling overrides in
+`static/css/ontodia_overrides.css`. See the `graph-explorer` skill and
+`docs/ontodia-graph-explorer-references.md`.
+
+## Debugging
+
+Playwright MCP is configured in `.mcp.json` (gitignored); start the server
+first. Chromium runs headless under WSL. It silently caches `static/js` and
+`static/css` — hard-clear the browser cache before verifying frontend changes.
+
+## Skills
+
+In `.claude/skills/`: **graph-explorer**, **branding**, **instanceTemplate**,
+**classTemplate**, **iconGeneration**.
+
+## Docs
+
+`docs/templating.md` (template authoring), `docs/architecture.md`,
+`docs/configuration.md`, `docs/deployment.md`, `docs/getting-started.md`.
 
 ## graphify
 
-This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+Knowledge graph at `graphify-out/`. **Scope: `.go`, `.js`, `.sh` only** —
+`templates/` is not indexed, so use grep/Read for template questions.
 
-**Scope: Go and JS only.** The graph indexes `.go`, `.js`, and `.sh` files. `templates/` is not indexed (by design — it's mostly standard partials), so use grep/Read for template questions.
-
-Rules:
-- For Go/JS questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
-- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
-- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
-- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- Go/JS questions: run `graphify query "<question>"` first; `graphify path
+  "<A>" "<B>"` for relationships, `graphify explain "<concept>"` for concepts.
+- `graphify-out/wiki/index.md` for broad navigation;
+  `graphify-out/GRAPH_REPORT.md` only for architecture review.
+- After changing code, run `graphify update .`.
