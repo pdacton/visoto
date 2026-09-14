@@ -131,7 +131,7 @@ Each `[[application.sparqlEndpoints]]` block defines one entry in the endpoint-s
 | `default` | boolean | `false` | Marks this endpoint as pre-selected when the app starts. At most one endpoint should have `default = true`. Also used as the fallback when resolving `.EndpointTag` in templates. |
 | `monitor` | boolean | `false` | Enables health monitoring for this endpoint. Monitored endpoints appear on the `/monitoring` dashboard with response-time history stored in `./data/`. |
 | `tag` | string | `""` | A logical group label (e.g., `"lindas"`, `"stadtzuerich"`). The tag of the currently selected endpoint is exposed to templates as `.EndpointTag`, allowing templates to conditionally show endpoint-specific content. |
-| `search_provider` | string | `"stardog"` | Full-text search backend for this endpoint: `"stardog"`, `"graphdb"`, `"fuseki"` or `"sparql-query"`. Different triple stores expose FTS through different vendor predicates. |
+| `search_provider` | string | `"stardog"` | Full-text search backend for this endpoint: `"stardog"`, `"graphdb"` (Simple FTS), `"graphdb-lucene"` (auto-discovered Lucene connectors), `"fuseki"`, `"qlever"` or `"sparql-query"`. Different triple stores expose FTS through different vendor predicates; `"sparql-query"` is the portable `CONTAINS` fallback that needs no index. |
 | `export_provider` | string | auto | Overrides how named-graph export is performed: `"graphdb"`, `"gsp"` (Graph Store Protocol) or `"construct"`. Autodetected when omitted. |
 | `access_token` | string | — | Bearer token for write operations (upload, graph deletion). Takes precedence over `username`/`password`. |
 | `username` / `password` | string | — | Basic-auth credentials for write operations, used only when `access_token` is absent. |

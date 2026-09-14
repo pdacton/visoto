@@ -62,7 +62,7 @@ Inside `pageContent`, you compose the page from components (which carry their ow
 
 **Components** (`literals`, `relationships`, `pageHeader`) — pass `.` (full context), they issue their own SPARQL queries internally.
 
-**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
+**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlCube`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
 
 ---
 
@@ -369,6 +369,27 @@ Row icons and badges are not parameters — declare them with `icon` / `badge` o
   "icon" "list"
 ) }}
 ```
+
+### `sparqlCube`
+
+The observations of a `cube:Cube` as a table — one row per observation, one column
+per dimension. Unlike every other partial it takes no `result`: cube observations
+carry per-cube dimension predicates, so the column set cannot be written in a
+template. `/api/cube-table/:id` reads the cube's SHACL observation constraint,
+generates a wide query with one `OPTIONAL` per dimension, and renders it through
+`sparqlTable`.
+
+```
+{{ template "sparqlCube" (dict "id" "cubeData" "iri" .ResourceIRI
+                               "title" (t "card.data" "Data") "icon" "table") }}
+```
+
+Parameters: `id`, `iri` (the cube, usually `.ResourceIRI`), `title`, `icon`.
+
+Bounded in `cmd/visoto/cube_table.go` to 15 columns (ordered by `sh:order`) and
+1000 observations, loaded once and paged locally — cubes range from 5 to 288
+dimensions, and the largest observation set holds over 700,000 rows. Loads lazily
+over HTMX, so a page carrying it pays nothing until the fragment arrives.
 
 ### `sparqlGrid`
 

@@ -1,8 +1,9 @@
 # Agent Instructions for this Project
 
 Visoto is a Go server that renders RDF resources from SPARQL endpoints as HTML
-pages. No database — every page is built from SPARQL queries embedded in its
-template.
+pages. Every page is built from SPARQL queries embedded in its template; there
+is no database for RDF data. (The only local store is a SQLite file under
+`./data/` holding endpoint-monitoring history.)
 
 ## Build & run
 

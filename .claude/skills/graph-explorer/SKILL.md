@@ -9,12 +9,18 @@ Reference guide for customizing the Graph Explorer library (a fork of Ontodia) u
 
 ## Library Information
 - **Library**: [Graph Explorer](https://github.com/zazuko/graph-explorer) (fork of Ontodia)
-- **CDN**: `graph-explorer@1.3.0`
+- **CDN**: `graph-explorer@2.1.0`
 - **CSS Prefix**: All classes use `graph-explorer-` prefix
 
 ## Local Project Files
-- `templates/pages/ontodia.html` - Main Graph Explorer page with initialization code
+- `templates/partials/sparql-graph.html` - the `sparqlGraph` partial; embeds a graph on any
+  page and self-loads the CDN bundle. This is where initialization lives.
+- `static/js/sparql-graph.js` - the partial's behaviour, including the CDN version pin
+- `static/js/schema-graph.js` - the schema diagram at `/_schema.html`; pins the same version
 - `static/css/ontodia_overrides.css` - Custom CSS overrides
+
+There is no longer a standalone Graph Explorer page: `templates/pages/ontodia.html` was
+retired in 612bca6 and replaced by the partial above.
 
 ## Key Source Files Reference
 
