@@ -6,6 +6,11 @@
 port = 8060
 sparqlEndpoint = "https://ld.admin.ch/query/"  # Default endpoint
 timeout = 30 # timeout in seconds
+
+# Lets the URL mode of /api/upload fetch loopback, private and link-local hosts.
+# Off by default as an SSRF guard — enable only in a local test environment where
+# you need to upload from e.g. http://localhost.
+# allow_private_upload_urls = false
 gemini_api_key = "YOUR_GEMINI_API_KEY_HERE" # Get from: https://aistudio.google.com/app/apikey
 
 # Used when the request expresses no usable preference. Must be one of the codes
@@ -75,7 +80,13 @@ slug = "lindas-prod"
 # access_token = "YOUR_TOKEN_HERE"  # optional: Bearer token for write operations (Upload data feature)
 # username = ""                      # alternative: basic auth (used only if access_token is absent)
 # password = ""
-# search_provider = "stardog"        # FTS backend: "stardog" (default), "graphdb", "fuseki", "sparql-query"
+# search_provider = "stardog"        # FTS backend, per endpoint. One of:
+#                                    #   "stardog"        (default)
+#                                    #   "graphdb"        GraphDB Simple FTS
+#                                    #   "graphdb-lucene" GraphDB with auto-discovered Lucene connectors
+#                                    #   "fuseki"
+#                                    #   "qlever"
+#                                    #   "sparql-query"   portable CONTAINS fallback, no index needed
 
 [[application.sparqlEndpoints]]
 name = "LINDAS int"

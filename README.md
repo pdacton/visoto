@@ -127,10 +127,15 @@ layout, partial, page, class and instance template parsed successfully.
 ```
 cmd/visoto/        — main entry point
 internal/
+  cache/           — in-process query/label caching
   chat/            — Gemini AI chat handler
+  column/          — <sparql-column> declarations and column building
   config/          — TOML config loading
   export/          — named-graph export (Turtle, N-Quads, TriG, RDF/XML, JSON-LD)
   facet/           — faceted-search filter construction
+  i18n/            — UI message catalogs (go-i18n)
+  icon/            — resource icon resolution
+  lang/            — language negotiation and the configured language set
   logger/          — structured slog logger
   mcp/             — MCP server (AI tool integration)
   monitor/         — simple SPARQL endpoint health monitoring
@@ -139,7 +144,9 @@ internal/
   search/          — full-text search over SPARQL endpoints
   sparql/          — SPARQL query execution
   templates/       — Go template loader
+  tree/            — hierarchy tree queries and validation
   upload/          — RDF upload and named-graph management
+locales/           — UI translations (de, en, fr, it, rm)
 templates/
   layout/          — shared layout templates (base, sidebar, header, footer)
   pages/           — static page templates (home, search, monitoring, …)
@@ -168,11 +175,8 @@ static/            — CSS, JS, images
 | `GET` | `/api/async-table-data/:id` | Working-set table rows (JSON) |
 | `GET` | `/api/faceted-table/:id` | Faceted table — fragment or JSON, content-negotiated |
 | `GET` | `/api/facet-values/:id/:var` | Distinct values and counts for one facet (JSON) |
-
-The five async routes above all require `?src=<template set>` (e.g.
-`src=pages/plazi.html`): `:id` names a `<sparql-async>` declaration, and those are
-scoped to the template set that declares them, not global. The frontend attaches it
-automatically — see [Async query scope](docs/templating.md#async-query-scope).
+| `GET` | `/api/cube-table/:id` | Cube observation table; query built from the cube's SHACL constraint |
+| `GET` | `/api/lazy-tree/:id/:role` | One level of a lazily expanded tree |
 | `POST` | `/api/upload` | Upload RDF from a file or URL into a named graph |
 | `GET` | `/api/named-graphs` | List named graphs (JSON) |
 | `DELETE` | `/api/named-graphs` | Delete a named graph |
@@ -183,6 +187,15 @@ automatically — see [Async query scope](docs/templating.md#async-query-scope).
 | `ANY` | `/mcp` | MCP server endpoint |
 | `GET` | `/health` | MCP health check |
 | `GET` | `/ping` | Health check |
+
+The `metric`, `async-table`, `async-table-data`, `faceted-table`, `facet-values` and
+`lazy-tree` routes require `?src=<template set>` (e.g. `src=pages/plazi.html`): `:id`
+names a declaration in the markup (`<sparql-async>`, or `<sparql-tree-query>` for
+lazy-tree), and those are scoped to the template set that declares them, not global.
+The frontend attaches it automatically — see
+[Async query scope](docs/templating.md#async-query-scope). `/api/cube-table/:id` is
+the exception: its query is generated from the cube's own SHACL constraint, so `?iri=`
+alone determines the response.
 
 ### Screenshots
 

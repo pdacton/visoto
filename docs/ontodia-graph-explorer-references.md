@@ -37,10 +37,10 @@ Quick reference for improving Visoto's Graph Explorer implementation.
 
 ### Current Visoto Implementation
 ```javascript
-// From /templates/pages/ontodia.html
+// From static/js/sparql-graph.js
 var settings = Object.assign({}, GE.OWLRDFSSettings, {
-  dataLabelProperty: '<http://schema.org/name> | rdfs:label',
-  schemaLabelProperty: '<http://schema.org/name> | rdfs:label'
+  dataLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
+  schemaLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label'
 });
 
 var dataProvider = new GE.SparqlDataProvider({
@@ -153,7 +153,7 @@ Set `WorkspaceProps.languages` array
 
 ### How to: Save/Load Diagrams
 API: `SerializedDiagram`, `LayoutData` from index.ts
-Current Visoto implementation: See `/templates/pages/ontodia.html` lines 58-173
+Current Visoto implementation: See `static/js/sparql-graph.js`
 
 ### How to: Handle Large Datasets
 Use: `OWLRDFSSettings` (no class statistics)
