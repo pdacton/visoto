@@ -82,6 +82,41 @@ loaded with a filter pre-selected, where the advanced-filter accordion then fail
 auto-expand. Logged as `.project/issues/search-js-uses-bare-bootstrap-global.md`
 rather than fixed here — `cdn` mode does not carry code changes.
 
+**Tabler 1.5 hid both sidebars — found by the user, fixed in this branch.**
+The bump shipped a layout regression that every automated check passed over.
+1.5 assumes a page has *either* a horizontal navbar *or* a vertical one, and
+ships a mutually exclusive pair of rules keyed off `data-bs-navbar-position`
+on `<html>`:
+
+| State | Effect |
+|---|---|
+| attribute absent | `> .navbar-vertical { display: none }` — both sidebars vanish |
+| attribute set to `vertical` | hides the horizontal navbar — the topbar vanishes |
+
+Visoto has both, as siblings inside `.page`, which is the one combination
+neither branch allows. Setting the attribute is NOT the fix — verified, it just
+swaps which element disappears. The branch that applies to us is undone in
+`tabler_overrides.css`, scoped to Tabler's exact selector so the mobile overlay
+and `d-print-none` keep working. The same selector also zeroes
+`--tblr-sidebar-width`, so both properties are restored.
+
+Separately, 1.5 introduced `--tblr-sidebar-width: 16rem` (256px) where 1.4
+declared no sidebar width at all — 240px was intrinsic from content. Left alone
+this sized the sidebar 16px wider than every offset derived from
+`--vs-sidebar-width`. Tabler's variable is now pinned to ours, keeping one name
+for the width.
+
+**Testing lesson — the important one.** Every check in this sweep passed while
+the site was visibly broken. They asserted that things *existed* (`window.lucide`
+is an object, 79 SVGs, a Tabulator table has rows) and never that a layout
+element was *visible*. `display: none` on a fixed-position sidebar does not throw,
+does not log, and does not change any of those signals; `.page-wrapper` kept its
+240px margin, so the page even looked deliberately laid out. A screenshot from
+the user is what surfaced it. **After a CSS-framework bump, assert computed
+`display` and a non-zero bounding box on the major layout containers — sidebar,
+topbar, content — and check the content gutter is zero.** A library that "loads"
+proves nothing about layout.
+
 **Deferred**
 
 - **`mermaid 11.17.2 → 12.0.0` + `@mermaid-js/layout-elk 0.2.3 → 1.0.0`** —
