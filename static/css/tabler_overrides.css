@@ -172,14 +172,44 @@ header.navbar.sticky-top.is-scrolled {
    the click. Desktop only: on mobile the sidebar is an overlay that always starts
    closed, and these margins are not how it hides.
 
-   The sidebar has no declared width — 240px is intrinsic, from its content — so
-   there is no Tabler variable to reuse here and the offset has to be named. This
-   is that one name: sidebar.js reads it as its own fallback when it cannot measure
+   240px was originally intrinsic, from the sidebar's content: 1.4 declared no
+   sidebar width at all. Tabler 1.5 introduced --tblr-sidebar-width (16rem/256px),
+   which would size the element 16px wider than every offset computed from the
+   name below — the sidebar and the content gutter would disagree. So the Tabler
+   variable is pinned to ours rather than the other way round, keeping one name
+   for the width: sidebar.js reads it as its own fallback when it cannot measure
    the element, so the pre-paint offset and the script's can never drift apart.
    The measured width still wins once the script runs; this only has to hold for
    the first frame. */
 :root {
     --vs-sidebar-width: 240px;
+    --tblr-sidebar-width: var(--vs-sidebar-width);
+}
+
+/* Tabler 1.5 assumes a page has EITHER a horizontal navbar OR a vertical one,
+   and ships a mutually exclusive pair of rules keyed off data-bs-navbar-position
+   on <html>. Visoto has both — the topbar and the sidebar are siblings inside
+   .page — which is the one combination neither branch allows:
+
+     without the attribute   -> hides .navbar-vertical  (both sidebars vanish,
+                                while .page-wrapper keeps its margin: empty gutter)
+     with  the attribute     -> hides the horizontal navbar (topbar vanishes)
+
+   So the attribute cannot resolve this; setting it just swaps which element
+   disappears. Undo the branch that applies to us instead. The same selector also
+   zeroes --tblr-sidebar-width, which would collapse the sidebar to 0 even once it
+   is displayed again, so both properties have to be restored.
+
+   Scoped to the exact Tabler selector rather than a blanket `.navbar-vertical
+   { display: flex }` so that genuinely hidden states — the mobile overlay, print
+   — keep working. Revisit if Tabler ever supports both navbars on one page. */
+html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expand"]:not(.navbar-vertical)) > .navbar-vertical {
+    display: flex;
+}
+
+html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expand"]:not(.navbar-vertical)) > .navbar,
+html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expand"]:not(.navbar-vertical)) > .page-wrapper {
+    --tblr-sidebar-width: var(--vs-sidebar-width);
 }
 
 @media (min-width: 992px) {
