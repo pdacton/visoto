@@ -56,8 +56,13 @@ jobs:
       # sweep: a CVE lands when it lands. govulncheck is call-graph aware, so
       # it only fails on advisories this code can actually reach -- an
       # unreachable one in a required module is reported without failing.
+      #
+      # Pinned, not @latest: setup-go sets GOTOOLCHAIN=local, so the version
+      # used here must build under the Go in go.mod. govulncheck v1.8.0 needs
+      # Go >= 1.26 and fails the step outright. v1.7.0 is the newest that
+      # builds against 1.25. Bump this when the go directive moves.
       - name: Vulnerability scan
-        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.7.0 ./...
 
       - name: Build
         run: go build ./...
