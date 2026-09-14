@@ -12,10 +12,12 @@
 // whatever the CDN served that day. SRI is not available here — integrity
 // cannot be expressed on a bare ES module import — so the pin is the only
 // thing fixing what actually runs.
-import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.17.2/dist/mermaid.esm.min.mjs';
-import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@0.2.3/dist/mermaid-layout-elk.esm.min.mjs';
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@12.0.0/dist/mermaid.esm.min.mjs';
+import elkLayouts from 'https://cdn.jsdelivr.net/npm/@mermaid-js/layout-elk@1.0.0/dist/mermaid-layout-elk.esm.min.mjs';
 
-// Register ELK layout loaders
+// Register ELK layout loaders.
+// Mermaid 12 bundles ELK, so this call is no longer strictly required — it is
+// kept because it still works and keeps the layout package explicit.
 mermaid.registerLayoutLoaders(elkLayouts);
 
 // Make mermaid available globally for other scripts
@@ -27,9 +29,10 @@ window.mermaid = mermaid;
   mermaid.initialize({
     startOnLoad: false,
     theme: isDark ? 'dark' : 'default',
+    look: 'classic',
+    layout: 'elk',
     securityLevel: 'loose',
     flowchart: {
-      defaultRenderer: 'elk',
       curve: 'linear',
       htmlLabels: true
     },
@@ -47,9 +50,10 @@ window.mermaid = mermaid;
     mermaid.initialize({
       startOnLoad: false,
       theme: isDark ? 'dark' : 'default',
+      look: 'classic',
+      layout: 'elk',
       securityLevel: 'loose',
       flowchart: {
-        defaultRenderer: 'elk',
         curve: 'linear',
         htmlLabels: true,
       },
