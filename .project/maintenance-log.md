@@ -170,6 +170,8 @@ proves nothing about layout.
   `mermaid-init.js` with no SRI, so a break shows up only as a diagram that
   silently fails to render. Needs a human loading a page with a mermaid
   diagram. Changelog: https://github.com/mermaid-js/mermaid/releases
+  **RESOLVED later the same day** — applied in
+  `maintenance/cdn-mermaid-12-2026-09-14`; see the newest entry.
 
 **Process note** — the skill's file table misses a sixth location:
 `static/css/tabulator_overrides.css:3` names the Tabulator stylesheet it
