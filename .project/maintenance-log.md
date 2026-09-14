@@ -35,6 +35,32 @@ Surfaced while auditing CLAUDE.md; none of these have been applied.
 
 ## History
 
+### 2026-09-14 — docs (`/maintenance docs`, branch `maintenance/docs-2026-09-14`)
+
+First run of the skill. Fixed: graph-explorer skill CDN 1.3.0 → 2.1.0 and its
+dead `templates/pages/ontodia.html` paths; the reference doc's stale label-property
+snippet; `/ontodia` in the sparqlGraph partial comment; `./data/` described as JSON
+time-series when monitoring moved to SQLite (architecture.md + CLAUDE.md); six
+`internal/` packages missing from the README and architecture package tables; two
+missing README routes (`cube-table`, `lazy-tree`) plus a `?src=` note that split the
+route table and over-claimed (cube-table is exempt); `search_provider` listing four
+of six backends in the example and configuration.md; `allow_private_upload_urls`
+absent from the example; `sparqlCube` undocumented in the authoring guide.
+
+Checked and found correct, no change needed:
+- `docs/templating.md` on `<sparql-facet>` — already describes it as a retired
+  element kept only so a leftover fails at startup. The parser still recognises it
+  for exactly that reason; it is not a live tag and the doc does not claim it is.
+- `Bicycle.svg` / `custom-icon.svg` in the icon and graph-explorer skills —
+  illustrative examples in commands, not paths that must exist.
+- `/api/x` and `/p` — test-only routes in `*_test.go`, correctly absent from the
+  README.
+
+Process note: the pre-flight clean-tree check fired on this run because the skill
+and CLAUDE.md were still uncommitted. Committing the setup first, then branching,
+kept the setup and the sweep as two reviewable diffs. Worth repeating.
+
+
 ### 2026-09-14 — docs (manual, pre-skill)
 
 Rewrote `CLAUDE.md` against the codebase. Corrected: Graph Explorer 1.3.0 →
@@ -48,6 +74,6 @@ requirement, the no-inline-JS rule and a pointer to `docs/templating.md`.
 modules that are not called.
 
 Not checked this pass: `docs/*.md` beyond `templating.md`, `README.md`,
-`visoto.config.example`, and the five `SKILL.md` files. The `graph-explorer`
-skill is known to still claim CDN `1.3.0` — first `/maintenance docs` run
-should fix it.
+`visoto.config.example`, and the five `SKILL.md` files. All covered by the
+`/maintenance docs` run above, which fixed the `graph-explorer` skill's stale
+CDN version among the rest.
