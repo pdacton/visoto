@@ -37,6 +37,72 @@ Surfaced while auditing CLAUDE.md; none of these have been applied.
 
 ## History
 
+### 2026-09-14 — cdn (`/maintenance cdn`, branch `maintenance/cdn-2026-09-14`)
+
+Bumped, with SRI recomputed and verified against the bytes the CDN actually
+serves:
+
+| Library | Old → New | Files |
+|---|---|---|
+| `@tabler/core` | 1.4.0 → 1.5.1 | `base.html` ×3 (tabler.css, tabler-themes.min.css, tabler.js) |
+| `lucide` | 1.37.0 → 1.46.0 | `base.html` ×1 |
+
+Verified in a browser with the cache hard-cleared via CDP: all four assets load
+past SRI validation (a stale hash fails closed and would have blocked them),
+`window.lucide` is live with 79 icons rendered, Tabler CSS applies, and a
+Tabulator table renders 10 rows / 11 columns with header and body sharing an
+x-origin — the known misalignment symptom is absent. Graph Explorer still mounts.
+Console clean on all three pages.
+
+Already current, no action: tabulator-tables 6.5.2, wunderbaum 0.14.1,
+highlight.js 11.12.0, htmx 2.0.10, svg-pan-zoom 3.6.2, chart.js 4.5.1,
+chartjs-adapter-date-fns 3.0.0, graph-explorer 2.1.0.
+
+**Tabler 1.5 upgrade guide reviewed** (https://docs.tabler.io/ui/getting-started/upgrade
+— supplied by the user mid-run; 1.5 carries real breaking changes that the version
+number alone does not advertise). Checked each against the codebase:
+
+| Breaking change | Status here |
+|---|---|
+| Bootstrap now bundled; remove a separate `bootstrap.bundle.min.js` | Not affected — `base.html` never loaded one, so no double-initialisation |
+| `window.bootstrap.X` → `window.tabler.X` | Already compliant everywhere except one pre-existing bug, below |
+| `data-bs-*` → `data-tblr-*` | Optional; both prefixes work. Left alone |
+| `.badges-list`/`.tags-list`/`.markdown` renamed | Not used |
+| `dist/libs` direct file paths moved | Not used |
+| Separate RTL stylesheet dropped | Not used |
+| Sass variable/`@use` changes | Not applicable — CDN build, no Sass compilation |
+
+The one finding, **pre-existing and not caused by this bump**:
+`static/js/search.js:57` calls a bare `new bootstrap.Collapse(...)`. `window.bootstrap`
+has never existed on this site (Tabler exposes `window.tabler.bootstrap`, as the rest
+of the codebase already uses and as comments in `sparql-graph.js` / `schema-graph.js`
+explicitly warn). Confirmed in-browser: `ReferenceError: bootstrap is not defined`.
+Dates to 4d8af01 (2026-01-16), so 1.4 was equally broken. Reachable only on `/search`
+loaded with a filter pre-selected, where the advanced-filter accordion then fails to
+auto-expand. Logged as `.project/issues/search-js-uses-bare-bootstrap-global.md`
+rather than fixed here — `cdn` mode does not carry code changes.
+
+**Deferred**
+
+- **`mermaid 11.17.2 → 12.0.0` + `@mermaid-js/layout-elk 0.2.3 → 1.0.0`** —
+  both major, and a coupled pair: layout-elk 1.0 targets mermaid 12, so they
+  move together or not at all. Both are bare ES module imports in
+  `mermaid-init.js` with no SRI, so a break shows up only as a diagram that
+  silently fails to render. Needs a human loading a page with a mermaid
+  diagram. Changelog: https://github.com/mermaid-js/mermaid/releases
+
+**Process note** — the skill's file table misses a sixth location:
+`static/css/tabulator_overrides.css:3` names the Tabulator stylesheet it
+overrides inside a comment. That one is documentation, not a loaded pin, so it
+needs no SRI — but it will read as wrong the moment Tabulator moves. The `grep`
+in the skill is what caught this; keep trusting it over the table. (The table's
+count of 13 pins in `base.html` is correct, all 13 carrying SRI.)
+
+Also: the boot check bound 8060 on the first attempt because `PORT=8061` was
+omitted. The user's own server happened to be down so nothing was displaced, and
+the specific PID was killed rather than `pkill`. The startup log line is the
+tell — always confirm `port=:8061` before testing.
+
 ### 2026-09-14 — docs (`/maintenance docs`, branch `maintenance/docs-2026-09-14`)
 
 First run of the skill. Fixed: graph-explorer skill CDN 1.3.0 → 2.1.0 and its
