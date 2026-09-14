@@ -37,6 +37,51 @@ Surfaced while auditing CLAUDE.md; none of these have been applied.
 
 ## History
 
+### 2026-09-14 — cdn (mermaid major, branch `maintenance/cdn-mermaid-12-2026-09-14`)
+
+**The standing mermaid deferral is lifted.** `mermaid 11.17.2 → 12.0.0` and
+`@mermaid-js/layout-elk 0.2.3 → 1.0.0`, applied together (layout-elk 1.0 peers
+`^12.0.0`; 0.2.3 peers `^11.0.2`). Run at the user's request with a human at the
+browser — which is exactly the condition the deferral named.
+
+Two breaking changes actually reached us:
+
+| Change | Handling |
+|---|---|
+| `flowchart.defaultRenderer` removed | Moved to the top-level `layout: 'elk'`, in both the init config and the theme-change observer |
+| New `neo` look / `redux-color` theme defaults | Pinned `look: 'classic'` so the bump does not silently restyle diagrams |
+
+`registerLayoutLoaders` still works (v12 bundles ELK) and was kept, with the
+comment updated. Verified on the municipality and district pages, cache
+hard-cleared via CDP: 31 nodes / 58 links at the same 727×460 box as v11, no
+console errors, across initial render, both layout-dropdown switches and a
+dark/light round trip. Visually indistinguishable from the v11 screenshot.
+
+**Testing lesson, and it cost most of this run.** Nearly every "failure" found
+here was manufactured by the test harness, not by mermaid 12:
+
+- **Fixed timeouts read half-rendered diagrams.** This graph takes ~10s to
+  settle. Reading at 4-6s yields `0 links, height 150` — which looks exactly
+  like a collapsed diagram. The user said "when I test it manually it works
+  fine" while a run was mid-flight, and they were right.
+- **Driving re-renders faster than they settle breaks them.** Rapid dropdown and
+  theme cycling re-enters the render before the previous one finishes and
+  produces genuine `SVGMatrix` / `getAttribute` errors. **The same errors
+  reproduce on 11.17.2** — confirmed by stashing the bump and re-running. They
+  are a pre-existing re-entrancy weakness, not a regression.
+- **Setting `data-bs-theme` via `page.evaluate` is not the theme toggle.**
+  Clicking `#theme-toggle` behaves differently. Drive the real control.
+
+Two speculative fixes to `sparql-mermaid-flow.js` (`initPanZoom` SVG sizing)
+were written and both reverted: the first froze the *previous* render's box onto
+a new diagram, the second was simply unnecessary. **The shipped diff touches
+only `mermaid-init.js`.** When a symptom appears after a bump, reproduce it on
+the old version before writing a fix.
+
+Not logged as an issue: the re-entrancy errors above are only reachable by
+switching layout or theme several times per second, which no user does. If that
+changes, the fix is to guard `render()` against overlapping calls.
+
 ### 2026-09-14 — cdn (`/maintenance cdn`, branch `maintenance/cdn-2026-09-14`)
 
 Bumped, with SRI recomputed and verified against the bytes the CDN actually
@@ -125,6 +170,8 @@ proves nothing about layout.
   `mermaid-init.js` with no SRI, so a break shows up only as a diagram that
   silently fails to render. Needs a human loading a page with a mermaid
   diagram. Changelog: https://github.com/mermaid-js/mermaid/releases
+  **RESOLVED later the same day** — applied in
+  `maintenance/cdn-mermaid-12-2026-09-14`; see the newest entry.
 
 **Process note** — the skill's file table misses a sixth location:
 `static/css/tabulator_overrides.css:3` names the Tabulator stylesheet it
