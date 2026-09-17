@@ -114,12 +114,15 @@ else
     ssh ${SSH_OPTS} "${SSH_TARGET}" "cd ${REMOTE_DIR} && docker compose up -d --build"
 fi
 
-# Restart Caddy: `up -d` does not recreate it (the Caddyfile is a bind mount and
-# the xcaddy image build is layer-cached), so without this the old Caddyfile
+# Recreate Caddy: `up -d` above does not touch it (the Caddyfile is a bind mount
+# and the xcaddy image build is layer-cached), so without this the old Caddyfile
 # stays loaded and the in-memory Souin cache keeps serving pre-deploy responses.
-# A restart reloads the config and clears the cache in one stroke.
-ssh ${SSH_OPTS} "${SSH_TARGET}" "cd ${REMOTE_DIR} && docker compose restart caddy"
-echo "Caddy restarted (fresh Caddyfile + empty cache)"
+#
+# `up -d --force-recreate`, not `restart`: a plain restart reuses the existing
+# container, which can leave stale state behind. Recreating reloads the config
+# and clears the cache in one stroke.
+ssh ${SSH_OPTS} "${SSH_TARGET}" "cd ${REMOTE_DIR} && docker compose up -d --force-recreate caddy"
+echo "Caddy recreated (fresh Caddyfile + empty cache)"
 
 # Step 6: Verify deployment
 echo -e "${YELLOW}[6/6] Verifying deployment...${NC}"
@@ -135,10 +138,15 @@ if ssh ${SSH_OPTS} "${SSH_TARGET}" "for i in \$(seq 1 ${HEALTH_TIMEOUT}); do [ \
     echo "Visoto is running at:"
     echo "  https://visoto.hutzli.org"
     echo ""
+    echo "Analytics dashboard (PUBLIC - no auth; first report ~5 min after deploy):"
+    echo "  https://visoto.hutzli.org/goaccess/"
+    echo ""
     echo "Useful commands on the server:"
     echo "  cd ${REMOTE_DIR}"
     echo "  docker compose logs -f                          # View all logs"
     echo "  docker compose logs caddy -f                    # View Caddy logs"
+    echo "  docker compose logs goaccess -f                 # View analytics generator logs"
+    echo "  docker compose restart goaccess                 # Force a report rebuild"
     echo "  docker compose restart                          # Restart services"
     echo "  docker compose down                             # Stop services"
     if [ "$WITH_QLEVER" = true ]; then

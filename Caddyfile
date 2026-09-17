@@ -51,6 +51,28 @@ visoto.hutzli.org {
     }
     respond @souinAdminExternal 403
 
+    # ── Access log ───────────────────────────────────────────────────────────
+    # Written as JSON to a shared volume (caddy_logs) and parsed by the goaccess
+    # service into the dashboard served at /goaccess/ below.
+    #
+    # Rotation is not optional: without roll_size the volume grows unbounded.
+    # GoAccess's --persist/--restore (docker-compose.yml) is what keeps a roll
+    # from resetting the visitor totals to zero.
+    #
+    # Caddy's json format writes `ts` as a Unix epoch float, which is why the
+    # goaccess service passes --date-format=%s --time-format=%s. That coupling
+    # is guarded by scripts/test-goaccess-format.sh — run it if the dashboard
+    # ever looks empty, because a mismatch fails silently (0 lines parsed, no
+    # error, empty report).
+    log {
+        output file /var/log/caddy/access.log {
+            roll_size 50MiB
+            roll_keep 5
+            roll_keep_for 720h
+        }
+        format json
+    }
+
     # ── UI language normalization ────────────────────────────────────────────
     # Collapse the two language signals a browser sends (the site-lang cookie and
     # Accept-Language) into one header with a small, closed value set, so both
@@ -169,6 +191,61 @@ visoto.hutzli.org {
         key {
             headers Accept-Encoding
         }
+    }
+
+    # ── Analytics dashboard ──────────────────────────────────────────────────
+    # The static report written by the goaccess service. A `route` (not a bare
+    # matcher) so this terminates the chain and never falls through to
+    # reverse_proxy — visoto has no /goaccess route and would 404.
+    #
+    # Must stay ABOVE reverse_proxy. It is deliberately outside both cache tiers:
+    # @cacheablePages matches `path /resource` and @cacheableApi matches
+    # `path /api/*`, so neither covers /goaccess/* and Souin will not cache a
+    # report that changes every 5 minutes.
+    #
+    # ⚠ CURRENTLY PUBLIC — NO AUTHENTICATION.
+    # The report exposes top URLs, referrers, user agents and visitor IPs
+    # (anonymized to /24 by --anonymize-ip in docker-compose.yml). Anyone who
+    # knows the path can read it.
+    #
+    # An attempt to put this behind basic_auth was reverted on 2026-09-17.
+    # `basic_auth` does NOT expand {env.*} placeholders: Caddy stores the literal
+    # string "{env.GOACCESS_HASH}" as the password, then rejects it at
+    # provisioning with "username and password are required" — a CONFIG-LOAD
+    # error, so it crash-loops Caddy and takes the WHOLE SITE down, not just this
+    # route. Verified with `caddy adapt`, which shows the placeholder unexpanded
+    # in the adapted JSON. Do not retry the env-var approach; it cannot work.
+    #
+    # Since this repo is PUBLIC, a committed bcrypt hash is the only way to use
+    # basic_auth here, and that puts a permanent offline-cracking target next to
+    # the hostname it guards.
+    #
+    # The clean fix, when this matters: drop basic_auth and restrict by SOURCE —
+    # `@external not remote_ip private_ranges` + `respond @external 403`, reached
+    # over an SSH tunnel (docs/deployment.md, Option A). No credential anywhere.
+    #
+    # Keep this a `route`, not a `handle`. Caddy re-sorts directives by type and
+    # `file_server` sorts BEFORE `respond` — including inside a `handle` block,
+    # which re-sorts its nested directives too. Written as a handle, the
+    # source-restricted form's 403 loses to file_server and the lockdown fails
+    # OPEN while looking correct. `route` is the only construct preserving
+    # written order.
+    route /goaccess/* {
+        # GoAccess's bundled JS calls eval() during App.initialize(), and embeds
+        # its icon font as a data: URI. Under the site-wide CSP below, both are
+        # blocked and the report dies on its loading screen showing
+        # "No authentication provided." — a misleading message that has nothing
+        # to do with auth: initialize() simply threw an EvalError first.
+        #
+        # This replaces the site CSP for this path ONLY. 'unsafe-eval' stays off
+        # everywhere else; do not move these relaxations into the global header
+        # block. The report is a static local file with no user input, so the
+        # weaker policy has no bearing on the app itself.
+        header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; font-src 'self' data:; img-src 'self' data:"
+
+        uri strip_prefix /goaccess
+        root * /srv/goaccess
+        file_server
     }
 
     rate_limit {

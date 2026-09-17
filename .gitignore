@@ -54,3 +54,7 @@ iconfactory/
 # graphify knowledge graph (regenerate with `graphify update .`)
 graphify-out/
 .claude/settings.json.graphify-bak
+
+# Environment files. This repo is PUBLIC — no secret belongs in it.
+.env
+.env.*

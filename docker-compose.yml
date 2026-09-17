@@ -43,9 +43,59 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      # Access log, written as JSON and rolled by Caddy itself (see the `log`
+      # block in the Caddyfile). The goaccess service reads this read-only.
+      - caddy_logs:/var/log/caddy
+      # The generated analytics report, served read-only at /goaccess/.
+      # Not depends_on: Caddy must come up even if goaccess is down — the route
+      # just 404s until the first report is written.
+      - goaccess_report:/srv/goaccess:ro
     restart: unless-stopped
     depends_on:
       - visoto
+    networks:
+      - visoto-network
+
+  # Web analytics. Re-parses Caddy's access log every 5 minutes into a static
+  # HTML report; Caddy serves it behind basic_auth (see the `route /goaccess/*`
+  # block in the Caddyfile). Deliberately NOT real-time:
+  # the WebSocket mode would need a CSP change (connect-src 'self') and an extra
+  # port for no benefit on a dashboard consulted occasionally.
+  goaccess:
+    image: allinurl/goaccess:1.9.4
+    container_name: goaccess
+    entrypoint: /bin/sh
+    command:
+      - -c
+      - |
+        set -u
+        mkdir -p /report /db
+        while true; do
+          if [ -s /logs/access.log ]; then
+            goaccess /logs/access.log \
+              -o /report/index.html \
+              --log-format=CADDY \
+              --date-format=%s \
+              --time-format=%s \
+              --persist --restore --db-path=/db \
+              --anonymize-ip \
+              --agent-list \
+              --real-os \
+              --no-global-config \
+              --exclude-ip=10.0.0.0-10.255.255.255 \
+              --exclude-ip=172.16.0.0-172.31.255.255 \
+              --exclude-ip=192.168.0.0-192.168.255.255 \
+              || echo "goaccess: parse failed, retrying next cycle"
+          else
+            echo "goaccess: waiting for /logs/access.log"
+          fi
+          sleep 300
+        done
+    volumes:
+      - caddy_logs:/logs:ro
+      - goaccess_report:/report
+      - goaccess_db:/db
+    restart: unless-stopped
     networks:
       - visoto-network
 
@@ -121,3 +171,10 @@ volumes:
   caddy_config:
   visoto_data:
   qlever_data:
+  # Caddy's JSON access log. Bounded by roll_size/roll_keep in the Caddyfile.
+  caddy_logs:
+  # The generated GoAccess HTML report (written by goaccess, read by caddy).
+  goaccess_report:
+  # GoAccess's on-disk database. This is what makes visitor totals survive log
+  # rotation and container restarts — without it every roll resets to zero.
+  goaccess_db:
