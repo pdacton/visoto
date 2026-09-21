@@ -58,3 +58,5 @@ graphify-out/
 # Environment files. This repo is PUBLIC — no secret belongs in it.
 .env
 .env.*
+# ...except the template, which documents the variable names and ships empty.
+!.env.example

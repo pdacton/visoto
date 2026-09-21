@@ -93,27 +93,41 @@ visoto.hutzli.org {
         ~^\s*rm  rm
         default  en
     }
-    # The cookie is the explicit user choice and outranks Accept-Language. Two
-    # matchers because an empty cookie is a real choice ("no language"), distinct
-    # from having no cookie at all.
-    @langCookie header_regexp lc Cookie (?:^|;\s*)site-lang=(de|fr|it|en|rm)(?:;|$)
-    @langCookieEmpty header_regexp le Cookie (?:^|;\s*)site-lang=(?:;|$)
-
-    # The unconditional line is the security boundary: request_header without a
-    # prefix REPLACES the field, so a client-supplied X-Site-Lang is always
-    # overwritten and can never inject a value outside the set above — which is
-    # what keeps the cache key space bounded. The conditional lines then refine
-    # it, later ones winning.
+    # The cookie is the explicit user choice and outranks Accept-Language, so it
+    # is resolved first and only falls back to {al_lang} when absent.
     #
-    # Note: the empty-value form below depends on Caddy setting a present-but-
-    # empty header rather than omitting it. Verify with
+    # Why one map rather than a base `request_header` refined by two matcher-
+    # scoped ones: the conditional form silently stopped applying in production —
+    # the unconditional line still ran (responses kept reporting
+    # `Vary: X-Site-Lang`), but the cookie lines never did, so every request was
+    # rendered from Accept-Language alone and the topbar picker appeared to do
+    # nothing. A single map has no matcher ordering to get wrong, and it keeps
+    # the one property that matters for safety: the field is always REPLACED
+    # from a closed value set, so a client-supplied X-Site-Lang can never be
+    # injected and the cache key space stays bounded.
+    #
+    # The empty cookie is a real choice ("no language"), distinct from having no
+    # cookie at all, so it maps to the empty string rather than falling through.
+    # That depends on Caddy setting a present-but-empty header rather than
+    # omitting it. Verify with
     #   curl -sI -H 'Cookie: site-lang=' https://visoto.hutzli.org/about.html
     # and check the response says `Vary: X-Site-Lang`. If Caddy omits it, visoto
     # degrades gracefully: it falls through to the cookie, still renders the
     # no-language variant, and only reports Vary: Accept-Language.
-    request_header X-Site-Lang {al_lang}
-    request_header @langCookie X-Site-Lang {re.lc.1}
-    request_header @langCookieEmpty X-Site-Lang ""
+    # One line per code rather than a capture group: a regexp capture would work
+    # here, but enumerating the closed set needs no placeholder-expansion
+    # semantics to be true, and the list has to be kept in sync with
+    # visoto.config either way.
+    map {http.request.header.Cookie} {site_lang} {
+        ~(?:^|;\s*)site-lang=de(?:;|$)  de
+        ~(?:^|;\s*)site-lang=fr(?:;|$)  fr
+        ~(?:^|;\s*)site-lang=it(?:;|$)  it
+        ~(?:^|;\s*)site-lang=en(?:;|$)  en
+        ~(?:^|;\s*)site-lang=rm(?:;|$)  rm
+        ~(?:^|;\s*)site-lang=(?:;|$)    ""
+        default                          {al_lang}
+    }
+    request_header X-Site-Lang {site_lang}
 
     # Compress responses (zstd preferred, gzip fallback). Ordered inside `cache`
     # via the global `order cache before encode`, so Souin stores the compressed

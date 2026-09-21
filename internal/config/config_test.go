@@ -549,18 +549,23 @@ func TestLoadDefaultsLanguages(t *testing.T) {
 //
 // It specifically guards the TOML trap that [[application.languages]]
 // introduces: every bare key written *after* an array-of-tables header belongs
-// to that table, not to [application]. Put gemini_api_key below the language
+// to that table, not to [application]. Move default_language below the language
 // blocks and it silently becomes a field of the last language instead, with no
 // parse error to notice. Asserting a scalar key alongside the languages catches
 // that reordering.
+//
+// default_language is the sentinel because it is the last *uncommented* scalar
+// in [application]; gemini_api_key used to serve this role, but it is now
+// commented out (its value comes from ${GEMINI_API_KEY} in .env) and a
+// commented key cannot detect anything.
 func TestExampleConfigParses(t *testing.T) {
 	cfg, err := Load("../../visoto.config.example")
 	if err != nil {
 		t.Fatalf("Load(visoto.config.example) error = %v", err)
 	}
 
-	if got := cfg.Application.GeminiAPIKey; got == "" {
-		t.Error("gemini_api_key did not land on [application] — a scalar key is below an array-of-tables")
+	if got := cfg.Application.DefaultLanguage; got == "" {
+		t.Error("default_language did not land on [application] — a scalar key is below an array-of-tables")
 	}
 	if got := cfg.Application.Port; got == 0 {
 		t.Error("port did not land on [application]")
@@ -584,5 +589,147 @@ func TestExampleConfigParses(t *testing.T) {
 	}
 	if !hasDefault {
 		t.Errorf("default_language %q is not among %v", cfg.Application.DefaultLanguage, codes)
+	}
+}
+
+// TestExpandEnvRefs covers the ${VAR} substitution that keeps endpoint
+// credentials out of visoto.config.
+func TestExpandEnvRefs(t *testing.T) {
+	t.Setenv("VISOTO_TEST_TOKEN", "s3cr3t")
+	t.Setenv("VISOTO_TEST_USER", "alice")
+
+	tests := []struct {
+		name    string
+		in      string
+		want    string
+		wantErr string
+	}{
+		{
+			name: "single reference",
+			in:   `access_token = "${VISOTO_TEST_TOKEN}"`,
+			want: `access_token = "s3cr3t"`,
+		},
+		{
+			name: "multiple references on separate keys",
+			in:   "username = \"${VISOTO_TEST_USER}\"\npassword = \"${VISOTO_TEST_TOKEN}\"",
+			want: "username = \"alice\"\npassword = \"s3cr3t\"",
+		},
+		{
+			name: "no references passes through untouched",
+			in:   `url = "https://example.com/query"`,
+			want: `url = "https://example.com/query"`,
+		},
+		{
+			// A bare "$VAR" is not a reference: only the braced form is, so
+			// SPARQL variables in magic_properties survive intact.
+			name: "bare dollar is not a reference",
+			in:   `q = "SELECT $x WHERE {}"`,
+			want: `q = "SELECT $x WHERE {}"`,
+		},
+		{
+			name:    "unset variable is an error, not an empty string",
+			in:      `access_token = "${VISOTO_TEST_DEFINITELY_UNSET}"`,
+			wantErr: "VISOTO_TEST_DEFINITELY_UNSET",
+		},
+		{
+			// visoto.config.example documents the syntax in comments; an unset
+			// name there must not block startup.
+			name: "commented reference is left alone",
+			in:   `# access_token = "${VISOTO_TEST_DEFINITELY_UNSET}"`,
+			want: `# access_token = "${VISOTO_TEST_DEFINITELY_UNSET}"`,
+		},
+		{
+			name: "trailing comment does not suppress the value before it",
+			in:   `access_token = "${VISOTO_TEST_TOKEN}"  # ${VISOTO_TEST_DEFINITELY_UNSET}`,
+			want: `access_token = "s3cr3t"  # ${VISOTO_TEST_DEFINITELY_UNSET}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := expandEnvRefs([]byte(tt.in))
+			if tt.wantErr != "" {
+				if err == nil {
+					t.Fatalf("expandEnvRefs() error = nil, want error containing %q", tt.wantErr)
+				}
+				if !strings.Contains(err.Error(), tt.wantErr) {
+					t.Errorf("expandEnvRefs() error = %q, want it to contain %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("expandEnvRefs() error = %v, want nil", err)
+			}
+			if string(got) != tt.want {
+				t.Errorf("expandEnvRefs() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+// TestExpandEnvRefs_EmptyIsError guards the specific failure mode this change
+// exists to prevent: an empty token silently becoming `Authorization: Bearer `.
+func TestExpandEnvRefs_EmptyIsError(t *testing.T) {
+	t.Setenv("VISOTO_TEST_EMPTY", "")
+
+	if _, err := expandEnvRefs([]byte(`access_token = "${VISOTO_TEST_EMPTY}"`)); err == nil {
+		t.Fatal("expandEnvRefs() error = nil for an empty variable, want an error")
+	}
+}
+
+// TestLoadExpandsEnvRefs verifies the substitution runs inside Load, ahead of
+// TOML parsing, so the endpoint struct receives the resolved secret.
+func TestLoadExpandsEnvRefs(t *testing.T) {
+	t.Setenv("VISOTO_TEST_TOKEN", "from-env")
+
+	configPath := filepath.Join(t.TempDir(), "test.toml")
+	configContent := `
+[application]
+port = 8080
+
+[[application.sparqlEndpoints]]
+name = "Local"
+url = "http://localhost:7001"
+slug = "local"
+access_token = "${VISOTO_TEST_TOKEN}"
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatalf("Failed to create test config file: %v", err)
+	}
+
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+
+	ep := cfg.Application.GetEndpointBySlug("local")
+	if ep == nil {
+		t.Fatal("GetEndpointBySlug(\"local\") = nil, want the configured endpoint")
+	}
+	if ep.AccessToken != "from-env" {
+		t.Errorf("AccessToken = %q, want %q", ep.AccessToken, "from-env")
+	}
+}
+
+// TestLoadFailsOnUnsetEnvRef ensures a missing secret stops startup rather than
+// producing a half-configured endpoint.
+func TestLoadFailsOnUnsetEnvRef(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "test.toml")
+	configContent := `
+[application]
+port = 8080
+
+[[application.sparqlEndpoints]]
+name = "Local"
+url = "http://localhost:7001"
+slug = "local"
+access_token = "${VISOTO_TEST_DEFINITELY_UNSET}"
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatalf("Failed to create test config file: %v", err)
+	}
+
+	if _, err := Load(configPath); err == nil {
+		t.Fatal("Load() error = nil for an unset env reference, want an error")
 	}
 }

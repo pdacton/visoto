@@ -3,6 +3,7 @@
 package config
 
 import (
+	"bytes"
 	"fmt"
 	"log/slog"
 	"os"
@@ -142,6 +143,58 @@ type LoggingConfig struct {
 	Output string `toml:"output"` // "stdout", "stderr", or file path
 }
 
+// envRefPattern matches a ${VAR} reference. The name is restricted to the
+// POSIX environment-variable charset so a TOML value containing a literal
+// "${" (a SPARQL snippet, say) cannot be mistaken for a reference.
+var envRefPattern = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
+
+// expandEnvRefs replaces every ${VAR} in the raw config with the value of that
+// environment variable.
+//
+// An unset or empty variable is a hard error, never an empty substitution: the
+// only values written this way are credentials, and silently expanding an
+// access_token to "" would send an `Authorization: Bearer ` header and fail at
+// the endpoint as a confusing 401 rather than here as a clear startup error.
+//
+// Comments are skipped, so documenting the syntax in visoto.config.example
+// ("# access_token = \"${MY_TOKEN}\"") does not demand that MY_TOKEN be set.
+// The scan is line-based and ignores the fact that a `#` can appear inside a
+// TOML string: treating such a line as a comment only means a ${VAR} to its
+// right is left unexpanded, and no real config puts a credential there.
+//
+// Values are injected verbatim. A secret containing a `"` would produce invalid
+// TOML and surface as a parse error on the next line, which is acceptable for
+// machine-generated tokens.
+func expandEnvRefs(data []byte) ([]byte, error) {
+	var missing []string
+
+	expandLine := func(line []byte) []byte {
+		return envRefPattern.ReplaceAllFunc(line, func(match []byte) []byte {
+			name := string(envRefPattern.FindSubmatch(match)[1])
+			val := os.Getenv(name)
+			if val == "" {
+				missing = append(missing, name)
+				return match
+			}
+			return []byte(val)
+		})
+	}
+
+	lines := bytes.Split(data, []byte("\n"))
+	for i, line := range lines {
+		if idx := bytes.IndexByte(line, '#'); idx >= 0 {
+			lines[i] = append(expandLine(line[:idx]), line[idx:]...)
+			continue
+		}
+		lines[i] = expandLine(line)
+	}
+
+	if len(missing) > 0 {
+		return nil, fmt.Errorf("environment variable(s) not set or empty: %s", strings.Join(missing, ", "))
+	}
+	return bytes.Join(lines, []byte("\n")), nil
+}
+
 // Load reads and parses the TOML config file
 // Returns loaded config with defaults for missing values
 func Load(configPath string) (*Config, error) {
@@ -169,8 +222,17 @@ func Load(configPath string) (*Config, error) {
 		return cfg, fmt.Errorf("failed to read config file %s: %w", configPath, err)
 	}
 
+	// Substitute ${VAR} references before parsing so secrets (endpoint
+	// access_token / username / password) can live in the environment instead
+	// of in the config file. Done on the raw text rather than per-field so it
+	// works for any key without the struct having to opt in.
+	expanded, err := expandEnvRefs(data)
+	if err != nil {
+		return cfg, fmt.Errorf("failed to resolve env references in %s: %w", configPath, err)
+	}
+
 	// Parse TOML format
-	if err := toml.Unmarshal(data, cfg); err != nil {
+	if err := toml.Unmarshal(expanded, cfg); err != nil {
 		return cfg, fmt.Errorf("failed to parse TOML config %s: %w", configPath, err)
 	}
 

@@ -33,6 +33,20 @@ PORT="7001"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATA_DIR="${SCRIPT_DIR}/../qlever/data"
 
+# Write token for SPARQL UPDATE / Graph Store uploads. Read from .env
+# (gitignored) rather than hardcoded; must match the access_token of the
+# visoto-qlever endpoint in visoto.config.
+ENV_FILE="${SCRIPT_DIR}/../.env"
+if [ -f "${ENV_FILE}" ]; then
+    # shellcheck disable=SC1090
+    set -a; . "${ENV_FILE}"; set +a
+fi
+if [ -z "${QLEVER_ACCESS_TOKEN:-}" ]; then
+    echo "Error: QLEVER_ACCESS_TOKEN is not set." >&2
+    echo "Copy .env.example to .env and set a token, or export it in your shell." >&2
+    exit 1
+fi
+
 # Ensure data directory exists
 mkdir -p "${DATA_DIR}"
 
@@ -81,7 +95,7 @@ docker run -d \
     -c 1G \
     -e 256M \
     -s 60s \
-    -a tOLk1n4gdSt00rYs
+    -a "${QLEVER_ACCESS_TOKEN}"
 
 echo "QLever started on port ${PORT}"
 echo "SPARQL endpoint: http://localhost:${PORT}"

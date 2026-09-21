@@ -24,6 +24,9 @@ NC='\033[0m' # No Color
 # Parse arguments
 SERVER="${1}"
 USER="${2:-$DEFAULT_USER}"
+# $2 is positional, so `./deploy.sh <server> --with-qlever` would otherwise set
+# USER to the flag and fail later as an opaque "cannot connect" error.
+case "$USER" in --*) USER="$DEFAULT_USER" ;; esac
 WITH_QLEVER=false
 
 for arg in "$@"; do
@@ -88,10 +91,29 @@ scp ${SCP_OPTS} "${SCRIPT_DIR}/Dockerfile" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/docker-compose.yml" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/Caddyfile" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/visoto.config" "${SSH_TARGET}:${REMOTE_DIR}/"
+# .env carries the secrets that visoto.config and docker-compose.yml reference
+# as ${VAR}. It is gitignored, so it must be copied explicitly — without it
+# compose cannot resolve QLEVER_ACCESS_TOKEN and the app exits at startup.
+if [ -f "${SCRIPT_DIR}/.env" ]; then
+    scp ${SCP_OPTS} "${SCRIPT_DIR}/.env" "${SSH_TARGET}:${REMOTE_DIR}/"
+    ssh ${SSH_OPTS} "${SSH_TARGET}" "chmod 600 ${REMOTE_DIR}/.env"
+elif [ "$WITH_QLEVER" = true ]; then
+    echo -e "${RED}Error: --with-qlever needs a .env with QLEVER_ACCESS_TOKEN${NC}"
+    echo "Copy .env.example to .env and set a token."
+    exit 1
+fi
 scp ${SCP_OPTS} "${SCRIPT_DIR}/go.mod" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/go.sum" "${SSH_TARGET}:${REMOTE_DIR}/"
 if [ "$WITH_QLEVER" = true ]; then
-    scp ${SCP_OPTS} "${SCRIPT_DIR}/qlever/data/init.ttl" "${SSH_TARGET}:${REMOTE_DIR}/qlever/data/"
+    # Write init.ttl on the remote rather than copying it: qlever/data/ is
+    # gitignored, so the file is absent on a fresh clone and the scp would abort
+    # the deploy. Its content is irrelevant — qlever-server refuses to start
+    # without an index, so qlever-init builds one from this single filler triple.
+    # Real data arrives later via /api/upload or a bulk reindex, and the
+    # `[ ! -f /data/visoto.index.pos ]` guard makes this a no-op on redeploy.
+    ssh ${SSH_OPTS} "${SSH_TARGET}" "cat > ${REMOTE_DIR}/qlever/data/init.ttl" <<'EOF'
+@prefix ex: <http://example.org/> . ex:init ex:status "bootstrapped" .
+EOF
 fi
 
 # Remove source directories first to avoid stale files from previous deploys

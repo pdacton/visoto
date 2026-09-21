@@ -777,6 +777,15 @@ func main() {
 
 	log := logger.Get()
 	if err != nil {
+		// A missing config file is survivable — defaults apply. A file that
+		// exists but cannot be read, parsed or env-resolved is not: it starts a
+		// server with no endpoints and, because the PORT override lives at the
+		// end of Load(), silently ignores PORT and binds the configured one.
+		if _, statErr := os.Stat("visoto.config"); statErr == nil {
+			log.Error("config file is present but could not be loaded",
+				slog.String("error", err.Error()))
+			os.Exit(1)
+		}
 		log.Warn("config file not found, using defaults",
 			slog.String("error", err.Error()))
 	} else {

@@ -14,6 +14,13 @@ services:
     environment:
       # Gin mode: debug, release, or test
       - GIN_MODE=release
+      # Resolves the ${QLEVER_ACCESS_TOKEN} reference in visoto.config. Empty
+      # default so the stack still starts without the qlever profile; config
+      # Load() fails loudly if the config references it while unset.
+      - QLEVER_ACCESS_TOKEN=${QLEVER_ACCESS_TOKEN:-}
+      # Same, for the ${GEMINI_API_KEY} reference (chat feature). Optional:
+      # leave gemini_api_key commented out in visoto.config to run without chat.
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8060/ping"]
@@ -122,6 +129,14 @@ services:
         else
           echo "Index already exists, skipping."
         fi
+        # This container runs as root, so everything above is root-owned, but
+        # qlever-server runs as the image's default (non-root) user. Without
+        # this chown it can read the index yet cannot create
+        # visoto.update-triples.tmp, so every --persist-updates write fails with
+        # "Permission denied" and the upload modal shows a 500.
+        owner=$(stat -c '%u:%g' /qlever/qlever-server)
+        echo "Handing /data to ${owner} (qlever-server's user)..."
+        chown -R "${owner}" /data
     volumes:
       - qlever_data:/data
       - ./qlever/data/init.ttl:/init/init.ttl:ro
@@ -148,8 +163,16 @@ services:
       - 256M
       - -s
       - 60s
+      # Write token, required for SPARQL UPDATE / Graph Store uploads. Supplied
+      # via .env (gitignored) so it is not committed; must match the
+      # access_token of the visoto-qlever endpoint in visoto.config.
       - -a
-      - tOLk1n4gdSt00rYs
+      - ${QLEVER_ACCESS_TOKEN:?QLEVER_ACCESS_TOKEN is not set - add it to .env (see .env.example)}
+      # Without this, SPARQL UPDATEs (including Graph Store Protocol uploads via
+      # /api/upload) live only in memory and are silently lost on restart — the
+      # bootstrap index still exists on disk, so qlever-init skips and the server
+      # comes back up healthy but empty.
+      - --persist-updates
     volumes:
       - qlever_data:/data
     working_dir: /data
