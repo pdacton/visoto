@@ -78,6 +78,13 @@ func validateRemoteURL(rawURL string, allowPrivate bool) error {
 	return nil
 }
 
+// rdfAccept is the Accept header sent when fetching a remote RDF URL. Without
+// it, namespace URIs that content-negotiate (purl.org's dc/dcterms, for one)
+// serve their HTML documentation page instead of RDF, and the endpoint then
+// rejects the upload as an unsupported media type. Turtle first, since every
+// target engine parses it.
+const rdfAccept = "text/turtle, application/n-triples;q=0.9, application/rdf+xml;q=0.8, application/ld+json;q=0.7, */*;q=0.1"
+
 // fetchRemoteURL GETs rawURL after SSRF validation, re-validating every
 // redirect hop so a public URL cannot bounce to an internal one.
 func fetchRemoteURL(rawURL string, allowPrivate bool) (*http.Response, error) {
@@ -92,7 +99,12 @@ func fetchRemoteURL(rawURL string, allowPrivate bool) (*http.Response, error) {
 			return validateRemoteURL(req.URL.String(), allowPrivate)
 		},
 	}
-	return client.Get(rawURL)
+	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", rdfAccept)
+	return client.Do(req)
 }
 
 // sendToEndpoint POSTs rdfBody to the Graph Store HTTP Protocol endpoint.

@@ -258,11 +258,6 @@ url   = "https://www.w3.org/2002/07/owl#"
 graph = "urn:ontology:w3/owl"
 
 [[ontologies]]
-name  = "SKOS"
-url   = "https://www.w3.org/2009/08/skos-reference/skos.rdf"
-graph = "urn:ontology:w3/skos"
-
-[[ontologies]]
 name  = "DC"
 url   = "http://purl.org/dc/elements/1.1/"
 graph = "urn:ontology:dc/elements"
