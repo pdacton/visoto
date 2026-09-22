@@ -144,7 +144,7 @@
     {{ template "sparqlGraph" (dict
         "id" "systemDiagram"
         "iris" (columnValues .QueryResults.systemDiagram "node")
-        "endpointUrl" .EndpointURL
+        "endpointUrl" .GraphQueryURL
         "title" (t "card.systemDiagram" "System diagram")
         "icon" "workflow"
         "hideTypeEdges" true

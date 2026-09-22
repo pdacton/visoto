@@ -37,6 +37,56 @@ Surfaced while auditing CLAUDE.md; none of these have been applied.
 
 ## History
 
+### 2026-09-15 — audit (`/maintenance audit`)
+
+Report-only. No code changed; three findings written to `.project/issues/`.
+
+**New security findings:**
+
+- **[HIGH] SPARQL injection on `/api/export-graphs`** —
+  `export-graphs-sparql-injection.md`. `?graph=` flows unvalidated into
+  `fmt.Sprintf("... GRAPH <%s> ...")` in `internal/export/construct.go:45`; a
+  `>` escapes the IRIREF term. Unauthenticated. **Proven against a running
+  instance:** a `>`-bearing value returns HTTP 200 where broken syntax gives
+  400, so the term is escaped and the tail parses. Reliable exfiltration is
+  engine-dependent (could not land a triple-leaking payload on the *cached*
+  LINDAS parser in the time available), but the primitive is present, and
+  write-credentialed endpoints run the injected query authenticated. Fix is the
+  one the codebase already has everywhere else: `sparql.IRITerm` / `ValidateIRI`
+  at the boundary. Also audit the `graphdb`/`gsp` export providers for the same
+  splicing.
+
+- **[MEDIUM] URL-mode upload: no timeout / size limit / rebinding guard** —
+  `upload-fetch-no-timeout-or-size-limit.md`. The SSRF guard itself is sound
+  (scheme allow-list, private-IP block, redirect re-validation). But
+  `fetchRemoteURL`'s `http.Client` has no `Timeout`, the fetched body streams to
+  the endpoint with no `io.LimitReader`, and validate-then-fetch resolves DNS
+  twice (rebinding TOCTOU). Unauthenticated `POST /api/upload`. Grouped: same 40
+  lines, same "checks the URL not the transfer" class.
+
+**Dependency / toolchain** — `dependency-toolchain-audit-2026-09-15.md`, updating
+the 2026-09-14 backlog:
+
+- **govulncheck**: 0 reachable. The 3 `x/crypto` module findings confirmed
+  unreachable (nothing imports ssh/openpgp; enters via gin -> validator ->
+  sha3).
+- **mcp-go v0.58.0 -> v1.0.0 is now actionable** — deferral lifted. Compiled
+  against v1.0.0: `go build ./...` clean, `go test ./...` all 16 packages pass.
+  The major does not break our tool surface. Recommend bumping (Dependabot will
+  likely open it); exercise the live MCP tools once after merge.
+- **`golang/protobuf`** and **`klauspost/compress`** reclassified
+  **non-actionable**: protobuf is google.golang.org/protobuf's compat shim;
+  compress is gin/binding -> mongo-driver bson. Neither is ours. Stop
+  re-flagging both.
+- **Go toolchain 1.25.14 -> 1.27.1** (two minors behind). Worth a dedicated PR
+  that also unpins `govulncheck` from v1.7.0; re-verify with `GOTOOLCHAIN=go<new>`.
+
+Clean surfaces confirmed (recorded so the next audit skips them): the `??` ->
+`<iri>` path (`SubstituteEntity` validates), resource-IRI intake
+(`resource.go:60`), `namedGraphsQuery` (inline guard), and cache correctness —
+every cacheable route uses `resolveEndpoint(false)` / `resolveQueryLang`
+(URL-pure, `markURLPure` asserts it); only uncached entry pages read the cookie.
+
 ### 2026-09-14 — cdn (`/maintenance cdn`, branch `maintenance/cdn-2026-09-14`)
 
 Bumped, with SRI recomputed and verified against the bytes the CDN actually

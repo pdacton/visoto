@@ -92,6 +92,12 @@ never read the endpoint cookie in them.
 Build resource links with `sparql.ResourceHref` (Go) or `visotoResourceHref`
 (JS), never by hand.
 
+Endpoint **URLs are server-side only** — the browser never receives one. All
+browser-side SPARQL (Graph Explorer, the schema diagram) posts to the
+same-origin proxy `POST /api/sparql?endpoint=<slug>` (`internal/sparqlproxy`),
+which is what makes the Docker-private QLever endpoint usable at all. Templates
+get the proxy path as `.GraphQueryURL`; there is no `.EndpointURL`.
+
 Note: LINDAS instance counts drift between calls — query counts live with
 `<sparql-async>`, never hard-code them in prose.
 
@@ -102,6 +108,12 @@ RDF graph visualization via [Graph Explorer](https://github.com/zazuko/graph-exp
 (`templates/partials/sparql-graph.html`); styling overrides in
 `static/css/ontodia_overrides.css`. See the `graph-explorer` skill and
 `docs/ontodia-graph-explorer-references.md`.
+
+It queries from the **browser**, so it is pointed at `.GraphQueryURL` (the
+`/api/sparql` proxy), never an endpoint URL. The proxy accepts only
+SELECT/ASK/CONSTRUCT/DESCRIBE and attaches endpoint credentials server-side.
+Queries stay POST: a GET puts the whole query in the URL and long link queries
+blow past the ~8 KB limit, silently losing every edge.
 
 ## Debugging
 

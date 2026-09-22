@@ -94,7 +94,7 @@
       }
 
       var AVAILABLE_ICONS = readIsland('-available-icons') || {};
-      var ENDPOINT_URL = readIsland('-endpoint-url') || 'https://lindas.cz-aws.net/query/';
+      var ENDPOINT_URL = readIsland('-endpoint-url') || '/api/sparql';
 
       // Build the starting IRI list: iris[] + optional single iri + ?iri= URL param.
       var startIris = [];

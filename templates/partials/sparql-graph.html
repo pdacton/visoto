@@ -3,19 +3,21 @@
   that draws and lays out a set of IRIs at initialization.
 
   Usage:
-    {{ template "sparqlGraph" (dict "iris" .SomeIRIList "endpointUrl" .EndpointURL) }}
+    {{ template "sparqlGraph" (dict "iris" .SomeIRIList "endpointUrl" .GraphQueryURL) }}
 
     {{ template "sparqlGraph" (dict
           "id" "mygraph"
           "iris" .SomeIRIList
-          "endpointUrl" .EndpointURL
+          "endpointUrl" .GraphQueryURL
           "height" "600px") }}
 
   Parameters (via dict):
     - id: (optional) unique DOM id suffix; allows multiple graphs on one page. Default "sparql-graph".
     - iris: (optional) a []string of IRIs to draw and lay out at initialization.
     - iri: (optional) a single starting IRI; convenience alias appended to iris.
-    - endpointUrl: (optional) SPARQL endpoint URL. Pass .EndpointURL. Falls back to a default.
+    - endpointUrl: (optional) URL the BROWSER posts SPARQL to. Pass .GraphQueryURL, which is
+      the same-origin /api/sparql proxy — not the endpoint itself (the upstream host and its
+      credentials stay server-side; see internal/sparqlproxy). Falls back to /api/sparql.
     - height: (optional) CSS height for the container. Default "calc(100vh - 200px)".
     - hideTypeEdges: (optional) hide rdf:type / rdfs:subClassOf edges. Use on architecture
       diagrams, where one type edge per node buries the relations that matter.
@@ -84,7 +86,7 @@
     </div>
   </div>
 
-  <!-- Data islands: available icon names, resolved endpoint URL, starting IRIs, height. -->
+  <!-- Data islands: available icon names, the same-origin SPARQL proxy URL, starting IRIs, height. -->
   <template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>
   <template id="{{ $id }}-endpoint-url">{{ $endpointUrl | toJSON }}</template>
   <template id="{{ $id }}-iris">{{ $iris | toJSON }}</template>

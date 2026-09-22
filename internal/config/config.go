@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"regexp"
 	"strconv"
@@ -113,13 +114,29 @@ type SparqlEndpoint struct {
 	// wholesale by the footer's raw-data dump and by the chat resource-data
 	// embed. Without these tags encoding/json exports the field names and
 	// these secrets end up in the HTML of every page. They are only ever read
-	// server-side (internal/upload, internal/export) to set an Authorization
-	// header, so nothing needs them on the wire.
+	// server-side (internal/upload, internal/export, internal/sparqlproxy) via
+	// ApplyAuth below to set an Authorization header, so nothing needs them on
+	// the wire.
 	Username       string `toml:"username"     json:"-"` // Optional basic auth username for write operations
 	Password       string `toml:"password"     json:"-"` // Optional basic auth password for write operations
 	AccessToken    string `toml:"access_token" json:"-"` // Optional Bearer token for write operations (takes precedence over username/password)
 	SearchProvider string `toml:"search_provider"`       // FTS provider: "stardog" (default), "graphdb" (Simple FTS), "graphdb-lucene" (auto-discovered Lucene connectors), "fuseki", "qlever", "sparql-query"
 	ExportProvider string `toml:"export_provider"`       // optional export provider override: "graphdb", "gsp", "construct"
+}
+
+// ApplyAuth sets the Authorization header on req from the endpoint's
+// credentials. Priority: Bearer access_token > Basic username/password > none.
+//
+// It lives here, next to the json:"-" fields above, because it is the only
+// thing those secrets exist for — internal/export, internal/upload and
+// internal/sparqlproxy all funnel through it rather than repeating the switch.
+func (e *SparqlEndpoint) ApplyAuth(req *http.Request) {
+	switch {
+	case e.AccessToken != "":
+		req.Header.Set("Authorization", "Bearer "+e.AccessToken)
+	case e.Username != "":
+		req.SetBasicAuth(e.Username, e.Password)
+	}
 }
 
 // RDFConfig holds RDF-related settings

@@ -2,21 +2,7 @@ package export
 
 import (
 	"io"
-	"net/http"
-
-	"hutzli.org/visoto/internal/config"
 )
-
-// applyAuth sets the Authorization header on req based on endpoint credentials.
-// Priority: Bearer access_token > Basic username/password > none.
-func applyAuth(req *http.Request, ep *config.SparqlEndpoint) {
-	switch {
-	case ep.AccessToken != "":
-		req.Header.Set("Authorization", "Bearer "+ep.AccessToken)
-	case ep.Username != "":
-		req.SetBasicAuth(ep.Username, ep.Password)
-	}
-}
 
 // multiReadCloser wraps io.MultiReader with a Close() that closes all underlying bodies.
 type multiReadCloser struct {

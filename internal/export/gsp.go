@@ -56,7 +56,7 @@ func gspFetch(ep *config.SparqlEndpoint, iri, format string) (io.ReadCloser, err
 		return nil, ErrNotApplicable
 	}
 	req.Header.Set("Accept", format)
-	applyAuth(req, ep)
+	ep.ApplyAuth(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

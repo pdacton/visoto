@@ -79,7 +79,7 @@ func graphdbFetch(repoBase, iri, format string, ep *config.SparqlEndpoint) (io.R
 		return nil, err
 	}
 	req.Header.Set("Accept", format)
-	applyAuth(req, ep)
+	ep.ApplyAuth(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

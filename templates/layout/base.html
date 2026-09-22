@@ -151,7 +151,7 @@
                  toggle switches to it; the graph is lazily initialized on first show so
                  Graph Explorer measures a visible (non-zero-size) container. -->
             <div id="resource-graph-view" class="d-none">
-              {{ template "sparqlGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+              {{ template "sparqlGraph" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "lazy" true) }}
             </div>
             <!-- Data view: every triple touching the current resource, in one table.
                  The query is expensive and this view is used infrequently, so it is
@@ -241,7 +241,7 @@
                  Sync and async ids are separate namespaces and cannot actually collide. -->
             <div id="resource-schema-view" class="d-none">
               <div class="mb-3">
-                {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+                {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "lazy" true) }}
               </div>
 
               <!-- Sub/superclasses are walked TRANSITIVELY (rdfs:subClassOf+), not one

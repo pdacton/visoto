@@ -684,7 +684,7 @@ out a set of IRIs at initialization.
 | `id` | `string` | `"sparql-graph"` | DOM id suffix; allows multiple graphs on one page. |
 | `iris` | `[]string` | — | IRIs to draw at initialization. |
 | `iri` | `string` | — | Convenience alias for a single starting IRI, appended to `iris`. |
-| `endpointUrl` | `string` | fallback | SPARQL endpoint URL — pass `.EndpointURL`. |
+| `endpointUrl` | `string` | fallback | URL the browser posts SPARQL to — pass `.GraphQueryURL`, the same-origin `/api/sparql` proxy. Never an endpoint URL: the upstream host and its credentials stay server-side (`internal/sparqlproxy`). |
 | `height` | `string` | `"calc(100vh - 200px)"` | CSS height of the container. |
 | `lazy` | `bool` | `false` | Defer initialization until a `graph:init` event fires on the `-root` element. |
 
@@ -703,7 +703,7 @@ derives the schema from a sample of up to 50 instances; for an instance it deriv
 from that one resource, anchored on a detected class.
 
 ```html
-{{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+{{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "lazy" true) }}
 ```
 
 ### `sparqlMetric`

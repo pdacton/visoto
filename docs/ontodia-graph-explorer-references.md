@@ -51,7 +51,9 @@ var dataProvider = new GE.SparqlDataProvider({
 
 ### SparqlDataProvider Options
 **Constructor Options:**
-- `endpointUrl` - SPARQL endpoint URL (required)
+- `endpointUrl` - URL the browser posts SPARQL to (required). In Visoto this is
+  always the same-origin `/api/sparql?endpoint=<slug>` proxy (`.GraphQueryURL`),
+  never the endpoint itself — see `internal/sparqlproxy`.
 - `queryMethod` - `SparqlQueryMethod.GET` or `.POST`
 - `acceptBlankNodes` - Boolean (default: depends on settings)
 - `imagePropertyUris` - Array of property URIs for images

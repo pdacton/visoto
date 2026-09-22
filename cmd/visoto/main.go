@@ -28,6 +28,7 @@ import (
 	"hutzli.org/visoto/internal/resource"
 	"hutzli.org/visoto/internal/search"
 	"hutzli.org/visoto/internal/sparql"
+	"hutzli.org/visoto/internal/sparqlproxy"
 	"hutzli.org/visoto/internal/templates"
 	"hutzli.org/visoto/internal/upload"
 )
@@ -250,7 +251,23 @@ func stampEndpointData(c *gin.Context, data *parser.TemplateData) {
 		data.SelectedEndpointSlug = ep.Slug
 		data.EndpointTag = ep.Tag
 	}
-	data.EndpointURL = activeEndpointURL(c)
+	data.GraphQueryURL = proxyEndpointURL(c)
+}
+
+// proxyEndpointURL is the URL the BROWSER uses for SPARQL — the same-origin
+// /api/sparql route, not the endpoint itself.
+//
+// Graph Explorer queries from the browser, so handing it ep.URL cannot work for
+// an endpoint the browser cannot reach: the local QLever lives on a private
+// Docker network. Routing every browser-side query through Visoto also keeps
+// the upstream host and its credentials server-side. See internal/sparqlproxy.
+func proxyEndpointURL(c *gin.Context) string {
+	ep := activeEndpoint(c)
+	if ep == nil || ep.Slug == "" {
+		// Bare config with no endpoint list; the proxy falls back on its own.
+		return sparqlproxy.Path
+	}
+	return sparqlproxy.Path + "?endpoint=" + url.QueryEscape(ep.Slug)
 }
 
 // endpointTemplateData is stampEndpointData's counterpart for handlers that
@@ -891,6 +908,12 @@ func main() {
 	mcpURL := fmt.Sprintf("http://localhost:%d/mcp", cfg.Application.Port)
 	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey, mcpURL))
 	router.POST("/api/upload", upload.UploadHandler(&cfg.Application))
+	// Browser-side SPARQL (Graph Explorer, schema diagram). Deliberately takes
+	// neither epFromURL nor langFromURL, unlike every other /api route: the
+	// response depends on the request BODY, so it is not a function of the URL
+	// and must never be marked cacheable. The handler resolves its own slug
+	// from the URL, which keeps the endpoint cookie provably unread.
+	router.POST(sparqlproxy.Path, sparqlproxy.New(&cfg.Application, cfg.GetTimeout()).Handler())
 	router.GET("/api/named-graphs", upload.NamedGraphsHandler(&cfg.Application))
 	router.DELETE("/api/named-graphs", upload.DeleteNamedGraphHandler(&cfg.Application))
 	router.GET("/api/export-graphs", upload.ExportNamedGraphsHandler(&cfg.Application))

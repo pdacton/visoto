@@ -291,6 +291,14 @@ visoto.hutzli.org {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "strict-origin-when-cross-origin"
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://getbootstrap.com; style-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://ld.admin.ch https://lindas.admin.ch https://int.lindas.admin.ch https://test.lindas.admin.ch https://lindas.cz-aws.net https://lindas.int.cz-aws.net https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://generativelanguage.googleapis.com"
+        # connect-src deliberately lists NO SPARQL endpoint hosts. The browser
+        # no longer talks to any endpoint directly: Graph Explorer and the
+        # schema diagram post to the same-origin /api/sparql proxy
+        # (internal/sparqlproxy), which is the only way the Docker-private
+        # QLever endpoint can be queried at all. Adding a new endpoint to
+        # visoto.config therefore needs NO change here — if a graph fails with
+        # "Failed to fetch", the fix is to route it through the proxy, not to
+        # re-add its host. The remaining entries are CDN script/style origins.
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://getbootstrap.com; style-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com"
     }
 }

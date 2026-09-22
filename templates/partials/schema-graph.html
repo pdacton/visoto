@@ -12,12 +12,14 @@
       overrides).
 
   Usage:
-    {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .EndpointURL "lazy" true) }}
+    {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "lazy" true) }}
 
   Parameters (via dict):
     - id: (optional) unique DOM id suffix; allows multiple diagrams on one page. Default "schema-graph".
     - iri: the resource IRI to derive the schema for. Falls back to the ?iri= URL param.
-    - endpointUrl: (optional) SPARQL endpoint URL. Pass .EndpointURL. Falls back to a default.
+    - endpointUrl: (optional) URL the BROWSER posts SPARQL to. Pass .GraphQueryURL, which is
+      the same-origin /api/sparql proxy — not the endpoint itself (the upstream host and its
+      credentials stay server-side; see internal/sparqlproxy). Falls back to /api/sparql.
     - height: (optional) CSS height for the container. Default "calc(100vh - 200px)".
     - lazy: (optional) defer init until a 'schema:init' event fires on the -root element.
     - title/icon: (optional) card header title and Lucide icon. Defaults "Schema" / "shapes".

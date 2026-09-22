@@ -107,6 +107,17 @@ func fetchRemoteURL(rawURL string, allowPrivate bool) (*http.Response, error) {
 	return client.Do(req)
 }
 
+// normalizeGraphURI trims whitespace and strips the angle brackets an IRI is
+// conventionally written with. The Graph Store protocol takes the bare IRI in
+// the ?graph parameter; passing <...> through makes QLever fail to parse it.
+func normalizeGraphURI(raw string) string {
+	s := strings.TrimSpace(raw)
+	for strings.HasPrefix(s, "<") && strings.HasSuffix(s, ">") && len(s) > 1 {
+		s = strings.TrimSpace(s[1 : len(s)-1])
+	}
+	return s
+}
+
 // sendToEndpoint POSTs rdfBody to the Graph Store HTTP Protocol endpoint.
 // graphURI is the target named graph; contentType must be a valid RDF MIME type.
 // Auth priority: Bearer access_token > Basic username/password > none.
@@ -130,12 +141,7 @@ func sendToEndpoint(ep *config.SparqlEndpoint, graphURI, contentType string, rdf
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", contentType)
-	switch {
-	case ep.AccessToken != "":
-		req.Header.Set("Authorization", "Bearer "+ep.AccessToken)
-	case ep.Username != "":
-		req.SetBasicAuth(ep.Username, ep.Password)
-	}
+	ep.ApplyAuth(req)
 
 	log.Debug("uploading RDF to endpoint",
 		slog.String("url", targetURL),
@@ -176,7 +182,7 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		log := logger.Get()
 
 		endpointSlug := c.PostForm("endpoint")
-		graphURI := strings.TrimSpace(c.PostForm("graphURI"))
+		graphURI := normalizeGraphURI(c.PostForm("graphURI"))
 		remoteURL := strings.TrimSpace(c.PostForm("url"))
 
 		ep := endpointFromSlug(cfg, endpointSlug)
@@ -289,12 +295,7 @@ func sparqlQuery(ep *config.SparqlEndpoint, query string) ([]map[string]struct {
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", "application/sparql-results+json")
-	switch {
-	case ep.AccessToken != "":
-		req.Header.Set("Authorization", "Bearer "+ep.AccessToken)
-	case ep.Username != "":
-		req.SetBasicAuth(ep.Username, ep.Password)
-	}
+	ep.ApplyAuth(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -392,12 +393,7 @@ func DeleteNamedGraphHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 			return
 		}
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		switch {
-		case ep.AccessToken != "":
-			req.Header.Set("Authorization", "Bearer "+ep.AccessToken)
-		case ep.Username != "":
-			req.SetBasicAuth(ep.Username, ep.Password)
-		}
+		ep.ApplyAuth(req)
 
 		log.Debug("deleting named graph via SPARQL Update", slog.String("query", updateQuery), slog.String("endpoint", ep.URL))
 

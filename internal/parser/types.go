@@ -23,6 +23,6 @@ type TemplateData struct {
 	SelectedEndpointName string                        // Name of the active endpoint, so the topbar can server-render <option selected> (don't rely on JS/cookie timing)
 	SelectedEndpointSlug string                        // Slug of the active endpoint — the only identifier used on the wire (?endpoint=, cookie)
 	EndpointTag          string                        // Tag of the currently selected endpoint (e.g. "lindas", "stadtzuerich")
-	EndpointURL          string                        // Resolved URL of the currently selected endpoint (for client-side use, e.g. Graph Explorer)
+	GraphQueryURL        string                        // Same-origin proxy path for browser-side SPARQL (Graph Explorer, schema diagram). NOT the endpoint URL: the upstream host and its credentials deliberately never reach the browser. See internal/sparqlproxy.
 	BaseURL              string                        // Public base URL of this instance derived from the request (e.g. https://visoto.example.org)
 }
