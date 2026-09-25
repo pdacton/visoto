@@ -733,3 +733,44 @@ access_token = "${VISOTO_TEST_DEFINITELY_UNSET}"
 		t.Fatal("Load() error = nil for an unset env reference, want an error")
 	}
 }
+
+// TestLoadReadsDotEnv ensures ${VAR} references resolve from a .env beside the
+// config file, and that a variable already in the environment wins over it.
+func TestLoadReadsDotEnv(t *testing.T) {
+	os.Unsetenv("VISOTO_TEST_DOTENV_TOKEN")
+	t.Cleanup(func() { os.Unsetenv("VISOTO_TEST_DOTENV_TOKEN") })
+	t.Setenv("VISOTO_TEST_DOTENV_USER", "from-shell")
+
+	dir := t.TempDir()
+	dotEnv := "# comment\nexport VISOTO_TEST_DOTENV_TOKEN=\"from-dotenv\"\nVISOTO_TEST_DOTENV_USER=from-dotenv\n"
+	if err := os.WriteFile(filepath.Join(dir, ".env"), []byte(dotEnv), 0600); err != nil {
+		t.Fatalf("Failed to create .env: %v", err)
+	}
+	configPath := filepath.Join(dir, "test.toml")
+	configContent := `
+[[application.sparqlEndpoints]]
+name = "Local"
+url = "http://localhost:7001"
+slug = "local"
+access_token = "${VISOTO_TEST_DOTENV_TOKEN}"
+username = "${VISOTO_TEST_DOTENV_USER}"
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatalf("Failed to create test config file: %v", err)
+	}
+
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load() error = %v, want nil", err)
+	}
+	ep := cfg.Application.GetEndpointBySlug("local")
+	if ep == nil {
+		t.Fatal("GetEndpointBySlug(\"local\") = nil, want the configured endpoint")
+	}
+	if ep.AccessToken != "from-dotenv" {
+		t.Errorf("AccessToken = %q, want %q", ep.AccessToken, "from-dotenv")
+	}
+	if ep.Username != "from-shell" {
+		t.Errorf("Username = %q, want %q (environment must win over .env)", ep.Username, "from-shell")
+	}
+}

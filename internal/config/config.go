@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -212,6 +213,46 @@ func expandEnvRefs(data []byte) ([]byte, error) {
 	return bytes.Join(lines, []byte("\n")), nil
 }
 
+// loadDotEnv sets variables from a KEY=VALUE .env file so ${VAR} references
+// resolve under a plain `go run` — docker compose reads .env itself, but nothing
+// else does. A variable already present in the environment is never
+// overwritten: the real environment (compose, CI, the shell) wins. A missing
+// file is not an error.
+//
+// Supported: blank lines, `#` comments, an optional `export ` prefix, and
+// values wrapped in matching single or double quotes (stripped, no escapes).
+func loadDotEnv(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	for _, line := range strings.Split(string(data), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		line = strings.TrimPrefix(line, "export ")
+		key, val, ok := strings.Cut(line, "=")
+		if !ok {
+			continue
+		}
+		key, val = strings.TrimSpace(key), strings.TrimSpace(val)
+		if len(val) >= 2 && (val[0] == '"' || val[0] == '\'') && val[len(val)-1] == val[0] {
+			val = val[1 : len(val)-1]
+		}
+		if _, set := os.LookupEnv(key); set || key == "" {
+			continue
+		}
+		if err := os.Setenv(key, val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Load reads and parses the TOML config file
 // Returns loaded config with defaults for missing values
 func Load(configPath string) (*Config, error) {
@@ -242,7 +283,12 @@ func Load(configPath string) (*Config, error) {
 	// Substitute ${VAR} references before parsing so secrets (endpoint
 	// access_token / username / password) can live in the environment instead
 	// of in the config file. Done on the raw text rather than per-field so it
-	// works for any key without the struct having to opt in.
+	// works for any key without the struct having to opt in. The .env next to
+	// the config file is loaded first so a local `go run` sees the same secrets
+	// docker compose would inject.
+	if err := loadDotEnv(filepath.Join(filepath.Dir(configPath), ".env")); err != nil {
+		return cfg, fmt.Errorf("failed to read .env: %w", err)
+	}
 	expanded, err := expandEnvRefs(data)
 	if err != nil {
 		return cfg, fmt.Errorf("failed to resolve env references in %s: %w", configPath, err)
