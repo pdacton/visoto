@@ -432,3 +432,19 @@ func indexOfSubstring(s, substr string) int {
 	}
 	return -1
 }
+
+// TestExtractKeepsAbsoluteIRIs guards against the HTML tokenizer reading
+// `<http://…>` as a tag: the IRI used to vanish, sending `?x  ?o` to the endpoint.
+func TestExtractKeepsAbsoluteIRIs(t *testing.T) {
+	const body = `SELECT * WHERE { ?x <http://ex.org/p> ?g . ?g <urn:x:y> <https://ex.org/o#frag> FILTER(?n < 5) }`
+	els, err := ExtractAsyncElements(`<div><sparql-async id="a">` + body + `</sparql-async></div>`)
+	if err != nil {
+		t.Fatalf("ExtractAsyncElements() error = %v", err)
+	}
+	if len(els) != 1 {
+		t.Fatalf("got %d elements, want 1", len(els))
+	}
+	if els[0].Content != body {
+		t.Errorf("Content = %q, want %q", els[0].Content, body)
+	}
+}

@@ -2,6 +2,7 @@ package parser
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"golang.org/x/net/html"
@@ -10,10 +11,24 @@ import (
 
 // ----- Helper functions for element extraction (DOM parsing) -----
 
+// iriOpenerRe matches the `<scheme:` that opens an absolute IRI in a query
+// body, e.g. `<http://…>` or `<urn:…>`. The HTML tokenizer reads such a `<`
+// as the start of an element named "http:" and drops the IRI from the text, so
+// `?x <http://ex.org/p> ?o` reached the endpoint as `?x  ?o`. No real tag name
+// contains a colon, so escaping these is safe for the whole document.
+var iriOpenerRe = regexp.MustCompile(`<([A-Za-z][A-Za-z0-9+.-]*:)`)
+
+// parseTemplateHTML is html.Parse for template content: it escapes IRI
+// openers first so query text inside the custom elements survives intact
+// (the parser decodes `&lt;` back to `<` in text nodes).
+func parseTemplateHTML(content string) (*html.Node, error) {
+	return html.Parse(strings.NewReader(iriOpenerRe.ReplaceAllString(content, "&lt;$1")))
+}
+
 // extractElements parses template as HTML DOM and extracts embedded SPARQL custom elements
 // calls parseElement for each element to extract attributes and content
 func extractElements(templateContent string) ([]ExtractedElement, error) {
-	doc, err := html.Parse(strings.NewReader(templateContent))
+	doc, err := parseTemplateHTML(templateContent)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
@@ -274,7 +289,7 @@ func flagSet(attrs map[string]string, name string) bool {
 // This walks the DOM itself rather than going through extractElements: inheritance
 // needs the parent chain, which a flat tag-name scan has already discarded.
 func ExtractColumnElements(content string) ([]ExtractedElement, error) {
-	doc, err := html.Parse(strings.NewReader(content))
+	doc, err := parseTemplateHTML(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
@@ -310,7 +325,7 @@ func ExtractColumnElements(content string) ([]ExtractedElement, error) {
 // difference between the container and its children makes that typo easy and its
 // symptom (a column that silently never appears) hard to read.
 func ExtractColumnContainers(content string) ([]ExtractedElement, error) {
-	doc, err := html.Parse(strings.NewReader(content))
+	doc, err := parseTemplateHTML(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}
