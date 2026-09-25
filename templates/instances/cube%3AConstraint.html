@@ -56,7 +56,7 @@
                             ?shape sh:path ?dimension .
                             OPTIONAL { ?shape a ?dimType_ . FILTER(?dimType_ != sh:PropertyShape) }
                             OPTIONAL { ?shape schema:name ?name_ .
-                                       FILTER(lang(?name_) = visoto:dispLang || lang(?name_) = "") }
+                                       FILTER(langMatches(lang(?name_), visoto:dispLang) || !langMatches(lang(?name_), "*")) }
                             OPTIONAL { ?shape qudt:scaleType ?scaleType_ }
                             OPTIONAL { ?shape sh:datatype ?datatype_ }
                             OPTIONAL { ?shape qudt:unit ?unit_ }

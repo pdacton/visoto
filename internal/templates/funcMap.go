@@ -34,6 +34,7 @@ var funcMap = template.FuncMap{
 	"columnIconVars":  columnIconVars,
 	"columnBadgeVars": columnBadgeVars,
 	"columnGroupVar":  columnGroupVar,
+	"contains":        strings.Contains, // {{ if contains .SearchProvider "graphdb" }}
 }
 
 // defaultTemplateSet is the parse-time placeholder for {{ templateSet }}. Load

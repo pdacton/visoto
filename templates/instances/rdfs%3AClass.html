@@ -20,7 +20,7 @@
           SELECT ?instance ?description WHERE {
             ?instance a ?? .
             OPTIONAL { ?instance visoto:description ?description .
-              FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
+              FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }
           }
         </sparql-async>
         <sparql-columns for="classInstances">

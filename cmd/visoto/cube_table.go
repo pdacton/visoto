@@ -133,7 +133,7 @@ SELECT ?dimension (SAMPLE(?name_) AS ?name) (SAMPLE(?order_) AS ?order) WHERE {
   FILTER(isIRI(?dimension))
   OPTIONAL {
     ?shape <http://schema.org/name> ?preferred_ .
-    FILTER(lang(?preferred_) = visoto:dispLang || lang(?preferred_) = "")
+    FILTER(langMatches(lang(?preferred_), visoto:dispLang) || !langMatches(lang(?preferred_), "*"))
   }
   OPTIONAL { ?shape <http://schema.org/name> ?any_ }
   BIND(COALESCE(?preferred_, ?any_) AS ?name_)

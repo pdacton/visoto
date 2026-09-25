@@ -65,7 +65,7 @@
     # carrying all four languages contributes exactly one string per domain.
     OPTIONAL { ?instance schch:termDomain ?d_ .
                OPTIONAL { ?d_ schema:name ?dn_ .
-                          FILTER(lang(?dn_) = visoto:dispLang || lang(?dn_) = "en" || lang(?dn_) = "") }
+                          FILTER(langMatches(lang(?dn_), visoto:dispLang) || langMatches(lang(?dn_), "en") || !langMatches(lang(?dn_), "*")) }
                BIND(COALESCE(?dn_, REPLACE(STR(?d_), "^.*/", "")) AS ?domain_) }
     OPTIONAL { ?instance schema:description ?definition_ .
                FILTER(lang(?definition_) = visoto:dispLang) }

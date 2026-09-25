@@ -81,7 +81,7 @@
                           WHERE {
                             ?? meta:isUsedIn ?cube .
                             OPTIONAL { ?cube dct:creator/schema:name ?creatorName .
-                                       FILTER(lang(?creatorName) = "en" || lang(?creatorName) = "") }
+                                       FILTER(langMatches(lang(?creatorName), "en") || !langMatches(lang(?creatorName), "*")) }
                             OPTIONAL { ?cube dcat:theme/schema:name ?themeName .
                                        FILTER(lang(?themeName) = visoto:dispLang) }
                             OPTIONAL { ?cube schema:creativeWorkStatus/schema:name ?st .

@@ -250,6 +250,7 @@ func stampEndpointData(c *gin.Context, data *parser.TemplateData) {
 		data.SelectedEndpointName = ep.Name
 		data.SelectedEndpointSlug = ep.Slug
 		data.EndpointTag = ep.Tag
+		data.SearchProvider = ep.SearchProvider
 	}
 	data.GraphQueryURL = proxyEndpointURL(c)
 }
@@ -278,6 +279,7 @@ func endpointTemplateData(c *gin.Context, h gin.H) gin.H {
 		h["SelectedEndpointName"] = ep.Name
 		h["SelectedEndpointSlug"] = ep.Slug
 		h["EndpointTag"] = ep.Tag
+		h["SearchProvider"] = ep.SearchProvider
 	}
 	return h
 }

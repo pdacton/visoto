@@ -25,7 +25,7 @@
           SELECT DISTINCT ?class ?description WHERE {
             ?class a ?? .
             OPTIONAL { ?class visoto:description ?description .
-              FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
+              FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }
           }
           ORDER BY ?class
           LIMIT 10000

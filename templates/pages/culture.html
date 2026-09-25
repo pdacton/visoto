@@ -337,7 +337,7 @@
       ?domain schema:name ?domainName .
       FILTER (?year &gt;= "1850"^^xsd:gYear &amp;&amp; ?year &lt;= "1875"^^xsd:gYear)
       FILTER (xsd:decimal(?amountCHF) &gt; 0)
-      FILTER (lang(?domainName) = "")
+      FILTER (!langMatches(lang(?domainName), "*"))
     }
   } ORDER BY ?year DESC(xsd:decimal(?amountCHF))
 </sparql-async>

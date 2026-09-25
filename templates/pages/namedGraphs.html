@@ -9,6 +9,24 @@
 <div class="row">
   <div class="col">
 
+    <!-- named graphs with their classes (lazy-loaded so the page shell renders before the heavy graph scan) -->
+    <div class="mb-3">
+      <sparql-async id="namedGraphs">
+        SELECT DISTINCT ?graph ?class (STR(?class) AS ?iri) WHERE {
+          GRAPH ?graph { ?instance a ?class }
+        }
+      </sparql-async>
+      <sparql-columns for="namedGraphs">
+        <sparql-column var="graph" group badge></sparql-column>
+        <sparql-column var="class" icon></sparql-column>
+      </sparql-columns>
+      {{ template "sparqlAsyncTable" (dict
+          "queryId" "namedGraphs"
+          "title" (t "card.namedGraphsAndClasses" "Named Graphs and Classes")
+          "icon" "package")
+      }}
+    </div>
+
     <!-- named graphs with any attributes the graph IRI itself carries -->
     <div class="mb-3">
       <sparql-async id="namedGraphsList">
@@ -25,30 +43,24 @@
         }
       </sparql-async>
       <sparql-columns for="namedGraphsList">
-        <sparql-column var="graph" group filter></sparql-column>
+        <sparql-column var="graph" group filter badge></sparql-column>
       </sparql-columns>
-      {{ template "sparqlAsyncTable" (dict
-          "queryId" "namedGraphsList"
-          "title" (t "card.namedGraphsAttributes" "Named Graphs & Attributes")
-          "icon" "package")
-      }}
-    </div>
-
-    <!-- named graphs with their classes (lazy-loaded so the page shell renders before the heavy graph scan) -->
-    <div class="mb-3">
-      <sparql-async id="namedGraphs">
-        SELECT ?graph ?class (STR(?class) AS ?iri) WHERE {
-          GRAPH ?graph {
-            OPTIONAL { ?instance a ?class . }
-          }
-        } GROUP BY ?graph ?class
+      <!-- GraphDB lists its graphs through the onto:graphs system predicate in
+           well under a second; the portable scan above takes ~40s on LINDAS -->
+      <sparql-async id="namedGraphsListGraphDB">
+        SELECT ?graph ?property ?value WHERE {
+          ?x <http://www.ontotext.com/graphs> ?graph .
+          OPTIONAL { ?graph ?property ?value }
+        }
       </sparql-async>
-      <sparql-columns for="namedGraphs">
-        <sparql-column var="graph" group></sparql-column>
+      <sparql-columns for="namedGraphsListGraphDB">
+        <sparql-column var="graph" group filter badge></sparql-column>
       </sparql-columns>
+      {{ $listQuery := "namedGraphsList" }}
+      {{ if contains .SearchProvider "graphdb" }}{{ $listQuery = "namedGraphsListGraphDB" }}{{ end }}
       {{ template "sparqlAsyncTable" (dict
-          "queryId" "namedGraphs"
-          "title" (t "card.namedGraphsAndClasses" "Named Graphs and Classes")
+          "queryId" $listQuery
+          "title" (t "card.namedGraphsAttributes" "Named Graphs & Attributes")
           "icon" "package")
       }}
     </div>

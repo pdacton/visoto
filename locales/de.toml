@@ -861,6 +861,8 @@
 "page.politics.metaTitle" = "Politik & Regierung"
 "page.politics.subtitle" = "Wie die Schweiz regiert wird und wie ihre Bürgerinnen und Bürger entscheiden."
 "page.politics.title" = "Politik & Regierung"
+"page.properties.kind" = "Art"
+"page.properties.kindTip" = "Deklariert als owl:ObjectProperty oder owl:DatatypeProperty"
 "page.properties.metaTitle" = "Eigenschaften"
 "page.properties.subtitle" = "Eine Liste aller im Triple Store verwendeten Eigenschaften."
 "page.properties.title" = "Eigenschaftsübersicht"

@@ -50,7 +50,7 @@ const (
 // DefaultPageLimit and DefaultCapLimit are the per-level defaults for the two
 // modes: a page size when the query orders its rows, a hard cap when it does not.
 const (
-	DefaultPageLimit = 200
+	DefaultPageLimit = 500
 	DefaultCapLimit  = 10000
 )
 

@@ -141,7 +141,7 @@
             SELECT ?node ?label ?hasChildren WHERE {
               GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
                 ?node a schema:GovernmentOrganization .
-                OPTIONAL { ?node schema:name ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+                OPTIONAL { ?node schema:name ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
                 FILTER NOT EXISTS { ?node schema:parentOrganization ?anyParent . }
                 BIND (EXISTS { ?child schema:parentOrganization ?node } AS ?hasChildren)
               }
@@ -152,7 +152,7 @@
               GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
                 ?node schema:parentOrganization ?parent .
                 ?node a schema:GovernmentOrganization .
-                OPTIONAL { ?node schema:name ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+                OPTIONAL { ?node schema:name ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
                 BIND (EXISTS { ?child schema:parentOrganization ?node } AS ?hasChildren)
               }
             } ORDER BY ?label
@@ -169,7 +169,7 @@
               GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
                 ?node a schema:GovernmentOrganization .
                 ?node schema:name ?label .
-                FILTER (lang(?label) = visoto:dispLang || lang(?label) = "")
+                FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*"))
                 FILTER (CONTAINS(LCASE(STR(?label)), LCASE(STR(?__token__))))
               }
             } ORDER BY ?label
@@ -241,7 +241,7 @@
             ?roleNode schema:member ?person .
             OPTIONAL { ?person schema:givenName ?givenName . }
             OPTIONAL { ?person schema:familyName ?familyName . }
-            OPTIONAL { ?roleNode schema:name ?roleDisp . FILTER (lang(?roleDisp) = visoto:dispLang || lang(?roleDisp) = "") }
+            OPTIONAL { ?roleNode schema:name ?roleDisp . FILTER (langMatches(lang(?roleDisp), visoto:dispLang) || !langMatches(lang(?roleDisp), "*")) }
             OPTIONAL { ?roleNode schema:name ?roleDe . FILTER (lang(?roleDe) = "de") }
             BIND (COALESCE(?roleDisp, ?roleDe) AS ?role)
           }
@@ -313,7 +313,7 @@
               # worth having beside the full name.
               OPTIONAL {
                 ?organization schema:alternateName ?alternateName .
-                FILTER (lang(?alternateName) = visoto:dispLang || lang(?alternateName) = "")
+                FILTER (langMatches(lang(?alternateName), visoto:dispLang) || !langMatches(lang(?alternateName), "*"))
               }
               OPTIONAL { ?organization schema:address/schema:addressLocality ?addressLocality . }
               {

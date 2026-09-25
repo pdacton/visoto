@@ -486,15 +486,13 @@
         return fetchRole('focus', { node: key }).catch(function () { return null; });
       });
       Promise.all(walks).then(function (results) {
-        var seeded = false;
+        results = results.filter(function (f) { return f && !f.error && f.levels; });
         results.forEach(function (focus) {
-          if (!focus || focus.error || !focus.levels) return;
           for (var parentKey in focus.levels) {
-            if (levelCache[parentKey] === undefined) { levelCache[parentKey] = focus.levels[parentKey]; seeded = true; }
+            if (levelCache[parentKey] === undefined) levelCache[parentKey] = focus.levels[parentKey];
           }
         });
-        if (!seeded) return;
-        var chains = results.filter(Boolean).map(function (f) { return f.path || []; });
+        var chains = results.map(function (f) { return f.path || []; });
         var expandAll = chains.reduce(function (acc, chain) {
           return acc.concat(chain.slice(0, -1));
         }, []);
@@ -507,9 +505,30 @@
         };
         withoutRemembering(function () {
           return step(0).then(function () {
-            tree.filterNodes(searchInput ? searchInput.value.trim() : '');
+            placeUnloadedHits(hits, chains);
+            // Filter on the hit KEYS, not the typed term: the search matches any
+            // label (Switzerland), the tree shows the display-language one (Schweiz),
+            // so a text filter would hide the very node that was found.
+            var hitKeys = {};
+            chains.forEach(function (chain) { if (chain.length) hitKeys[chain[chain.length - 1]] = true; });
+            tree.filterNodes(function (node) { return !!hitKeys[node.key]; });
           });
         });
+      });
+    }
+
+    // A hit can sit beyond its level's page — Switzerland is root #270-something
+    // of a 200-node page — so expanding its ancestors does not mount it. Add it to
+    // its parent (or the root level) directly, from the search row.
+    function placeUnloadedHits(hits, chains) {
+      var byKey = {};
+      hits.forEach(function (h) { byKey[h.key] = h; });
+      chains.forEach(function (chain) {
+        var key = chain[chain.length - 1];
+        if (!key || !byKey[key] || tree.findKey(key)) return;
+        var parent = chain.length > 1 ? tree.findKey(chain[chain.length - 2]) : tree.root;
+        if (!parent) return;
+        parent.addChildren(Object.assign({}, byKey[key]));
       });
     }
 

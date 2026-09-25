@@ -11,7 +11,7 @@
     <!-- properties (lazy-loaded so the page shell renders before the heavy discovery query) -->
     <div class="mb-3">
       <sparql-async id="allProperties">
-        SELECT DISTINCT ?property ?iri ?domain ?type WHERE {
+        SELECT DISTINCT ?property ?iri ?domain ?type ?kind WHERE {
           {
             # subquery to pick up all properties (declared and used)
             SELECT DISTINCT ?property WHERE {
@@ -27,8 +27,17 @@
           BIND(
             IF(CONTAINS(?iri, "http://") || CONTAINS(?iri, "https://"),
               REPLACE(REPLACE(?iri, "^https?://", ""), "/.*$", ""), "NO DOMAIN") AS ?domain )
+          # object vs. value (datatype) property; unbound when neither is declared
+          BIND(
+            IF(EXISTS { ?property a owl:ObjectProperty }, "ObjectProperty",
+              IF(EXISTS { ?property a owl:DatatypeProperty }, "ValueProperty", ?unbound)) AS ?kind )
         }
       </sparql-async>
+      <sparql-columns for="allProperties">
+        <sparql-column var="kind" label="{{ t "page.properties.kind" "Kind" }}"
+                       tip="{{ t "page.properties.kindTip" "Declared as owl:ObjectProperty or owl:DatatypeProperty" }}"
+                       badge filter width="150"></sparql-column>
+      </sparql-columns>
       {{ template "sparqlAsyncTable" (dict
            "queryId" "allProperties"
            "title" (t "card.properties" "Properties")

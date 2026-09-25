@@ -270,7 +270,7 @@
                     } GROUP BY ?subclass
                   }
                   OPTIONAL { ?subclass visoto:description ?description .
-                    FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
+                    FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }
                 } ORDER BY ?depth ?subclass LIMIT 200
               </sparql-async>
               <sparql-columns for="schemaSubclasses">
@@ -288,7 +288,7 @@
                     } GROUP BY ?superclass
                   }
                   OPTIONAL { ?superclass visoto:description ?description .
-                    FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }
+                    FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }
                 } ORDER BY ?depth ?superclass LIMIT 200
               </sparql-async>
               <sparql-columns for="schemaSuperclasses">

@@ -11,7 +11,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="title">SELECT ?title WHERE { ?? dct:title ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") } LIMIT 1</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? dct:title ?title . FILTER (langMatches(lang(?title), visoto:dispLang) || !langMatches(lang(?title), "*")) } LIMIT 1</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
@@ -22,7 +22,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? dct:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") } LIMIT 1</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? dct:description ?description . FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) } LIMIT 1</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 

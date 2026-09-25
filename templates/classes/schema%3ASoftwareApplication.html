@@ -51,7 +51,7 @@
             OPTIONAL { ?instance visoto:identifier ?identifier . }
             OPTIONAL {
               ?instance visoto:description ?description .
-              FILTER (lang(?description) = visoto:dispLang || lang(?description) = "")
+              FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*"))
             }
             OPTIONAL { ?instance visoto:modified ?modified . }
           }

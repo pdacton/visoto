@@ -11,7 +11,7 @@
 
      schema: is http://schema.org/ here — NOT the https namespace. -->
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (lang(?title) = visoto:dispLang || lang(?title) = "") }</sparql-query>
+<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (langMatches(lang(?title), visoto:dispLang) || !langMatches(lang(?title), "*")) }</sparql-query>
 {{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 {{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
 
@@ -22,7 +22,7 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (lang(?description) = visoto:dispLang || lang(?description) = "") }</sparql-query>
+<sparql-query id="pageSubtitle">SELECT ?description WHERE { ?? visoto:description ?description . FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }</sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
 
 {{ define "pageContent" }}
@@ -57,7 +57,7 @@
           SELECT ?node ?label ?hasChildren WHERE {
             GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
               ?node a schema:GovernmentOrganization .
-              OPTIONAL { ?node schema:name ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+              OPTIONAL { ?node schema:name ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
               FILTER NOT EXISTS { ?node schema:parentOrganization ?anyParent . }
               BIND (EXISTS { ?child schema:parentOrganization ?node } AS ?hasChildren)
             }
@@ -68,7 +68,7 @@
             GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
               ?node schema:parentOrganization ?parent .
               ?node a schema:GovernmentOrganization .
-              OPTIONAL { ?node schema:name ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
+              OPTIONAL { ?node schema:name ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
               BIND (EXISTS { ?child schema:parentOrganization ?node } AS ?hasChildren)
             }
           } ORDER BY ?label
@@ -85,7 +85,7 @@
             GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
               ?node a schema:GovernmentOrganization .
               ?node schema:name ?label .
-              FILTER (lang(?label) = visoto:dispLang || lang(?label) = "")
+              FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*"))
               FILTER (CONTAINS(LCASE(STR(?label)), LCASE(STR(?__token__))))
             }
           } ORDER BY ?label

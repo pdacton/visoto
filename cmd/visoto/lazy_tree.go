@@ -201,7 +201,7 @@ func serveLevel(c *gin.Context, block parser.TreeQueries, role, parent string) {
 		return
 	}
 
-	nodes, execErr := runLevel(c, q, block, query)
+	nodes, complete, execErr := runLevel(c, q, block, query, limit)
 	if execErr != nil {
 		// A transient endpoint failure must never be cached as if it were data.
 		c.Header("Cache-Control", "no-store")
@@ -210,26 +210,34 @@ func serveLevel(c *gin.Context, block parser.TreeQueries, role, parent string) {
 		return
 	}
 
-	complete := len(nodes) <= limit
-	if !complete {
-		nodes = nodes[:limit]
-	}
 	markCacheable(c)
 	c.JSON(http.StatusOK, levelEnvelope{
 		Nodes: nodes, Total: offset + len(nodes), Complete: complete, LimitMode: string(mode),
 	})
 }
 
-// runLevel executes one level query and shapes its rows into nodes.
-func runLevel(c *gin.Context, q treeQueryContext, block parser.TreeQueries, query string) ([]treeNode, error) {
+// runLevel executes one level query (sent with LIMIT limit+1) and shapes its rows
+// into nodes.
+//
+// Completeness is decided on ROWS, before nodesFrom collapses duplicates. A query
+// that returns one node several times (two labels, several skos:notation values,
+// membership in several schemes) fills the LIMIT with repeats: 201 rows can be 4
+// distinct nodes. Comparing the deduplicated count against the limit would then
+// report that level as complete, with no "showing the first N" notice. Only the
+// first limit rows are used, so the probe row never becomes a node.
+func runLevel(c *gin.Context, q treeQueryContext, block parser.TreeQueries, query string, limit int) ([]treeNode, bool, error) {
 	result, err := q.preprocessor.ExecuteQueryWithContext(q.ctx, query, true, q.lang, "")
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if result.Error != "" {
-		return nil, fmt.Errorf("%s", result.Error)
+		return nil, false, fmt.Errorf("%s", result.Error)
 	}
-	return nodesFrom(result, block), nil
+	complete := len(result.Bindings) <= limit
+	if !complete {
+		result.Bindings = result.Bindings[:limit]
+	}
+	return nodesFrom(result, block), complete, nil
 }
 
 // nodesFrom converts SPARQL rows to tree nodes.
@@ -387,16 +395,12 @@ func serveSearch(c *gin.Context, block parser.TreeQueries) {
 		badTreeRequest(c, http.StatusBadRequest, err.Error())
 		return
 	}
-	nodes, execErr := runLevel(c, q, block, query)
+	nodes, complete, execErr := runLevel(c, q, block, query, limit)
 	if execErr != nil {
 		c.Header("Cache-Control", "no-store")
 		c.JSON(http.StatusOK, levelEnvelope{Nodes: []treeNode{}, Complete: true,
 			LimitMode: string(mode), Error: execErr.Error()})
 		return
-	}
-	complete := len(nodes) <= limit
-	if !complete {
-		nodes = nodes[:limit]
 	}
 	markCacheable(c)
 	c.JSON(http.StatusOK, levelEnvelope{
@@ -550,13 +554,9 @@ func focusLevel(c *gin.Context, q treeQueryContext, block parser.TreeQueries,
 	if err != nil {
 		return levelEnvelope{}, err
 	}
-	nodes, err := runLevel(c, q, block, query)
+	nodes, complete, err := runLevel(c, q, block, query, limit)
 	if err != nil {
 		return levelEnvelope{}, err
-	}
-	complete := len(nodes) <= limit
-	if !complete {
-		nodes = nodes[:limit]
 	}
 	return levelEnvelope{Nodes: nodes, Total: len(nodes), Complete: complete, LimitMode: string(mode)}, nil
 }

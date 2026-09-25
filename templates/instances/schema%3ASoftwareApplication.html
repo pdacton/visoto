@@ -158,7 +158,7 @@
         OPTIONAL { ?service svc:providedBy ?provider . }
         OPTIONAL {
           ?service visoto:description ?description .
-          FILTER (lang(?description) = visoto:dispLang || lang(?description) = "")
+          FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*"))
         }
       }
     </sparql-async>

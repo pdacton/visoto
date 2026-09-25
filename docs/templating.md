@@ -143,6 +143,7 @@ Every template receives a `TemplateData` value as `.`:
 | `.QueryResults` | `map[string]QueryResult` | Results of all `<sparql-query>` elements, keyed by their `id` attribute. |
 | `.SparqlEndpoints` | `[]SparqlEndpoint` | All configured named endpoints (for building custom endpoint UI if needed). |
 | `.EndpointTag` | `string` | The `tag` value of the currently selected endpoint. Empty if not set. |
+| `.SearchProvider` | `string` | The `search_provider` value of the currently selected endpoint. Any value containing `"graphdb"` identifies a GraphDB store (`{{ if contains .SearchProvider "graphdb" }}`), so a page can pick an engine-specific query — see `pages/namedGraphs.html`. |
 
 ### `QueryResult` fields
 
@@ -177,7 +178,7 @@ SPARQL queries are embedded in template files using `<sparql-query>` custom elem
   SELECT ?title WHERE {
     BIND (?? AS ?s)
     ?s rdfs:label ?title .
-    FILTER (lang(?title) = "en" || lang(?title) = "")
+    FILTER (langMatches(lang(?title), "en") || !langMatches(lang(?title), "*"))
   }
 </sparql-query>
 ```
@@ -190,10 +191,11 @@ SPARQL queries are embedded in template files using `<sparql-query>` custom elem
 - All queries in a template are executed **in parallel** before rendering. Queries cannot depend on each other's results.
 
 **Special tokens:**
-- `visoto:dispLang` — substituted with the value of the request's `Accept-Language` header. Use in FILTER clauses for multilingual data:
+- `visoto:dispLang` — substituted with the display language as a string literal (e.g. `"de"`): the `site-lang` cookie on pages, `?lang=` on `/api/*`. Use in FILTER clauses for multilingual data:
   ```sparql
-  FILTER (lang(?label) = visoto:dispLang || lang(?label) = "en" || lang(?label) = "")
+  FILTER (langMatches(lang(?label), visoto:dispLang) || langMatches(lang(?label), "en") || !langMatches(lang(?label), "*"))
   ```
+  Write the untagged fallback as `!langMatches(lang(?x), "*")`, **not** `lang(?x) = ""`. The two mean the same, but on QLever an `OPTIONAL { … FILTER (… || lang(?x) = "") }` is evaluated against every label in the dataset before the join: a 5-concept tree level took 3.3 s instead of 0.4 s on the opendata.swiss ABN endpoint. `langMatches` is also slightly broader: `"de"` matches `de-CH`.
 - **Magic properties** — any other `visoto:<key>` token is expanded to the property path configured under `[rdf.magic_properties]` in `visoto.config`, wrapped in parentheses. With
   ```toml
   [rdf.magic_properties]
@@ -486,7 +488,7 @@ returning the wrong level.
 | `title` / `icon` | `string` | — | Card heading and Lucide icon. |
 | `collapsed` | `bool` | `false` | Card starts collapsed. |
 | `ResourceIRI` | `string` | — | Node to expand to and focus. Needs a `parents` role. |
-| `limit` | `int` | 200 / 10000 | Per-level page size or hard cap; see below. |
+| `limit` | `int` | 500 / 10000 | Per-level page size or hard cap; see below. |
 | `minSearchLength` | `int` | `3` | Below this, only loaded nodes are filtered. |
 | `flatSearch` | `bool` | `false` | Show search hits as a flat list. |
 | `flatSearchToggle` | `bool` | `false` | Offer the hierarchical/flat switch. |
@@ -744,7 +746,7 @@ The base layout (`templates/layout/base.html`) provides named blocks that page t
 |---|---|
 | `pageTitle` | Page heading (rendered as H1). |
 | `metaTitle` | Browser tab title. |
-| `metaIcon` | Resource icon shown in the header. |
+| `metaIcon` | Browser tab icon (favicon) URL, e.g. `/static/img/search.svg`. Defaults to `resourceIcon`. |
 | `pageSubtitle` | Subtitle displayed below the heading. |
 | `pageClasses` | `rdf:type` list shown below the title. |
 | `breadcrumb` | Breadcrumb trail (`<li>` elements). |

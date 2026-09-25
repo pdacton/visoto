@@ -75,7 +75,7 @@
                 OPTIONAL {
                   ?c cube:observationSet ?set .
                   OPTIONAL { ?c dct:creator/schema:name ?creatorName .
-                             FILTER(lang(?creatorName) = "en" || lang(?creatorName) = "") }
+                             FILTER(langMatches(lang(?creatorName), "en") || !langMatches(lang(?creatorName), "*")) }
                   OPTIONAL { ?c dcat:theme/schema:name ?themeName .
                              FILTER(lang(?themeName) = visoto:dispLang) }
                   OPTIONAL { ?c schema:creativeWorkStatus/schema:name ?st .

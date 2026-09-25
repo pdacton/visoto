@@ -43,7 +43,7 @@ const (
 // declares no for= and is left alone; see parseTreeQueriesNode for why that is the
 // signal used.
 func ExtractTreeQueries(content string) ([]TreeQueries, error) {
-	doc, err := html.Parse(strings.NewReader(content))
+	doc, err := parseTemplateHTML(content)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse HTML: %w", err)
 	}

@@ -23,7 +23,7 @@
       ?cube cube:observationSet ?set .
       OPTIONAL {
         ?cube schema:name ?cubeName .
-        FILTER(lang(?cubeName) = visoto:dispLang || lang(?cubeName) = "en" || lang(?cubeName) = "")
+        FILTER(langMatches(lang(?cubeName), visoto:dispLang) || langMatches(lang(?cubeName), "en") || !langMatches(lang(?cubeName), "*"))
       }
     }
   } LIMIT 1
@@ -38,7 +38,7 @@
     ?set cube:observation ?? .
     ?cube cube:observationSet ?set ;
           schema:name ?name .
-    FILTER(lang(?name) = visoto:dispLang || lang(?name) = "en" || lang(?name) = "")
+    FILTER(langMatches(lang(?name), visoto:dispLang) || langMatches(lang(?name), "en") || !langMatches(lang(?name), "*"))
   } LIMIT 1
 </sparql-query>
 {{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
@@ -73,7 +73,7 @@
      all still shows up under its raw predicate, so nothing is silently dropped.
 
      LANGUAGE PICKING — why not the usual one-liner. Most templates write
-     FILTER(lang(?x) = visoto:dispLang || lang(?x) = ""), which works when a
+     FILTER(langMatches(lang(?x), visoto:dispLang) || !langMatches(lang(?x), "*")), which works when a
      resource has one label plus an untagged fallback. ELCom dimensions carry
      de/fr/it/en for EVERY dimension, so that OR matches several at once and the
      grid renders "KANTON, CANTON". Ranking each label and taking MIN per

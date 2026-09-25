@@ -860,6 +860,8 @@
 "page.politics.metaTitle" = "Politica & governo"
 "page.politics.subtitle" = "Come è governata la Svizzera e come decidono i suoi cittadini."
 "page.politics.title" = "Politica & governo"
+"page.properties.kind" = "Tipo"
+"page.properties.kindTip" = "Dichiarata come owl:ObjectProperty o owl:DatatypeProperty"
 "page.properties.metaTitle" = "Proprietà"
 "page.properties.subtitle" = "L'elenco di tutte le proprietà usate nel triplestore."
 "page.properties.title" = "Panoramica delle proprietà"

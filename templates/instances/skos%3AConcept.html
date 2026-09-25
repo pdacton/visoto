@@ -3,8 +3,13 @@
 <sparql-query id="breadcrumbs"> SELECT ?conceptScheme { ?? skos:inScheme ?conceptScheme . } </sparql-query>
 {{ define "breadcrumb" }}
   <li class="breadcrumb-item">{{ tHTML "type.concept.conceptScheme" "<a href=\"/resource?iri=skos:ConceptScheme\">Concept Scheme</a>" }}</li>
-  {{ range $index, $binding := .QueryResults.breadcrumbs.Bindings }}
-    <li class="breadcrumb-item">{{ render ((index $binding "conceptScheme")) }}</li>
+  <!-- Every scheme in ONE crumb: the schemes are sibling memberships (a country
+       is in the full list AND in subsets like "EU member states"), not a path,
+       so a slash between them would read as nesting. -->
+  {{ with .QueryResults.breadcrumbs.Bindings }}
+    <li class="breadcrumb-item">
+      {{- range $index, $binding := . }}{{ if $index }}<span class="text-secondary mx-1">–</span>{{ end }}{{ render ((index $binding "conceptScheme")) }}{{ end -}}
+    </li>
   {{ end }}
 {{ end }}
 
@@ -23,25 +28,30 @@
       <div class="mb-3">
                 <sparql-tree-queries for="conceptTree">
                     <sparql-tree-query role="roots">
-                        SELECT ?node ?label ?code ?hasChildren WHERE {
+                        SELECT ?node (SAMPLE(?nodeLabel) AS ?label) (MIN(STR(?notation)) AS ?code) ?hasChildren WHERE {
                             ?? skos:inScheme ?conceptScheme .
                             ?node skos:inScheme ?conceptScheme .
                             ?node a skos:Concept .
-                            OPTIONAL { ?node skos:prefLabel ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
-                            OPTIONAL { ?node skos:notation ?code . }
-                            FILTER NOT EXISTS { ?node skos:broader ?anyParent . ?anyParent skos:inScheme ?conceptScheme . }
+                            OPTIONAL { ?node skos:prefLabel ?nodeLabel . FILTER (langMatches(lang(?nodeLabel), visoto:dispLang) || !langMatches(lang(?nodeLabel), "*")) }
+                            OPTIONAL { ?node skos:notation ?notation . }
+                            # Root = no parent in ANY of the page concept's schemes, not just the
+                            # one ?conceptScheme is bound to: the children query lists a node
+                            # under its parent whichever scheme links them, so a per-scheme test
+                            # would show FRO both as a root (via a subset scheme without DNK)
+                            # and under DNK — a duplicate key the tree rejects.
+                            FILTER NOT EXISTS { ?node skos:broader ?anyParent . ?anyParent skos:inScheme ?parentScheme . ?? skos:inScheme ?parentScheme . }
                             BIND (EXISTS { ?child skos:broader ?node } AS ?hasChildren)
-                        } ORDER BY ?label
+                        } GROUP BY ?node ?hasChildren ORDER BY ?label
                     </sparql-tree-query>
                     <sparql-tree-query role="children">
-                        SELECT ?node ?label ?code ?hasChildren WHERE {
+                        SELECT ?node (SAMPLE(?nodeLabel) AS ?label) (MIN(STR(?notation)) AS ?code) ?hasChildren WHERE {
                             ?? skos:inScheme ?conceptScheme .
                             ?node skos:broader ?parent .
                             ?node skos:inScheme ?conceptScheme .
-                            OPTIONAL { ?node skos:prefLabel ?label . FILTER (lang(?label) = visoto:dispLang || lang(?label) = "") }
-                            OPTIONAL { ?node skos:notation ?code . }
+                            OPTIONAL { ?node skos:prefLabel ?nodeLabel . FILTER (langMatches(lang(?nodeLabel), visoto:dispLang) || !langMatches(lang(?nodeLabel), "*")) }
+                            OPTIONAL { ?node skos:notation ?notation . }
                             BIND (EXISTS { ?child skos:broader ?node } AS ?hasChildren)
-                        } ORDER BY ?label
+                        } GROUP BY ?node ?hasChildren ORDER BY ?label
                     </sparql-tree-query>
                     <sparql-tree-query role="parents">
                         SELECT ?node ?parent WHERE {

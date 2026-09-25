@@ -83,7 +83,7 @@
     OPTIONAL { ?instance a ?t_ .
                FILTER(?t_ NOT IN (schema:DefinedTermSet, rdfs:Class, owl:Class))
                OPTIONAL { ?t_ rdfs:label ?tLabel_ .
-                          FILTER(lang(?tLabel_) = visoto:dispLang || lang(?tLabel_) = "") }
+                          FILTER(langMatches(lang(?tLabel_), visoto:dispLang) || !langMatches(lang(?tLabel_), "*")) }
                BIND(COALESCE(?tLabel_,
                     REPLACE(STR(?t_), "^.*[/#]", "")) AS ?typeName_) }
   }

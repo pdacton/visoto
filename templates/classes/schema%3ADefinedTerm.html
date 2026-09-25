@@ -31,7 +31,7 @@
      of schema:name returns 12 rows for one term. SAMPLE/GROUP_CONCAT collapse the
      repeats and the MIN-rank trick below picks exactly one name.
 
-     LANGUAGE PICKING. FILTER(lang(?x) = visoto:dispLang || lang(?x) = "") matches
+     LANGUAGE PICKING. FILTER(langMatches(lang(?x), visoto:dispLang) || !langMatches(lang(?x), "*")) matches
      several labels at once when a term carries de+fr+it+en, rendering "Kupfer,
      Cuivre". Ranking each label and taking MIN picks one: dispLang, else en, else
      untagged, else any. The rank is prefixed onto the string ("1|Kupfer") because

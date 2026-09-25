@@ -18,7 +18,7 @@
             OPTIONAL { ?instance a ?type . }
             OPTIONAL {
               ?instance dct:description ?description .
-              FILTER (lang(?description) = visoto:dispLang || lang(?description) = "")
+              FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*"))
             }
             OPTIONAL { ?instance dct:type ?dctype . }
             OPTIONAL { ?instance dcat:dataset ?dataset . }

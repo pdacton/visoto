@@ -35,7 +35,7 @@
                         ?? meta:nextInHierarchy ?level .
                         OPTIONAL { ?level sh:path ?path }
                         OPTIONAL { ?level schema:name ?name .
-                                   FILTER(lang(?name) = visoto:dispLang || lang(?name) = "") }
+                                   FILTER(langMatches(lang(?name), visoto:dispLang) || !langMatches(lang(?name), "*")) }
                     }
                 </sparql-query>
                 <sparql-columns for="hierarchyLevels" order>

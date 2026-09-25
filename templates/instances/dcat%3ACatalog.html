@@ -18,7 +18,7 @@
             OPTIONAL { ?dataset a ?type . }
             OPTIONAL {
               ?dataset dct:title ?title .
-              FILTER (lang(?title) = visoto:dispLang || lang(?title) = "")
+              FILTER (langMatches(lang(?title), visoto:dispLang) || !langMatches(lang(?title), "*"))
             }
             OPTIONAL { ?dataset dct:identifier ?identifier . }
           }
