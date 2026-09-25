@@ -333,16 +333,38 @@ func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string
 
 // ExecuteQueriesParallel executes multiple queries concurrently with timeout
 func (p *Preprocessor) ExecuteQueriesParallel(queries []ExtractedQuery, timeout time.Duration, acceptLanguage string) map[string]QueryResult {
+	return p.ExecuteQueriesParallelN(queries, 0, timeout, acceptLanguage)
+}
+
+// ExecuteQueriesParallelN is ExecuteQueriesParallel with at most maxConcurrent
+// queries in flight at once (0 = unlimited). Use it for fan-outs of heavy
+// queries against one endpoint, where firing every query at once would load
+// the store more than the caller's latency needs. The timeout covers the whole
+// batch, including time spent waiting for a slot.
+func (p *Preprocessor) ExecuteQueriesParallelN(queries []ExtractedQuery, maxConcurrent int, timeout time.Duration, acceptLanguage string) map[string]QueryResult {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
 	resultsChan := make(chan queryExecutionResult, len(queries))
 	var wg sync.WaitGroup
 
+	var slots chan struct{}
+	if maxConcurrent > 0 {
+		slots = make(chan struct{}, maxConcurrent)
+	}
+
 	for _, q := range queries {
 		wg.Add(1)
 		go func(query ExtractedQuery) {
 			defer wg.Done()
+
+			if slots != nil {
+				select {
+				case slots <- struct{}{}:
+					defer func() { <-slots }()
+				case <-ctx.Done():
+				}
+			}
 
 			select {
 			case <-ctx.Done():

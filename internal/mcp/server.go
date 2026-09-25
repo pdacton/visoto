@@ -96,7 +96,8 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 	mcpServer.AddTool(
 		goMcp.NewTool("discover_classes",
 			goMcp.WithDescription("Discover the most common RDF types/classes in an endpoint, ordered by instance count. "+
-				"Provide graph to scope discovery to a single named graph."),
+				"Provide graph to scope discovery to a single named graph. "+
+				"On GraphDB stores, discovery without graph runs once per named graph and adds the counts up."),
 			goMcp.WithString("endpoint",
 				goMcp.Description("Endpoint name or URL. Uses the default endpoint if omitted."),
 			),

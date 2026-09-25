@@ -205,14 +205,124 @@ func (tc *toolContext) handleDiscoverClasses(ctx context.Context, request goMcp.
 	endpoint := getStringParam(request, "endpoint")
 	graph := getStringParam(request, "graph")
 
-	var query string
 	if graph != "" {
-		query = fmt.Sprintf(queryDiscoverClassesInGraph, graph, limit)
-	} else {
-		query = fmt.Sprintf(queryDiscoverClasses, limit)
+		r := tc.run(ctx, fmt.Sprintf(queryDiscoverClassesInGraph, graph, limit), endpoint, false)
+		return toMCPResult(r)
 	}
-	r := tc.run(ctx, query, endpoint, false)
+
+	// A store-wide GROUP BY over every rdf:type triple times out on large
+	// GraphDB stores (LINDAS: ~468M triples), while the same query scoped to one
+	// graph is fast. On GraphDB, fan out per graph and add the counts up.
+	graphs := tc.run(ctx, fmt.Sprintf(queryListNamedGraphsGraphDB, 1000), endpoint, false)
+	if graphs.Error == "" && graphs.RowCount > 0 {
+		return toMCPResult(tc.discoverClassesPerGraph(ctx, graphs, endpoint, limit))
+	}
+
+	r := tc.run(ctx, fmt.Sprintf(queryDiscoverClasses, limit), endpoint, false)
 	return toMCPResult(r)
+}
+
+// discoverClassesPerGraphConcurrency caps the per-graph fan-out: each query
+// scans one graph's rdf:type triples, and firing all ~60 of LINDAS's at once
+// loads the store for no latency gain.
+const discoverClassesPerGraphConcurrency = 10
+
+// discoverClassesPerGraph runs queryDiscoverClassesInGraph once per named graph
+// in parallel and merges the rows: one row per class, counts added up across
+// graphs.
+func (tc *toolContext) discoverClassesPerGraph(ctx context.Context, graphs toolResult, endpoint string, limit int) toolResult {
+	queries := make([]sparql.ExtractedQuery, 0, len(graphs.Results))
+	for _, row := range graphs.Results {
+		if iri, ok := row["graph"].(string); ok && iri != "" {
+			queries = append(queries, sparql.ExtractedQuery{
+				ID:       iri,
+				Query:    fmt.Sprintf(queryDiscoverClassesInGraph, iri, 100000),
+				Endpoint: endpoint,
+			})
+		}
+	}
+	results := tc.preprocessor.ExecuteQueriesParallelN(queries, discoverClassesPerGraphConcurrency, tc.cfg.GetTimeout(), "")
+
+	classes, failed := mergeClassCounts(results)
+	if len(classes) > limit {
+		classes = classes[:limit]
+	}
+
+	r := toolResult{
+		EndpointUsed:  graphs.EndpointUsed,
+		QueryExecuted: fmt.Sprintf("-- run once per named graph (%d graphs), counts added up:%s", len(queries), fmt.Sprintf(queryDiscoverClassesInGraph, "GRAPH_IRI", 100000)),
+		RowCount:      len(classes),
+		Results:       make([]map[string]any, 0, len(classes)),
+	}
+	for _, c := range classes {
+		r.Results = append(r.Results, map[string]any{
+			"type":             c.display,
+			"type_visoto_link": tc.visotoLink(ctx, c.iri, graphs.EndpointUsed),
+			"count":            strconv.Itoa(c.count),
+		})
+	}
+	r.Hints = append(r.Hints, "Counts are added up across named graphs; an instance typed in several graphs is counted once per graph.")
+	if len(failed) > 0 {
+		sort.Strings(failed)
+		r.Hints = append(r.Hints, fmt.Sprintf("Counts are partial: %d graph(s) failed or timed out: %s", len(failed), strings.Join(failed, ", ")))
+	}
+	if len(classes) == limit {
+		r.Hints = append(r.Hints, fmt.Sprintf("Result may be truncated at limit=%d — raise the limit parameter to see more classes.", limit))
+	}
+	return r
+}
+
+// classCount is one merged row of the per-graph class discovery.
+type classCount struct {
+	iri     string
+	display string
+	count   int
+}
+
+// mergeClassCounts merges per-graph {type, count} results (keyed by graph IRI)
+// into one row per class, sorted by count descending, then by IRI. Graphs whose
+// query failed are returned in failed and contribute nothing; rows with a
+// non-numeric count are skipped.
+func mergeClassCounts(results map[string]sparql.QueryResult) (classes []classCount, failed []string) {
+	byIRI := map[string]*classCount{}
+	for graph, res := range results {
+		if res.Error != "" {
+			failed = append(failed, graph)
+			continue
+		}
+		for _, b := range res.Bindings {
+			t, ok := b["type"]
+			if !ok || t.Value == "" {
+				continue
+			}
+			n, err := strconv.Atoi(b["count"].Value)
+			if err != nil {
+				continue
+			}
+			c := byIRI[t.Value]
+			if c == nil {
+				display := t.DisplayText
+				if display == "" {
+					display = t.Value
+				}
+				c = &classCount{iri: t.Value, display: display}
+				byIRI[t.Value] = c
+			}
+			c.count += n
+		}
+	}
+
+	classes = make([]classCount, 0, len(byIRI))
+	for _, c := range byIRI {
+		classes = append(classes, *c)
+	}
+	sort.Slice(classes, func(i, j int) bool {
+		if classes[i].count != classes[j].count {
+			return classes[i].count > classes[j].count
+		}
+		return classes[i].iri < classes[j].iri
+	})
+	return classes, failed
 }
 
 // handleDiscoverProperties lists distinct predicates used in the endpoint.
