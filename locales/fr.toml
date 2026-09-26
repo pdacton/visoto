@@ -251,6 +251,7 @@
 "card.observationSets" = "Ensembles d'observations"
 "card.observationSetsAllVersions" = "Ensembles d'observations (toutes versions)"
 "card.observations" = "Observations"
+"card.ontologyDiagram" = "Diagramme de l'ontologie"
 "card.openSupplyDisruptions" = "Ruptures d'approvisionnement ouvertes"
 "card.operators" = "Exploitants"
 "card.organisations" = "Organisations"

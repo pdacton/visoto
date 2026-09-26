@@ -689,9 +689,35 @@ out a set of IRIs at initialization.
 | `endpointUrl` | `string` | fallback | URL the browser posts SPARQL to — pass `.GraphQueryURL`, the same-origin `/api/sparql` proxy. Never an endpoint URL: the upstream host and its credentials stay server-side (`internal/sparqlproxy`). |
 | `height` | `string` | `"calc(100vh - 200px)"` | CSS height of the container. |
 | `lazy` | `bool` | `false` | Defer initialization until a `graph:init` event fires on the `-root` element. |
+| `construct` | `string` | — | A SPARQL CONSTRUCT whose result *is* the diagram (see below). `iris` is then ignored. |
 
 The partial self-loads the Graph Explorer CDN bundle, guarded so it loads only once
 per page. The `?iri=` URL parameter is honored as an additional starting IRI.
+
+**Construct mode.** With `construct`, the graph does not browse the endpoint: the
+browser posts the query once (through the `/api/sparql` proxy) and draws exactly the
+returned triples from an in-memory provider (`static/js/graph-memory-store.js`). Use it
+when the edges you want do not exist verbatim in the data. Mapping:
+
+- an IRI with an `rdf:type`, or at either end of an IRI-valued triple, is a node;
+- `<node> <p> "literal"` is an attribute row in the node's box;
+- `<a> <p> <b>` is an edge of type `<p>`;
+- `rdfs:label` labels nodes, and — for IRIs that are not nodes — the edges and
+  attribute rows whose predicate they are. Labels in every language may be returned;
+  the page language is shown.
+
+`??` is replaced by `<iri>` in the browser, so pass `iri`. The proxy does no prefix
+expansion and no `visoto:` magic properties: declare every `PREFIX`. The query is a Go
+raw string, since it is a parameter rather than a `<sparql-query>` tag:
+
+```html
+{{ $q := `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+CONSTRUCT { ?d ?p ?r . ?p rdfs:label ?l } WHERE { ?p rdfs:isDefinedBy ?? ; rdfs:domain ?d ; rdfs:range ?r ; rdfs:label ?l }` }}
+{{ template "sparqlGraph" (dict "id" "model" "iri" .ResourceIRI "construct" $q "endpointUrl" .GraphQueryURL) }}
+```
+
+`templates/instances/owl%3AOntology.html` is the reference use: an ontology as a UML
+class diagram.
 
 ### `schemaGraph`
 

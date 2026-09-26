@@ -1,0 +1,111 @@
+<!-- owl:Ontology Instance Template
+
+     Adds a UML-style class diagram of the ontology to the default page
+     (header, literals, relationships).
+
+     Membership: a class or property belongs to the ontology when it is
+     `rdfs:isDefinedBy` it — the only "defined by" predicate on LINDAS pointing
+     at an owl:Ontology. Several LINDAS ontologies (the agriculture system map,
+     inspection and plant-protection vocabularies) assert no isDefinedBy at all;
+     for those, and only those, membership falls back to classes and properties
+     whose IRI starts with the ontology IRI.
+
+     Projection (what the CONSTRUCT emits, see static/js/graph-memory-store.js):
+       - every member class           -> a class box
+       - member rdfs:subClassOf C     -> a generalization edge (hollow triangle);
+                                         owl:Thing is skipped, as UML leaves the
+                                         implicit root out
+       - member property P with rdfs:domain D and an object rdfs:range R
+                                      -> ONE edge D -P-> R, labelled with P's rdfs:label
+       - member property P with rdfs:domain D and a literal range (xsd:*,
+         rdfs:Literal, rdf:langString, …)
+                                      -> an attribute row "P: xsd:type" in D's box
+       - rdfs:label of every node and every property, all languages; the graph
+         shows the page language.
+     owl:unionOf domains and ranges are expanded to their members, so a property
+     with a union domain draws one edge per member class. Properties with no
+     domain or no range are left out: without both ends there is nothing to draw.
+     So are rdf:type and rdfs:label when an ontology re-declares them (prov# does):
+     the projection uses both as its own node-type and node-label predicates.
+     Domain/range classes defined elsewhere (prov:Entity, svc:Service, …) appear
+     as boxes too, so the ontology's links to other vocabularies stay visible.
+
+     The query runs in the browser through the /api/sparql proxy, which does no
+     prefix expansion and no visoto:dispLang — hence the PREFIX header and the
+     language choice in JS. `??` is substituted client-side with the page IRI.
+     Sized on LINDAS prod: RiC-O, the largest isDefinedBy ontology with
+     domain/range axioms, yields 106 classes, 535 associations, 82 attributes and
+     111 generalizations.
+-->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ $ontologyDiagram := `PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
+CONSTRUCT {
+  ?class a owl:Class .
+  ?sub rdfs:subClassOf ?super .
+  ?domain ?prop ?range .
+  ?domain ?prop ?datatype .
+  ?node rdfs:label ?label .
+} WHERE {
+  {
+    SELECT DISTINCT ?m WHERE {
+      { ?m rdfs:isDefinedBy ?? . }
+      UNION
+      {
+        FILTER NOT EXISTS { ?anyMember rdfs:isDefinedBy ?? . }
+        VALUES ?memberType { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty rdf:Property }
+        ?m a ?memberType .
+        FILTER (isIRI(?m) && ?m != ?? && STRSTARTS(STR(?m), STR(??)))
+      }
+    }
+  }
+  {
+    VALUES ?classType { owl:Class rdfs:Class }
+    ?m a ?classType .
+    BIND (?m AS ?class)
+  } UNION {
+    ?m rdfs:subClassOf ?super .
+    FILTER (isIRI(?super) && ?super != owl:Thing)
+    BIND (?m AS ?sub)
+  } UNION {
+    ?m rdfs:domain/(owl:unionOf/rdf:rest*/rdf:first)? ?domain .
+    ?m rdfs:range/(owl:unionOf/rdf:rest*/rdf:first)? ?r .
+    FILTER (isIRI(?domain) && isIRI(?r) && ?m NOT IN (rdf:type, rdfs:label))
+    BIND (?m AS ?prop)
+    BIND (STRSTARTS(STR(?r), STR(xsd:)) || ?r IN (rdfs:Literal, rdf:langString, rdf:PlainLiteral, rdf:HTML, rdf:XMLLiteral, rdf:JSON) AS ?isLiteral)
+    BIND (IF(?isLiteral, REPLACE(REPLACE(REPLACE(STR(?r), STR(xsd:), "xsd:"), STR(rdfs:), "rdfs:"), STR(rdf:), "rdf:"), ?unbound) AS ?datatype)
+    BIND (IF(?isLiteral, ?unbound, ?r) AS ?range)
+  } UNION {
+    ?m (rdfs:domain|rdfs:range|rdfs:subClassOf)?/(owl:unionOf/rdf:rest*/rdf:first)? ?node .
+    FILTER (isIRI(?node))
+    ?node rdfs:label ?label .
+  }
+}` }}
+
+  <!-- A distinct `id` is required: the base layout's page-level graph already
+       claims the default "sparql-graph" DOM id. Eager (not lazy): the card sits
+       in the default view, so its container is measurable at mount. -->
+  <div class="mb-3">
+    {{ template "sparqlGraph" (dict
+        "id" "ontologyDiagram"
+        "iri" .ResourceIRI
+        "construct" $ontologyDiagram
+        "endpointUrl" .GraphQueryURL
+        "title" (t "card.ontologyDiagram" "Ontology diagram")
+        "icon" "shapes"
+        "height" "700px") }}
+  </div>
+
+  {{ template "literals" . }}
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}
