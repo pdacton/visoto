@@ -17,21 +17,50 @@
 
   {{ template "literals" . }}
 
-  <!-- instances: classes defined as rdfs:Class or owl:Class -->
+  <!-- instances: classes declared as rdfs:Class
+
+       One row per class (1,436 on LINDAS, 0.7s), so every value is aggregated:
+       - superclass: SAMPLE, not one row per superclass. 1,134 classes have exactly
+         one, 63 have 2-6; the class page lists them all. Blank nodes (OWL
+         restrictions) and self-references are dropped.
+       - namespace: the IRI minus its last segment, as a grouping/filter handle —
+         939 of LINDAS's classes are schema.org.
+       - description: the house MIN-rank idiom (dispLang, else en, else untagged,
+         else any); the rank must stay a SINGLE DIGIT for SUBSTR(…, 3).
+
+       - hasInstances: an EXISTS probe, not a count. COUNT per class scans every
+         rdf:type triple (cube:Observation alone has 14M) and took ~40s on LINDAS,
+         and SPARQL cannot cap a per-group count, so a LIMIT does not make it
+         cheaper; the EXISTS stops at the first instance (0.5s for all classes). -->
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
         <sparql-async id="rdfsClassInstances">
-          SELECT DISTINCT ?class ?description WHERE {
+          SELECT ?class
+                 (SAMPLE(?super_) AS ?superclass)
+                 (SAMPLE(?namespace_) AS ?namespace)
+                 (SUBSTR(MIN(?ranked_),3) AS ?description)
+                 (SAMPLE(?used_) AS ?hasInstances)
+          WHERE {
             ?class a ?? .
-            OPTIONAL { ?class visoto:description ?description .
-              FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }
-          }
+            FILTER (isIRI(?class))
+            BIND (EXISTS { ?instance_ a ?class } AS ?used_)
+            BIND (REPLACE(STR(?class), "[^/#]*$", "") AS ?namespace_)
+            OPTIONAL { ?class rdfs:subClassOf ?super_ . FILTER (isIRI(?super_) && ?super_ != ?class) }
+            OPTIONAL { ?class visoto:description ?d_ .
+                       BIND(IF(langMatches(lang(?d_), visoto:dispLang), 1,
+                            IF(langMatches(lang(?d_), "en"), 2,
+                            IF(!langMatches(lang(?d_), "*"), 3, 4))) AS ?rk_)
+                       BIND(CONCAT(STR(?rk_), "|", STR(?d_)) AS ?ranked_) }
+          } GROUP BY ?class
           ORDER BY ?class
-          LIMIT 10000
         </sparql-async>
-        <sparql-columns for="rdfsClassInstances">
-          <sparql-column var="class" icon filter></sparql-column>
+        <sparql-columns for="rdfsClassInstances" order>
+          <sparql-column var="class" icon></sparql-column>
+          <sparql-column var="superclass" label="{{ t "facet.superclass" "Superclass" }}" icon></sparql-column>
+          <sparql-column var="namespace" label="{{ t "facet.namespace" "Namespace" }}"></sparql-column>
+          <sparql-column var="description" label="{{ t "facet.description" "Description" }}"></sparql-column>
+          <sparql-column var="hasInstances" label="{{ t "facet.hasInstances" "Has instances" }}" badge></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict

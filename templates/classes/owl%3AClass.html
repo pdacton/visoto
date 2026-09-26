@@ -17,21 +17,46 @@
 
   {{ template "literals" . }}
 
-  <!-- instances: classes defined as rdfs:Class or owl:Class -->
+  <!-- instances: classes declared as owl:Class
+
+       Same shape as classes/rdfs%3AClass.html (see the notes there for the
+       SAMPLE / MIN-rank / EXISTS choices), plus rdfs:isDefinedBy: OWL vocabularies
+       use it far more than RDFS ones (371 of LINDAS's 1,255 IRI owl:Classes), and
+       it names the ontology a class comes from. 1,255 rows in 0.8s on LINDAS.
+       The 168 blank-node owl:Classes (anonymous restrictions/unions) are dropped:
+       they have no page to link to. -->
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
         <sparql-async id="owlClassInstances">
-          SELECT DISTINCT ?class ?description WHERE {
+          SELECT ?class
+                 (SAMPLE(?super_) AS ?superclass)
+                 (SAMPLE(?definedBy_) AS ?definedBy)
+                 (SAMPLE(?namespace_) AS ?namespace)
+                 (SUBSTR(MIN(?ranked_),3) AS ?description)
+                 (SAMPLE(?used_) AS ?hasInstances)
+          WHERE {
             ?class a ?? .
-            OPTIONAL { ?class visoto:description ?description .
-            FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }
-          }
+            FILTER (isIRI(?class))
+            BIND (EXISTS { ?instance_ a ?class } AS ?used_)
+            BIND (REPLACE(STR(?class), "[^/#]*$", "") AS ?namespace_)
+            OPTIONAL { ?class rdfs:subClassOf ?super_ . FILTER (isIRI(?super_) && ?super_ != ?class) }
+            OPTIONAL { ?class rdfs:isDefinedBy ?definedBy_ . }
+            OPTIONAL { ?class visoto:description ?d_ .
+                       BIND(IF(langMatches(lang(?d_), visoto:dispLang), 1,
+                            IF(langMatches(lang(?d_), "en"), 2,
+                            IF(!langMatches(lang(?d_), "*"), 3, 4))) AS ?rk_)
+                       BIND(CONCAT(STR(?rk_), "|", STR(?d_)) AS ?ranked_) }
+          } GROUP BY ?class
           ORDER BY ?class
-          LIMIT 10000
         </sparql-async>
-        <sparql-columns for="owlClassInstances">
-          <sparql-column var="class" icon filter></sparql-column>
+        <sparql-columns for="owlClassInstances" order>
+          <sparql-column var="class" icon></sparql-column>
+          <sparql-column var="superclass" label="{{ t "facet.superclass" "Superclass" }}" icon></sparql-column>
+          <sparql-column var="definedBy" label="{{ t "facet.definedBy" "Defined by" }}"></sparql-column>
+          <sparql-column var="namespace" label="{{ t "facet.namespace" "Namespace" }}"></sparql-column>
+          <sparql-column var="description" label="{{ t "facet.description" "Description" }}"></sparql-column>
+          <sparql-column var="hasInstances" label="{{ t "facet.hasInstances" "Has instances" }}" badge></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict
