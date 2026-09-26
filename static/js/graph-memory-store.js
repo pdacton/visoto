@@ -295,7 +295,9 @@
             counts[l.linkTypeId] = counts[l.linkTypeId] || { id: l.linkTypeId, inCount: 0, outCount: 0 };
             counts[l.linkTypeId].outCount++;
           }
-          if (l.targetId === params.elementId) {
+          // A self-loop (Dictionary -derivedByInsertionFrom-> Dictionary) is one
+          // link; counting it as both out and in made the Connections badge read 2.
+          if (l.targetId === params.elementId && l.sourceId !== params.elementId) {
             counts[l.linkTypeId] = counts[l.linkTypeId] || { id: l.linkTypeId, inCount: 0, outCount: 0 };
             counts[l.linkTypeId].inCount++;
           }
