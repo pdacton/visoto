@@ -710,6 +710,10 @@ when the edges you want do not exist verbatim in the data. Mapping:
   and the marker's `rdfs:label` becomes the box's type line. Defined today:
   `ExternalClass` (shaded darker) and `AnyResource` (dashed border).
 
+The left panel's class tree lists the diagram's nodes typed `owl:Class` / `rdfs:Class`,
+nested by the `rdfs:subClassOf` edges between them; picking one lists that class and its
+subclasses under Instances, ready to drag onto the canvas.
+
 `??` is replaced by `<iri>` in the browser, so pass `iri`. The proxy does no prefix
 expansion and no `visoto:` magic properties: declare every `PREFIX`. The query is a Go
 raw string, since it is a parameter rather than a `<sparql-query>` tag:

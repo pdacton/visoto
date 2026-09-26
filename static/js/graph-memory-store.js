@@ -33,6 +33,8 @@
   var RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
   var RDFS_LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
   var RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class';
+  var OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class';
+  var RDFS_SUBCLASS = 'http://www.w3.org/2000/01/rdf-schema#subClassOf';
 
   // Presentation markers: a CONSTRUCT may type a node urn:visoto:<Name> to ask
   // for a distinct look (e.g. urn:visoto:ExternalClass on the ontology diagram).
@@ -186,6 +188,32 @@
       return el.id.toLowerCase().indexOf(t) >= 0 ||
         el.label.values.some(function (v) { return v.value.toLowerCase().indexOf(t) >= 0; });
     }
+    function classNodeIds() {
+      return Object.keys(store.elements).filter(function (id) {
+        var types = store.elements[id].types;
+        return types.indexOf(OWL_CLASS) >= 0 || types.indexOf(RDFS_CLASS) >= 0;
+      });
+    }
+    function sortByLabel(nodes) {
+      function text(n) { return (n.label.values[0] || { value: n.id }).value.toLowerCase(); }
+      return nodes.sort(function (a, b) { return text(a) < text(b) ? -1 : text(a) > text(b) ? 1 : 0; });
+    }
+    // The class and everything below it via rdfs:subClassOf edges.
+    function subclassClosure(id) {
+      var seen = {};
+      var queue = [id];
+      seen[id] = true;
+      while (queue.length) {
+        var cur = queue.shift();
+        store.links.forEach(function (l) {
+          if (l.linkTypeId === RDFS_SUBCLASS && l.targetId === cur && !seen[l.sourceId]) {
+            seen[l.sourceId] = true;
+            queue.push(l.sourceId);
+          }
+        });
+      }
+      return seen;
+    }
     function neighbours(elementId, linkId, direction) {
       var iris = [];
       store.links.forEach(function (l) {
@@ -197,17 +225,46 @@
     }
 
     return {
+      // The diagram's own class nodes (typed owl:Class / rdfs:Class), nested
+      // by the rdfs:subClassOf edges between them. Marker-typed nodes (external
+      // classes, placeholders) are not classes of the diagram and stay out. GE
+      // adds each id once and breaks cycles itself, so a class with two
+      // superclasses may safely appear under both. count 0 hides the badge: the
+      // nodes are classes, not instance counts.
       classTree: function () {
-        return Promise.resolve([{
-          id: RDFS_CLASS,
-          label: { values: [{ value: 'Class', language: '' }] },
-          count: Object.keys(store.elements).length,
-          children: [],
-        }]);
+        var ids = classNodeIds();
+        if (ids.length === 0) {
+          return Promise.resolve([{
+            id: RDFS_CLASS,
+            label: { values: [{ value: 'Class', language: '' }] },
+            count: Object.keys(store.elements).length,
+            children: [],
+          }]);
+        }
+        var isClass = {};
+        ids.forEach(function (id) { isClass[id] = true; });
+        var children = {};
+        var hasParent = {};
+        store.links.forEach(function (l) {
+          if (l.linkTypeId !== RDFS_SUBCLASS || !isClass[l.sourceId] || !isClass[l.targetId]) return;
+          (children[l.targetId] = children[l.targetId] || []).push(l.sourceId);
+          hasParent[l.sourceId] = true;
+        });
+        var visiting = {};
+        function node(id) {
+          visiting[id] = true;
+          var kids = (children[id] || [])
+            .filter(function (c) { return !visiting[c]; })
+            .map(node);
+          delete visiting[id];
+          return { id: id, label: store.elements[id].label, count: 0, children: sortByLabel(kids) };
+        }
+        return Promise.resolve(sortByLabel(ids.filter(function (id) { return !hasParent[id]; }).map(node)));
       },
       classInfo: function (params) {
         return Promise.resolve(params.classIds.map(function (id) {
-          return { id: id, label: label(id), count: 0, children: [] };
+          var el = store.elements[id];
+          return { id: id, label: el ? el.label : label(id), count: 0, children: [] };
         }));
       },
       propertyInfo: function (params) {
@@ -252,11 +309,16 @@
         var iris = params.refElementId
           ? neighbours(params.refElementId, params.refElementLinkId, params.linkDirection)
           : Object.keys(store.elements);
+        // Picking a class in the tree lists that class node and its subclasses
+        // (the tree's classes ARE diagram nodes), so they can be dragged onto
+        // the canvas; any other type id filters by rdf:type as usual.
+        var subtree = params.elementTypeId && store.elements[params.elementTypeId]
+          ? subclassClosure(params.elementTypeId) : null;
         var dict = {};
         iris.forEach(function (iri) {
           var el = store.elements[iri];
           if (!el) return;
-          if (params.elementTypeId && el.types.indexOf(params.elementTypeId) < 0) return;
+          if (params.elementTypeId && !(subtree && subtree[iri]) && el.types.indexOf(params.elementTypeId) < 0) return;
           if (!matchesText(el, params.text)) return;
           dict[iri] = el;
         });
