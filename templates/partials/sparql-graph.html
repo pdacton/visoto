@@ -21,6 +21,11 @@
     - height: (optional) CSS height for the container. Default "calc(100vh - 200px)".
     - hideTypeEdges: (optional) hide rdf:type / rdfs:subClassOf edges. Use on architecture
       diagrams, where one type edge per node buries the relations that matter.
+    - construct: (optional) a SPARQL CONSTRUCT whose result IS the diagram. Switches the
+      graph from browsing the endpoint to rendering exactly the constructed triples (see
+      static/js/graph-memory-store.js for how triples map to nodes, attribute rows and
+      edges). `??` is replaced by <iri> client-side, so pass "iri" too. The proxy does
+      no prefix expansion: declare every PREFIX the query uses. `iris` is ignored.
 
   Notes:
     - The partial self-loads the Graph Explorer CDN bundle, guarded so it loads only once
@@ -38,6 +43,7 @@
   {{ $height := or .height "calc(100vh - 200px)" }}
   {{ $lazy := .lazy }}
   {{ $hideTypeEdges := .hideTypeEdges }}
+  {{ $construct := .construct }}
   {{ $title := or .title (t "graph.defaultTitle" "Graph") }}
   {{ $icon := or .icon "share-2" }}
 
@@ -86,17 +92,21 @@
     </div>
   </div>
 
-  <!-- Data islands: available icon names, the same-origin SPARQL proxy URL, starting IRIs, height. -->
+  <!-- Data islands: available icon names, the same-origin SPARQL proxy URL, starting IRIs, height,
+       and the optional CONSTRUCT. -->
   <template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>
   <template id="{{ $id }}-endpoint-url">{{ $endpointUrl | toJSON }}</template>
   <template id="{{ $id }}-iris">{{ $iris | toJSON }}</template>
   <template id="{{ $id }}-height">{{ $height | toJSON }}</template>
   {{ if $iri }}<template id="{{ $id }}-iri">{{ $iri | toJSON }}</template>{{ end }}
+  {{ if $construct }}<template id="{{ $id }}-construct">{{ $construct | toJSON }}</template>{{ end }}
 
   <!-- Behaviour lives in static/js/sparql-graph.js; this partial emits only
        markup, data islands and the data-sparql-graph marker it reads. -->
   <!-- Shared icon resolution (mirrors internal/icon); must precede the graph script. -->
   <script src="/static/js/visoto-icons.js" defer></script>
+  <!-- In-memory store + DataProvider for CONSTRUCTed graphs; must precede the graph script. -->
+  <script src="/static/js/graph-memory-store.js" defer></script>
   <script src="/static/js/sparql-graph.js" defer></script>
 
 {{ end }}

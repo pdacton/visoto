@@ -28,9 +28,6 @@
 
     var currentWorkspace = null;
 
-    var RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
-    var RDFS_LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
-
     function readIsland(suffix) {
       var el = document.getElementById(ID + suffix);
       if (!el) return null;
@@ -154,202 +151,9 @@
       ].join('\n');
     }
 
-    // -------------------------------------------------------------------------
-    // Minimal N-Triples parser — sufficient for the CONSTRUCT output (IRIs and
-    // plain/typed literals; the query never emits blank nodes).
-    // -------------------------------------------------------------------------
-    function unescapeNt(s) {
-      return s.replace(/\\u([0-9A-Fa-f]{4})/g, function (_, h) { return String.fromCharCode(parseInt(h, 16)); })
-        .replace(/\\(.)/g, function (_, c) {
-          return c === 'n' ? '\n' : c === 't' ? '\t' : c === 'r' ? '\r' : c;
-        });
-    }
-    function parseNTriples(text) {
-      var triples = [];
-      var lineRe = /^<([^>]*)>\s+<([^>]*)>\s+(.+?)\s*\.\s*$/;
-      var litRe = /^"((?:[^"\\]|\\.)*)"(?:@([A-Za-z][A-Za-z0-9-]*)|\^\^<([^>]*)>)?$/;
-      text.split('\n').forEach(function (line) {
-        line = line.trim();
-        if (!line || line.charAt(0) === '#') return;
-        var m = line.match(lineRe);
-        if (!m) return;
-        var s = m[1], p = m[2], oRaw = m[3], o;
-        if (oRaw.charAt(0) === '<') {
-          o = { type: 'iri', value: oRaw.slice(1, -1) };
-        } else {
-          var lm = oRaw.match(litRe);
-          if (!lm) return;
-          o = { type: 'literal', value: unescapeNt(lm[1]), language: lm[2] || '' };
-        }
-        triples.push({ s: s, p: p, o: o });
-      });
-      return triples;
-    }
-
-    // -------------------------------------------------------------------------
-    // In-memory DataProvider over the projected schema triples (the CDN bundle
-    // has no RDFDataProvider, so we implement the interface ourselves).
-    // -------------------------------------------------------------------------
-    function buildStore(triples) {
-      var elements = {};   // iri -> ElementModel
-      var links = [];      // LinkModel[]
-
-      function element(iri) {
-        if (!elements[iri]) {
-          elements[iri] = {
-            id: iri,
-            types: [],
-            label: { values: [] },
-            properties: {},
-          };
-        }
-        return elements[iri];
-      }
-
-      triples.forEach(function (t) {
-        var el = element(t.s);
-        if (t.p === RDF_TYPE && t.o.type === 'iri') {
-          el.types.push(t.o.value);
-        } else if (t.p === RDFS_LABEL && t.o.type === 'literal') {
-          el.label.values.push({ value: t.o.value, language: t.o.language });
-        } else if (t.o.type === 'literal') {
-          if (!el.properties[t.p]) el.properties[t.p] = { type: 'string', values: [] };
-          el.properties[t.p].values.push({ value: t.o.value, language: t.o.language });
-        } else {
-          element(t.o.value);
-          links.push({ linkTypeId: t.p, sourceId: t.s, targetId: t.o.value });
-        }
-      });
-
-      Object.keys(elements).forEach(function (iri) {
-        var el = elements[iri];
-        if (el.label.values.length === 0) {
-          el.label.values.push({ value: localName(iri), language: '' });
-        }
-        // A class node's rdf:type is the generic rdfs:Class, so typeStyleResolver()
-        // -- which Graph Explorer hands nothing but the type array -- can only ever
-        // return the generic class icon. The node's identity is its own IRI.
-        //
-        // GE 1.3.0 let a StandardTemplate subclass patch iconUrl into this.props
-        // before super.render(). That silently stopped working in 2.x: props are
-        // rebuilt from the model on every render, so the patched copy is discarded
-        // (and React 19 makes props read-only besides). Instead, put the icon on the
-        // element model itself -- renderThumbnail() prefers data.image over iconUrl,
-        // and it survives the props rebuild because it IS the model.
-        var icon = window.VisotoIcons.resolve(iri, [], AVAILABLE_ICONS);
-        if (icon) el.image = icon;
-      });
-
-      return { elements: elements, links: links };
-    }
-
-    function makeSchemaProvider(store) {
-      function label(iri) {
-        return { values: [{ value: localName(iri), language: '' }] };
-      }
-      function linkTypeList() {
-        var counts = {};
-        store.links.forEach(function (l) { counts[l.linkTypeId] = (counts[l.linkTypeId] || 0) + 1; });
-        return Object.keys(counts).map(function (id) {
-          return { id: id, label: label(id), count: counts[id] };
-        });
-      }
-      function elementDict(iris) {
-        var dict = {};
-        iris.forEach(function (iri) {
-          if (store.elements[iri]) dict[iri] = store.elements[iri];
-        });
-        return dict;
-      }
-      function matchesText(el, text) {
-        if (!text) return true;
-        var t = text.toLowerCase();
-        return el.id.toLowerCase().indexOf(t) >= 0 ||
-          el.label.values.some(function (v) { return v.value.toLowerCase().indexOf(t) >= 0; });
-      }
-
-      return {
-        classTree: function () {
-          return Promise.resolve([{
-            id: 'http://www.w3.org/2000/01/rdf-schema#Class',
-            label: { values: [{ value: 'Class', language: '' }] },
-            count: Object.keys(store.elements).length,
-            children: [],
-          }]);
-        },
-        classInfo: function (params) {
-          return Promise.resolve(params.classIds.map(function (id) {
-            return { id: id, label: label(id), count: 0, children: [] };
-          }));
-        },
-        propertyInfo: function (params) {
-          var dict = {};
-          params.propertyIds.forEach(function (id) { dict[id] = { id: id, label: label(id) }; });
-          return Promise.resolve(dict);
-        },
-        linkTypes: function () { return Promise.resolve(linkTypeList()); },
-        linkTypesInfo: function (params) {
-          return Promise.resolve(params.linkTypeIds.map(function (id) {
-            return { id: id, label: label(id) };
-          }));
-        },
-        elementInfo: function (params) {
-          return Promise.resolve(elementDict(params.elementIds));
-        },
-        linksInfo: function (params) {
-          var inSet = {};
-          params.elementIds.forEach(function (id) { inSet[id] = true; });
-          return Promise.resolve(store.links.filter(function (l) {
-            return inSet[l.sourceId] && inSet[l.targetId];
-          }));
-        },
-        linkTypesOf: function (params) {
-          var counts = {};
-          store.links.forEach(function (l) {
-            if (l.sourceId === params.elementId) {
-              counts[l.linkTypeId] = counts[l.linkTypeId] || { id: l.linkTypeId, inCount: 0, outCount: 0 };
-              counts[l.linkTypeId].outCount++;
-            }
-            if (l.targetId === params.elementId) {
-              counts[l.linkTypeId] = counts[l.linkTypeId] || { id: l.linkTypeId, inCount: 0, outCount: 0 };
-              counts[l.linkTypeId].inCount++;
-            }
-          });
-          return Promise.resolve(Object.keys(counts).map(function (k) { return counts[k]; }));
-        },
-        linkElements: function (params) {
-          var iris = [];
-          store.links.forEach(function (l) {
-            if (params.linkId && l.linkTypeId !== params.linkId) return;
-            if (l.sourceId === params.elementId && params.direction !== 'in') iris.push(l.targetId);
-            if (l.targetId === params.elementId && params.direction !== 'out') iris.push(l.sourceId);
-          });
-          return Promise.resolve(elementDict(iris));
-        },
-        filter: function (params) {
-          var iris;
-          if (params.refElementId) {
-            iris = [];
-            store.links.forEach(function (l) {
-              if (params.refElementLinkId && l.linkTypeId !== params.refElementLinkId) return;
-              if (l.sourceId === params.refElementId && params.linkDirection !== 'in') iris.push(l.targetId);
-              if (l.targetId === params.refElementId && params.linkDirection !== 'out') iris.push(l.sourceId);
-            });
-          } else {
-            iris = Object.keys(store.elements);
-          }
-          var dict = {};
-          iris.forEach(function (iri) {
-            var el = store.elements[iri];
-            if (!el) return;
-            if (params.elementTypeId && el.types.indexOf(params.elementTypeId) < 0) return;
-            if (!matchesText(el, params.text)) return;
-            dict[iri] = el;
-          });
-          return Promise.resolve(dict);
-        },
-      };
-    }
+    // N-Triples parsing, the store and the in-memory DataProvider are shared
+    // with sparql-graph.js's construct mode (static/js/graph-memory-store.js).
+    var MEM = window.VisotoMemoryGraph;
 
     // -------------------------------------------------------------------------
     // Rendering: same Tabler-grey link styling as sparql-graph; class boxes
@@ -396,7 +200,7 @@
         currentWorkspace = workspace;
         var model = workspace.getModel();
         model.importLayout({
-          dataProvider: makeSchemaProvider(store),
+          dataProvider: MEM.makeProvider(store),
           preloadedElements: {},
           layoutData: undefined,
         });
@@ -478,7 +282,7 @@
           var clsPromise = mode === 'class' ? Promise.resolve(RESOURCE_IRI) : detectAnchorClass();
           return clsPromise.then(function (cls) {
             return sparql(vizQuery(mode, RESOURCE_IRI, cls), 'application/n-triples').then(function (nt) {
-              var store = buildStore(parseNTriples(nt));
+              var store = MEM.buildStore(MEM.parseNTriples(nt), AVAILABLE_ICONS);
               if (Object.keys(store.elements).length === 0) {
                 throw new Error('Derivation returned no triples');
               }

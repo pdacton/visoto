@@ -251,6 +251,7 @@
 "card.observationSets" = "Insiemi di osservazioni"
 "card.observationSetsAllVersions" = "Insiemi di osservazioni (tutte le versioni)"
 "card.observations" = "Osservazioni"
+"card.ontologyDiagram" = "Diagramma dell'ontologia"
 "card.openSupplyDisruptions" = "Interruzioni di fornitura aperte"
 "card.operators" = "Operatori"
 "card.organisations" = "Organizzazioni"
@@ -375,6 +376,8 @@
 
 "card.shapeInformationSHACL" = "Informazioni sulle shape (SHACL)"
 "graph.defaultTitle" = "Grafo"
+"graph.uml.externalClass" = "classe esterna"
+"graph.uml.notDeclared" = "non dichiarato"
 
 # ── Page: politics ────────────────────────────────────────────────
 "page.politics.16MillionTriplesOrganization" = "~1,6 milioni di triple — organization è il più grande con ~975 000"
