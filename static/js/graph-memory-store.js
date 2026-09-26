@@ -23,6 +23,9 @@
     - `<p> rdfs:label "x"` for any IRI that is NOT a node labels it as a link
       type / attribute property — this is how an edge takes its label from the
       property it was projected from, rather than from the IRI's local name.
+      Labels of marker types (below) work the same way and become the box's
+      type line.
+    - `<node> a <urn:visoto:Name>` is a presentation marker (see MARKER_PREFIX).
 */
 (function () {
   'use strict';
@@ -30,6 +33,17 @@
   var RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
   var RDFS_LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
   var RDFS_CLASS = 'http://www.w3.org/2000/01/rdf-schema#Class';
+
+  // Presentation markers: a CONSTRUCT may type a node urn:visoto:<Name> to ask
+  // for a distinct look (e.g. urn:visoto:ExternalClass on the ontology diagram).
+  // GE's StandardTemplate exposes nothing per-node that CSS can select on, and the
+  // CDN bundle keeps its React private, so a template subclass cannot add a class.
+  // The one per-node value that reaches the DOM verbatim is the thumbnail's
+  // <img src> (data.image), so the marker rides there as a URL fragment
+  // ("…svg#vs-ExternalClass") and ontodia_overrides.css selects on it with :has().
+  // The fragment does not change which image loads.
+  var MARKER_PREFIX = 'urn:visoto:';
+  var MARKER_FALLBACK_IMAGE = '/static/img/resource/defaultClass.svg';
 
   function localName(iri) {
     var decoded;
@@ -133,6 +147,11 @@
       // props rebuild because it IS the model.
       var icon = window.VisotoIcons.resolve(iri, [], availableIcons || {});
       if (icon) el.image = icon;
+
+      var marker = el.types.filter(function (t) { return t.indexOf(MARKER_PREFIX) === 0; })[0];
+      if (marker) {
+        el.image = (el.image || MARKER_FALLBACK_IMAGE).split('#')[0] + '#vs-' + marker.slice(MARKER_PREFIX.length);
+      }
     });
 
     return { elements: elements, links: links, labels: labels };

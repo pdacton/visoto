@@ -705,6 +705,10 @@ when the edges you want do not exist verbatim in the data. Mapping:
 - `rdfs:label` labels nodes, and — for IRIs that are not nodes — the edges and
   attribute rows whose predicate they are. Labels in every language may be returned;
   the page language is shown.
+- `<node> a <urn:visoto:Name>` is a presentation marker, not data: the node gets a
+  CSS hook (`#vs-Name` on its thumbnail URL, selected in `ontodia_overrides.css`),
+  and the marker's `rdfs:label` becomes the box's type line. Defined today:
+  `ExternalClass` (shaded darker) and `AnyResource` (dashed border).
 
 `??` is replaced by `<iri>` in the browser, so pass `iri`. The proxy does no prefix
 expansion and no `visoto:` magic properties: declare every `PREFIX`. The query is a Go

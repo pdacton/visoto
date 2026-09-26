@@ -376,6 +376,8 @@
 
 "card.shapeInformationSHACL" = "Informazioni sulle shape (SHACL)"
 "graph.defaultTitle" = "Grafo"
+"graph.uml.externalClass" = "classe esterna"
+"graph.uml.notDeclared" = "non dichiarato"
 
 # ── Page: politics ────────────────────────────────────────────────
 "page.politics.16MillionTriplesOrganization" = "~1,6 milioni di triple — organization è il più grande con ~975 000"
