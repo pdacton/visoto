@@ -10,6 +10,15 @@
     data-sparql-graph       marker; presence means "initialize me"
     data-sparql-graph-id    DOM id prefix for this instance's islands/elements
     data-sparql-graph-lazy  "true" to defer init until a 'graph:init' event
+
+  Two modes:
+    - browse (default): seed IRIs, then Graph Explorer's SparqlDataProvider
+      fetches their data and the links between them from the endpoint.
+    - construct (a -construct island is present): one CONSTRUCT is posted,
+      and its triples ARE the diagram, served from an in-memory provider
+      (static/js/graph-memory-store.js). For views whose edges do not exist
+      verbatim in the data, e.g. an ontology's domain/range pairs drawn as
+      one association per property.
 */
 (function () {
   'use strict';
@@ -111,10 +120,20 @@
       // Fall back to a default when nothing was provided.
       if (startIris.length === 0) startIris = ['http://www.w3.org/2000/01/rdf-schema#Class'];
 
+      // Construct mode: the query text, and the store built from its result
+      // before the workspace mounts (see render() at the end of init).
+      var CONSTRUCT = readIsland('-construct');
+      var constructedStore = null;
+
       function onWorkspaceMounted(workspace) {
         if (!workspace) return;
         // Stash the workspace so the fullscreen toggle / resize handler can re-fit later.
         currentWorkspace = workspace;
+
+        if (constructedStore) {
+          mountConstructed(workspace, constructedStore);
+          return;
+        }
 
         // OWLStatsSettings with LINDAS-specific label properties and prefixes.
         var settings = Object.assign({}, GE.OWLStatsSettings, {
@@ -321,6 +340,72 @@
         setTimeout(relayout, 4000);
       }
 
+      // --- Construct mode ---------------------------------------------------------------
+      // The page IRI substituted for `??`, as in server-side queries. Validated
+      // because it is spliced into query text between angle brackets.
+      function validIri(iri) {
+        return /^https?:\/\/[^<>"{}|\\^`\s]+$/.test(iri);
+      }
+
+      function showError(message) {
+        var alert = document.createElement('div');
+        alert.className = 'alert alert-danger m-3';
+        alert.textContent = message;
+        container.replaceChildren(alert);
+      }
+
+      function fetchConstructed() {
+        var iri = singleIri || urlIri;
+        if (CONSTRUCT.indexOf('??') >= 0 && !(iri && validIri(iri))) {
+          return Promise.reject(new Error('No valid resource IRI for the graph query'));
+        }
+        var query = CONSTRUCT.split('??').join('<' + iri + '>');
+        return fetch(ENDPOINT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/sparql-query', 'Accept': 'application/n-triples' },
+          body: query,
+        }).then(function(res) {
+          if (!res.ok) throw new Error('SPARQL request failed: ' + res.status);
+          return res.text();
+        }).then(function(text) {
+          var MEM = window.VisotoMemoryGraph;
+          return MEM.buildStore(MEM.parseNTriples(text), AVAILABLE_ICONS);
+        });
+      }
+
+      // Every constructed node is placed on a grid, nodes with attribute rows
+      // are expanded (the rest would show GE's "no properties" placeholder),
+      // then force layout once the links are in.
+      function mountConstructed(workspace, store) {
+        var MEM = window.VisotoMemoryGraph;
+        var model = workspace.getModel();
+        model.importLayout({
+          dataProvider: MEM.makeProvider(store),
+          preloadedElements: {},
+          layoutData: undefined,
+        });
+
+        var iris = Object.keys(store.elements);
+        var cols = Math.ceil(Math.sqrt(iris.length));
+        iris.forEach(function(iri, i) {
+          var el = model.createElement(iri);
+          if (el) el.setPosition({ x: (i % cols) * 300, y: Math.floor(i / cols) * 200 });
+        });
+
+        Promise.resolve(model.requestElementData(iris))
+          .then(function() { return model.requestLinksOfType(); })
+          .then(function() {
+            model.elements.forEach(function(el) {
+              var data = store.elements[el.iri];
+              if (data && Object.keys(data.properties).length > 0 && el.setExpanded) el.setExpanded(true);
+            });
+            setTimeout(function() {
+              workspace.forceLayout();
+              workspace.zoomToFit();
+            }, 300);
+          });
+      }
+
       // Icon resolution is shared with schema-graph.js and mirrors internal/icon
       // (see static/js/visoto-icons.js) — one definition of "own name first, then
       // any exact type match, then any .fallback".
@@ -391,7 +476,23 @@
       var LINK_DEFAULT = makeLinkTemplate();
       var LINK_DASHED  = makeLinkTemplate({ 'stroke-dasharray': '4,4', 'stroke-width': 4 });
       var LINK_WIDE    = makeLinkTemplate({ 'stroke-width': 4 });
+      // UML generalization: hollow triangle at the superclass end. Construct mode
+      // only — there the diagram is a class model, and subClassOf is inheritance
+      // rather than one more "is-a" edge to de-emphasize.
+      var GENERALIZATION_LINE = '#9ba3af';
+      var LINK_GENERALIZATION = {
+        markerTarget: { d: 'M0,0 L0,12 L14,6 z', width: 14, height: 12, fill: '#ffffff', stroke: GENERALIZATION_LINE },
+        renderLink: function() {
+          return {
+            connection: { stroke: GENERALIZATION_LINE, 'stroke-width': 1.5 },
+            label: { attrs: LINK_LABEL_ATTRS },
+          };
+        },
+      };
       function linkTemplateResolver(linkTypeId) {
+        if (CONSTRUCT && linkTypeId === RDFS_SUBCLASS) {
+          return LINK_GENERALIZATION;
+        }
         if (linkTypeId === RDF_TYPE || linkTypeId === RDFS_SUBCLASS) {
           return LINK_DASHED;
         }
@@ -420,7 +521,21 @@
         },
       };
 
-      GE.renderTo(GE.Workspace, container, props);
+      if (!CONSTRUCT) {
+        GE.renderTo(GE.Workspace, container, props);
+        return;
+      }
+      // Constructed labels come in every language the ontology has; show the
+      // page's (html lang, from the site-lang cookie) when GE offers it.
+      var pageLang = (document.documentElement.lang || '').slice(0, 2);
+      if (props.languages.some(function(l) { return l.code === pageLang; })) props.language = pageLang;
+      fetchConstructed()
+        .then(function(store) {
+          if (Object.keys(store.elements).length === 0) throw new Error('The graph query returned no triples');
+          constructedStore = store;
+          GE.renderTo(GE.Workspace, container, props);
+        })
+        .catch(function(err) { showError('Graph query failed: ' + err.message); });
     }
 
     // Run init at most once, whether triggered on load (eager) or on first show (lazy).

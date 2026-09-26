@@ -638,6 +638,24 @@
   border-color: var(--tblr-border-color) !important;
 }
 
+/* Presentation markers from a constructed graph (sparqlGraph "construct" mode).
+ * The marker arrives as a fragment on the thumbnail's <img src> — the only
+ * per-node value GE puts in the DOM (see static/js/graph-memory-store.js).
+ *
+ * vs-ExternalClass: a class from another vocabulary on the ontology diagram.
+ *   Shaded darker than the ontology's own classes. color-mix against the body
+ *   colour darkens in light mode and lightens in dark mode, so the box stands
+ *   apart in both; the selector outranks the dark-mode surface rule below.
+ * vs-AnyResource: a placeholder for an undeclared domain or range. Dashed. */
+.graph-explorer-standard-template:has(img[src$="#vs-ExternalClass"]) .graph-explorer-standard-template__body,
+.graph-explorer-standard-template:has(img[src$="#vs-ExternalClass"]) .graph-explorer-standard-template__dropdown {
+  background-color: color-mix(in srgb, var(--tblr-body-color) 12%, var(--tblr-bg-surface)) !important;
+}
+.graph-explorer-standard-template:has(img[src$="#vs-AnyResource"]) .graph-explorer-standard-template__main {
+  border-style: dashed !important;
+  box-shadow: none !important;
+}
+
 /* ===== CONNECTIONS MENU — Tabler styling (theme-agnostic) ===== */
 
 /* Outer dialog frame — the library draws a near-black 1px border, square
