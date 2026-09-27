@@ -42,7 +42,7 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
 - **GL-2** The diagram is rendered with the page's default algorithm: Network for
   the resource graph, Tree → for the ontology diagram.
 - **GL-3** A layout the user chose earlier is remembered per diagram type
-  (`localStorage`) and wins over the default. A saved canvas (GL-37) wins over both.
+  (`localStorage`) and wins over the default. An autosaved canvas (GL-35) wins over both.
 - **GL-4** A spinner shows while the layout computes; afterwards the diagram
   zooms to fit.
 - **GL-43** On first visit a dismissible one-line hint explains the basics
