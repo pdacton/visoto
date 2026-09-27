@@ -36,8 +36,12 @@ Quick reference for improving Visoto's Graph Explorer implementation.
 ## Configuration Reference
 
 ### Current Visoto Implementation
+Since the graph-layout work (Part A) every GE call goes through `static/js/ge-adapter.js`
+(`VisotoGE.sparqlProvider(endpointUrl, settings)` builds the provider below over
+`OWLStatsSettings`); see the `graph-explorer` skill for the file map.
+
 ```javascript
-// From static/js/sparql-graph.js
+// Provider settings, from static/js/sparql-graph.js (built in ge-adapter.js)
 var settings = Object.assign({}, GE.OWLRDFSSettings, {
   dataLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
   schemaLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label'

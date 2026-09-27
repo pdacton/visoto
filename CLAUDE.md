@@ -109,6 +109,11 @@ RDF graph visualization via [Graph Explorer](https://github.com/zazuko/graph-exp
 `static/css/ontodia_overrides.css`. See the `graph-explorer` skill and
 `docs/ontodia-graph-explorer-references.md`.
 
+Every embed shares one layer: `static/js/ge-adapter.js` (the only file touching GE),
+`graph-kit.js` (toolbar, undo, layouts, saving) and the `graph-*.js` modules it installs;
+markup in `templates/partials/graph-toolbar.html`. Add resource searches through
+`GET /api/search` (JSON twin of `/search`).
+
 It queries from the browser through the `/api/sparql` proxy (see Data layer),
 which accepts only SELECT/ASK/CONSTRUCT/DESCRIBE. Queries stay POST: a GET puts the whole query in the URL and long link queries
 blow past the ~8 KB limit, silently losing every edge.

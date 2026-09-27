@@ -140,3 +140,4 @@
 "js.graph.removeAllOfClass" = "Remove all"
 "js.graph.cmd.removeClass" = "Remove all {name}"
 "js.graph.findCount" = "{n} of {total}"
+"js.graph.selectNode" = "Select {name}"

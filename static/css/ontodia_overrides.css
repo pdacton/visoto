@@ -1225,3 +1225,39 @@
   overflow-y: auto;
   min-height: 0;
 }
+
+/* List view (GL-39): over the canvas area, below the floating toolbar. */
+.graph-list {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  overflow: auto;
+  padding: 4rem 1rem 1rem;
+  background: var(--tblr-bg-surface, #fff);
+}
+.graph-list[hidden] {
+  display: none !important;
+}
+.graph-help-menu {
+  width: min(22rem, 90vw);
+}
+.graph-help-menu dd {
+  margin-bottom: .25rem;
+}
+
+/* GL-41: a visible focus ring on every graph control, whatever the theme. */
+.graph-toolbar .btn:focus-visible,
+.graph-selectionbar .btn:focus-visible,
+.graph-options .btn:focus-visible {
+  outline: 2px solid var(--tblr-primary, #066fd1);
+  outline-offset: 2px;
+}
+/* GL-40: 44 px hit targets on touch screens. */
+@media (pointer: coarse) {
+  .graph-toolbar .btn,
+  .graph-selectionbar .btn,
+  .graph-options .btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}

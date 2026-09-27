@@ -1,0 +1,75 @@
+{{ define "pageTitle" }}{{ t "page.graphHelp.title" "Working with graphs" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.graphHelp.subtitle" "Arrange, filter, save and share the interactive diagrams on Visoto pages." }}{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/resource/Thing.svg" alt="" width="48" height="48">{{end}}
+{{ define "metaIcon" }}/static/img/resource/Thing.svg{{ end }}
+
+{{ define "pageContent" }}
+<!-- Guide behind the "?" button of every graph toolbar (GL-53). Keep it in step
+     with templates/partials/graph-toolbar.html. -->
+<div class="row row-cards">
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h3 class="card-title"><i data-lucide="hand" class="icon me-2" aria-hidden="true"></i>{{ t "page.graphHelp.moveTitle" "Moving around" }}</h3></div>
+      <div class="card-body">
+        <p>{{ t "page.graphHelp.move1" "In Pan mode (hand) a drag on empty canvas moves the view; in Select mode (dashed box) it draws a selection box. Shift+drag draws a box in either mode." }}</p>
+        <p>{{ t "page.graphHelp.move2" "Zoom with the + and − buttons or Ctrl+mouse wheel. Fit shows the whole diagram, or the selection when there is one. The button in the card header opens the graph full screen." }}</p>
+        <p class="mb-0">{{ t "page.graphHelp.move3" "On touch screens, use Select mode to drag nodes and draw boxes; in Pan mode a finger scrolls the canvas." }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h3 class="card-title"><i data-lucide="square-dashed-mouse-pointer" class="icon me-2" aria-hidden="true"></i>{{ t "page.graphHelp.selectTitle" "Selecting" }}</h3></div>
+      <div class="card-body">
+        <p>{{ t "page.graphHelp.select1" "Click a node to select it; Ctrl+click (⌘+click on a Mac) adds or removes a node. Ctrl+A selects all, Esc clears the selection." }}</p>
+        <p class="mb-0">{{ t "page.graphHelp.select2" "While nodes are selected, a bar at the bottom offers: add all their neighbours, select their neighbours, lay out the selection, pin, align and distribute, keep only these, and remove. Dragging a selected node moves the whole selection." }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h3 class="card-title"><i data-lucide="network" class="icon me-2" aria-hidden="true"></i>{{ t "page.graphHelp.layoutTitle" "Layouts and pins" }}</h3></div>
+      <div class="card-body">
+        <p>{{ t "page.graphHelp.layout1" "The Layout menu arranges the diagram as a Network, a Tree (top-down or left-to-right) or Radial rings around one node. With two or more nodes selected, only the selection is arranged." }}</p>
+        <p>{{ t "page.graphHelp.layout2" "A node you drag or align is pinned (pin badge): layouts leave it where it is. Click the badge, or use Pin in the selection bar, to release it." }}</p>
+        <p class="mb-0">{{ t "page.graphHelp.layout3" "Layout options lists the properties on the diagram; reverse one to turn it upside down in the Tree layouts (superclasses on top is the default), then press Redraw." }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h3 class="card-title"><i data-lucide="layers" class="icon me-2" aria-hidden="true"></i>{{ t "page.graphHelp.contentTitle" "Adding, hiding, finding" }}</h3></div>
+      <div class="card-body">
+        <p>{{ t "page.graphHelp.content1" "The + button finds resources by label, or takes a pasted IRI. Selecting a node also shows Graph Explorer's own menu to follow its connections. More than 20 new nodes at once ask for confirmation first." }}</p>
+        <p>{{ t "page.graphHelp.content2" "Classes and namespaces lists what is on the diagram; the eye hides or shows those nodes without losing them. Hidden nodes stay out of layouts and exports." }}</p>
+        <p class="mb-0">{{ t "page.graphHelp.content3" "The magnifier finds nodes already on the diagram and zooms to them; Enter selects them." }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h3 class="card-title"><i data-lucide="save" class="icon me-2" aria-hidden="true"></i>{{ t "page.graphHelp.saveTitle" "Saving and sharing" }}</h3></div>
+      <div class="card-body">
+        <p>{{ t "page.graphHelp.save1" "Every change can be undone. Your arrangement is saved automatically in this browser and comes back when you reopen the page; Reset diagram (⋮ menu) returns to the page's own view." }}</p>
+        <p class="mb-0">{{ t "page.graphHelp.save2" "Save as… keeps named diagrams in this browser (My diagrams). Download file writes a .visoto-graph.json that anyone can open with Open file…; it remembers its SPARQL endpoint. Export writes Turtle, SVG, PNG, or prints." }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header"><h3 class="card-title"><i data-lucide="table" class="icon me-2" aria-hidden="true"></i>{{ t "page.graphHelp.a11yTitle" "Without the mouse" }}</h3></div>
+      <div class="card-body">
+        <p>{{ t "page.graphHelp.a11y1" "List view shows the diagram as tables of nodes and edges, with a checkbox per node that selects it on the canvas too — the same diagram for keyboards and screen readers." }}</p>
+        <p class="mb-0">{{ t "page.graphHelp.a11y2" "Every toolbar button has a label and can be reached with Tab. The ? button lists the keyboard shortcuts." }}</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

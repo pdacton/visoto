@@ -504,6 +504,40 @@
             .then(function () { workspace.getDiagram().performSyncUpdate(); return ids; }),
         };
       },
+      // --- A6: what is drawn --------------------------------------------------
+      // For Turtle export (GL-38) and the list view (GL-39): every node with
+      // its types and labels (property rows only for expanded nodes — only
+      // those are drawn), and every visible edge.
+      drawnGraph: function () {
+        var view = workspace.getDiagram();
+        var elements = model.elements.map(function (el) {
+          var data = el.data || {};
+          return {
+            id: el.id,
+            iri: el.iri,
+            label: view.formatLabel(data.label ? data.label.values : [], el.iri),
+            labels: data.label ? data.label.values : [],
+            types: data.types || [],
+            typeLabels: (data.types || []).map(function (t) {
+              var cls = model.getClass(t);
+              return view.formatLabel(cls ? cls.label : [], t);
+            }),
+            properties: el.isExpanded ? (data.properties || {}) : {},
+          };
+        });
+        var links = [];
+        model.links.forEach(function (link) {
+          var s = model.sourceOf(link), t = model.targetOf(link);
+          if (!s || !t) return;
+          var type = model.getLinkType(link.typeId);
+          links.push({
+            source: s.iri, target: t.iri, type: link.typeId,
+            sourceId: s.id, targetId: t.id,
+            typeLabel: view.formatLabel(type ? type.label : [], link.typeId),
+          });
+        });
+        return { elements: elements, links: links };
+      },
       // --- Saving (A3) -----------------------------------------------------
       // GE's SerializedDiagram: element ids, IRIs, positions, expanded state,
       // links with vertices, link-type visibility. Labels and data are not in

@@ -116,6 +116,11 @@
             aria-label="{{ t "graph.details" "Details: show or hide property cards" }}" title="{{ t "graph.details" "Details: show or hide property cards" }}">
       <i data-lucide="list-collapse" class="icon"></i>
     </button>
+    <!-- GL-39: the canvas as tables of nodes and edges (graph-list.js). -->
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="list-view" aria-pressed="false"
+            aria-label="{{ t "graph.listView" "List view" }}" title="{{ t "graph.listView" "List view" }}">
+      <i data-lucide="table" class="icon"></i>
+    </button>
     <!-- GL-10, 49, 52: classes and namespaces on the canvas, with hide/show. -->
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="filter"
             aria-label="{{ t "graph.filter" "Classes and namespaces" }}" title="{{ t "graph.filter" "Classes and namespaces" }}">
@@ -161,6 +166,9 @@
           </button>
           <div class="dropdown-divider"></div>
           <h6 class="dropdown-header">{{ t "graph.export" "Export" }}</h6>
+          <button type="button" class="dropdown-item" data-graph-action="export-ttl">
+            <i data-lucide="file-text" class="icon dropdown-item-icon"></i>{{ t "graph.exportTtl" "Turtle (RDF)" }}
+          </button>
           <button type="button" class="dropdown-item" data-graph-action="export-svg">
             <i data-lucide="file-code" class="icon dropdown-item-icon"></i>{{ t "graph.exportSvg" "SVG image" }}
           </button>
@@ -170,6 +178,27 @@
           <button type="button" class="dropdown-item" data-graph-action="print">
             <i data-lucide="printer" class="icon dropdown-item-icon"></i>{{ t "graph.print" "Print" }}
           </button>
+        </div>
+      </div>
+
+      <!-- GL-53: shortcuts and the guide page. -->
+      <div class="dropdown">
+        <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" aria-expanded="false"
+                aria-label="{{ t "graph.help" "Help and shortcuts" }}" title="{{ t "graph.help" "Help and shortcuts" }}">
+          <i data-lucide="circle-help" class="icon"></i>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end p-3 graph-help-menu">
+          <h6 class="dropdown-header px-0 pt-0">{{ t "graph.shortcuts" "Keyboard shortcuts" }}</h6>
+          <dl class="row small mb-2">
+            <dt class="col-5"><kbd>Ctrl/⌘</kbd>+<kbd>Z</kbd></dt><dd class="col-7">{{ t "graph.undo" "Undo" }}</dd>
+            <dt class="col-5"><kbd>Ctrl/⌘</kbd>+<kbd>⇧</kbd>+<kbd>Z</kbd></dt><dd class="col-7">{{ t "graph.redo" "Redo" }}</dd>
+            <dt class="col-5"><kbd>Ctrl/⌘</kbd>+<kbd>A</kbd></dt><dd class="col-7">{{ t "graph.helpSelectAll" "Select all nodes" }}</dd>
+            <dt class="col-5"><kbd>Esc</kbd></dt><dd class="col-7">{{ t "graph.helpClear" "Clear the selection" }}</dd>
+            <dt class="col-5"><kbd>Del</kbd></dt><dd class="col-7">{{ t "graph.helpDelete" "Remove the selection" }}</dd>
+            <dt class="col-5"><kbd>Ctrl/⌘</kbd>+{{ t "graph.helpClickKey" "click" }}</dt><dd class="col-7">{{ t "graph.helpToggle" "Add to or remove from the selection" }}</dd>
+            <dt class="col-5"><kbd>⇧</kbd>+{{ t "graph.helpDragKey" "drag" }}</dt><dd class="col-7">{{ t "graph.helpBox" "Draw a selection box" }}</dd>
+          </dl>
+          <a class="small" href="/graph-help.html" target="_blank" rel="noopener">{{ t "graph.helpGuide" "Guide: working with graphs" }}</a>
         </div>
       </div>
 
@@ -339,6 +368,36 @@
     </div>
     <div class="card-footer py-2 px-3 small text-secondary">
       {{ t "graph.filterHint" "Hidden nodes stay out of layouts and exports and are saved with the diagram." }}
+    </div>
+  </div>
+{{ end }}
+
+<!--
+  List view (GL-39): the canvas as tables, over the canvas area while open.
+  Rows filled by graph-list.js.
+
+  Usage (inside the graph stage):
+    template "graphListView" (dict "id" $id)
+-->
+{{ define "graphListView" }}
+  {{ $id := .id }}
+  <div id="{{ $id }}-list" class="graph-list" hidden role="region" aria-label="{{ t "graph.listView" "List view" }}">
+    <h4 class="h5 mb-2">{{ t "graph.nodes" "Nodes" }} <span class="badge bg-secondary-lt" data-graph-list-nodecount></span></h4>
+    <div class="table-responsive mb-3">
+      <table class="table table-sm table-vcenter card-table">
+        <thead><tr>
+          <th class="w-1"><span class="visually-hidden">{{ t "graph.selected" "Selected" }}</span></th>
+          <th>{{ t "graph.node" "Node" }}</th><th>{{ t "graph.type" "Type" }}</th><th class="text-end">{{ t "graph.edges" "Edges" }}</th>
+        </tr></thead>
+        <tbody data-graph-list-nodes></tbody>
+      </table>
+    </div>
+    <h4 class="h5 mb-2">{{ t "graph.edges" "Edges" }} <span class="badge bg-secondary-lt" data-graph-list-edgecount></span></h4>
+    <div class="table-responsive">
+      <table class="table table-sm table-vcenter card-table">
+        <thead><tr><th>{{ t "graph.source" "Source" }}</th><th>{{ t "graph.property" "Property" }}</th><th>{{ t "graph.target" "Target" }}</th></tr></thead>
+        <tbody data-graph-list-edges></tbody>
+      </table>
     </div>
   </div>
 {{ end }}

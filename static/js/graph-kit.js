@@ -343,6 +343,7 @@
       if (window.VisotoGraphSelection) window.VisotoGraphSelection.install(kit);
       if (window.VisotoGraphTools) window.VisotoGraphTools.install(kit);
       if (window.VisotoGraphFilter) window.VisotoGraphFilter.install(kit);
+      if (window.VisotoGraphList) window.VisotoGraphList.install(kit);
       updateHistoryButtons();
       updateLanguage();
       updateLayoutMenu();
@@ -539,6 +540,7 @@
         case 'zoom-in': c.zoomIn(); break;
         case 'zoom-out': c.zoomOut(); break;
         case 'export-svg': c.exportSvg(fileName('svg')); break;
+        case 'export-ttl': downloadText(window.VisotoTurtle.toTurtle(c.drawnGraph()), 'text/turtle', fileName('ttl')); break;
         case 'export-png': c.exportPng(fileName('png')); break;
         case 'print': c.print(); break;
         case 'save-as': saveAs(); break;
@@ -698,10 +700,14 @@
 
     function download() {
       if (!kit.commands) return;
-      var blob = new Blob([JSON.stringify(kit.snapshot(), null, 2)], { type: 'application/json' });
+      downloadText(JSON.stringify(kit.snapshot(), null, 2), 'application/json', fileName('visoto-graph.json'));
+    }
+
+    function downloadText(text, type, name) {
+      var blob = new Blob([text], { type: type });
       var a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = fileName('visoto-graph.json');
+      a.download = name;
       document.body.appendChild(a);
       a.click();
       a.remove();

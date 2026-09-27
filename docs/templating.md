@@ -690,9 +690,21 @@ out a set of IRIs at initialization.
 | `height` | `string` | `"calc(100vh - 200px)"` | CSS height of the container. |
 | `lazy` | `bool` | `false` | Defer initialization until a `graph:init` event fires on the `-root` element. |
 | `construct` | `string` | — | A SPARQL CONSTRUCT whose result *is* the diagram (see below). `iris` is then ignored. |
+| `hideTypeEdges` | `bool` | `false` | Start with `rdf:type` / `rdfs:subClassOf` edges hidden (the user can show them again). |
+| `title` / `icon` | `string` | `"Graph"` / `"share-2"` | Card header title and Lucide icon. |
 
-The partial self-loads the Graph Explorer CDN bundle, guarded so it loads only once
-per page. The `?iri=` URL parameter is honored as an additional starting IRI.
+The partial self-loads the Graph Explorer CDN bundle (with SRI), once per page. The
+`?iri=` URL parameter is honored as an additional starting IRI.
+
+**What every graph gets** (both partials, no parameters needed): Visoto's own floating
+toolbar instead of GE's — Add resource, Find on canvas, Layout ▾ (Network, Tree ↓,
+Tree →, Radial, Layout options), Pan / Select, Undo / Redo, zoom and Fit, Details,
+List view, Classes and namespaces, label language, Save / Export ▾, help — plus a
+selection bar, pinning, autosave per page and graph `id`, and inline error messages
+with Retry. The first layout is Network for a browse graph and Tree → for a `construct`
+or schema diagram. Give each graph on a page its own `id`: the id keys its autosave.
+User guide: `/graph-help.html`. Code: `static/js/graph-kit.js` and the `graph-*.js`
+files it installs; `static/js/ge-adapter.js` is the only file that talks to GE.
 
 **Construct mode.** With `construct`, the graph does not browse the endpoint: the
 browser posts the query once (through the `/api/sparql` proxy) and draws exactly the

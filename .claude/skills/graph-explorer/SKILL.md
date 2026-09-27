@@ -19,6 +19,27 @@ Reference guide for customizing the Graph Explorer library (a fork of Ontodia) u
 - `static/js/schema-graph.js` - the schema diagram at `/_schema.html`; pins the same version
 - `static/css/ontodia_overrides.css` - Custom CSS overrides
 
+### Visoto graph layer (graph-layout plan, Part A)
+Every embed goes through a shared layer; change behaviour there, not per embed:
+- `static/js/ge-adapter.js` - **the only file that touches GE**: CDN loader (SRI), the
+  remembering `CommandHistory` GE 2.1 lacks, render, provider, all model/view calls.
+  Workarounds an upstream change would retire are tagged `GE-UPSTREAM: B<n>`.
+- `static/js/graph-kit.js` - per-graph controller (`VisotoGraph.create(id)`, `.get(id)`):
+  toolbar, undo/redo + hotkeys, messages with Retry, spinner/Cancel, layouts, saving.
+- `static/js/graph-layout.js` - pure layouts (Network, Tree ↓/→ via elkjs, Radial,
+  packing, align); `static/js/graph-turtle.js` - pure Turtle writer. Both unit-tested:
+  `node --test tests/js/`.
+- `static/js/graph-selection.js`, `graph-tools.js`, `graph-filter.js`, `graph-list.js`,
+  `graph-store.js` - selection/pins, add/details/layout options, classes/namespaces/find,
+  list view, localStorage saves.
+- `templates/partials/graph-toolbar.html` - toolbar, selection bar, panels, modal.
+- Spec and decisions: `.project/todo/graph-layout.md`, `.project/todo/graph-layout-plan.md`.
+
+GE 2.1 traps met on the way: `hideToolbar` replaces the toolbar; the Workspace default
+history cannot undo; `importLayout` registers link types asynchronously (seed after it
+settles); `ElementLayer.requestRedraw(el, None)` never redraws (adapter forces it after
+each history change); modifier clicks are ignored by the editor; the paper is mouse-only.
+
 There is no longer a standalone Graph Explorer page: `templates/pages/ontodia.html` was
 retired in 612bca6 and replaced by the partial above.
 
