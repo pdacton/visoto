@@ -4,8 +4,10 @@ Status: **feature request**, no code written. Requirement IDs (GL-n) are stable 
 cite them in issues and PRs. IDs are never renumbered; amended requirements keep
 their ID.
 
-Applies to both Graph Explorer embeds: the resource graph
-(`static/js/sparql-graph.js`) and the ontology diagram (`static/js/schema-graph.js`).
+Applies to all three Graph Explorer embeds: the resource graph
+(`static/js/sparql-graph.js`, browse mode), the owl:Ontology UML diagram (same
+file, construct mode) and the schema view (`static/js/schema-graph.js`). "Ontology
+diagram" below means the latter two. Implementation plan: `graph-layout-plan.md`.
 
 **Scope of a canvas:** one canvas per `sparqlGraph` instance in a template. A page
 may contain several graphs; each has its own toolbar, selection, history and saved
