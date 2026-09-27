@@ -196,14 +196,25 @@
         // requestLinksOfType register some of them first, and GE then throws
         // "Link type '<iri>' already exists" and draws nothing (the Dependencies
         // graph on system-map pages, whose link types load slowly).
-        Promise.resolve(model.importLayout({
-          dataProvider: dataProvider,
-          preloadedElements: {},
-          layoutData: undefined,
-          diagram: linkTypeOptions ? { linkTypeOptions: linkTypeOptions } : undefined,
-        })).catch(function () { /* seed anyway: an edgeless graph beats none */ }).then(seed);
+        //
+        // kit.boot restores an autosaved or opened canvas instead when there is
+        // one; fresh() is also what Reset diagram runs.
+        kit.boot({
+          provider: function () { return dataProvider; },
+          fingerprint: window.VisotoGraphStore.fingerprint(startIris),
+          fresh: function () {
+            return Promise.resolve(model.importLayout({
+              dataProvider: dataProvider,
+              preloadedElements: {},
+              layoutData: undefined,
+              diagram: linkTypeOptions ? { linkTypeOptions: linkTypeOptions } : undefined,
+            })).catch(function () { /* seed anyway: an edgeless graph beats none */ }).then(seed);
+          },
+        });
 
+        // Resolves once the first layout is applied and the history reset.
         function seed() {
+          return new Promise(function (resolve) {
           // Load each starting element and fetch its data.
           //
           // The icon is stamped on at creation, BEFORE requestElementData, because
@@ -274,7 +285,7 @@
             if (didLayout) return;
             didLayout = true;
             loaded();
-            kit.layout(null, { initial: true }).then(kit.ready);
+            kit.layout(null, { initial: true }).then(kit.ready).then(resolve);
           }
 
           var elementsLoaded = model.requestElementData(startIris);
@@ -287,6 +298,7 @@
           // Fallback: fires only if the chain above never settles (or was never
           // started, on a build whose model lacks requestLinksOfType).
           setTimeout(relayout, 4000);
+          });
         }
       }
 
@@ -368,12 +380,18 @@
       function mountConstructed(workspace, store) {
         var MEM = window.VisotoMemoryGraph;
         var model = workspace.getModel();
-        // Seeded after importLayout settles, as in browse mode (see seed()).
-        Promise.resolve(model.importLayout({
-          dataProvider: MEM.makeProvider(store),
-          preloadedElements: {},
-          layoutData: undefined,
-        })).then(function () { seedConstructed(workspace, store); });
+        kit.boot({
+          provider: function () { return MEM.makeProvider(store); },
+          fingerprint: window.VisotoGraphStore.fingerprint(Object.keys(store.elements)),
+          // Seeded after importLayout settles, as in browse mode (see seed()).
+          fresh: function () {
+            return Promise.resolve(model.importLayout({
+              dataProvider: MEM.makeProvider(store),
+              preloadedElements: {},
+              layoutData: undefined,
+            })).then(function () { return seedConstructed(workspace, store); });
+          },
+        });
       }
 
       function seedConstructed(workspace, store) {
@@ -385,7 +403,7 @@
           if (el) el.setPosition({ x: (i % cols) * 300, y: Math.floor(i / cols) * 200 });
         });
 
-        Promise.resolve(model.requestElementData(iris))
+        return Promise.resolve(model.requestElementData(iris))
           .then(function() { return model.requestLinksOfType(); })
           .then(function() {
             model.elements.forEach(function(el) {
@@ -395,10 +413,10 @@
             // After the expanded boxes have rendered, so their sizes are real.
             // Small islands (a property without domain or range: two boxes, one
             // edge) are packed in rows by the layout itself (GL-17).
-            setTimeout(function() {
-              kit.layout(null, { initial: true }).then(kit.ready);
-            }, 300);
-          });
+            return new Promise(function (resolve) { setTimeout(resolve, 300); });
+          })
+          .then(function() { return kit.layout(null, { initial: true }); })
+          .then(kit.ready);
       }
 
       // Icon resolution is shared with schema-graph.js and mirrors internal/icon

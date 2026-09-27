@@ -186,13 +186,21 @@
         if (!workspace) return;
         kit.attach(workspace);
         var model = workspace.getModel();
-        // Seed after importLayout settles: it registers link types
-        // asynchronously (see seed() in sparql-graph.js).
-        Promise.resolve(model.importLayout({
-          dataProvider: MEM.makeProvider(store),
-          preloadedElements: {},
-          layoutData: undefined,
-        })).then(seed);
+        // kit.boot restores an autosaved or opened canvas when there is one;
+        // fresh() builds the default (and is what Reset diagram runs). Seed
+        // after importLayout settles: it registers link types asynchronously
+        // (see seed() in sparql-graph.js).
+        kit.boot({
+          provider: function () { return MEM.makeProvider(store); },
+          fingerprint: window.VisotoGraphStore.fingerprint(Object.keys(store.elements)),
+          fresh: function () {
+            return Promise.resolve(model.importLayout({
+              dataProvider: MEM.makeProvider(store),
+              preloadedElements: {},
+              layoutData: undefined,
+            })).then(seed);
+          },
+        });
       }
 
       function seed() {
@@ -208,7 +216,7 @@
           }
         });
 
-        Promise.resolve(model.requestElementData(iris))
+        return Promise.resolve(model.requestElementData(iris))
           .then(function () { return model.requestLinksOfType(); })
           .then(function () {
             model.elements.forEach(function (el) {
@@ -216,10 +224,10 @@
               var hasAttrs = data && Object.keys(data.properties).length > 0;
               if (hasAttrs && el.setExpanded) el.setExpanded(true);
             });
-            setTimeout(function () {
-              kit.layout(null, { initial: true }).then(kit.ready);
-            }, 300);
-          });
+            return new Promise(function (resolve) { setTimeout(resolve, 300); });
+          })
+          .then(function () { return kit.layout(null, { initial: true }); })
+          .then(kit.ready);
       }
 
       window.VisotoGE.render(container, kit.workspaceProps({

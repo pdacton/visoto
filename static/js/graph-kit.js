@@ -180,7 +180,7 @@
         var retry = document.createElement('button');
         retry.type = 'button';
         retry.className = 'btn btn-sm';
-        retry.textContent = vsT('js.graph.retry', 'Retry');
+        retry.textContent = opts.actionLabel || vsT('js.graph.retry', 'Retry');
         retry.addEventListener('click', function () { clearMessage(); opts.retry(); });
         body.appendChild(retry);
       }
@@ -338,6 +338,7 @@
       kit.workspace = workspace;
       kit.commands = window.VisotoGE.commands(workspace);
       kit.commands.history.events.on('historyChanged', updateHistoryButtons);
+      kit.commands.history.events.on('historyChanged', scheduleAutosave);
       wireToolbar();
       if (window.VisotoGraphSelection) window.VisotoGraphSelection.install(kit);
       updateHistoryButtons();
@@ -349,7 +350,11 @@
     // The page's starting state is not an undo step: forget everything the
     // initial load recorded (element creation, the first layout).
     kit.ready = function () {
-      if (kit.commands) kit.commands.history.reset();
+      if (!kit.commands) return;
+      suppressAutosave = true;
+      kit.commands.history.reset();
+      suppressAutosave = false;
+      tracking = true;
     };
 
     kit.undo = function () { if (kit.commands) kit.commands.undo(); };
@@ -505,6 +510,7 @@
           e.preventDefault();
           kit.commands.setLanguage(langItem.getAttribute('data-graph-lang'));
           updateLanguage();
+          scheduleAutosave(); // the label language is saved with the canvas
           return;
         }
         var btn = target && target.closest('[data-graph-action]');
@@ -532,11 +538,246 @@
         case 'export-svg': c.exportSvg(fileName('svg')); break;
         case 'export-png': c.exportPng(fileName('png')); break;
         case 'print': c.print(); break;
+        case 'save-as': saveAs(); break;
+        case 'my-diagrams': showDiagrams(); break;
+        case 'download': download(); break;
+        case 'open-file': openFilePicker(); break;
+        case 'reset': kit.reset(); break;
         case 'clear-all':
           if (c.elementCount() && window.confirm(vsT('js.graph.confirmClear', 'Remove every node from the diagram?'))) {
             kit.batch(vsT('js.graph.cmd.clearAll', 'Clear all'), c.clearAll);
           }
           break;
+      }
+    }
+
+    // --- Saving (GL-35, 36, 50; storage in graph-store.js) ---------------------
+    // The embed calls kit.boot(spec) once its workspace is mounted:
+    //   spec.provider()     the DataProvider a restored diagram loads from
+    //   spec.fingerprint    the page's starting resources (GL-35 change check)
+    //   spec.fresh()        builds the page default (seeds, first layout) and
+    //                       ends with kit.ready(); returns a promise
+    // Boot restores, in this order: a canvas handed over by an endpoint switch
+    // (Open file), this graph's autosave, else the page default.
+    var Store = window.VisotoGraphStore;
+    var tracking = false;          // autosave only after the canvas is ready
+    var suppressAutosave = false;  // history.reset() itself is not a change
+    var autosaveTimer = null;
+    var AUTOSAVE_DELAY = 800;
+
+    function endpointSlug() {
+      if (typeof window.activeEndpointSlug === 'function') return window.activeEndpointSlug() || '';
+      return new URLSearchParams(window.location.search).get('endpoint') || '';
+    }
+
+    kit.snapshot = function () {
+      var c = kit.commands;
+      return {
+        format: Store.FORMAT,
+        version: Store.VERSION,
+        savedAt: new Date().toISOString(),
+        page: window.location.pathname + window.location.search,
+        graph: id,
+        endpoint: endpointSlug(),
+        language: c.language(),
+        layout: kit.algorithm || kit.defaultLayout,
+        pins: kit.pinnedIds ? kit.pinnedIds() : [],
+        fingerprint: kit.spec ? kit.spec.fingerprint : '',
+        diagram: c.exportDiagram(),
+      };
+    };
+
+    function scheduleAutosave() {
+      if (!tracking || suppressAutosave || !Store) return;
+      clearTimeout(autosaveTimer);
+      autosaveTimer = setTimeout(function () {
+        if (!Store.autosave(id, kit.snapshot())) {
+          kit.showMessage(vsT('js.graph.storageFull', 'The browser refused to store the diagram (storage full or blocked).'), { level: 'warning' });
+        }
+      }, AUTOSAVE_DELAY);
+    }
+
+    kit.boot = function (spec) {
+      kit.spec = spec;
+      var pending = Store && Store.takePending(id);
+      if (pending) return restore(pending, false);
+      var saved = Store && Store.loadAutosave(id);
+      if (saved) return restore(saved, true);
+      return spec.fresh();
+    };
+
+    function restore(saved, checkFingerprint) {
+      var c = kit.commands;
+      tracking = false;
+      var done = busy(vsT('js.graph.loading', 'Loading graph…'));
+      return c.importDiagram(kit.spec.provider(), saved.diagram).then(function () {
+        done();
+        if (saved.language) c.setLanguage(saved.language);
+        if (kit.loadPins) kit.loadPins(saved.pins);
+        kit.algorithm = saved.layout || null;
+        updateLanguage();
+        updateLayoutMenu();
+        // Sizes arrive with the first render; fit after it.
+        setTimeout(kit.fit, 300);
+        kit.ready();
+        if (checkFingerprint && saved.fingerprint && kit.spec.fingerprint && saved.fingerprint !== kit.spec.fingerprint) {
+          kit.showMessage(vsT('js.graph.pageChanged', 'Page content changed since this diagram was saved.'), {
+            level: 'info',
+            actionLabel: vsT('js.graph.reset', 'Reset diagram'),
+            retry: function () { kit.reset(true); },
+          });
+        }
+      }, function (err) {
+        done();
+        kit.showMessage(vsT('js.graph.restoreFailed', 'The saved diagram could not be loaded.'), {
+          actionLabel: vsT('js.graph.reset', 'Reset diagram'),
+          retry: function () { kit.reset(true); },
+        });
+      });
+    }
+
+    // Reset diagram (GL-35): back to the page default, fresh history.
+    kit.reset = function (confirmed) {
+      if (!kit.spec) return;
+      if (!confirmed && !window.confirm(vsT('js.graph.confirmReset', 'Replace the diagram with the page default? Your changes are lost.'))) return;
+      tracking = false;
+      clearTimeout(autosaveTimer);
+      if (Store) Store.clearAutosave(id);
+      clearMessage();
+      kit.algorithm = null;
+      if (kit.loadPins) kit.loadPins([]);
+      return kit.spec.fresh();
+    };
+
+    // Opens a saved canvas into this graph (GL-36, GL-50). A canvas from
+    // another endpoint switches the page to it first (GL-37 merged): the
+    // canvas waits in sessionStorage for the reloaded page.
+    function open(saved) {
+      if (!Store || !Store.valid(saved)) {
+        kit.showMessage(vsT('js.graph.notADiagram', 'This is not a Visoto diagram file.'));
+        return;
+      }
+      if (kit.commands.elementCount() &&
+          !window.confirm(vsT('js.graph.confirmOpen', 'Replace the current diagram? Your changes are lost.'))) return;
+      var slug = endpointSlug();
+      if (saved.endpoint && slug && saved.endpoint !== slug) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('endpoint', saved.endpoint);
+        if (Store.setPending(id, saved)) {
+          window.location.assign(url.toString());
+          return;
+        }
+      }
+      clearTimeout(autosaveTimer);
+      restore(saved, false).then(scheduleSave);
+    }
+    function scheduleSave() { tracking = true; scheduleAutosave(); }
+
+    function saveAs() {
+      if (!kit.commands || !Store) return;
+      var title = card && card.querySelector('.card-title');
+      var name = window.prompt(vsT('js.graph.saveAsPrompt', 'Name for this diagram:'), title ? title.textContent.trim() : '');
+      if (name === null) return;
+      name = name.trim() || vsT('js.graph.untitled', 'Untitled diagram');
+      if (Store.saveAs(name, kit.snapshot())) {
+        kit.showMessage(vsTf('js.graph.savedAs', 'Saved as “{name}”.', { name: name }), { level: 'success' });
+        setTimeout(clearMessage, 2500);
+      } else {
+        kit.showMessage(vsT('js.graph.storageFull', 'The browser refused to store the diagram (storage full or blocked).'), { level: 'warning' });
+      }
+    }
+
+    function download() {
+      if (!kit.commands) return;
+      var blob = new Blob([JSON.stringify(kit.snapshot(), null, 2)], { type: 'application/json' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = fileName('visoto-graph.json');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }
+
+    var fileInput = null;
+    function openFilePicker() {
+      if (!fileInput) {
+        fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = '.json,application/json';
+        fileInput.hidden = true;
+        fileInput.addEventListener('change', function () {
+          var file = fileInput.files && fileInput.files[0];
+          fileInput.value = '';
+          if (!file) return;
+          file.text().then(function (text) {
+            var saved = null;
+            try { saved = JSON.parse(text); } catch (e) { /* reported below */ }
+            open(saved);
+          });
+        });
+        document.body.appendChild(fileInput);
+      }
+      fileInput.click();
+    }
+
+    // My diagrams (GL-50): a modal listing the named saves of this browser.
+    var modal = document.getElementById(id + '-diagrams');
+    function showDiagrams() {
+      if (!modal || !Store) return;
+      renderDiagrams();
+      var Modal = window.tabler && window.tabler.Modal;
+      if (Modal) Modal.getOrCreateInstance(modal).show();
+    }
+    function renderDiagrams() {
+      var list = modal.querySelector('[data-graph-diagrams-list]');
+      var empty = modal.querySelector('[data-graph-diagrams-empty]');
+      var entries = Store.list();
+      list.replaceChildren();
+      empty.hidden = entries.length > 0;
+      var fmt = new Intl.DateTimeFormat(document.documentElement.lang || undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      entries.forEach(function (entry) {
+        var row = document.createElement('div');
+        row.className = 'list-group-item d-flex align-items-center gap-2';
+        var text = document.createElement('div');
+        text.className = 'flex-fill text-truncate';
+        var name = document.createElement('div');
+        name.className = 'fw-medium text-truncate';
+        name.textContent = entry.name;
+        var meta = document.createElement('div');
+        meta.className = 'small text-secondary text-truncate';
+        var when = entry.savedAt ? fmt.format(new Date(entry.savedAt)) : '';
+        meta.textContent = [entry.endpoint, when].filter(Boolean).join(' · ');
+        text.appendChild(name);
+        text.appendChild(meta);
+        row.appendChild(text);
+        [['open', vsT('js.graph.open', 'Open'), 'btn-primary'],
+         ['rename', vsT('js.graph.rename', 'Rename'), 'btn-ghost-secondary'],
+         ['delete', vsT('js.graph.delete', 'Delete'), 'btn-ghost-danger']].forEach(function (b) {
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn btn-sm ' + b[2];
+          btn.textContent = b[1];
+          btn.setAttribute('aria-label', b[1] + ': ' + entry.name);
+          btn.addEventListener('click', function () { diagramAction(b[0], entry); });
+          row.appendChild(btn);
+        });
+        list.appendChild(row);
+      });
+    }
+    function diagramAction(what, entry) {
+      if (what === 'open') {
+        var saved = Store.get(entry.key);
+        var Modal = window.tabler && window.tabler.Modal;
+        if (Modal) Modal.getOrCreateInstance(modal).hide();
+        open(saved);
+      } else if (what === 'rename') {
+        var name = window.prompt(vsT('js.graph.saveAsPrompt', 'Name for this diagram:'), entry.name);
+        if (name !== null && name.trim()) Store.rename(entry.key, name.trim());
+        renderDiagrams();
+      } else if (what === 'delete') {
+        if (window.confirm(vsTf('js.graph.confirmDelete', 'Delete “{name}”?', { name: entry.name }))) Store.remove(entry.key);
+        renderDiagrams();
       }
     }
 

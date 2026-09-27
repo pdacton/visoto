@@ -100,10 +100,25 @@
       <div class="dropdown">
         <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
                 aria-expanded="false" title="{{ t "graph.saveExport" "Save / Export" }}">
-          <i data-lucide="download" class="icon"></i>
-          <span class="d-none d-sm-inline">{{ t "graph.export" "Export" }}</span>
+          <i data-lucide="save" class="icon"></i>
+          <span class="d-none d-lg-inline">{{ t "graph.saveExport" "Save / Export" }}</span>
         </button>
         <div class="dropdown-menu dropdown-menu-end">
+          <h6 class="dropdown-header">{{ t "graph.save" "Save" }}</h6>
+          <button type="button" class="dropdown-item" data-graph-action="save-as">
+            <i data-lucide="save" class="icon dropdown-item-icon"></i>{{ t "graph.saveAs" "Save as…" }}
+          </button>
+          <button type="button" class="dropdown-item" data-graph-action="my-diagrams">
+            <i data-lucide="folder-open" class="icon dropdown-item-icon"></i>{{ t "graph.myDiagrams" "My diagrams…" }}
+          </button>
+          <button type="button" class="dropdown-item" data-graph-action="download">
+            <i data-lucide="file-down" class="icon dropdown-item-icon"></i>{{ t "graph.download" "Download file" }}
+          </button>
+          <button type="button" class="dropdown-item" data-graph-action="open-file">
+            <i data-lucide="file-up" class="icon dropdown-item-icon"></i>{{ t "graph.openFile" "Open file…" }}
+          </button>
+          <div class="dropdown-divider"></div>
+          <h6 class="dropdown-header">{{ t "graph.export" "Export" }}</h6>
           <button type="button" class="dropdown-item" data-graph-action="export-svg">
             <i data-lucide="file-code" class="icon dropdown-item-icon"></i>{{ t "graph.exportSvg" "SVG image" }}
           </button>
@@ -123,6 +138,9 @@
           <i data-lucide="more-vertical" class="icon"></i>
         </button>
         <div class="dropdown-menu dropdown-menu-end">
+          <button type="button" class="dropdown-item" data-graph-action="reset">
+            <i data-lucide="rotate-ccw" class="icon dropdown-item-icon"></i>{{ t "graph.reset" "Reset diagram" }}
+          </button>
           <button type="button" class="dropdown-item text-danger" data-graph-action="clear-all">
             <i data-lucide="trash-2" class="icon dropdown-item-icon"></i>{{ t "graph.clearAll" "Clear all" }}
           </button>
@@ -194,5 +212,33 @@
             aria-label="{{ t "graph.clearSelection" "Clear selection (Esc)" }}" title="{{ t "graph.clearSelection" "Clear selection (Esc)" }}">
       <i data-lucide="x" class="icon"></i>
     </button>
+  </div>
+{{ end }}
+
+<!--
+  "My diagrams" dialog (GL-50): the canvases saved in this browser. The list is
+  filled by graph-kit.js; this is only the frame.
+
+  Usage (inside the graph card, outside the canvas frame):
+    template "graphDiagramsModal" (dict "id" $id)
+-->
+{{ define "graphDiagramsModal" }}
+  {{ $id := .id }}
+  <div class="modal fade" id="{{ $id }}-diagrams" tabindex="-1" aria-labelledby="{{ $id }}-diagrams-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="{{ $id }}-diagrams-title">{{ t "graph.myDiagramsTitle" "My diagrams" }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t "graph.close" "Close" }}"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="list-group list-group-flush" data-graph-diagrams-list></div>
+          <p class="text-secondary m-3" data-graph-diagrams-empty>{{ t "graph.noDiagrams" "No saved diagrams yet. Use Save as… to keep one in this browser." }}</p>
+        </div>
+        <div class="modal-footer small text-secondary">
+          {{ t "graph.diagramsNote" "Saved diagrams stay in this browser only." }}
+        </div>
+      </div>
+    </div>
   </div>
 {{ end }}

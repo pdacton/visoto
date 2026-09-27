@@ -49,6 +49,16 @@
     var mode = 'pan';
 
     kit.isPinned = function (elementId) { return !!pinned[elementId]; };
+    // Saved canvases carry the pins (A3); loading them is not an undo step.
+    kit.pinnedIds = function () {
+      return Object.keys(pinned).filter(function (eid) { return pinned[eid] && c.exists(eid); });
+    };
+    kit.loadPins = function (ids) {
+      pinned = {};
+      (ids || []).forEach(function (eid) { pinned[eid] = true; });
+      decorate();
+      updateBar();
+    };
     kit.selectedIds = function () { return c.selectedIds(); };
 
     // --- Marking (GL-7, GL-26) ---------------------------------------------

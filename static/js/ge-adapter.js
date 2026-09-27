@@ -385,6 +385,24 @@
           .then(function () { workspace.getDiagram().performSyncUpdate(); return ids; });
         return { ids: ids, loaded: loading };
       },
+      // --- Saving (A3) -----------------------------------------------------
+      // GE's SerializedDiagram: element ids, IRIs, positions, expanded state,
+      // links with vertices, link-type visibility. Labels and data are not in
+      // it; importDiagram re-fetches them, so a restored canvas is never stale.
+      exportDiagram: function () {
+        return JSON.parse(JSON.stringify(model.exportLayout()));
+      },
+      // Replaces the canvas with `diagram`, loading element data and the links
+      // between the elements from `provider`. An IRI that no longer resolves
+      // stays on the canvas as a bare IRI.
+      importDiagram: function (provider, diagram) {
+        return Promise.resolve(model.importLayout({
+          dataProvider: provider,
+          diagram: diagram,
+          preloadedElements: {},
+          validateLinks: true,
+        })).then(function () { workspace.getDiagram().performSyncUpdate(); });
+      },
       selectedIds: function () {
         var Element = GE().Element;
         return workspace.getEditor().selection

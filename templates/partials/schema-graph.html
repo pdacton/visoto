@@ -79,6 +79,7 @@
       <div id="{{ $id }}-overlay" class="graph-overlay" aria-live="polite"></div>
       </div>
       </div>
+      {{ template "graphDiagramsModal" (dict "id" $id) }}
       <button type="button" class="btn btn-icon graph-exit-fullscreen" id="{{ $id }}-exit" title="{{ t "graph.exitFullscreen" "Exit fullscreen" }}">
         <i data-lucide="minimize"></i>
       </button>
@@ -100,6 +101,7 @@
   <script src="/static/js/ge-adapter.js" defer></script>
   <script src="/static/js/graph-layout.js" defer></script>
   <script src="/static/js/graph-selection.js" defer></script>
+  <script src="/static/js/graph-store.js" defer></script>
   <script src="/static/js/graph-kit.js" defer></script>
   <!-- In-memory store + DataProvider for CONSTRUCTed graphs; must precede the graph script. -->
   <script src="/static/js/graph-memory-store.js" defer></script>
