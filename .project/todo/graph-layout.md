@@ -94,7 +94,20 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
   vertices cleared); no edge routing.
 - **GL-17** Disconnected components are always packed side by side, never
   scattered.
-- **GL-18** Every layout, add, remove, pin and move is undoable with Ctrl+Z.
+- **GL-18** *(amended)* **Undo / Redo** buttons in the toolbar (and Ctrl/Cmd+Z,
+  Ctrl/Cmd+Shift+Z) cover **every** canvas change, one step per user action:
+  - Visoto actions: layouts (GL-16, Redraw GL-23), Layout selection, pin/unpin,
+    group drag (GL-9), Expand all, Remove, Keep only these, class-tree Add/Remove
+    all (GL-10).
+  - GE's native actions: node drag, halo remove, connections-menu add, drag-drop
+    from the class tree / instances panel, Clear all, link-type visibility, GE's
+    own Force layout.
+  - Buttons are disabled when there is nothing to undo/redo; the tooltip names the
+    step ("Undo: Layout — Tree ↓").
+  - Not undo steps: selection, pan/zoom, the GL-21 reverse toggles themselves (the
+    Redraw they trigger is), and preferences.
+  - **Reset diagram** and **Open file** (GL-35, GL-36) ask for confirmation and
+    start a fresh history. History is not persisted across page reloads.
 - **GL-19** **Radial** is a radial explosion from a centre node: the single
   selected node, else the page's own resource, else the highest-degree node.
   Nodes sit on rings by hop distance; each subtree gets an angular wedge sized by
@@ -187,7 +200,8 @@ leave it out by hiding `rdf:type` (GL-21).
 
 ## 5. Suggested delivery order
 
-1. GL-11, 16–19, 13 — layout engines and menu (ELK + WebCola).
+1. GL-11, 16–19, 13 — layout engines and menu (ELK + WebCola), with Undo/Redo
+   (GL-18) from the start so every later action lands in the same history.
 2. GL-5–9, 12, 26 — selection, selection actions, pinning.
 3. GL-35–36 — autosave and file save/open.
 4. GL-20–23 — layout options panel.
@@ -213,6 +227,14 @@ leave it out by hiding `rdf:type` (GL-21).
   - Multi-selection feedback: `view.setHighlighter()` (public) or
     `view._setElementDecorator()` (internal); the latter also suits the pin badge.
   - `editor.events.on('addElements', …)` fires after halo-menu placement (GL-14).
+  - Undo (GL-18): GE already records its native actions in `model.history`
+    (`CommandHistory`: drag via `RestoreGeometry`, `removeItems`, connections-menu
+    add, drag-drop, link-type visibility, `forceLayout`), but has **no** undo
+    button or Ctrl+Z binding — `workspace.undo()` / `redo()` exist unused. Visoto
+    actions must go through the same history: wrap in `history.startBatch(title)`
+    / `batch.store()`, and use `GE.Command.create` / `Command.effect` for state
+    outside GE's model (pinned flags). Button state from the `historyChanged`
+    event plus `undoStack` / `redoStack` lengths; titles from `Command.title`.
   - Saving: `model.exportLayout()` / `model.importLayout({ diagram })`; pinned
     state and GL-21 settings are Visoto metadata alongside it.
   - Hidden link types (GL-21): filter them out of the links passed to the layout;
