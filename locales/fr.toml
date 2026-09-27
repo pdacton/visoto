@@ -1592,3 +1592,6 @@
 "page.graphHelp.a11y1" = "La vue en liste montre le diagramme sous forme de tableaux de nœuds et d'arêtes, avec une case par nœud qui le sélectionne aussi dans le diagramme — le même diagramme pour le clavier et les lecteurs d'écran."
 "page.graphHelp.a11y2" = "Chaque bouton de la barre d'outils a un libellé et est accessible avec Tab. Le bouton ? liste les raccourcis clavier."
 "js.graph.selectNode" = "Sélectionner {name}"
+"js.graph.closeLeftPanel" = "Fermer le panneau des classes et instances"
+"js.graph.closeRightPanel" = "Fermer le panneau des connexions"
+"js.graph.toggleSidePanel" = "Afficher ou masquer le panneau latéral"

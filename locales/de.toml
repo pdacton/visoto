@@ -1593,3 +1593,6 @@
 "page.graphHelp.a11y1" = "Die Listenansicht zeigt das Diagramm als Tabellen von Knoten und Kanten, mit einem Kontrollkästchen pro Knoten, das ihn auch im Diagramm auswählt — dasselbe Diagramm für Tastatur und Screenreader."
 "page.graphHelp.a11y2" = "Jede Schaltfläche der Werkzeugleiste hat eine Beschriftung und ist mit Tab erreichbar. Die Schaltfläche ? listet die Tastenkürzel."
 "js.graph.selectNode" = "{name} auswählen"
+"js.graph.closeLeftPanel" = "Klassen- und Instanzen-Panel schliessen"
+"js.graph.closeRightPanel" = "Verbindungen-Panel schliessen"
+"js.graph.toggleSidePanel" = "Seitenpanel ein- oder ausblenden"

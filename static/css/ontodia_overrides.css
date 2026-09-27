@@ -1117,16 +1117,35 @@
  */
 .graph-stage {
   position: relative;
+  /* Widths of GE's open side panels (graph-tools.js); the floating bars are
+     centred in the space between them. */
+  --graph-inset-left: 0px;
+  --graph-inset-right: 0px;
+  --graph-free: calc(100% - var(--graph-inset-left) - var(--graph-inset-right));
+  --graph-mid: calc(var(--graph-inset-left) + var(--graph-free) / 2);
+}
+/* × on an open GE side panel (graph-tools.js); GE's chevron reopens it. */
+.graph-sidebar-close {
+  position: absolute;
+  z-index: 102;
+  width: 32px;
+  height: 32px;
+  background: var(--tblr-bg-surface, #fff);
+  border: 1px solid var(--tblr-border-color, #e6e7e9);
+  border-radius: 50%;
+}
+.graph-sidebar-close[hidden] {
+  display: none !important;
 }
 /* Floating pill, top-centre over the canvas (Miro style), as GE's own toolbar
    was. Above the message overlay, so a message never covers it. */
 .graph-toolbar {
   position: absolute;
   top: .75rem;
-  left: 50%;
+  left: var(--graph-mid, 50%);
   transform: translateX(-50%);
   z-index: 101;
-  max-width: calc(100% - 1.5rem);
+  max-width: calc(var(--graph-free, 100%) - 1.5rem);
   width: max-content;
   background: var(--tblr-bg-surface, #fff);
   border: 1px solid var(--tblr-border-color, #e6e7e9);
@@ -1167,10 +1186,10 @@
 .graph-selectionbar {
   position: absolute;
   bottom: .75rem;
-  left: 50%;
+  left: var(--graph-mid, 50%);
   transform: translateX(-50%);
   z-index: 101;
-  max-width: calc(100% - 1.5rem);
+  max-width: calc(var(--graph-free, 100%) - 1.5rem);
   width: max-content;
   background: var(--tblr-bg-surface, #fff);
   border: 1px solid var(--tblr-border-color, #e6e7e9);
@@ -1211,7 +1230,7 @@
 .graph-options {
   position: absolute;
   top: 3.75rem;
-  right: .75rem;
+  right: calc(var(--graph-inset-right, 0px) + .75rem);
   z-index: 102;
   width: min(20rem, calc(100% - 1.5rem));
   max-height: calc(100% - 5rem);

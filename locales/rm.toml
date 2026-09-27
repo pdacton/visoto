@@ -237,3 +237,6 @@
 "page.graphHelp.a11y1" = "La vista da glista mussa il diagram sco tabellas da nufs e colliaziuns, cun ina chaschetta per nuf che al tscherna era en il diagram — il medem diagram per tastatura e lectur da visur."
 "page.graphHelp.a11y2" = "Mintga buttun da la trav d'utensils ha ina inscripziun e po vegnir cuntanschì cun Tab. Il buttun ? enumerescha las scursanidas da tastatura."
 "js.graph.selectNode" = "Tscherner {name}"
+"js.graph.closeLeftPanel" = "Serrar il panel da classas ed instanzas"
+"js.graph.closeRightPanel" = "Serrar il panel da colliaziuns"
+"js.graph.toggleSidePanel" = "Mussar u zuppentar il panel lateral"

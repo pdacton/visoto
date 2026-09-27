@@ -1592,3 +1592,6 @@
 "page.graphHelp.a11y1" = "La vista elenco mostra il diagramma come tabelle di nodi e archi, con una casella per nodo che lo seleziona anche nel diagramma — lo stesso diagramma per tastiera e lettori di schermo."
 "page.graphHelp.a11y2" = "Ogni pulsante della barra degli strumenti ha un'etichetta ed è raggiungibile con Tab. Il pulsante ? elenca le scorciatoie da tastiera."
 "js.graph.selectNode" = "Seleziona {name}"
+"js.graph.closeLeftPanel" = "Chiudi il pannello di classi e istanze"
+"js.graph.closeRightPanel" = "Chiudi il pannello delle connessioni"
+"js.graph.toggleSidePanel" = "Mostra o nascondi il pannello laterale"

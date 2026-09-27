@@ -141,3 +141,6 @@
 "js.graph.cmd.removeClass" = "Remove all {name}"
 "js.graph.findCount" = "{n} of {total}"
 "js.graph.selectNode" = "Select {name}"
+"js.graph.closeLeftPanel" = "Close the classes and instances panel"
+"js.graph.closeRightPanel" = "Close the connections panel"
+"js.graph.toggleSidePanel" = "Show or hide the side panel"

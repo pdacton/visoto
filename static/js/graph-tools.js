@@ -266,6 +266,69 @@
         window.confirm(vsTf('js.graph.confirmAdd', 'Add {n} nodes to the diagram?', { n: n }));
     }, function (ids) { kit.placeNew(ids); });
 
+    // --- GE's side panels (Classes / Instances left, Connections right) ---------
+    // GE collapses them only through a small round chevron on their inner edge.
+    // Each open panel gets a visible × in its top-right corner that clicks that
+    // chevron (which stays, to reopen it), and the chevrons get a label. The
+    // panels' widths are published as --graph-inset-left/right on the stage, so
+    // the floating toolbar, selection bar and docked panels sit between them
+    // instead of over their headers (ontodia_overrides.css). Our buttons live in
+    // the stage, not in GE's React DOM, and follow it through observers.
+    var stage = kit.container.parentElement;
+    var closers = {};
+    function closer(side) {
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-sm btn-icon graph-sidebar-close';
+      var label = side === 'left'
+        ? vsT('js.graph.closeLeftPanel', 'Close the classes and instances panel')
+        : vsT('js.graph.closeRightPanel', 'Close the connections panel');
+      btn.title = label;
+      btn.setAttribute('aria-label', label);
+      btn.innerHTML = '<i data-lucide="x" class="icon"></i>';
+      btn.addEventListener('click', function () { if (btn._handle) btn._handle.click(); });
+      stage.appendChild(btn);
+      if (window.lucide) window.lucide.createIcons();
+      return (closers[side] = btn);
+    }
+    function syncSidebars() {
+      var insets = { left: 0, right: 0 };
+      var s = stage.getBoundingClientRect();
+      kit.container.querySelectorAll('.graph-explorer-accordion-item__handle-btn').forEach(function (handle) {
+        var side = handle.classList.contains('graph-explorer-accordion-item__handle-btn-left') ? 'left' : 'right';
+        var item = handle.closest('.graph-explorer-accordion-item');
+        if (!item) return;
+        handle.setAttribute('aria-label', vsT('js.graph.toggleSidePanel', 'Show or hide the side panel'));
+        var r = item.getBoundingClientRect();
+        insets[side] = Math.round(r.width);
+        var open = item.classList.contains('graph-explorer-accordion-item--expanded');
+        var btn = closers[side] || closer(side);
+        btn._handle = handle;
+        btn.hidden = !open;
+        if (!open) return;
+        // The fullscreen exit button owns the viewport's top-right corner: the
+        // right panel's × then sits just left of it, in the same row.
+        var beside = side === 'right' && kit.card && kit.card.classList.contains('graph-maximized') ? 52 : 0;
+        btn.style.top = (r.top - s.top + (beside ? 16 : 4)) + 'px';
+        btn.style.left = (r.right - s.left - 36 - beside) + 'px';
+      });
+      stage.style.setProperty('--graph-inset-left', insets.left + 'px');
+      stage.style.setProperty('--graph-inset-right', insets.right + 'px');
+    }
+    var syncQueued = false;
+    function queueSync() {
+      if (syncQueued) return;
+      syncQueued = true;
+      requestAnimationFrame(function () { syncQueued = false; syncSidebars(); });
+    }
+    // Collapse toggles flip a class on the panel; drags and resizes change its
+    // size. Both are watched on the canvas container only.
+    new MutationObserver(queueSync).observe(kit.container, { subtree: true, attributes: true, attributeFilter: ['class'] });
+    if (window.ResizeObserver) new ResizeObserver(queueSync).observe(kit.container);
+    kit.container.addEventListener('mouseup', queueSync);
+    if (kit.card) new MutationObserver(queueSync).observe(kit.card, { attributes: true, attributeFilter: ['class'] });
+    queueSync();
+
     // --- Toolbar dispatch ----------------------------------------------------------
     if (toolbar) {
       toolbar.addEventListener('click', function (e) {
