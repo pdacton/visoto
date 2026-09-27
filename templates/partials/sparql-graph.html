@@ -81,8 +81,8 @@
            the ZgotmplZ sentinel; assigning it from a JSON string in JS avoids that.
            The .graph-canvas class is targeted by the .graph-maximized fullscreen CSS. -->
       <div id="{{ $id }}-frame" class="graph-frame">
-      {{ template "graphToolbar" (dict "id" $id) }}
       <div class="graph-stage">
+      {{ template "graphToolbar" (dict "id" $id) }}
       <div id="{{ $id }}-root" class="graph-canvas" style="width: 100%;"
            data-sparql-graph
            data-sparql-graph-id="{{ $id }}"

@@ -68,8 +68,8 @@
       <!-- Height is applied via JS from the data island below (avoids Go's
            html/template ZgotmplZ CSS-context sanitizer; see sparql-graph.html). -->
       <div id="{{ $id }}-frame" class="graph-frame">
-      {{ template "graphToolbar" (dict "id" $id) }}
       <div class="graph-stage">
+      {{ template "graphToolbar" (dict "id" $id) }}
       <div id="{{ $id }}-root" class="graph-canvas" style="width: 100%;"
            data-schema-graph
            data-schema-graph-id="{{ $id }}"

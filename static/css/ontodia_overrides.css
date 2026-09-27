@@ -1079,8 +1079,8 @@
 .card.graph-maximized .card-body {
   padding: 0;
 }
-/* The FRAME (toolbar + canvas + overlay) is what gets pinned, so the toolbar
-   stays usable in fullscreen; the canvas takes the height left under it. */
+/* The FRAME (stage: canvas + floating toolbar + overlay) is what gets pinned,
+   so the toolbar stays usable in fullscreen. */
 .card.graph-maximized .graph-frame {
   position: fixed;
   inset: 0;
@@ -1097,10 +1097,6 @@
   height: 100% !important;   /* overrides the JS-set inline height */
   border: none;
   border-radius: 0;
-}
-/* Room for the floating exit button at the toolbar's right end. */
-.card.graph-maximized .graph-toolbar {
-  padding-right: 3.5rem !important;
 }
 
 /* Floating exit button — hidden normally, shown only while maximized. */
@@ -1122,9 +1118,20 @@
 .graph-stage {
   position: relative;
 }
+/* Floating pill, top-centre over the canvas (Miro style), as GE's own toolbar
+   was. Above the message overlay, so a message never covers it. */
 .graph-toolbar {
+  position: absolute;
+  top: .75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 101;
+  max-width: calc(100% - 1.5rem);
+  width: max-content;
   background: var(--tblr-bg-surface, #fff);
-  min-height: 2.5rem;
+  border: 1px solid var(--tblr-border-color, #e6e7e9);
+  border-radius: var(--tblr-border-radius-lg, 8px);
+  box-shadow: var(--tblr-box-shadow-dropdown, 0 4px 16px rgba(0,0,0,.08));
 }
 .graph-toolbar .vr {
   align-self: stretch;
@@ -1140,7 +1147,7 @@
   flex-direction: column;
   align-items: center;
   gap: .5rem;
-  padding: .75rem;
+  padding: 4rem .75rem .75rem;  /* messages start below the floating toolbar */
   z-index: 100;              /* above GE's own stacked paper layers */
 }
 .graph-overlay > * {

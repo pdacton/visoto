@@ -4,7 +4,7 @@
   that one offered: layout, zoom in/out, fit, SVG, PNG, print, clear all and the
   label language.
 
-  Usage (inside the graph card, before the canvas):
+  Usage (inside the graph stage, before the canvas; it floats top-centre over it):
     template "graphToolbar" (dict "id" $id)
 
   Markup only. static/js/graph-kit.js finds it by the `<id>-toolbar` DOM id and
@@ -14,7 +14,7 @@
 -->
 {{ define "graphToolbar" }}
   {{ $id := .id }}
-  <div id="{{ $id }}-toolbar" class="graph-toolbar d-flex flex-wrap align-items-center gap-1 px-2 py-1 border-bottom"
+  <div id="{{ $id }}-toolbar" class="graph-toolbar d-flex flex-wrap align-items-center justify-content-center gap-1 px-2 py-1"
        role="toolbar" aria-label="{{ t "graph.toolbar" "Graph tools" }}">
 
     <div class="dropdown">
@@ -56,7 +56,9 @@
       <i data-lucide="scan" class="icon"></i>
     </button>
 
-    <div class="ms-auto d-flex align-items-center gap-1">
+    <div class="vr mx-1"></div>
+
+    <div class="d-flex align-items-center gap-1">
       <div class="dropdown">
         <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
                 aria-expanded="false" aria-label="{{ t "graph.labelLanguage" "Label language" }}"
