@@ -1225,6 +1225,12 @@
   overflow-y: auto;
   min-height: 0;
 }
+/* Only the list scrolls: header (with its close button), hint and footer keep
+   their height however short the canvas is. Without this the header shrank
+   to nothing on a short card and the panel could not be closed. */
+.graph-options > :not(.graph-options-list) {
+  flex-shrink: 0;
+}
 
 /* List view (GL-39): over the canvas area, below the floating toolbar. */
 .graph-list {
