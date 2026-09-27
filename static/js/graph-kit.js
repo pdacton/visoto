@@ -342,6 +342,7 @@
       wireToolbar();
       if (window.VisotoGraphSelection) window.VisotoGraphSelection.install(kit);
       if (window.VisotoGraphTools) window.VisotoGraphTools.install(kit);
+      if (window.VisotoGraphFilter) window.VisotoGraphFilter.install(kit);
       updateHistoryButtons();
       updateLanguage();
       updateLayoutMenu();
@@ -585,6 +586,7 @@
         layout: kit.algorithm || kit.defaultLayout,
         pins: kit.pinnedIds ? kit.pinnedIds() : [],
         reversed: kit.reverseOverrides ? kit.reverseOverrides() : {},
+        filter: kit.filterState ? kit.filterState() : null, // GL-49, GL-52
         fingerprint: kit.spec ? kit.spec.fingerprint : '',
         diagram: c.exportDiagram(),
       };
@@ -619,6 +621,7 @@
         if (saved.language) c.setLanguage(saved.language);
         if (kit.loadPins) kit.loadPins(saved.pins);
         if (kit.applyReverseOverrides) kit.applyReverseOverrides(saved.reversed);
+        if (kit.loadFilterState) kit.loadFilterState(saved.filter);
         kit.algorithm = saved.layout || null;
         updateLanguage();
         updateLayoutMenu();
@@ -651,6 +654,7 @@
       clearMessage();
       kit.algorithm = null;
       if (kit.loadPins) kit.loadPins([]);
+      if (kit.loadFilterState) kit.loadFilterState(null);
       return kit.spec.fresh();
     };
 

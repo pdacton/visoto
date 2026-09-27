@@ -31,6 +31,20 @@
       </div>
     </div>
 
+    <!-- GL-32: highlight and zoom to nodes on the canvas; Enter selects them. -->
+    <div class="dropdown" data-graph-find>
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+              aria-expanded="false" aria-label="{{ t "graph.find" "Find on canvas" }}" title="{{ t "graph.find" "Find on canvas" }}">
+        <i data-lucide="search" class="icon"></i>
+      </button>
+      <div class="dropdown-menu p-2 graph-add-menu">
+        <input type="search" class="form-control form-control-sm" autocomplete="off"
+               placeholder="{{ t "graph.findPlaceholder" "Find on canvas (Enter selects)" }}"
+               aria-label="{{ t "graph.findPlaceholder" "Find on canvas (Enter selects)" }}">
+        <div class="small text-secondary mt-1" data-graph-find-count aria-live="polite"></div>
+      </div>
+    </div>
+
     <div class="dropdown">
       <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
               aria-expanded="false" title="{{ t "graph.layoutMenu" "Layout" }}">
@@ -101,6 +115,11 @@
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="details"
             aria-label="{{ t "graph.details" "Details: show or hide property cards" }}" title="{{ t "graph.details" "Details: show or hide property cards" }}">
       <i data-lucide="list-collapse" class="icon"></i>
+    </button>
+    <!-- GL-10, 49, 52: classes and namespaces on the canvas, with hide/show. -->
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="filter"
+            aria-label="{{ t "graph.filter" "Classes and namespaces" }}" title="{{ t "graph.filter" "Classes and namespaces" }}">
+      <i data-lucide="layers" class="icon"></i>
     </button>
 
     <div class="vr mx-1"></div>
@@ -292,6 +311,34 @@
         <i data-lucide="refresh-cw" class="icon"></i>{{ t "graph.redraw" "Redraw" }}
       </button>
       <span class="small text-secondary" data-graph-options-dirty hidden>{{ t "graph.unapplied" "Changes not applied yet" }}</span>
+    </div>
+  </div>
+{{ end }}
+
+<!--
+  Classes and namespaces panel (GL-10, GL-49, GL-52): rows filled by
+  graph-filter.js — eye toggle, label, node count, and a ⋮ menu per class.
+
+  Usage (inside the graph stage):
+    template "graphFilterPanel" (dict "id" $id)
+-->
+{{ define "graphFilterPanel" }}
+  {{ $id := .id }}
+  <div id="{{ $id }}-filter" class="graph-options card shadow-sm" hidden
+       role="region" aria-label="{{ t "graph.filter" "Classes and namespaces" }}">
+    <div class="card-header py-2 px-3 d-flex align-items-center">
+      <h4 class="card-title mb-0 small fw-bold flex-fill">{{ t "graph.filter" "Classes and namespaces" }}</h4>
+      <button type="button" class="btn-close" data-graph-action="close-filter" aria-label="{{ t "graph.close" "Close" }}"></button>
+    </div>
+    <div class="graph-options-list">
+      <div class="px-3 pt-2 small fw-medium text-secondary">{{ t "graph.classes" "Classes" }}</div>
+      <div class="list-group list-group-flush" data-graph-filter-classes></div>
+      <p class="small text-secondary px-3 my-1" data-graph-filter-noclasses hidden>{{ t "graph.noClasses" "No typed nodes on the diagram." }}</p>
+      <div class="px-3 pt-2 small fw-medium text-secondary">{{ t "graph.namespaces" "Namespaces" }}</div>
+      <div class="list-group list-group-flush" data-graph-filter-namespaces></div>
+    </div>
+    <div class="card-footer py-2 px-3 small text-secondary">
+      {{ t "graph.filterHint" "Hidden nodes stay out of layouts and exports and are saved with the diagram." }}
     </div>
   </div>
 {{ end }}

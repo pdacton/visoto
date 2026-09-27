@@ -53,6 +53,12 @@
     kit.pinnedIds = function () {
       return Object.keys(pinned).filter(function (eid) { return pinned[eid] && c.exists(eid); });
     };
+    // Re-pins nodes shown again after a hide (graph-filter.js); the batch that
+    // re-created them removes them on undo, so this is not an undo step.
+    kit.addPins = function (ids) {
+      ids.forEach(function (eid) { pinned[eid] = true; });
+      decorate();
+    };
     kit.loadPins = function (ids) {
       pinned = {};
       (ids || []).forEach(function (eid) { pinned[eid] = true; });

@@ -72,6 +72,7 @@
       {{ template "graphToolbar" (dict "id" $id) }}
       {{ template "graphSelectionBar" (dict "id" $id) }}
       {{ template "graphLayoutOptions" (dict "id" $id) }}
+      {{ template "graphFilterPanel" (dict "id" $id) }}
       <div id="{{ $id }}-root" class="graph-canvas" style="width: 100%;"
            data-schema-graph
            data-schema-graph-id="{{ $id }}"
@@ -104,6 +105,7 @@
   <script src="/static/js/graph-selection.js" defer></script>
   <script src="/static/js/graph-store.js" defer></script>
   <script src="/static/js/graph-tools.js" defer></script>
+  <script src="/static/js/graph-filter.js" defer></script>
   <script src="/static/js/graph-kit.js" defer></script>
   <!-- In-memory store + DataProvider for CONSTRUCTed graphs; must precede the graph script. -->
   <script src="/static/js/graph-memory-store.js" defer></script>

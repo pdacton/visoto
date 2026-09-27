@@ -70,6 +70,33 @@
       // graph is a network. Radial centres on the page's resource (GL-19).
       kit.defaultLayout = CONSTRUCT ? 'tree-right' : 'network';
       kit.searchEndpoint = !CONSTRUCT; // Add resource: endpoint search (GL-47)
+      // GL-10 / GL-49: "a class includes its subclasses". Asked of the endpoint
+      // for the classes on the canvas only (both ends bound by VALUES), so the
+      // property path stays cheap. A constructed diagram's nodes are classes
+      // themselves; their rdf:type is the metaclass, with nothing to nest.
+      if (!CONSTRUCT) {
+        kit.superclasses = function (types) {
+          var iris = types.filter(validIri);
+          if (iris.length < 2) return Promise.resolve({});
+          var values = iris.map(function (t) { return '<' + t + '>'; }).join(' ');
+          var query = 'SELECT ?sub ?sup WHERE { VALUES ?sub { ' + values + ' } VALUES ?sup { ' + values +
+            ' } ?sub <http://www.w3.org/2000/01/rdf-schema#subClassOf>+ ?sup . FILTER(?sub != ?sup) }';
+          return fetch(ENDPOINT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/sparql-query', 'Accept': 'application/sparql-results+json' },
+            body: query,
+          }).then(function (res) {
+            if (!res.ok) throw new Error('SPARQL request failed: ' + res.status);
+            return res.json();
+          }).then(function (json) {
+            var map = {};
+            json.results.bindings.forEach(function (b) {
+              (map[b.sub.value] = map[b.sub.value] || []).push(b.sup.value);
+            });
+            return map;
+          });
+        };
+      }
       kit.pageIri = singleIri || urlIri;
       var constructedStore = null;
 

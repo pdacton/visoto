@@ -449,6 +449,61 @@
           if (after) after(e.elements.map(function (el) { return el.id; }));
         });
       },
+      // --- A5: classes, namespaces, find -----------------------------------
+      // What graph-filter.js needs to know about an element.
+      describe: function (id) {
+        var el = model.getElement(id);
+        if (!el) return null;
+        var data = el.data || {};
+        return {
+          id: id,
+          iri: el.iri,
+          types: data.types || [],
+          label: workspace.getDiagram().formatLabel(data.label ? data.label.values : [], el.iri),
+        };
+      },
+      classLabel: function (classIri) {
+        var cls = model.getClass(classIri) || model.createClass(classIri);
+        return workspace.getDiagram().formatLabel(cls ? cls.label : [], classIri);
+      },
+      // GL-32: blur every element for which `match(id)` is false; null clears.
+      highlight: function (match) {
+        workspace.getDiagram().setHighlighter(match ? function (item) {
+          return item instanceof GE().Element ? match(item.id) : false;
+        } : undefined);
+      },
+      // GL-49 / GL-52, inside the caller's batch. hide() removes elements and
+      // returns what show() needs to bring them back; show() re-creates them
+      // where they were and reloads their data and links.
+      hide: function (ids) {
+        var records = [];
+        var els = [];
+        ids.forEach(function (id) {
+          var el = model.getElement(id);
+          if (!el) return;
+          els.push(el);
+          records.push({ iri: el.iri, x: el.position.x, y: el.position.y, expanded: !!el.isExpanded, types: (el.data && el.data.types) || [] });
+        });
+        if (els.length) workspace.getEditor().removeItems(els);
+        return records;
+      },
+      show: function (records) {
+        var ids = [];
+        records.forEach(function (r) {
+          var el = model.createElement(r.iri);
+          if (!el) return;
+          el.setPosition({ x: r.x, y: r.y });
+          if (r.expanded) el.setExpanded(true);
+          ids.push(el.id);
+        });
+        var iris = records.map(function (r) { return r.iri; });
+        return {
+          ids: ids,
+          loaded: Promise.resolve(model.requestElementData(iris))
+            .then(function () { return model.requestLinksOfType(); })
+            .then(function () { workspace.getDiagram().performSyncUpdate(); return ids; }),
+        };
+      },
       // --- Saving (A3) -----------------------------------------------------
       // GE's SerializedDiagram: element ids, IRIs, positions, expanded state,
       // links with vertices, link-type visibility. Labels and data are not in
