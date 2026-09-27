@@ -270,6 +270,10 @@ Only if B1–B5 land smoothly.
 | A5 | Hiding removes the nodes through GE's commands and keeps a record each (IRI, position, expanded, types, pinned); showing re-creates them (new element ids, pins re-applied) and reloads data and links. A node stays hidden while any class or namespace rule matches. One undo step per toggle; rules and records are saved with the canvas. Blank-node types are not listed. | GE has no visibility flag (`GE-UPSTREAM: B5`). |
 | A5 | Namespace = IRI up to its last `#` or `/`; common vocabularies shown by prefix (rdf:, owl:, schema:, prov:, …). Rows sort by count, then name, so they do not jump while toggling. | GL-52. |
 | A5 | Find on canvas (GL-32): toolbar search; label or IRI contains the text; matches highlighted through GE's public `setHighlighter`, the rest blurred, view zoomed to the matches; Enter selects them; closing the field clears the highlight. | Enter-to-select makes Find feed the selection actions. |
+| A6 | Turtle export (GL-38) writes what is drawn: each node's types and labels, the property rows of expanded nodes, every visible edge; common prefixes only when used; checked with rdflib (243 triples for T1). Writer is pure (`graph-turtle.js`, unit-tested). | GL-38 "the triples currently drawn". |
+| A6 | List view (GL-39) is Tabler tables (nodes with a selection checkbox, type, edge count; edges source / property / target) over the canvas area, not `sparqlTable`/Tabulator. Selection is shared both ways. | The data is in memory and small; Tabulator would add a data round trip through the server for nothing. |
+| A6 | Help (GL-53): a ? dropdown with the shortcut list and a link to `/graph-help.html` (i18n page). a11y (GL-40, 41): every control has `aria-label`/`title`; `:focus-visible` rings on graph controls; 44 px targets under `pointer: coarse`. | GL-41, GL-40. A full screen-reader pass on a device is still open. |
+| A6 | Docs: `docs/templating.md` (partial parameters + what every graph gets), `graph-explorer` skill (file map + GE 2.1 traps), `docs/ontodia-graph-explorer-references.md`, CLAUDE.md, NOTICE (elkjs). Locale keys in all five catalogs throughout. | Plan A6. |
 
 ### Test set (LINDAS prod, `endpoint=lindas-prod`)
 
@@ -285,6 +289,11 @@ Only if B1–B5 land smoothly.
 LINDAS here. Browser verification runs on a machine with LINDAS access (local
 dev, or the deployed instance after push); pure `graph-layout.js` logic can be
 checked here with `node --test`.
+
+### Status
+
+Part A done on this branch (A0–A6, 2026-09-27): every phase checked on T1–T4 in
+headless Chromium; JS unit tests `node --test tests/js/`. Part B can start (B0 proposal).
 
 ## 3. Risks
 
