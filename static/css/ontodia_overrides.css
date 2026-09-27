@@ -638,6 +638,29 @@
   border-color: var(--tblr-border-color) !important;
 }
 
+/* Expanded panel photo — GE repeats data.image full-width above the IRI. Our
+ * data.image is the resource icon stamped in sparql-graph.js, already shown in
+ * the thumbnail, so the repeat only blows the box up to icon-sized height. */
+.graph-explorer-standard-template__photo {
+  display: none !important;
+}
+
+/* Resize grip — the right edge of a node box can be dragged wider
+ * (enableElementResize in sparql-graph.js). This strip only supplies the
+ * cursor; its width must match RESIZE_EDGE there, which does the hit test. */
+.graph-explorer-standard-template {
+  position: relative;
+}
+.graph-explorer-standard-template::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 8px;
+  height: 100%;
+  cursor: ew-resize;
+}
+
 /* Presentation markers from a constructed graph (sparqlGraph "construct" mode).
  * The marker arrives as a fragment on the thumbnail's <img src> — the only
  * per-node value GE puts in the DOM (see static/js/graph-memory-store.js).

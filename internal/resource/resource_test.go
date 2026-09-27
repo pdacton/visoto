@@ -235,3 +235,40 @@ func TestBreadcrumbTypeFilters(t *testing.T) {
 		t.Error("ZefixOrganisation must keep its breadcrumb segment")
 	}
 }
+
+// TestSortTypesByPriorityPutsClassTypesLast guards the generic class templates
+// (instances/rdfs:Class, instances/owl:Class) against shadowing a more specific
+// instance template on a resource that is also typed as a class.
+func TestSortTypesByPriorityPutsClassTypesLast(t *testing.T) {
+	const (
+		rdfsClass = "http://www.w3.org/2000/01/rdf-schema#Class"
+		owlClass  = "http://www.w3.org/2002/07/owl#Class"
+		specific  = "https://cube.link/meta/Hierarchy"
+		listed    = "http://schema.org/Person"
+	)
+	cases := []struct {
+		name     string
+		types    []string
+		priority []string
+		want     []string
+	}{
+		{"unlisted class types after unlisted specific type",
+			[]string{owlClass, rdfsClass, specific}, []string{listed},
+			[]string{specific, owlClass, rdfsClass}},
+		{"also with an empty priority list",
+			[]string{rdfsClass, specific}, nil,
+			[]string{specific, rdfsClass}},
+		{"listed types still come first",
+			[]string{rdfsClass, specific, listed}, []string{listed},
+			[]string{listed, specific, rdfsClass}},
+		{"an explicitly listed class type keeps its index",
+			[]string{specific, owlClass}, []string{owlClass},
+			[]string{owlClass, specific}},
+	}
+	for _, c := range cases {
+		got := sortTypesByPriority(c.types, c.priority)
+		if strings.Join(got, " ") != strings.Join(c.want, " ") {
+			t.Errorf("%s: got %v, want %v", c.name, got, c.want)
+		}
+	}
+}

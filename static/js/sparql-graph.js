@@ -129,6 +129,7 @@
         if (!workspace) return;
         // Stash the workspace so the fullscreen toggle / resize handler can re-fit later.
         currentWorkspace = workspace;
+        enableElementResize(container, workspace.getModel());
 
         if (constructedStore) {
           mountConstructed(workspace, constructedStore);
@@ -343,6 +344,52 @@
       // --- Construct mode ---------------------------------------------------------------
       // The page IRI substituted for `??`, as in server-side queries. Validated
       // because it is spliced into query text between angle brackets.
+      // Drag a node box's right edge to widen it. GE has no element resize: it
+      // sizes a box from its rendered DOM, re-measuring only when the element
+      // redraws. So the drag sets an inline width on the template root (React
+      // never touches it — the root's only prop is className) and calls
+      // redraw() so links re-attach to the new bounds.
+      //
+      // The listener runs in the CAPTURE phase on the container GE renders
+      // into: React's onMouseDown (which starts an element drag) listens on the
+      // same node in the bubble phase, so stopPropagation here keeps the resize
+      // from also moving the box. The ew-resize cursor is a ::after strip in
+      // ontodia_overrides.css, RESIZE_EDGE px wide to match the hit test.
+      var RESIZE_EDGE = 8;
+      var RESIZE_MIN = 180; // GE's own min-width for a standard template
+      function enableElementResize(container, model) {
+        if (container.dataset.vsElementResize) return;
+        container.dataset.vsElementResize = '1';
+        container.addEventListener('mousedown', function (e) {
+          if (e.button !== 0 || !(e.target instanceof Element)) return;
+          var box = e.target.closest('.graph-explorer-standard-template');
+          var host = box && box.closest('[data-element-id]');
+          if (!host) return;
+          var rect = box.getBoundingClientRect();
+          if (e.clientX < rect.right - RESIZE_EDGE) return;
+          var element = model.getElement(host.getAttribute('data-element-id'));
+          if (!element) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          var startX = e.clientX;
+          var startWidth = box.offsetWidth;
+          var scale = rect.width / startWidth || 1; // screen px per paper px (zoom)
+          function onMove(ev) {
+            var width = Math.max(RESIZE_MIN, startWidth + (ev.clientX - startX) / scale);
+            box.style.width = width + 'px';
+            box.style.maxWidth = 'none';
+            element.redraw();
+          }
+          function onUp() {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup', onUp);
+          }
+          document.addEventListener('mousemove', onMove);
+          document.addEventListener('mouseup', onUp);
+        }, true);
+      }
+
       function validIri(iri) {
         return /^https?:\/\/[^<>"{}|\\^`\s]+$/.test(iri);
       }
@@ -399,11 +446,146 @@
               var data = store.elements[el.iri];
               if (data && Object.keys(data.properties).length > 0 && el.setExpanded) el.setExpanded(true);
             });
+            // Wrap forceLayout itself rather than calling packIslands after it
+            // here: the toolbar's Layout button calls workspace.forceLayout() on
+            // the instance at click time, so it gets the island pass too.
+            var forceLayout = workspace.forceLayout;
+            workspace.forceLayout = function () {
+              forceLayout.apply(this, arguments);
+              packIslands(model);
+            };
             setTimeout(function() {
               workspace.forceLayout();
               workspace.zoomToFit();
             }, 300);
           });
+      }
+
+      // Small disconnected islands — typically a property with neither domain
+      // nor range, i.e. two placeholder boxes and one edge — are scattered by the
+      // force layout all over the canvas around the main graph. After it runs,
+      // each island of up to ISLAND_MAX nodes is laid out top-down in the
+      // direction of its arrows, and the islands are packed in rows below the
+      // largest component, which keeps its force layout.
+      var ISLAND_MAX = 6;
+      var ISLAND_GAP = { x: 40, y: 60 };  // between boxes inside an island
+      var ISLAND_PACK = { x: 80, y: 80 }; // between islands, and below the main graph
+      // Edges that point UP inside an island: the target is layered above the
+      // source. rdfs:subClassOf puts the superclass on top, UML style; the
+      // arrow itself still runs child -> parent.
+      var UPWARD_LINK_TYPES = {
+        'http://www.w3.org/2000/01/rdf-schema#subClassOf': true,
+      };
+      function packIslands(model) {
+        var elements = model.elements;
+        var neighbours = new Map();
+        var outgoing = new Map();
+        var incoming = new Map();
+        elements.forEach(function (el) {
+          neighbours.set(el, []); outgoing.set(el, []); incoming.set(el, 0);
+        });
+        model.links.forEach(function (link) {
+          var s = model.sourceOf(link), t = model.targetOf(link);
+          if (!s || !t || s === t) return;
+          neighbours.get(s).push(t); neighbours.get(t).push(s);
+          if (UPWARD_LINK_TYPES[link.typeId]) { var swap = s; s = t; t = swap; }
+          outgoing.get(s).push(t); incoming.set(t, incoming.get(t) + 1);
+        });
+
+        // Connected components, ignoring edge direction.
+        var seen = new Set();
+        var components = [];
+        elements.forEach(function (start) {
+          if (seen.has(start)) return;
+          var comp = [start];
+          seen.add(start);
+          for (var i = 0; i < comp.length; i++) {
+            neighbours.get(comp[i]).forEach(function (n) {
+              if (!seen.has(n)) { seen.add(n); comp.push(n); }
+            });
+          }
+          components.push(comp);
+        });
+        if (components.length < 2) return;
+        components.sort(function (a, b) { return b.length - a.length; });
+        var islands = components.slice(1).filter(function (c) { return c.length <= ISLAND_MAX; });
+        if (!islands.length) return;
+
+        // Everything that is not an island stays put; islands go below it.
+        var fixed = [].concat.apply([], components.filter(function (c) { return islands.indexOf(c) < 0; }));
+        var bounds = boxOf(fixed);
+        var rowWidth = Math.max(bounds.right - bounds.left, 1200);
+        var x = bounds.left, y = bounds.bottom + ISLAND_PACK.y, rowHeight = 0;
+
+        islands.forEach(function (island) {
+          var layout = layerIsland(island, outgoing, incoming);
+          if (x > bounds.left && x + layout.width > bounds.left + rowWidth) {
+            x = bounds.left; y += rowHeight + ISLAND_PACK.y; rowHeight = 0;
+          }
+          layout.positions.forEach(function (pos, el) {
+            el.setPosition({ x: x + pos.x, y: y + pos.y });
+          });
+          x += layout.width + ISLAND_PACK.x;
+          rowHeight = Math.max(rowHeight, layout.height);
+        });
+      }
+
+      // Longest-path layering: a node sits one row below its lowest predecessor,
+      // so every arrow in an island points down. Relaxation stops after
+      // island.length rounds, which bounds a cycle (then it is just stacked).
+      function layerIsland(island, outgoing, incoming) {
+        var layer = new Map();
+        island.forEach(function (el) { layer.set(el, 0); });
+        for (var round = 0; round < island.length; round++) {
+          var changed = false;
+          island.forEach(function (el) {
+            outgoing.get(el).forEach(function (t) {
+              if (layer.get(t) < layer.get(el) + 1 && layer.get(el) + 1 < island.length) {
+                layer.set(t, layer.get(el) + 1); changed = true;
+              }
+            });
+          });
+          if (!changed) break;
+        }
+        // Rows in layer order; sources (no incoming edge) first within a row.
+        var rows = [];
+        island.forEach(function (el) {
+          var l = layer.get(el);
+          (rows[l] = rows[l] || []).push(el);
+        });
+        rows = rows.filter(Boolean);
+        var rowSizes = rows.map(function (row) {
+          row.sort(function (a, b) { return incoming.get(a) - incoming.get(b); });
+          return row.reduce(function (acc, el) {
+            return {
+              width: acc.width + el.size.width + (acc.width ? ISLAND_GAP.x : 0),
+              height: Math.max(acc.height, el.size.height),
+            };
+          }, { width: 0, height: 0 });
+        });
+        var width = Math.max.apply(null, rowSizes.map(function (r) { return r.width; }));
+        var positions = new Map();
+        var y = 0;
+        rows.forEach(function (row, i) {
+          var x = (width - rowSizes[i].width) / 2; // centre each row
+          row.forEach(function (el) {
+            positions.set(el, { x: x, y: y });
+            x += el.size.width + ISLAND_GAP.x;
+          });
+          y += rowSizes[i].height + ISLAND_GAP.y;
+        });
+        return { positions: positions, width: width, height: y - ISLAND_GAP.y };
+      }
+
+      function boxOf(els) {
+        var b = { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity };
+        els.forEach(function (el) {
+          b.left = Math.min(b.left, el.position.x);
+          b.top = Math.min(b.top, el.position.y);
+          b.right = Math.max(b.right, el.position.x + el.size.width);
+          b.bottom = Math.max(b.bottom, el.position.y + el.size.height);
+        });
+        return b;
       }
 
       // Icon resolution is shared with schema-graph.js and mirrors internal/icon

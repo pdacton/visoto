@@ -289,24 +289,31 @@ func templateExists(path string) bool {
 
 // sortTypesByPriority reorders types based on priority list
 // Types in priority list come first (in priority order), then remaining types
+//
+// Unlisted rdfs:Class / owl:Class go LAST, after every other unlisted type. When
+// either has an instance template (the generic class page), a class that also
+// carries a more specific type with its own instance template would otherwise
+// render as whichever the endpoint happened to return first. Nothing depends on
+// those templates existing: without them the loop in ResolveTemplate simply
+// finds no match and falls through to classes/default.html. Listing either in
+// type_priority still places it by that index.
 func sortTypesByPriority(types []string, priority []string) []string {
-	if len(priority) == 0 {
-		return types
-	}
-
 	// Create a map for quick priority lookup
 	priorityMap := make(map[string]int)
 	for i, p := range priority {
 		priorityMap[p] = i
 	}
 
-	// Separate into prioritized and non-prioritized
+	// Separate into prioritized, other and generic class-of-class types
 	var prioritized []string
 	var others []string
+	var generic []string
 
 	for _, typ := range types {
 		if _, hasPriority := priorityMap[typ]; hasPriority {
 			prioritized = append(prioritized, typ)
+		} else if uninformativeCrumbTypes[typ] {
+			generic = append(generic, typ)
 		} else {
 			others = append(others, typ)
 		}
@@ -317,8 +324,7 @@ func sortTypesByPriority(types []string, priority []string) []string {
 		return priorityMap[prioritized[i]] < priorityMap[prioritized[j]]
 	})
 
-	// Combine prioritized and others
-	return append(prioritized, others...)
+	return append(append(prioritized, others...), generic...)
 }
 
 // expandPrefixedIRI expands a prefixed IRI like "schema:Person" to full IRI

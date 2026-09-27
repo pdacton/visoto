@@ -1,0 +1,121 @@
+<!-- OWL Ontology Class Template — the catalog of ontologies in the endpoint.
+
+     Small (31 IRI-identified ontologies on LINDAS), so the table renders inline and
+     every column filters locally without a declaration. One row per ontology:
+     the EU authority tables carry a description in ~24 languages, so the
+     description is picked with the house MIN-rank idiom (dispLang, else en, else
+     untagged, else any) instead of a plain OPTIONAL that would repeat the row per
+     language. The rank must stay a SINGLE DIGIT: SUBSTR(?picked, 3) strips "N|".
+
+     The membership triple sits inside GRAPH so the graph can be shown. A blank-node
+     ontology (one on LINDAS) is dropped: it has no page to link to. -->
+
+{{ define "pageTitle" }}{{ t "type.ontology.title" "Ontologies" }}{{ end }}
+{{ define "metaTitle" }}{{ t "type.ontology.metaTitle" "OWL Ontology" }}{{ end }}
+{{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
+
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+{{ define "pageSubtitle" }}{{ t "type.ontology.subtitle" "Vocabularies and schemas loaded into this endpoint, with the classes, properties and terms each one defines." }}{{ end }}
+
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="row row-deck row-cards mb-3">
+    <!-- isIRI to match the table below, which drops the blank-node ontology -->
+    <sparql-async id="ontologyCount">
+      SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE {
+        ?instance a ?? .
+        FILTER (isIRI(?instance))
+      }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict
+        "queryId" "ontologyCount"
+        "iri" .ResourceIRI
+        "title" (t "card.ontologies" "Ontologies")
+        "href" "/resource?iri=owl:Ontology"
+        "icon" "/static/img/resource/Ontology.svg")
+    }}
+  </div>
+
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <!-- Terms and imports are counted in their own subqueries so they are not
+             multiplied by the description/creator OPTIONALs. Terms are counted the
+             way the ontology page's "Defined Terms" table lists them (isDefinedBy,
+             or a class/property in the ontology's namespace), so the two agree.
+
+             Version: owl:versionInfo, else owl:versionIRI — except where the
+             versionIRI is the ontology IRI itself (all of QUDT), which says nothing.
+
+             Creators are concatenated, not SAMPLEd: OWL-Time has 3, the plant-
+             protection vocabulary 5. An IRI creator shows its label if it has one. -->
+        <sparql-async id="ontologyInstances">
+          SELECT ?instance
+                 (SUBSTR(MIN(?ranked_),3) AS ?description)
+                 (SAMPLE(?terms_) AS ?terms)
+                 (SAMPLE(?imports_) AS ?imports)
+                 (COALESCE(SAMPLE(?versionInfo_), SAMPLE(?versionIRI_)) AS ?version)
+                 (GROUP_CONCAT(DISTINCT ?creatorName_; separator=", ") AS ?creator)
+                 (SAMPLE(?graph_) AS ?graph)
+          WHERE {
+            GRAPH ?graph_ { ?instance a ?? . }
+            FILTER (isIRI(?instance))
+            OPTIONAL { ?instance visoto:description ?d_ .
+                       BIND(IF(langMatches(lang(?d_), visoto:dispLang), 1,
+                            IF(langMatches(lang(?d_), "en"), 2,
+                            IF(!langMatches(lang(?d_), "*"), 3, 4))) AS ?rk_)
+                       BIND(CONCAT(STR(?rk_), "|", STR(?d_)) AS ?ranked_) }
+            OPTIONAL {
+              SELECT ?instance (COUNT(DISTINCT ?term_) AS ?terms_) WHERE {
+                ?instance a ?? .
+                FILTER (isIRI(?instance))
+                { ?term_ rdfs:isDefinedBy ?instance . }
+                UNION
+                { VALUES ?kind_ { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
+                  ?term_ a ?kind_ .
+                  FILTER (STRSTARTS(STR(?term_), STR(?instance))) }
+              } GROUP BY ?instance
+            }
+            OPTIONAL {
+              SELECT ?instance (COUNT(DISTINCT ?import_) AS ?imports_) WHERE {
+                ?instance a ?? ; owl:imports ?import_ .
+              } GROUP BY ?instance
+            }
+            OPTIONAL { ?instance owl:versionInfo ?versionInfo_ . }
+            OPTIONAL { ?instance owl:versionIRI ?versionIRI_ . FILTER (?versionIRI_ != ?instance) }
+            OPTIONAL { ?instance dct:creator ?creator_ .
+                       OPTIONAL { ?creator_ (rdfs:label|schema:name) ?creatorLabel_ . }
+                       BIND(COALESCE(?creatorLabel_, STR(?creator_)) AS ?creatorName_) }
+          } GROUP BY ?instance
+          ORDER BY ?instance
+        </sparql-async>
+        <sparql-columns for="ontologyInstances" order>
+          <sparql-column var="instance" icon></sparql-column>
+          <sparql-column var="description" label="{{ t "facet.description" "Description" }}"></sparql-column>
+          <sparql-column var="terms" label="{{ t "facet.terms" "Terms" }}" type="number"></sparql-column>
+          <sparql-column var="imports" label="{{ t "facet.imports" "Imports" }}" type="number"></sparql-column>
+          <sparql-column var="version" label="{{ t "facet.version" "Version" }}"></sparql-column>
+          <sparql-column var="creator" label="{{ t "facet.creator" "Creator" }}"></sparql-column>
+          <sparql-column var="graph" label="{{ t "facet.graph" "Graph" }}"></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "ontologyInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.ontologies" "Ontologies")
+            "icon" "book-open")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

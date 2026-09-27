@@ -22,9 +22,8 @@
     <div class="col-lg">
       <div class="mb-3">
         <sparql-async id="skosConceptSchemeInstances">
-          SELECT ?type ?scheme ?publisher ?status ?definition ?identifier ?conceptCount WHERE {
-            BIND (?? AS ?type)
-            ?scheme a ?type .
+          SELECT ?scheme ?publisher ?status ?definition ?identifier ?conceptCount WHERE {
+            ?scheme a ?? .
 
             OPTIONAL { ?scheme dct:publisher ?pub_lang . FILTER (LANG(?pub_lang) = visoto:dispLang)}
             OPTIONAL { ?scheme dct:publisher ?pub_nolang . FILTER (LANG(?pub_nolang) = "")}
@@ -52,7 +51,7 @@
           } LIMIT 10000
         </sparql-async>
         <sparql-columns for="skosConceptSchemeInstances">
-          <sparql-column var="type" icon></sparql-column>
+          <sparql-column var="scheme" icon></sparql-column>
           <sparql-column var="status" badge filter></sparql-column>
         </sparql-columns>
 
