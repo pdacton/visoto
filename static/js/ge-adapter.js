@@ -205,7 +205,62 @@
       if (!ids.length) return Promise.resolve([]);
       return classInfo(Object.assign({}, params, { classIds: ids }));
     };
+    useClassTreeRoute(provider, endpointUrl);
     return provider;
+  }
+
+  // The Classes panel. GE's OWLStats class-tree query counts the instances of
+  // every class over the whole store, which never finishes on LINDAS (60 s
+  // proxy timeout, endless spinner). Endpoints with daily class statistics
+  // (class_stats in visoto.config) serve the tree from /api/class-tree instead:
+  // the declared classes that have instances, counts from the latest snapshot,
+  // in GE's own result shape. The route answers 404 for other endpoints, and
+  // GE's own query runs as before.
+  //
+  // GE's classTree() is kept for parsing (cycle breaking, labels, badges): for
+  // one call its query is swapped for a marker, and executeSparqlQuery answers
+  // the marker with the fetched result instead of asking the endpoint.
+  var CLASS_TREE_MARKER = '# visoto:class-tree';
+  function useClassTreeRoute(provider, endpointUrl) {
+    var m = /^\/api\/sparql\?endpoint=([^&]+)$/.exec(endpointUrl || '');
+    if (!m || !provider.settings) return;
+    var treeUrl = '/api/class-tree?endpoint=' + m[1];
+    var ownTree = provider.classTree.bind(provider);
+    var exec = provider.executeSparqlQuery.bind(provider);
+    var pending = null;
+    provider.executeSparqlQuery = function (query) {
+      if (pending && query.indexOf(CLASS_TREE_MARKER) >= 0) {
+        var result = pending;
+        pending = null;
+        return Promise.resolve(result);
+      }
+      return exec(query);
+    };
+    provider.classTree = function () {
+      return fetch(treeUrl, { headers: { Accept: 'application/sparql-results+json' } })
+        .then(function (res) {
+          if (res.status === 404) return null;
+          if (!res.ok) throw new Error('class tree: HTTP ' + res.status);
+          return res.json();
+        })
+        .then(function (json) {
+          if (!json) return ownTree();
+          var settings = provider.settings;
+          var own = settings.classTreeQuery;
+          pending = json;
+          settings.classTreeQuery = CLASS_TREE_MARKER;
+          try {
+            return ownTree(); // reads the query synchronously, before its first await
+          } finally {
+            settings.classTreeQuery = own;
+          }
+        })
+        .catch(function (err) {
+          // An empty panel, not an endless spinner.
+          console.error(err);
+          return [];
+        });
+    };
   }
 
   // Everything the toolbar and graph-kit do to a mounted workspace.

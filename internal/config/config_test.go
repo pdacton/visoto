@@ -196,6 +196,38 @@ func TestGetEndpointBySlug(t *testing.T) {
 	}
 }
 
+func TestValidateClassStatsFrom(t *testing.T) {
+	eps := func(from string) ApplicationConfig {
+		return ApplicationConfig{SparqlEndpoints: []SparqlEndpoint{
+			{Name: "prod", Slug: "lindas-prod", ClassStats: true},
+			{Name: "int", Slug: "lindas-int"},
+			{Name: "cached", Slug: "lindas-cached", ClassStatsFrom: from},
+		}}
+	}
+	tests := []struct {
+		from    string
+		wantErr bool
+	}{
+		{"", false},
+		{"lindas-prod", false},
+		{"LINDAS-PROD", false},
+		{"lindas-int", true}, // exists but does not collect
+		{"nope", true},
+	}
+	for _, tt := range tests {
+		a := eps(tt.from)
+		if err := a.validateClassStatsFrom(); (err != nil) != tt.wantErr {
+			t.Errorf("class_stats_from=%q: err=%v, wantErr %v", tt.from, err, tt.wantErr)
+		}
+	}
+	a := eps("lindas-prod")
+	for i, want := range []string{"lindas-prod", "", "lindas-prod"} {
+		if got := a.SparqlEndpoints[i].ClassStatsSlug(); got != want {
+			t.Errorf("%s.ClassStatsSlug() = %q, want %q", a.SparqlEndpoints[i].Slug, got, want)
+		}
+	}
+}
+
 // TestParsePrefixStrings_SPARQL tests parsing SPARQL format prefixes
 func TestParsePrefixStrings_SPARQL(t *testing.T) {
 	tests := []struct {

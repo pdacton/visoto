@@ -6,6 +6,7 @@ import (
 
 	goMcp "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"hutzli.org/visoto/internal/classstats"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/sparql"
 )
@@ -20,10 +21,12 @@ Linking: tool results include visoto_link / <variable>_visoto_link URLs pointing
 
 // NewServer creates and returns a configured MCP HTTP handler.
 // The returned mux handles POST /mcp (MCP streamable HTTP) and GET /health.
-func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handler {
+// classStats may be nil (no daily class statistics).
+func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats *classstats.Collector) http.Handler {
 	tc := &toolContext{
 		preprocessor: preprocessor,
 		cfg:          cfg,
+		classStats:   classStats,
 	}
 
 	mcpServer := server.NewMCPServer(
@@ -188,7 +191,9 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 		goMcp.NewTool("count_instances",
 			goMcp.WithDescription(
 				"Count RDF instances per class in the endpoint. "+
-					"Provide class_iri to count only instances of that specific class.",
+					"Provide class_iri to count only instances of that specific class. "+
+					"On endpoints with daily class statistics the answer comes from the latest daily snapshot "+
+					"(its date is in the hints) instead of a live query; see class_trends for changes over time.",
 			),
 			goMcp.WithString("class_iri",
 				goMcp.Description("Optional RDF class IRI to count instances for, e.g. https://schema.org/Person. "+
@@ -201,6 +206,39 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor) http.Handl
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
 		tc.handleCountInstances,
+	)
+
+	// class_trends
+	mcpServer.AddTool(
+		goMcp.NewTool("class_trends",
+			goMcp.WithDescription(
+				"How the number of instances per class changed over time, from Visoto's daily class statistics "+
+					"(collected once a day, only for some endpoints — e.g. LINDAS). Without class_iri: the classes "+
+					"that appeared, vanished, grew or shrank most over the last `days` days, and the store size then "+
+					"and now; a 'drop' marks a class that lost more than 20%. With class_iri: that class's daily counts.",
+			),
+			goMcp.WithString("endpoint",
+				goMcp.Description("Endpoint name, slug or URL. Uses the default endpoint if omitted."),
+			),
+			goMcp.WithString("class_iri",
+				goMcp.Description("Optional class IRI for its daily series."),
+			),
+			goMcp.WithNumber("days",
+				goMcp.Description("How far back to compare or list. Default: 7."),
+				goMcp.DefaultNumber(7),
+				goMcp.Min(1),
+				goMcp.Max(3650),
+			),
+			goMcp.WithNumber("limit",
+				goMcp.Description("Maximum number of changed classes to return. Default: 50."),
+				goMcp.DefaultNumber(50),
+				goMcp.Min(1),
+				goMcp.Max(1000),
+			),
+			goMcp.WithReadOnlyHintAnnotation(true),
+			goMcp.WithDestructiveHintAnnotation(false),
+		),
+		tc.handleClassTrends,
 	)
 
 	// list_named_graphs

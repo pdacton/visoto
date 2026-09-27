@@ -11,6 +11,7 @@ import (
 	"time"
 
 	goMcp "github.com/mark3labs/mcp-go/mcp"
+	"hutzli.org/visoto/internal/classstats"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/sparql"
 )
@@ -30,6 +31,7 @@ type toolResult struct {
 type toolContext struct {
 	preprocessor *sparql.Preprocessor
 	cfg          *config.Config
+	classStats   *classstats.Collector // nil: no daily class statistics
 }
 
 // visotoLink returns the Visoto resource-page URL for a given IRI. The base URL
@@ -443,6 +445,10 @@ func (tc *toolContext) addTripleEstimates(r *toolResult, endpoint string) {
 func (tc *toolContext) handleCountInstances(ctx context.Context, request goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	classIRI := getStringParam(request, "class_iri")
 	endpoint := getStringParam(request, "endpoint")
+
+	if r, ok := tc.countInstancesFromSnapshot(ctx, classIRI, endpoint); ok {
+		return toMCPResult(r)
+	}
 
 	var query string
 	if classIRI != "" {

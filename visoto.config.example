@@ -12,6 +12,11 @@ timeout = 30 # timeout in seconds
 # you need to upload from e.g. http://localhost.
 # allow_private_upload_urls = false
 
+# Bearer token that guards GET /metrics (Prometheus text format — e.g. for a
+# Grafana Cloud "Metrics Endpoint" scrape job). Without it /metrics answers 404.
+# Keep the value in .env.
+# metrics_token = "${VISOTO_METRICS_TOKEN}"
+
 # API key for the Gemini-backed chat feature. Optional — the app starts without
 # it and only the chat is disabled. Get one from:
 #   https://aistudio.google.com/app/apikey
@@ -85,6 +90,10 @@ default = true
 monitor = true
 tag = "lindas"
 slug = "lindas-prod"
+class_stats = true                   # count the instances of every used class once a day
+                                     # (internal/classstats; GraphDB statistics when available)
+# class_stats_from = "<slug>"        # instead: serve another endpoint's counts (a cached
+                                     # twin of the same store, so it is not counted twice)
 # access_token = "${MY_TOKEN}"       # optional: Bearer token for write operations (Upload data feature)
 # username = ""                      # alternative: basic auth (used only if access_token is absent)
 # password = ""

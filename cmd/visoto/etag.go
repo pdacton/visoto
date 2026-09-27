@@ -203,7 +203,7 @@ func isCacheableMethod(method string) bool {
 // health/ping probes, and the MCP endpoint, which streams.
 func skipETagPath(path string) bool {
 	switch path {
-	case "/ping", "/health", "/mcp", "/favicon.ico", "/robots.txt":
+	case "/ping", "/health", "/mcp", "/metrics", "/favicon.ico", "/robots.txt":
 		return true
 	}
 	return strings.HasPrefix(path, "/static/")

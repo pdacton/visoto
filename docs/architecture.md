@@ -66,6 +66,7 @@ For non-resource pages (search, monitoring, home), the lifecycle is simpler: the
 | `internal/upload` | RDF upload (file or URL) and named-graph listing/deletion |
 | `internal/export` | Named-graph export, with per-store strategies (GraphDB, Graph Store Protocol, `CONSTRUCT`) |
 | `internal/monitor` | SPARQL endpoint health polling, response-time history in a SQLite DB under `./data/` |
+| `internal/classstats` | Daily class-instance counts per endpoint (`class_stats`), history in `./data/classstats.db`; serves the GE class tree, `/monitoring`, MCP and `/metrics` |
 | `internal/chat` | Google Gemini AI chat handler |
 | `internal/mcp` | Model Context Protocol server (embedded at `/mcp` on the main port) |
 | `internal/logger` | Structured `slog` logger wrapper |
@@ -88,7 +89,7 @@ See [docs/templating.md](templating.md) for the full authoring guide.
 
 Persistence happens at two levels:
 
-**Server-side (`./data/`):** SPARQL endpoint monitoring history is written to a SQLite database (`monitoring.db`, via the pure-Go `modernc.org/sqlite` driver, so no cgo), alongside `monitoring_enabled.json` holding the on/off state. The directory is created automatically on startup. Everything else on the server is stateless — all RDF data lives in the remote SPARQL endpoint.
+**Server-side (`./data/`):** SPARQL endpoint monitoring history is written to a SQLite database (`monitoring.db`, via the pure-Go `modernc.org/sqlite` driver, so no cgo), alongside `monitoring_enabled.json` holding the on/off state, and the daily class-instance counts (`classstats.db`, kept indefinitely — a few hundred rows per endpoint and day). The directory is created automatically on startup. Everything else on the server is stateless — all RDF data lives in the remote SPARQL endpoint.
 
 **Browser-side:** Several UI preferences are stored locally in the browser so they survive page navigation and reloads.
 

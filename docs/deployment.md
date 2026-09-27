@@ -118,6 +118,31 @@ visoto.hutzli.org {
 }
 ```
 
+## Metrics for Grafana Cloud
+
+`GET /metrics` serves Prometheus metrics: endpoint health from the monitor
+(`visoto_endpoint_up`, `visoto_endpoint_response_seconds`), the daily class
+statistics (`visoto_class_instances{endpoint,class}`, `visoto_store_triples`,
+`visoto_class_stats_*`) and the Go runtime. Labels carry endpoint **slugs**,
+never URLs. About 2,500 series with LINDAS prod/int/test — inside Grafana Cloud's
+free tier.
+
+The route answers only with `Authorization: Bearer <metrics_token>` and returns
+404 while no token is configured. It is not under `/api/*` or `/resource`, so
+Souin never caches it (the handler also sends `Cache-Control: no-store`).
+
+1. Create a token and put it in `.env` (deployed by `deploy.sh`):
+   `VISOTO_METRICS_TOKEN=$(openssl rand -hex 32)` (docker-compose.yml passes it
+   into the container)
+2. In `visoto.config`, under `[application]`:
+   `metrics_token = "${VISOTO_METRICS_TOKEN}"` — startup fails if the variable
+   is unset, so add both together.
+3. Check: `curl -H "Authorization: Bearer $TOKEN" https://visoto.hutzli.org/metrics | grep visoto_`
+   (and without the header: 401).
+4. Grafana Cloud → Connections → **Metrics Endpoint** → URL
+   `https://visoto.hutzli.org/metrics`, authentication *Bearer*, the token,
+   scrape interval 5 min (the class counts change once a day).
+
 ## Analytics (GoAccess)
 
 Visitor and performance statistics are available at

@@ -16,7 +16,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"hutzli.org/visoto/internal/chat"
+	"hutzli.org/visoto/internal/classstats"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/i18n"
 	"hutzli.org/visoto/internal/icon"
@@ -865,6 +867,16 @@ func main() {
 			slog.Bool("enabled", mon.IsEnabled()))
 	}
 
+	// Daily class-instance counts for endpoints with class_stats = true.
+	classStats, err = classstats.New(&cfg.Application, "./data")
+	if err != nil {
+		log.Warn("failed to initialize class statistics", slog.String("error", err.Error()))
+		classStats = nil
+	} else {
+		classStats.Start()
+		log.Info("class statistics started", slog.Bool("collecting", classStats.Enabled()))
+	}
+
 	// Build MCP handler (fixed default endpoint, no per-request cookie logic)
 	mcpPreprocessor := sparql.New(sparql.QueryInput{
 		EndpointURL:     cfg.Application.SparqlEndpoint,
@@ -873,7 +885,7 @@ func main() {
 		NamedEndpoints:  cfg.Application.GetNamedEndpointsMap(),
 		MagicProperties: cfg.RDF.MagicProperties,
 	})
-	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor)
+	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor, classStats)
 
 	// Create router
 	router := gin.Default()
@@ -924,6 +936,18 @@ func main() {
 	router.GET("/api/monitoring/status", monitoringStatusHandler)
 	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
 	router.GET("/api/monitoring/data", monitoringDataHandler)
+	router.GET("/api/class-tree", epFromURL, langFromURL, classTreeHandler)
+	router.GET("/api/class-stats/status", classStatsStatusHandler)
+	router.GET("/api/class-stats/changes", classStatsChangesHandler)
+	router.GET("/api/class-stats/series", classStatsSeriesHandler)
+	var promCollectors []prometheus.Collector
+	if mon != nil {
+		promCollectors = append(promCollectors, mon)
+	}
+	if classStats != nil {
+		promCollectors = append(promCollectors, classStats)
+	}
+	router.GET("/metrics", metricsHandler(cfg.Application.MetricsToken, promCollectors...))
 	router.POST("/api/cache/purge", cachePurgeHandler)
 	router.GET("/api/metric/:id", epFromURL, langFromURL, metricHandler)
 	router.GET("/api/search", epFromURL, langFromURL, searchAPIHandler)

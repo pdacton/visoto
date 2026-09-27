@@ -71,6 +71,11 @@ type ApplicationConfig struct {
 	// DefaultLanguage is used when the request expresses no usable preference.
 	// Must be the code of a member of Languages.
 	DefaultLanguage string `toml:"default_language"`
+
+	// MetricsToken guards GET /metrics (Prometheus text format): requests need
+	// "Authorization: Bearer <token>". Empty = /metrics answers 404, so the
+	// endpoint is never open by accident. json:"-" like the endpoint secrets.
+	MetricsToken string `toml:"metrics_token" json:"-"`
 }
 
 // Language is one entry in the UI language picker.
@@ -123,6 +128,21 @@ type SparqlEndpoint struct {
 	AccessToken    string `toml:"access_token" json:"-"` // Optional Bearer token for write operations (takes precedence over username/password)
 	SearchProvider string `toml:"search_provider"`       // FTS provider: "stardog" (default), "graphdb" (Simple FTS), "graphdb-lucene" (auto-discovered Lucene connectors), "fuseki", "qlever", "sparql-query"
 	ExportProvider string `toml:"export_provider"`       // optional export provider override: "graphdb", "gsp", "construct"
+	// ClassStats enables the daily class-instance count (internal/classstats)
+	// for this endpoint. Opt-in: a run sends one query per used class.
+	ClassStats bool `toml:"class_stats"`
+	// ClassStatsFrom names (by slug) another endpoint whose snapshot this one
+	// serves — for a cached twin of the same store, so it is not counted twice.
+	ClassStatsFrom string `toml:"class_stats_from"`
+}
+
+// ClassStatsSlug is the slug whose class-count snapshot serves this endpoint:
+// its own when it collects, the ClassStatsFrom source otherwise, "" for none.
+func (e *SparqlEndpoint) ClassStatsSlug() string {
+	if e.ClassStats {
+		return e.Slug
+	}
+	return e.ClassStatsFrom
 }
 
 // ApplyAuth sets the Authorization header on req from the endpoint's
@@ -307,6 +327,9 @@ func Load(configPath string) (*Config, error) {
 	if err := cfg.Application.validateEndpointSlugs(); err != nil {
 		return cfg, fmt.Errorf("invalid endpoint config in %s: %w", configPath, err)
 	}
+	if err := cfg.Application.validateClassStatsFrom(); err != nil {
+		return cfg, fmt.Errorf("invalid endpoint config in %s: %w", configPath, err)
+	}
 
 	// A config that lists a language with no catalog, or a default outside the
 	// list, would silently render half-translated pages — fail fast instead.
@@ -376,6 +399,22 @@ func (a *ApplicationConfig) validateEndpointSlugs() error {
 			return fmt.Errorf("endpoints %q and %q share slug %q (case-insensitive)", other, ep.Name, ep.Slug)
 		}
 		seen[key] = ep.Name
+	}
+	return nil
+}
+
+// validateClassStatsFrom requires every class_stats_from to name an endpoint
+// that collects (class_stats = true); a chain or a typo would silently leave
+// the endpoint without counts.
+func (a *ApplicationConfig) validateClassStatsFrom() error {
+	for _, ep := range a.SparqlEndpoints {
+		if ep.ClassStatsFrom == "" {
+			continue
+		}
+		src := a.GetEndpointBySlug(ep.ClassStatsFrom)
+		if src == nil || !src.ClassStats {
+			return fmt.Errorf("endpoint %q: class_stats_from = %q must name an endpoint with class_stats = true", ep.Name, ep.ClassStatsFrom)
+		}
 	}
 	return nil
 }

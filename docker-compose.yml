@@ -21,6 +21,9 @@ services:
       # Same, for the ${GEMINI_API_KEY} reference (chat feature). Optional:
       # leave gemini_api_key commented out in visoto.config to run without chat.
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # Same, for ${VISOTO_METRICS_TOKEN} (metrics_token: Bearer token of
+      # /metrics, e.g. for Grafana Cloud). Optional; unset = /metrics is 404.
+      - VISOTO_METRICS_TOKEN=${VISOTO_METRICS_TOKEN:-}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8060/ping"]

@@ -56,6 +56,38 @@
   </div>
 </div>
 
+<!-- Daily class-instance counts (internal/classstats), for endpoints with
+     class_stats = true. Behaviour: static/js/class-stats-monitor.js. -->
+<div class="card mt-3" data-class-stats>
+  <div class="card-header flex-wrap gap-2">
+    <h3 class="card-title">{{ t "page.monitoring.classStatsTitle" "Class instances" }}</h3>
+    <div class="card-actions d-flex flex-wrap gap-2">
+      <select class="form-select form-select-sm w-auto" data-class-stats-endpoint aria-label="{{ t "page.monitoring.endpoint" "Endpoint" }}"></select>
+      <div class="btn-group btn-group-sm" role="group" aria-label="{{ t "page.monitoring.classStatsCompare" "Compare with" }}">
+        <button type="button" class="btn btn-outline-secondary active" data-class-stats-days="1">{{ t "page.monitoring.classStatsDay" "1 day" }}</button>
+        <button type="button" class="btn btn-outline-secondary" data-class-stats-days="7">{{ t "page.monitoring.classStatsWeek" "7 days" }}</button>
+        <button type="button" class="btn btn-outline-secondary" data-class-stats-days="30">{{ t "page.monitoring.classStatsMonth" "30 days" }}</button>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <p class="text-secondary mb-0" data-class-stats-summary>{{ t "page.monitoring.loading2" "Loading…" }}</p>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-vcenter card-table">
+      <thead>
+        <tr>
+          <th>{{ t "page.monitoring.classStatsClass" "Class" }}</th>
+          <th class="text-end">{{ t "page.monitoring.classStatsBefore" "Before" }}</th>
+          <th class="text-end">{{ t "page.monitoring.classStatsNow" "Now" }}</th>
+          <th class="text-end">{{ t "page.monitoring.classStatsChange" "Change" }}</th>
+        </tr>
+      </thead>
+      <tbody data-class-stats-rows></tbody>
+    </table>
+  </div>
+</div>
+
 {{ end }}
 
 {{ define "pageScripts" }}
@@ -66,4 +98,5 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js" integrity="sha384-cVMg8E3QFwTvGCDuK+ET4PD341jF3W8nO1auiXfuZNQkzbUUiBGLsIQUE+b1mxws" crossorigin="anonymous"></script>
 <script src="/static/js/monitoring.js"></script>
+<script src="/static/js/class-stats-monitor.js"></script>
 {{ end }}

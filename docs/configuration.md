@@ -40,6 +40,7 @@ cp visoto.config.example visoto.config
 | `timeout` | integer | `30` | Per-query timeout in seconds for all SPARQL requests. |
 | `gemini_api_key` | string | — | Google Gemini API key. Required only for the AI chat feature at `/api/chat`. The rest of the app works without it. Get a key at [aistudio.google.com](https://aistudio.google.com/app/apikey). |
 | `allow_private_upload_urls` | boolean | `false` | Allows the URL mode of `/api/upload` to fetch from loopback, private and link-local hosts. Off by default as an SSRF guard — enable only in a local test environment where you need to upload from e.g. `http://localhost`. |
+| `metrics_token` | string | — | Bearer token that guards `GET /metrics` (Prometheus text format, e.g. for a Grafana Cloud scrape job — see `docs/deployment.md`). Without it `/metrics` answers 404. Keep the value in `.env` and reference it as `"${VISOTO_METRICS_TOKEN}"`. |
 | `default_language` | string | `"en"` | Language used when a request expresses no usable preference. Must be one of the codes in `[[application.languages]]`. See [UI languages](#ui-languages). |
 
 ---
@@ -132,9 +133,31 @@ Each `[[application.sparqlEndpoints]]` block defines one entry in the endpoint-s
 | `monitor` | boolean | `false` | Enables health monitoring for this endpoint. Monitored endpoints appear on the `/monitoring` dashboard with response-time history stored in `./data/`. |
 | `tag` | string | `""` | A logical group label (e.g., `"lindas"`, `"stadtzuerich"`). The tag of the currently selected endpoint is exposed to templates as `.EndpointTag`, allowing templates to conditionally show endpoint-specific content. |
 | `search_provider` | string | `"stardog"` | Full-text search backend for this endpoint: `"stardog"`, `"graphdb"` (Simple FTS), `"graphdb-lucene"` (auto-discovered Lucene connectors), `"fuseki"`, `"qlever"` or `"sparql-query"`. Different triple stores expose FTS through different vendor predicates; `"sparql-query"` is the portable `CONTAINS` fallback that needs no index. Also exposed to templates as `.SearchProvider`, the hint pages use to pick an engine-specific query. |
+| `class_stats` | boolean | `false` | Counts the instances of every used class once a day (03:00 local, plus a catch-up at startup when the last run is over a day old) and keeps the history in `./data/classstats.db`. On GraphDB the counts come from the index statistics, one query per class (≈35 s for all of LINDAS); other stores get a live `COUNT` per class with a 60 s timeout and a 30-minute run budget. Feeds the Graph Explorer class tree, the "Class instances" card on `/monitoring`, the MCP tools `count_instances` / `class_trends`, and `/metrics`. See [Class statistics](#class-statistics). |
+| `class_stats_from` | string | — | Slug of an endpoint with `class_stats = true` whose counts this endpoint serves — for a cached twin of the same store (`lindas-cached` → `lindas-prod`), so it is not counted twice. Startup fails if the slug does not name a collecting endpoint. |
 | `export_provider` | string | auto | Overrides how named-graph export is performed: `"graphdb"`, `"gsp"` (Graph Store Protocol) or `"construct"`. Autodetected when omitted. |
 | `access_token` | string | — | Bearer token for write operations (upload, graph deletion). Takes precedence over `username`/`password`. |
 | `username` / `password` | string | — | Basic-auth credentials for write operations, used only when `access_token` is absent. |
+
+### Class statistics {#class-statistics}
+
+A daily run per `class_stats` endpoint:
+
+1. **Store size and engine.** `COUNT(*)` over GraphDB's statistics pseudo-graph
+   (`<http://www.ontotext.com/owlim/system#statistics>`); a result above 0 means
+   GraphDB. Elsewhere a plain `COUNT(*)` with a 10 s timeout.
+2. **Classes.** The declared classes (`rdfs:Class` / `owl:Class`) that have
+   instances, directly or through a subclass (`classstats.ClassTreeQuery`).
+   Classes used without being declared are not found — listing every class in
+   use times out on large stores.
+3. **One count per class**, one after the other. On GraphDB the statistics
+   answer a single bound pattern `?s a <C>` from the index (0.2 s even for 14 M
+   instances, approximate); batching classes with `VALUES` defeats that and
+   falls back to a live count, so the collector never batches.
+
+The Graph Explorer Classes panel reads the tree from `/api/class-tree` on these
+endpoints (with count badges) instead of running GE's own query, which counts
+over the whole store and times out on LINDAS. Other endpoints keep GE's query.
 
 ### Slugs {#slugs}
 
