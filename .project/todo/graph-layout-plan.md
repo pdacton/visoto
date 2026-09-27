@@ -69,6 +69,10 @@ GL-44, GL-18, GL-45, GL-46, GL-24, GL-25.
 
 - Extract loader / readiness / island reader into `graph-kit.js`; both embed files
   call `VisotoGraph.attach`.
+- Add SRI (`integrity` + `crossorigin`) to the GE script loader — today it has
+  none, unlike the Tabler / Tabulator links in `base.html`.
+- **Touch spike:** check whether GE 2.1 reacts to touch/pointer events at all;
+  if it is mouse-only, re-scope GL-40 before A2.
 - `hideToolbar: true`; render `graph-toolbar.html` with parity (GL-44): Layout ▾
   (placeholder until A1, runs GE force), Undo/Redo, Fit, Language ▾, Save /
   Export ▾ (SVG, PNG, Print, Clear all for now).
@@ -88,7 +92,9 @@ GL-2, GL-11, GL-13, GL-16, GL-17, GL-19, GL-26 (fixed flag only).
 - `graph-layout.js`: Network (WebCola via `GE.forceLayout` adapter, tuned), Tree ↓
   / Tree → (ELK `layered`, DOWN / RIGHT), Radial (ELK `radial`, centre rule
   GL-19), component packing (GL-17). Default reversals (GL-22) applied here.
-- `elkjs` lazy-loaded from jsDelivr with SRI on first ELK use.
+- `elkjs@0.12.0` (`elk.bundled.js`) lazy-loaded from jsDelivr with SRI on first ELK
+  use. Licence EPL-2.0 OR GPL-3.0-or-later — loaded unmodified from the CDN; note
+  it next to the other third-party libraries in the docs.
 - Apply: positions set inside one `kit.batch("Layout — Tree ↓")`, link vertices
   cleared; selection-only layout keeps the centroid (GL-13).
 - Per-graph defaults (GL-2): browse → Network, construct/schema → Tree →.
@@ -133,7 +139,7 @@ GL-20–23, GL-47, GL-48, GL-14, GL-15.
 ### A5 — Class tree, filters, find
 GL-10, GL-49, GL-52, GL-32.
 
-- Class-tree ⋮ menu (Select / Add / Remove all, `subClassOf*`); eye toggle.
+- Class-tree ⋮ menu (Select all / Remove all, `subClassOf*`); eye toggle.
 - Namespace filter on construct/schema embeds.
 - Find on canvas: highlight + zoom via `setHighlighter`.
 - **Workaround:** hide = remove + re-add with link restore → B5.
@@ -152,7 +158,7 @@ GL-38, GL-39, GL-40, GL-41, GL-53.
 ## Part B — Graph Explorer upstream (separate step)
 
 Starts after A2 is stable, so every proposal is backed by a working Visoto
-implementation and screenshots.
+implementation.
 
 ### B0 — Proposal issue at zazuko/graph-explorer
 One issue listing B1–B6 as independent extension points, asking which PRs are
@@ -192,7 +198,34 @@ Only if B1–B5 land smoothly.
 
 ---
 
-## 2. Risks
+## 2. Working agreements
+
+- **One branch** (`claude/graph-explorer-node-placement-o594d0`), **one or more
+  distinct commits per phase**, each phase's commits self-contained and
+  deployable. No per-phase branches or PRs.
+- After code changes: `go build ./... && go test ./...`, `graphify update .`,
+  restart the server (templates load at startup).
+- i18n keys: `graph.*` in templates, `js.graph.*` for `vsT`, in all five
+  catalogs (de, en, fr, it, rm).
+- Every phase's exit additionally requires: all three embeds checked on the test
+  set below, and undo covering every action the phase added.
+
+### Test set (LINDAS prod, `endpoint=lindas-prod`)
+
+| # | Page | Covers |
+|---|---|---|
+| T1 | `/resource?iri=http://www.w3.org/ns/prov-o%23` (owl:Ontology, 30 classes) | UML construct diagram (`ontologyDiagram`) + Graph view + Schema view on one page → all three embeds, multi-graph autosave; > 20 incoming `rdfs:isDefinedBy` for GL-15 |
+| T2 | `/resource?iri=https://www.ica.org/standards/RiC/ontology` (owl:Ontology, 593 terms) | large construct diagram: ELK speed, GL-46 Cancel / > 500 warning |
+| T3 | `/resource?iri=https://agriculture.ld.admin.ch/system-map/S7DUZFs3emPOPYErT` (schema:SoftwareApplication) | browse mode with two graphs (`dependencyGraph` + Graph view) |
+| T4 | class page `schema:SoftwareApplication` (`systemDiagram`) | browse mode on a class template, expand from a hub node |
+
+**Environment note:** this cloud container's network policy blocks
+`cached.lindas.admin.ch` (proxy 403), so a locally started server cannot reach
+LINDAS here. Browser verification runs on a machine with LINDAS access (local
+dev, or the deployed instance after push); pure `graph-layout.js` logic can be
+checked here with `node --test`.
+
+## 3. Risks
 
 | Risk | Mitigation |
 |---|---|
@@ -203,7 +236,7 @@ Only if B1–B5 land smoothly.
 | Upstream PRs stall | Part A is complete without them; B0 gate falls back to Reactodia spike |
 | No JS unit tests | Keep `graph-layout.js` pure; optionally add `node --test` specs (no deps) for it |
 
-## 3. File inventory
+## 4. File inventory
 
 New: `static/js/graph-kit.js`, `static/js/ge-adapter.js`,
 `static/js/graph-layout.js`, `templates/partials/graph-toolbar.html`,

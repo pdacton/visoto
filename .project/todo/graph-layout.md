@@ -55,7 +55,7 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
 ### Selection
 
 - **GL-5** *(amended)* A **Pan / Select** toggle in the toolbar sets what a plain
-  drag on empty canvas does. In Select mode it draws a selection box that replaces
+  drag on empty canvas does; the canvas opens in **Pan** mode. In Select mode it draws a selection box that replaces
   the selection. **Shift+drag** is the shortcut for a box in Pan mode. Adding to a
   selection is done with GL-6.
 - **GL-6** **Ctrl/Cmd+click** toggles a node in or out of the selection (Cmd on
@@ -70,11 +70,12 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
 ### Class tree (left sidebar)
 
 - **GL-10** *(amended)* Right-click, long-press, or a visible "⋮" button on a class
-  opens: **Select all**, **Add all**, **Remove all**. A class includes its
-  subclasses (`rdf:type/rdfs:subClassOf*`), matching the nesting shown in the tree.
+  opens: **Select all**, **Remove all**. A class includes its subclasses
+  (`rdf:type/rdfs:subClassOf*`), matching the nesting shown in the tree.
   - Select all — select that class's nodes already on the diagram.
-  - Add all — load instances onto the diagram (GL-15 applies).
   - Remove all — remove that class's nodes from the diagram.
+  - *"Add all" dropped:* GE's Instances panel already lists a class's instances
+    for adding.
 - **GL-49** An eye toggle per class in the class tree **hides / shows** that class's
   nodes on the canvas without removing them. Hidden nodes are left out of layouts
   and exports; the tree shows which classes are hidden. Saved with the canvas.
@@ -159,7 +160,9 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
 - **GL-22** Reversed by default: `rdf:type`, `rdfs:subClassOf`, `skos:broader`,
   `schema:isPartOf` — so superclasses / broader concepts / wholes sit on top.
   User changes are remembered per property IRI (`localStorage`), shared by both
-  diagrams.
+  diagrams. The partial's existing `hideTypeEdges` parameter only sets the
+  *initial* visibility of `rdf:type` / `rdfs:subClassOf`; the user can show them
+  again.
 - **GL-23** A dedicated **Redraw** button applies reverse/visibility changes; it is
   highlighted while there are unapplied changes.
 
@@ -177,7 +180,9 @@ and data are re-fetched on load, so a saved canvas never shows stale labels; IRI
 that no longer resolve are shown as bare IRIs, not dropped.
 
 - **GL-35** *(amended)* **Autosave** per graph instance (page URL + graph `id`) in
-  `localStorage`; reopening the page restores each graph's canvas. A **Reset diagram** action (Save ▾) returns to the page default.
+  `localStorage`; reopening the page restores each graph's canvas. The save
+  stores a fingerprint of the graph's starting resources; if the page now seeds
+  different ones, the restored canvas shows "Page content changed — reset?". A **Reset diagram** action (Save ▾) returns to the page default.
 - **GL-36** **Download** the canvas as a `.visoto-graph.json` file (based on GE's
   `SerializedDiagram`) and **Open** such a file onto the canvas. The file carries
   the endpoint slug; opening it switches to that endpoint (absorbs GL-37).
