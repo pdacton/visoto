@@ -293,7 +293,11 @@ checked here with `node --test`.
 ### Status
 
 Part A done on this branch (A0–A6, 2026-09-27): every phase checked on T1–T4 in
-headless Chromium; JS unit tests `node --test tests/js/`. Part B can start (B0 proposal).
+headless Chromium; JS unit tests `node --test tests/js/`.
+
+Part B on hold (2026-09-27): Zazuko has not answered, and Part A already gives users
+everything B1–B5 would. Part B would only retire the `GE-UPSTREAM` workarounds;
+revisit if Zazuko responds or a GE release breaks one of them.
 
 ## 3. Risks
 
