@@ -28,9 +28,10 @@
       no prefix expansion: declare every PREFIX the query uses. `iris` is ignored.
 
   Notes:
-    - The partial self-loads the Graph Explorer CDN bundle, guarded so it loads only once
-      even if the partial appears multiple times (or alongside the schema diagram, which
-      loads the same bundle from static/js/schema-graph.js).
+    - The partial self-loads the Graph Explorer CDN bundle (with SRI) through
+      static/js/ge-adapter.js, once per page however many graphs it holds.
+    - Toolbar (graph-toolbar.html), undo, fullscreen and error messages come from
+      static/js/graph-kit.js, shared with the schemaGraph partial.
     - The ?iri= URL query parameter is also honored as an additional starting IRI.
 -->
 
@@ -79,11 +80,18 @@
            dynamic value interpolated directly into a style="" attribute (CSS context), emitting
            the ZgotmplZ sentinel; assigning it from a JSON string in JS avoids that.
            The .graph-canvas class is targeted by the .graph-maximized fullscreen CSS. -->
+      <div id="{{ $id }}-frame" class="graph-frame">
+      {{ template "graphToolbar" (dict "id" $id) }}
+      <div class="graph-stage">
       <div id="{{ $id }}-root" class="graph-canvas" style="width: 100%;"
            data-sparql-graph
            data-sparql-graph-id="{{ $id }}"
            {{ if $lazy }}data-sparql-graph-lazy="true"{{ end }}
            {{ if $hideTypeEdges }}data-sparql-graph-hide-type-edges="true"{{ end }}></div>
+      <!-- Messages (errors with Retry) and the busy spinner, over the canvas. -->
+      <div id="{{ $id }}-overlay" class="graph-overlay" aria-live="polite"></div>
+      </div>
+      </div>
       <!-- Floating exit button, shown only while maximized (see ontodia_overrides.css). -->
       <button type="button" class="btn btn-icon graph-exit-fullscreen" id="{{ $id }}-exit" title="{{ t "graph.exitFullscreen" "Exit fullscreen" }}">
         <i data-lucide="minimize"></i>
@@ -105,6 +113,9 @@
        markup, data islands and the data-sparql-graph marker it reads. -->
   <!-- Shared icon resolution (mirrors internal/icon); must precede the graph script. -->
   <script src="/static/js/visoto-icons.js" defer></script>
+  <!-- The GE adapter and the shared controller; both must precede the graph script. -->
+  <script src="/static/js/ge-adapter.js" defer></script>
+  <script src="/static/js/graph-kit.js" defer></script>
   <!-- In-memory store + DataProvider for CONSTRUCTed graphs; must precede the graph script. -->
   <script src="/static/js/graph-memory-store.js" defer></script>
   <script src="/static/js/sparql-graph.js" defer></script>

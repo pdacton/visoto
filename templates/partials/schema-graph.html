@@ -25,8 +25,8 @@
     - title/icon: (optional) card header title and Lucide icon. Defaults "Schema" / "shapes".
 
   Notes:
-    - Same guarded Graph Explorer CDN loader as templates/partials/sparql-graph.html,
-      so the Graph and Schema views share a single bundle load.
+    - Same Graph Explorer loader, toolbar and controller as sparql-graph.html
+      (static/js/ge-adapter.js, graph-kit.js), so all graphs share one bundle load.
     - The graph-explorer@2.1.0 bundle has no RDFDataProvider; this partial ships a
       custom in-memory DataProvider over the derived schema triples, which also makes
       search / class tree / connections menus work locally.
@@ -67,10 +67,17 @@
     <div class="card-body p-0">
       <!-- Height is applied via JS from the data island below (avoids Go's
            html/template ZgotmplZ CSS-context sanitizer; see sparql-graph.html). -->
+      <div id="{{ $id }}-frame" class="graph-frame">
+      {{ template "graphToolbar" (dict "id" $id) }}
+      <div class="graph-stage">
       <div id="{{ $id }}-root" class="graph-canvas" style="width: 100%;"
            data-schema-graph
            data-schema-graph-id="{{ $id }}"
            {{ if $lazy }}data-schema-graph-lazy="true"{{ end }}></div>
+      <!-- Messages (errors with Retry) and the busy spinner, over the canvas. -->
+      <div id="{{ $id }}-overlay" class="graph-overlay" aria-live="polite"></div>
+      </div>
+      </div>
       <button type="button" class="btn btn-icon graph-exit-fullscreen" id="{{ $id }}-exit" title="{{ t "graph.exitFullscreen" "Exit fullscreen" }}">
         <i data-lucide="minimize"></i>
       </button>
@@ -88,6 +95,9 @@
        markup, data islands and the data-schema-graph marker it reads. -->
   <!-- Shared icon resolution (mirrors internal/icon); must precede the graph script. -->
   <script src="/static/js/visoto-icons.js" defer></script>
+  <!-- The GE adapter and the shared controller; both must precede the graph script. -->
+  <script src="/static/js/ge-adapter.js" defer></script>
+  <script src="/static/js/graph-kit.js" defer></script>
   <!-- In-memory store + DataProvider for CONSTRUCTed graphs; must precede the graph script. -->
   <script src="/static/js/graph-memory-store.js" defer></script>
   <script src="/static/js/schema-graph.js" defer></script>

@@ -19,6 +19,10 @@
       (static/js/graph-memory-store.js). For views whose edges do not exist
       verbatim in the data, e.g. an ontology's domain/range pairs drawn as
       one association per property.
+
+  Loading, the toolbar, undo, fullscreen and error messages are shared with
+  schema-graph.js through static/js/graph-kit.js; GE itself is reached through
+  static/js/ge-adapter.js.
 */
 (function () {
   'use strict';
@@ -29,78 +33,17 @@
   function initSparqlGraph(root) {
 
     var ID = root.getAttribute('data-sparql-graph-id');
-
-    // Set once the Graph Explorer workspace mounts; used by the fullscreen toggle and
-    // the resize handler to re-fit the canvas after its size changes.
-    var currentWorkspace = null;
+    var kit = window.VisotoGraph.create(ID);
+    var readIsland = kit.readIsland;
 
     // When lazy, init is deferred until the container is first made visible (the caller
     // dispatches a 'graph:init' event at the -root element). This avoids Graph Explorer
     // measuring a zero-size box if the container starts hidden (e.g. behind a view toggle).
     var LAZY = root.getAttribute('data-sparql-graph-lazy') === 'true';
 
-    function readIsland(suffix) {
-      var el = document.getElementById(ID + suffix);
-      if (!el) return null;
-      try { return JSON.parse(el.innerHTML.trim()); } catch (e) { return null; }
-    }
-
-    // Apply the container height (kept out of the style="" attribute to avoid Go's
-    // html/template CSS-context sanitizer; see the note by the -root div).
-    (function() {
-      var root = document.getElementById(ID + '-root');
-      var h = readIsland('-height');
-      if (root && h) root.style.height = h;
-    })();
-
-    // --- Guarded Graph Explorer CDN loader --------------------------------------------
-    // The graph-explorer bundle is NOT part of the global base layout (only /ontodia
-    // loads it inline). Inject it once here and initialize once it's ready, so multiple
-    // partial instances share a single script load.
-    var GE_SRC = 'https://cdn.jsdelivr.net/npm/graph-explorer@2.1.0/dist/graph-explorer-full.min.js';
-
-    function whenGraphExplorerReady(cb) {
-      // Ensure the single shared loader script exists (inject once, deduped by marker).
-      if (!window.GraphExplorer && !document.querySelector('script[data-graph-explorer-loader]')) {
-        var loader = document.createElement('script');
-        loader.src = GE_SRC;
-        loader.setAttribute('data-graph-explorer-loader', '');
-        loader.addEventListener('error', function() {
-          var container = document.getElementById(ID + '-root');
-          if (container) {
-            container.innerHTML = '<div class="alert alert-danger m-3">Failed to load Graph Explorer library</div>';
-          }
-        });
-        document.head.appendChild(loader);
-      }
-      // Poll for readiness rather than relying on the script's load event: the shared
-      // script may already be loaded (cached, or loaded by another instance) before we
-      // could attach a listener, so a load handler alone would race and be missed.
-      if (window.GraphExplorer) { cb(); return; }
-      var waited = 0;
-      var poll = setInterval(function() {
-        if (window.GraphExplorer) {
-          clearInterval(poll);
-          cb();
-        } else if ((waited += 50) >= 15000) {
-          clearInterval(poll);
-          var container = document.getElementById(ID + '-root');
-          if (container && !container.querySelector('svg')) {
-            container.innerHTML = '<div class="alert alert-danger m-3">Failed to load Graph Explorer library</div>';
-          }
-        }
-      }, 50);
-    }
-
     function init() {
-      var GE = window.GraphExplorer;
-      var container = document.getElementById(ID + '-root');
+      var container = kit.container;
       if (!container) return;
-
-      if (!GE || !GE.Workspace || !GE.SparqlDataProvider) {
-        container.innerHTML = '<div class="alert alert-danger m-3">Failed to load Graph Explorer library</div>';
-        return;
-      }
 
       var AVAILABLE_ICONS = readIsland('-available-icons') || {};
       var ENDPOINT_URL = readIsland('-endpoint-url') || '/api/sparql';
@@ -127,8 +70,7 @@
 
       function onWorkspaceMounted(workspace) {
         if (!workspace) return;
-        // Stash the workspace so the fullscreen toggle / resize handler can re-fit later.
-        currentWorkspace = workspace;
+        kit.attach(workspace);
         enableElementResize(container, workspace.getModel());
 
         if (constructedStore) {
@@ -137,7 +79,7 @@
         }
 
         // OWLStatsSettings with LINDAS-specific label properties and prefixes.
-        var settings = Object.assign({}, GE.OWLStatsSettings, {
+        var settings = {
           defaultPrefix:
             'PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n' +
             'PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n' +
@@ -153,7 +95,7 @@
             'PREFIX dcterms: <http://purl.org/dc/terms/>\n',
           dataLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
           schemaLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
-        });
+        };
 
         // POST, not GET: GET puts the whole query in the URL, and the edge query
         // is the one that outgrows it.
@@ -186,14 +128,7 @@
         // the way GETs are, so the graph loses some benefit of the "cached"
         // endpoint — worth it against edges that silently vanish above a size
         // nobody can predict from the page.
-        var dataProvider = new GE.SparqlDataProvider(
-          {
-            endpointUrl: ENDPOINT_URL,
-            acceptBlankNodes: false,
-            queryMethod: GE.SparqlQueryMethod.POST,
-          },
-          settings
-        );
+        var dataProvider = window.VisotoGE.sparqlProvider(ENDPOINT_URL, settings);
 
         // Set data.image from an element's own IRI, preserving the rest of its
         // data. setData replaces the model wholesale, so the existing fields are
@@ -228,6 +163,8 @@
             return dict;
           });
         };
+        // Endpoint errors surface as an inline message with Retry (GL-45).
+        kit.guardProvider(dataProvider);
 
         var model = workspace.getModel();
         // data-sparql-graph-hide-type-edges hides rdf:type / rdfs:subClassOf
@@ -250,95 +187,105 @@
           ];
         }
 
-        model.importLayout({
+        // Seed only once importLayout has settled. It registers the provider's
+        // link types from an async linkTypes() call; seeding meanwhile lets
+        // requestLinksOfType register some of them first, and GE then throws
+        // "Link type '<iri>' already exists" and draws nothing (the Dependencies
+        // graph on system-map pages, whose link types load slowly).
+        Promise.resolve(model.importLayout({
           dataProvider: dataProvider,
           preloadedElements: {},
           layoutData: undefined,
           diagram: linkTypeOptions ? { linkTypeOptions: linkTypeOptions } : undefined,
-        });
+        })).catch(function () { /* seed anyway: an edgeless graph beats none */ }).then(seed);
 
-        // Load each starting element and fetch its data.
-        //
-        // The icon is stamped on at creation, BEFORE requestElementData, because
-        // elementInfo cannot be relied on to return anything: a class IRI is
-        // often only implied by its instances' rdf:type and carries no triples
-        // of its own (https://schema.ld.admin.ch/Canton has zero), so the query
-        // comes back empty and the element keeps the placeholder data GE built
-        // from the IRI. The elementInfo wrapper below then has no dictionary
-        // entry to enrich. Resolving from the IRI here needs no data at all --
-        // which is the whole point, since the IRI is all that exists.
-        // Seed positions are a RING, not a row.
-        //
-        // A single row (every node at the same y, x stepping right) is fine for
-        // the one-node case the base layout uses, but it is a degenerate starting
-        // state for a force layout: with no vertical displacement between any two
-        // nodes there is almost no vertical force to separate them, so a
-        // multi-node seed settles back into a flat band that zoomToFit then
-        // squeezes into an unreadable strip. Distributing the seed around a
-        // circle gives the simulation a 2D starting spread and it resolves into
-        // an actual graph.
-        //
-        // The radius grows with the node count so the ring stays roughly evenly
-        // spaced instead of overlapping as the seed set gets larger.
-        var CENTER_X = 400;
-        var CENTER_Y = 300;
-        var radius = Math.max(200, startIris.length * 30);
-        startIris.forEach(function(startIRI, index) {
-          var element = model.createElement(startIRI);
-          if (element) {
-            var angle = (2 * Math.PI * index) / startIris.length;
-            element.setPosition({
-              x: CENTER_X + radius * Math.cos(angle),
-              y: CENTER_Y + radius * Math.sin(angle),
-            });
-            stampIcon(element, startIRI);
+        function seed() {
+          // Load each starting element and fetch its data.
+          //
+          // The icon is stamped on at creation, BEFORE requestElementData, because
+          // elementInfo cannot be relied on to return anything: a class IRI is
+          // often only implied by its instances' rdf:type and carries no triples
+          // of its own (https://schema.ld.admin.ch/Canton has zero), so the query
+          // comes back empty and the element keeps the placeholder data GE built
+          // from the IRI. The elementInfo wrapper below then has no dictionary
+          // entry to enrich. Resolving from the IRI here needs no data at all --
+          // which is the whole point, since the IRI is all that exists.
+          // Seed positions are a RING, not a row.
+          //
+          // A single row (every node at the same y, x stepping right) is fine for
+          // the one-node case the base layout uses, but it is a degenerate starting
+          // state for a force layout: with no vertical displacement between any two
+          // nodes there is almost no vertical force to separate them, so a
+          // multi-node seed settles back into a flat band that zoomToFit then
+          // squeezes into an unreadable strip. Distributing the seed around a
+          // circle gives the simulation a 2D starting spread and it resolves into
+          // an actual graph.
+          //
+          // The radius grows with the node count so the ring stays roughly evenly
+          // spaced instead of overlapping as the seed set gets larger.
+          var CENTER_X = 400;
+          var CENTER_Y = 300;
+          var radius = Math.max(200, startIris.length * 30);
+          startIris.forEach(function(startIRI, index) {
+            var element = model.createElement(startIRI);
+            if (element) {
+              var angle = (2 * Math.PI * index) / startIris.length;
+              element.setPosition({
+                x: CENTER_X + radius * Math.cos(angle),
+                y: CENTER_Y + radius * Math.sin(angle),
+              });
+              stampIcon(element, startIRI);
+            }
+          });
+          // requestElementData fetches each element's OWN data (labels, types,
+          // properties) but NOT the edges between them — those are a separate
+          // round trip via requestLinksOfType. Without it a multi-IRI seed draws as
+          // unconnected boxes: every node present, no line between any two.
+          //
+          // The gap went unnoticed for as long as the only caller was the resource
+          // page's Graph view in layout/base.html, which seeds ONE IRI and so has
+          // no edges to miss. A seed set built from a query (the dependency graph
+          // on the SoftwareApplication pages) is the case that needs it.
+          //
+          // The two calls MUST be sequenced. Both register link types as they go,
+          // and the model throws "Link type '<iri>' already exists" if the second
+          // registration lands while the first is still in flight — which aborts
+          // link loading entirely and leaves the graph edgeless, the very symptom
+          // this call is here to fix. Chaining off requestElementData's promise
+          // (rather than firing both at once) keeps the registrations ordered.
+          //
+          // The layout runs AFTER the links land, not on a bare timer. forceLayout
+          // positions nodes by their edges, so laying out while the graph is still
+          // edgeless just spreads the seed row evenly — the nodes keep the flat
+          // line they were created on and never regroup once the edges arrive.
+          //
+          // relayout() is called from both the success and the failure path (and
+          // from a timer, in case neither promise ever settles) so an endpoint that
+          // refuses the links query still gets a laid-out, if edgeless, graph. It
+          // guards against running twice, which would otherwise re-scatter a graph
+          // the reader may already have started dragging.
+          var didLayout = false;
+          var loaded = kit.busy(vsT('js.graph.loading', 'Loading graph…'));
+          function relayout() {
+            if (didLayout) return;
+            didLayout = true;
+            loaded();
+            kit.commands.forceLayout();
+            kit.fit();
+            kit.ready();
           }
-        });
-        // requestElementData fetches each element's OWN data (labels, types,
-        // properties) but NOT the edges between them — those are a separate
-        // round trip via requestLinksOfType. Without it a multi-IRI seed draws as
-        // unconnected boxes: every node present, no line between any two.
-        //
-        // The gap went unnoticed for as long as the only caller was the resource
-        // page's Graph view in layout/base.html, which seeds ONE IRI and so has
-        // no edges to miss. A seed set built from a query (the dependency graph
-        // on the SoftwareApplication pages) is the case that needs it.
-        //
-        // The two calls MUST be sequenced. Both register link types as they go,
-        // and the model throws "Link type '<iri>' already exists" if the second
-        // registration lands while the first is still in flight — which aborts
-        // link loading entirely and leaves the graph edgeless, the very symptom
-        // this call is here to fix. Chaining off requestElementData's promise
-        // (rather than firing both at once) keeps the registrations ordered.
-        //
-        // The layout runs AFTER the links land, not on a bare timer. forceLayout
-        // positions nodes by their edges, so laying out while the graph is still
-        // edgeless just spreads the seed row evenly — the nodes keep the flat
-        // line they were created on and never regroup once the edges arrive.
-        //
-        // relayout() is called from both the success and the failure path (and
-        // from a timer, in case neither promise ever settles) so an endpoint that
-        // refuses the links query still gets a laid-out, if edgeless, graph. It
-        // guards against running twice, which would otherwise re-scatter a graph
-        // the reader may already have started dragging.
-        var didLayout = false;
-        function relayout() {
-          if (didLayout) return;
-          didLayout = true;
-          workspace.forceLayout();
-          workspace.zoomToFit();
-        }
 
-        var elementsLoaded = model.requestElementData(startIris);
-        if (elementsLoaded && elementsLoaded.then && model.requestLinksOfType) {
-          elementsLoaded
-            .then(function() { return model.requestLinksOfType(); })
-            .then(relayout)
-            .catch(relayout);
+          var elementsLoaded = model.requestElementData(startIris);
+          if (elementsLoaded && elementsLoaded.then && model.requestLinksOfType) {
+            elementsLoaded
+              .then(function() { return model.requestLinksOfType(); })
+              .then(relayout)
+              .catch(relayout);
+          }
+          // Fallback: fires only if the chain above never settles (or was never
+          // started, on a build whose model lacks requestLinksOfType).
+          setTimeout(relayout, 4000);
         }
-        // Fallback: fires only if the chain above never settles (or was never
-        // started, on a build whose model lacks requestLinksOfType).
-        setTimeout(relayout, 4000);
       }
 
       // --- Construct mode ---------------------------------------------------------------
@@ -394,13 +341,6 @@
         return /^https?:\/\/[^<>"{}|\\^`\s]+$/.test(iri);
       }
 
-      function showError(message) {
-        var alert = document.createElement('div');
-        alert.className = 'alert alert-danger m-3';
-        alert.textContent = message;
-        container.replaceChildren(alert);
-      }
-
       function fetchConstructed() {
         var iri = singleIri || urlIri;
         if (CONSTRUCT.indexOf('??') >= 0 && !(iri && validIri(iri))) {
@@ -426,12 +366,16 @@
       function mountConstructed(workspace, store) {
         var MEM = window.VisotoMemoryGraph;
         var model = workspace.getModel();
-        model.importLayout({
+        // Seeded after importLayout settles, as in browse mode (see seed()).
+        Promise.resolve(model.importLayout({
           dataProvider: MEM.makeProvider(store),
           preloadedElements: {},
           layoutData: undefined,
-        });
+        })).then(function () { seedConstructed(workspace, store); });
+      }
 
+      function seedConstructed(workspace, store) {
+        var model = workspace.getModel();
         var iris = Object.keys(store.elements);
         var cols = Math.ceil(Math.sqrt(iris.length));
         iris.forEach(function(iri, i) {
@@ -455,8 +399,9 @@
               packIslands(model);
             };
             setTimeout(function() {
-              workspace.forceLayout();
-              workspace.zoomToFit();
+              kit.commands.forceLayout();
+              kit.fit();
+              kit.ready();
             }, 300);
           });
       }
@@ -684,40 +629,43 @@
         return LINK_DEFAULT;
       }
 
-      var props = {
+      var props = kit.workspaceProps({
         ref: onWorkspaceMounted,
         typeStyleResolver: typeStyleResolver,
         linkTemplateResolver: linkTemplateResolver,
-        languages: [
-          { code: 'en', label: 'English' },
-          { code: 'de', label: 'German' },
-          { code: 'fr', label: 'French' },
-          { code: 'it', label: 'Italian' },
-        ],
-        language: 'en',
         viewOptions: {
           onIriClick: function(iriEvent) {
             var iri = iriEvent.iri || iriEvent;
             window.open(visotoResourceHref(iri), '_blank');
           },
         },
-      };
+      });
 
       if (!CONSTRUCT) {
-        GE.renderTo(GE.Workspace, container, props);
+        window.VisotoGE.render(container, props);
         return;
       }
-      // Constructed labels come in every language the ontology has; show the
-      // page's (html lang, from the site-lang cookie) when GE offers it.
-      var pageLang = (document.documentElement.lang || '').slice(0, 2);
-      if (props.languages.some(function(l) { return l.code === pageLang; })) props.language = pageLang;
-      fetchConstructed()
-        .then(function(store) {
-          if (Object.keys(store.elements).length === 0) throw new Error('The graph query returned no triples');
-          constructedStore = store;
-          GE.renderTo(GE.Workspace, container, props);
-        })
-        .catch(function(err) { showError('Graph query failed: ' + err.message); });
+      // Construct mode: the diagram exists only once the CONSTRUCT has answered.
+      // A failure keeps the (empty) card with a Retry; an empty answer says so.
+      function loadConstructed() {
+        var done = kit.busy(vsT('js.graph.loading', 'Loading graph…'));
+        fetchConstructed()
+          .then(function(store) {
+            done();
+            if (Object.keys(store.elements).length === 0) {
+              kit.showMessage(vsT('js.graph.empty', 'The graph query found nothing to draw.'), { level: 'info' });
+              return;
+            }
+            constructedStore = store;
+            window.VisotoGE.render(container, props);
+          })
+          .catch(function(err) {
+            done();
+            kit.showMessage(vsTf('js.graph.queryFailed', 'Graph query failed: {error}', { error: err.message }),
+              { retry: loadConstructed });
+          });
+      }
+      loadConstructed();
     }
 
     // Run init at most once, whether triggered on load (eager) or on first show (lazy).
@@ -725,66 +673,8 @@
     function initOnce() {
       if (initialized) return;
       initialized = true;
-      whenGraphExplorerReady(init);
+      kit.load().then(init);
     }
-
-    // --- Fullscreen ("maximize") toggle -----------------------------------------------
-    // Toggling the .graph-maximized class on the card pins the canvas to the viewport
-    // (see .graph-maximized rules in ontodia_overrides.css). We deliberately DON'T use
-    // the JS Fullscreen API — a fixed overlay lets native F11 stack on top for true
-    // edge-to-edge. Graph Explorer only auto-fits once at mount, so re-fit after the box
-    // resizes (both on toggle and on window resize, e.g. F11).
-    function setupFullscreen() {
-      var card = document.getElementById(ID + '-card');
-      var maximizeBtn = document.getElementById(ID + '-maximize');
-      var exitBtn = document.getElementById(ID + '-exit');
-      if (!card || !maximizeBtn || !exitBtn) return;
-
-      function refit() {
-        // zoomToFit re-centers within the resized viewport; guard until the workspace mounts.
-        setTimeout(function() {
-          if (currentWorkspace && currentWorkspace.zoomToFit) currentWorkspace.zoomToFit();
-        }, 100);
-      }
-
-      maximizeBtn.addEventListener('click', function() {
-        // Fullscreen on a collapsed card would pin a canvas that is inside a
-        // display:none wrapper — nothing visible but the exit button. Expand first;
-        // shown.bs.collapse then refits, and the refit() below covers the already-
-        // expanded case. Bootstrap's bundle is exposed as window.tabler here (the
-        // Tabler build), NOT window.bootstrap — that global does not exist.
-        var collapsed = document.getElementById('collapse-' + ID);
-        var Collapse = window.tabler && window.tabler.Collapse;
-        if (collapsed && !collapsed.classList.contains('show') && Collapse) {
-          Collapse.getOrCreateInstance(collapsed).show();
-        }
-        card.classList.add('graph-maximized');
-        refit();
-      });
-      exitBtn.addEventListener('click', function() {
-        card.classList.remove('graph-maximized');
-        refit();
-      });
-
-      // Re-fit on viewport resize while maximized (covers native F11 growing the viewport).
-      var resizeTimer;
-      window.addEventListener('resize', function() {
-        if (!card.classList.contains('graph-maximized')) return;
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function() {
-          if (currentWorkspace && currentWorkspace.zoomToFit) currentWorkspace.zoomToFit();
-        }, 150);
-      });
-
-      // Re-fit after the collapse animation finishes. While collapsed the canvas has
-      // no height, so the workspace's idea of its viewport is stale on the way back —
-      // without this the graph returns off-centre or clipped. shown.bs.collapse fires
-      // at the END of the transition, so the box is already at full height here.
-      var collapseEl = document.getElementById('collapse-' + ID);
-      if (collapseEl) collapseEl.addEventListener('shown.bs.collapse', refit);
-    }
-    // Buttons exist in the DOM regardless of GE readiness; wire them up as soon as possible.
-    setupFullscreen();
 
     if (LAZY) {
       // Defer until the caller signals the container is visible. The listener is one-shot;

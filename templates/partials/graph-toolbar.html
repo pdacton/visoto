@@ -1,0 +1,99 @@
+<!--
+  Toolbar for a Graph Explorer embed, shared by the sparqlGraph and schemaGraph
+  partials. It replaces GE's built-in toolbar (hideToolbar) and keeps everything
+  that one offered: layout, zoom in/out, fit, SVG, PNG, print, clear all and the
+  label language.
+
+  Usage (inside the graph card, before the canvas):
+    template "graphToolbar" (dict "id" $id)
+
+  Markup only. static/js/graph-kit.js finds it by the `<id>-toolbar` DOM id and
+  dispatches on `data-graph-action` / `data-graph-lang`; nothing here works
+  before the workspace mounts. Undo/Redo start disabled and are enabled from
+  the undo history.
+-->
+{{ define "graphToolbar" }}
+  {{ $id := .id }}
+  <div id="{{ $id }}-toolbar" class="graph-toolbar d-flex flex-wrap align-items-center gap-1 px-2 py-1 border-bottom"
+       role="toolbar" aria-label="{{ t "graph.toolbar" "Graph tools" }}">
+
+    <div class="dropdown">
+      <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
+              aria-expanded="false" title="{{ t "graph.layoutMenu" "Layout" }}">
+        <i data-lucide="network" class="icon"></i>
+        <span class="d-none d-sm-inline">{{ t "graph.layoutMenu" "Layout" }}</span>
+      </button>
+      <div class="dropdown-menu">
+        <button type="button" class="dropdown-item" data-graph-action="layout-network">
+          <i data-lucide="share-2" class="icon dropdown-item-icon"></i>{{ t "graph.layoutNetwork" "Network" }}
+        </button>
+      </div>
+    </div>
+
+    <div class="vr mx-1"></div>
+
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon disabled" data-graph-action="undo" disabled
+            aria-disabled="true" aria-label="{{ t "graph.undo" "Undo" }}" title="{{ t "graph.undo" "Undo" }}">
+      <i data-lucide="undo-2" class="icon"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon disabled" data-graph-action="redo" disabled
+            aria-disabled="true" aria-label="{{ t "graph.redo" "Redo" }}" title="{{ t "graph.redo" "Redo" }}">
+      <i data-lucide="redo-2" class="icon"></i>
+    </button>
+
+    <div class="vr mx-1"></div>
+
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="zoom-in"
+            aria-label="{{ t "graph.zoomIn" "Zoom in" }}" title="{{ t "graph.zoomIn" "Zoom in" }}">
+      <i data-lucide="zoom-in" class="icon"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="zoom-out"
+            aria-label="{{ t "graph.zoomOut" "Zoom out" }}" title="{{ t "graph.zoomOut" "Zoom out" }}">
+      <i data-lucide="zoom-out" class="icon"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="fit"
+            aria-label="{{ t "graph.fit" "Fit to view" }}" title="{{ t "graph.fit" "Fit to view" }}">
+      <i data-lucide="scan" class="icon"></i>
+    </button>
+
+    <div class="ms-auto d-flex align-items-center gap-1">
+      <div class="dropdown">
+        <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
+                aria-expanded="false" aria-label="{{ t "graph.labelLanguage" "Label language" }}"
+                title="{{ t "graph.labelLanguage" "Label language" }}">
+          <i data-lucide="languages" class="icon"></i>
+          <span data-graph-lang-current></span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end" role="menu">
+          <button type="button" class="dropdown-item" role="menuitemradio" data-graph-lang="de">Deutsch</button>
+          <button type="button" class="dropdown-item" role="menuitemradio" data-graph-lang="en">English</button>
+          <button type="button" class="dropdown-item" role="menuitemradio" data-graph-lang="fr">Français</button>
+          <button type="button" class="dropdown-item" role="menuitemradio" data-graph-lang="it">Italiano</button>
+        </div>
+      </div>
+
+      <div class="dropdown">
+        <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
+                aria-expanded="false" title="{{ t "graph.saveExport" "Save / Export" }}">
+          <i data-lucide="download" class="icon"></i>
+          <span class="d-none d-sm-inline">{{ t "graph.export" "Export" }}</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end">
+          <button type="button" class="dropdown-item" data-graph-action="export-svg">
+            <i data-lucide="file-code" class="icon dropdown-item-icon"></i>{{ t "graph.exportSvg" "SVG image" }}
+          </button>
+          <button type="button" class="dropdown-item" data-graph-action="export-png">
+            <i data-lucide="image" class="icon dropdown-item-icon"></i>{{ t "graph.exportPng" "PNG image" }}
+          </button>
+          <button type="button" class="dropdown-item" data-graph-action="print">
+            <i data-lucide="printer" class="icon dropdown-item-icon"></i>{{ t "graph.print" "Print" }}
+          </button>
+          <div class="dropdown-divider"></div>
+          <button type="button" class="dropdown-item text-danger" data-graph-action="clear-all">
+            <i data-lucide="trash-2" class="icon dropdown-item-icon"></i>{{ t "graph.clearAll" "Clear all" }}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}

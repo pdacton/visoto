@@ -1079,14 +1079,28 @@
 .card.graph-maximized .card-body {
   padding: 0;
 }
-.card.graph-maximized .graph-canvas {
+/* The FRAME (toolbar + canvas + overlay) is what gets pinned, so the toolbar
+   stays usable in fullscreen; the canvas takes the height left under it. */
+.card.graph-maximized .graph-frame {
   position: fixed;
   inset: 0;
   z-index: 1050;             /* above app chrome; below Bootstrap modals (1055+) */
-  height: 100vh !important;  /* overrides the JS-set inline height */
+  display: flex;
+  flex-direction: column;
+  background: var(--tblr-bg-surface, #fff);
+}
+.card.graph-maximized .graph-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.card.graph-maximized .graph-canvas {
+  height: 100% !important;   /* overrides the JS-set inline height */
   border: none;
   border-radius: 0;
-  background: var(--tblr-bg-surface, #fff);
+}
+/* Room for the floating exit button at the toolbar's right end. */
+.card.graph-maximized .graph-toolbar {
+  padding-right: 3.5rem !important;
 }
 
 /* Floating exit button — hidden normally, shown only while maximized. */
@@ -1099,4 +1113,40 @@
   top: 12px;
   right: 12px;
   z-index: 1060;             /* above the fullscreen canvas */
+}
+
+/* ===== VISOTO GRAPH TOOLBAR, MESSAGES, SPINNER ===================================
+ * Markup: templates/partials/graph-toolbar.html and the -frame/-overlay elements in
+ * the sparqlGraph / schemaGraph partials; behaviour: static/js/graph-kit.js.
+ */
+.graph-stage {
+  position: relative;
+}
+.graph-toolbar {
+  background: var(--tblr-bg-surface, #fff);
+  min-height: 2.5rem;
+}
+.graph-toolbar .vr {
+  align-self: stretch;
+  margin-block: .35rem;
+}
+/* Overlay spans the canvas area; only its children take pointer events, so the
+   canvas stays usable under a message. */
+.graph-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: .75rem;
+  z-index: 100;              /* above GE's own stacked paper layers */
+}
+.graph-overlay > * {
+  pointer-events: auto;
+  max-width: min(36rem, 100%);
+}
+.graph-message {
+  box-shadow: var(--tblr-box-shadow, 0 1px 3px rgba(0,0,0,.1));
 }

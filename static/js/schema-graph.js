@@ -16,7 +16,10 @@
     data-schema-graph-id     DOM id prefix for this instance's islands/elements
     data-schema-graph-lazy   "true" to defer init until a 'schema:init' event
 
-  See the partial's header comment for what the view actually does.
+  See the partial's header comment for what the view actually does. Loading,
+  the toolbar, undo, fullscreen and error messages are shared with
+  sparql-graph.js through static/js/graph-kit.js; GE itself is reached through
+  static/js/ge-adapter.js.
 */
 (function () {
   'use strict';
@@ -26,20 +29,8 @@
     if (!ID) return;
     var LAZY = root.getAttribute('data-schema-graph-lazy') === 'true';
 
-    var currentWorkspace = null;
-
-    function readIsland(suffix) {
-      var el = document.getElementById(ID + suffix);
-      if (!el) return null;
-      try { return JSON.parse(el.innerHTML.trim()); } catch (e) { return null; }
-    }
-
-    // Apply the container height (kept out of the style="" attribute to avoid
-    // Go's html/template ZgotmplZ CSS-context sanitizer; see the partial).
-    (function () {
-      var h = readIsland('-height');
-      if (root && h) root.style.height = h;
-    })();
+    var kit = window.VisotoGraph.create(ID);
+    var readIsland = kit.readIsland;
 
     var AVAILABLE_ICONS = readIsland('-available-icons') || {};
     var ENDPOINT_URL = readIsland('-endpoint-url') || '/api/sparql';
@@ -63,17 +54,10 @@
       return d.innerHTML;
     }
     // message is TEXT, never markup: it carries endpoint-supplied strings
-    // (err.message from the SPARQL fetch/parse path), so the alert wrapper is
-    // built as an element and the message set via textContent. Concatenating it
-    // into innerHTML let a hostile endpoint's error text execute script.
-    function showError(message) {
-      var container = document.getElementById(ID + '-root');
-      if (container) {
-        var alert = document.createElement('div');
-        alert.className = 'alert alert-danger m-3';
-        alert.textContent = message;
-        container.replaceChildren(alert);
-      }
+    // (err.message from the SPARQL fetch/parse path); kit.showMessage sets it
+    // via textContent, so a hostile endpoint's error text cannot execute script.
+    function showError(message, retry) {
+      kit.showMessage(message, { retry: retry });
       setStatus('');
     }
 
@@ -186,8 +170,7 @@
     }
 
     function renderSchema(store, mode, cls) {
-      var GE = window.GraphExplorer;
-      var container = document.getElementById(ID + '-root');
+      var container = kit.container;
       var summary = Object.keys(store.elements).length + ' classes, ' + store.links.length + ' relations';
       if (mode === 'class') {
         setStatus('derived from up to 50 sampled instances of <code>' + escapeHtml(localName(cls)) + '</code> &mdash; ' + summary);
@@ -197,13 +180,20 @@
 
       function onWorkspaceMounted(workspace) {
         if (!workspace) return;
-        currentWorkspace = workspace;
+        kit.attach(workspace);
         var model = workspace.getModel();
-        model.importLayout({
+        // Seed after importLayout settles: it registers link types
+        // asynchronously (see seed() in sparql-graph.js).
+        Promise.resolve(model.importLayout({
           dataProvider: MEM.makeProvider(store),
           preloadedElements: {},
           layoutData: undefined,
-        });
+        })).then(seed);
+      }
+
+      function seed() {
+        var workspace = kit.workspace;
+        var model = workspace.getModel();
 
         var iris = Object.keys(store.elements);
         var cols = Math.ceil(Math.sqrt(iris.length));
@@ -223,27 +213,26 @@
               if (hasAttrs && el.setExpanded) el.setExpanded(true);
             });
             setTimeout(function () {
-              workspace.forceLayout();
-              workspace.zoomToFit();
+              kit.commands.forceLayout();
+              kit.fit();
+              kit.ready();
             }, 300);
           });
       }
 
-      GE.renderTo(GE.Workspace, container, {
+      window.VisotoGE.render(container, kit.workspaceProps({
         ref: onWorkspaceMounted,
         typeStyleResolver: typeStyleResolver,
         // No element template override: the icon rides on element.data.image,
         // which StandardTemplate.renderThumbnail() renders directly.
         linkTemplateResolver: function () { return LINK_DEFAULT; },
-        languages: [{ code: 'en', label: 'English' }],
-        language: 'en',
         viewOptions: {
           onIriClick: function (iriEvent) {
             var iri = iriEvent.iri || iriEvent;
             window.open(visotoResourceHref(iri), '_blank');
           },
         },
-      });
+      }));
     }
 
     // -------------------------------------------------------------------------
@@ -264,7 +253,11 @@
       var q = 'SELECT ?c WHERE { <' + RESOURCE_IRI + '> a ?c }';
       return sparql(q, 'application/sparql-results+json').then(function (text) {
         var bindings = JSON.parse(text).results.bindings;
-        if (bindings.length === 0) throw new Error('Resource has no rdf:type and no instances — cannot derive a schema');
+        if (bindings.length === 0) {
+          var err = new Error('Resource has no rdf:type and no instances — cannot derive a schema');
+          err.noRetry = true;
+          throw err;
+        }
         var types = bindings.map(function (b) { return b.c.value; });
         var preferred = types.filter(function (t) { return t.indexOf('schema.ld.admin.ch') >= 0; });
         return preferred[preferred.length - 1] || types[0];
@@ -277,52 +270,29 @@
         return;
       }
       setStatus('deriving&hellip;');
+      var done = kit.busy(vsT('js.graph.loading', 'Loading graph…'));
       detectMode()
         .then(function (mode) {
           var clsPromise = mode === 'class' ? Promise.resolve(RESOURCE_IRI) : detectAnchorClass();
           return clsPromise.then(function (cls) {
             return sparql(vizQuery(mode, RESOURCE_IRI, cls), 'application/n-triples').then(function (nt) {
               var store = MEM.buildStore(MEM.parseNTriples(nt), AVAILABLE_ICONS);
+              done();
               if (Object.keys(store.elements).length === 0) {
-                throw new Error('Derivation returned no triples');
+                kit.showMessage(vsT('js.graph.empty', 'The graph query found nothing to draw.'), { level: 'info' });
+                setStatus('');
+                return;
               }
               renderSchema(store, mode, cls);
             });
           });
         })
         .catch(function (err) {
-          showError('Schema derivation failed: ' + err.message);
+          done();
+          // A resource without type or instances is a property of the data,
+          // not a failure: nothing to retry.
+          showError('Schema derivation failed: ' + err.message, err.noRetry ? undefined : derive);
         });
-    }
-
-    // --- Guarded Graph Explorer CDN loader (shared with sparql-graph) ---------
-    var GE_SRC = 'https://cdn.jsdelivr.net/npm/graph-explorer@2.1.0/dist/graph-explorer-full.min.js';
-
-    function whenGraphExplorerReady(cb) {
-      if (!window.GraphExplorer && !document.querySelector('script[data-graph-explorer-loader]')) {
-        var loader = document.createElement('script');
-        loader.src = GE_SRC;
-        loader.setAttribute('data-graph-explorer-loader', '');
-        loader.addEventListener('error', function () {
-          showError('Failed to load Graph Explorer library');
-        });
-        document.head.appendChild(loader);
-      }
-      // Poll for readiness (the shared script may already be loaded by another instance).
-      if (window.GraphExplorer) { cb(); return; }
-      var waited = 0;
-      var poll = setInterval(function () {
-        if (window.GraphExplorer) {
-          clearInterval(poll);
-          cb();
-        } else if ((waited += 50) >= 15000) {
-          clearInterval(poll);
-          var container = document.getElementById(ID + '-root');
-          if (container && !container.querySelector('svg')) {
-            showError('Failed to load Graph Explorer library');
-          }
-        }
-      }, 50);
     }
 
     // Run at most once, whether triggered on load (eager) or on first show (lazy).
@@ -330,58 +300,8 @@
     function initOnce() {
       if (initialized) return;
       initialized = true;
-      whenGraphExplorerReady(derive);
+      kit.load().then(derive);
     }
-
-    // --- Fullscreen ("maximize") toggle — same pattern as sparql-graph --------
-    function setupFullscreen() {
-      var card = document.getElementById(ID + '-card');
-      var maximizeBtn = document.getElementById(ID + '-maximize');
-      var exitBtn = document.getElementById(ID + '-exit');
-      if (!card || !maximizeBtn || !exitBtn) return;
-
-      function refit() {
-        setTimeout(function () {
-          if (currentWorkspace && currentWorkspace.zoomToFit) currentWorkspace.zoomToFit();
-        }, 100);
-      }
-
-      maximizeBtn.addEventListener('click', function () {
-        // Fullscreen on a collapsed card would pin a canvas that is inside a
-        // display:none wrapper — nothing visible but the exit button. Expand first;
-        // shown.bs.collapse then refits, and the refit() below covers the already-
-        // expanded case. Bootstrap's bundle is exposed as window.tabler here (the
-        // Tabler build), NOT window.bootstrap — that global does not exist.
-        var collapsed = document.getElementById('collapse-' + ID);
-        var Collapse = window.tabler && window.tabler.Collapse;
-        if (collapsed && !collapsed.classList.contains('show') && Collapse) {
-          Collapse.getOrCreateInstance(collapsed).show();
-        }
-        card.classList.add('graph-maximized');
-        refit();
-      });
-      exitBtn.addEventListener('click', function () {
-        card.classList.remove('graph-maximized');
-        refit();
-      });
-
-      var resizeTimer;
-      window.addEventListener('resize', function () {
-        if (!card.classList.contains('graph-maximized')) return;
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(function () {
-          if (currentWorkspace && currentWorkspace.zoomToFit) currentWorkspace.zoomToFit();
-        }, 150);
-      });
-
-      // Re-fit after the collapse animation finishes. While collapsed the canvas has
-      // no height, so the workspace's idea of its viewport is stale on the way back —
-      // without this the diagram returns off-centre or clipped. shown.bs.collapse fires
-      // at the END of the transition, so the box is already at full height here.
-      var collapseEl = document.getElementById('collapse-' + ID);
-      if (collapseEl) collapseEl.addEventListener('shown.bs.collapse', refit);
-    }
-    setupFullscreen();
 
     if (LAZY) {
       // Defer until the caller signals the container is visible (see resource-view-toggle.js).
