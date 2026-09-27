@@ -223,9 +223,8 @@ leave it out by hiding `rdf:type` (GL-21).
 - `elkjs` is loaded lazily from jsDelivr on first use (the Mermaid ELK plugin's
   bundled copy is not reachable from GE). Main thread is fine below ~500 nodes.
 - Keep the layout logic (ELK graph building, reversal, hidden-type filtering,
-  pinning) in a
-  module that does not depend on GE internals, so it survives a later move to
-  Reactodia.
+  pinning) in a module that does not depend on GE internals, so it survives a
+  later move to Reactodia.
 - GE's own right-hand **Connections** panel stays; it is the expand UI when a node
   is selected. The GL-20 panel is Visoto markup, not injected into GE's React DOM.
 
