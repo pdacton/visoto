@@ -7,6 +7,10 @@ their ID.
 Applies to both Graph Explorer embeds: the resource graph
 (`static/js/sparql-graph.js`) and the ontology diagram (`static/js/schema-graph.js`).
 
+**Scope of a canvas:** one canvas per `sparqlGraph` instance in a template. A page
+may contain several graphs; each has its own toolbar, selection, history and saved
+state, keyed by page URL + the partial's `id` parameter.
+
 ---
 
 ## 1. Why
@@ -24,8 +28,9 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
 
 ## 2. Principles
 
-- **Progressive disclosure.** Default toolbar: **Layout ▾ · Pan/Select · Undo/Redo ·
-  Fit · Save ▾**. Selection actions appear only while something is selected; expert
+- **Progressive disclosure.** Default toolbar: **Add resource · Layout ▾ ·
+  Pan/Select · Undo/Redo · Fit · Details · Language ▾ · Save / Export ▾ · ?** (the
+  existing Fullscreen button stays in the card header). Selection actions appear only while something is selected; expert
   settings (GL-20–23) sit in a collapsed "Layout options" panel.
 - **No hidden-only gestures.** Every shortcut (Shift+drag, Ctrl/Cmd+click,
   right-click) has a visible equivalent.
@@ -68,6 +73,9 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
   - Select all — select that class's nodes already on the diagram.
   - Add all — load instances onto the diagram (GL-15 applies).
   - Remove all — remove that class's nodes from the diagram.
+- **GL-49** An eye toggle per class in the class tree **hides / shows** that class's
+  nodes on the canvas without removing them. Hidden nodes are left out of layouts
+  and exports; the tree shows which classes are hidden. Saved with the canvas.
 
 ### Toolbar
 
@@ -85,7 +93,25 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
   confirmation when it exceeds **20**.
 - **GL-41** *(amended)* Every toolbar control has an `aria-label` and a visible
   focus ring. Keyboard shortcuts: Esc, Ctrl/Cmd+A, Del, Ctrl/Cmd+Z / Shift+Z; a
-  **?** button lists them.
+  **?** button lists them (see GL-53).
+- **GL-44** **Toolbar parity with GE's toolbar**, which ours replaces — nothing it
+  offers today is lost:
+  - **Save / Export ▾:** Save as… / My diagrams (GL-50), Download / Open file
+    (GL-36), Export Turtle (GL-38), **SVG**, **PNG**, **Print**; **Reset diagram**
+    (GL-35) and **Clear all** at the bottom, both with confirmation.
+  - **Language ▾:** label language switch, as in GE today; defaults to the site
+    language (`site-lang`).
+- **GL-47** **Add resource:** a search field that finds resources by label in the
+  endpoint (same lookup as GE's Instances panel) or accepts a pasted IRI; the chosen
+  resource is added and placed without moving existing nodes (GL-14).
+- **GL-48** **Details** toggle: collapse or expand the detail pane (property card)
+  of all nodes at once — compact nodes for an overview, full cards for reading.
+  Applies to the selection if there is one, otherwise to all nodes.
+- **GL-51** **Align / distribute** (selection actions, ≥ 2 nodes): align left,
+  centre, right, top, middle, bottom; distribute horizontally / vertically. Aligned
+  nodes are pinned (GL-26).
+- **GL-53** **Help:** the **?** button shows the shortcut list and links to a short
+  guide page on using the graph (i18n, like all pages).
 
 ### Layout behaviour
 
@@ -102,6 +128,8 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
   - GE's native actions: node drag, halo remove, connections-menu add, drag-drop
     from the class tree / instances panel, Clear all, link-type visibility, GE's
     own Force layout.
+  - Also: hide/show class (GL-49), align/distribute (GL-51), Add resource (GL-47),
+    collapse/expand all details (GL-48).
   - Buttons are disabled when there is nothing to undo/redo; the tooltip names the
     step ("Undo: Layout — Tree ↓").
   - Not undo steps: selection, pan/zoom, the GL-21 reverse toggles themselves (the
@@ -146,11 +174,14 @@ reverse settings (GL-21), layout choice, endpoint slug, language. Labels
 and data are re-fetched on load, so a saved canvas never shows stale labels; IRIs
 that no longer resolve are shown as bare IRIs, not dropped.
 
-- **GL-35** **Autosave** per page in `localStorage`; reopening the page restores the
-  canvas. A **Reset diagram** action (Save ▾) returns to the page default.
+- **GL-35** *(amended)* **Autosave** per graph instance (page URL + graph `id`) in
+  `localStorage`; reopening the page restores each graph's canvas. A **Reset diagram** action (Save ▾) returns to the page default.
 - **GL-36** **Download** the canvas as a `.visoto-graph.json` file (based on GE's
   `SerializedDiagram`) and **Open** such a file onto the canvas. The file carries
   the endpoint slug; opening it switches to that endpoint (absorbs GL-37).
+- **GL-50** **Save as…** stores the canvas under a name in the browser
+  (`localStorage`); **My diagrams** lists saved canvases (name, endpoint, date) to
+  open into this graph, rename or delete.
 - **GL-38** **Export as Turtle:** the triples currently drawn on the canvas, next to
   the existing SVG/PNG export.
 
@@ -162,6 +193,21 @@ that no longer resolve are shown as bare IRIs, not dropped.
 - **GL-40** Touch: Select mode (GL-5), long-press for menus (GL-10), hit targets
   ≥ 44 px.
 - **GL-41** — see Toolbar.
+
+### Robustness
+
+- **GL-45** Endpoint errors and timeouts during load, expand or add show an inline
+  message on the canvas with **Retry**; an expand or search that finds nothing says
+  so instead of silently doing nothing.
+- **GL-46** A running layout shows a spinner with **Cancel**. Above ~500 nodes the
+  user is warned that layouts may be slow before one starts.
+
+### Ontology diagram
+
+- **GL-52** **Filter by namespace:** a list of the namespaces present on the
+  diagram, each with a hide/show toggle (e.g. hide external vocabularies such as
+  `schema:` or `owl:`). Builds on the existing shading of external classes; works
+  like GL-49 (non-destructive, saved with the canvas).
 
 ### Across the board
 
@@ -187,6 +233,11 @@ Not reused. Deferred items live in `graph-later.md`.
 | GL-42 | deferred | share link, needs a decision on anonymous writes |
 | GL-43 | removed | first-visit hint; the Pan/Select toggle is visible |
 
+### Known limitations
+
+- Blank nodes are not shown (`acceptBlankNodes: false`), so OWL restrictions and
+  other blank-node structures in ontologies are not visible. Deliberate for now.
+
 ## 4. Why `rdf:type` is not excluded by default
 
 Excluding `rdf:type` is the usual remedy when one class node is linked to many
@@ -200,13 +251,14 @@ leave it out by hiding `rdf:type` (GL-21).
 
 ## 5. Suggested delivery order
 
-1. GL-11, 16–19, 13 — layout engines and menu (ELK + WebCola), with Undo/Redo
-   (GL-18) from the start so every later action lands in the same history.
-2. GL-5–9, 12, 26 — selection, selection actions, pinning.
-3. GL-35–36 — autosave and file save/open.
-4. GL-20–23 — layout options panel.
-5. GL-10, 32 — class-tree menu, find on canvas.
-6. GL-38–41 — Turtle export, list view, touch and a11y polish.
+1. GL-44, 11, 16–19, 13, 18, 45–46 — own toolbar with GE parity, layout engines
+   and menu, Undo/Redo from the start so every later action lands in the same
+   history, error handling.
+2. GL-5–9, 12, 26, 51 — selection, selection actions, pinning, align/distribute.
+3. GL-35–36, 50 — autosave, file save/open, named saves.
+4. GL-20–23, 47–48 — layout options panel, Add resource, Details toggle.
+5. GL-10, 49, 52, 32 — class-tree menu and hide, namespace filter, find on canvas.
+6. GL-38–41, 53 — Turtle export, list view, touch and a11y polish, help page.
 
 ## 6. Implementation notes (from the brainstorming, non-binding)
 
@@ -227,6 +279,11 @@ leave it out by hiding `rdf:type` (GL-21).
   - Multi-selection feedback: `view.setHighlighter()` (public) or
     `view._setElementDecorator()` (internal); the latter also suits the pin badge.
   - `editor.events.on('addElements', …)` fires after halo-menu placement (GL-14).
+  - Details toggle (GL-48): `element.setExpanded(bool)` per element, in one batch.
+  - Hiding classes / namespaces (GL-49, GL-52): GE has no element visibility flag;
+    remove the elements into a Visoto-held "hidden" set and re-add them on show
+    (keeping positions, restoring their links from the model's link cache or by
+    re-requesting links), each as one undoable command.
   - Undo (GL-18): GE already records its native actions in `model.history`
     (`CommandHistory`: drag via `RestoreGeometry`, `removeItems`, connections-menu
     add, drag-drop, link-type visibility, `forceLayout`), but has **no** undo
@@ -264,8 +321,8 @@ leave it out by hiding `rdf:type` (GL-21).
 - **Partial:** GL-12 (its "Expand" expands the node template, not neighbours),
   GL-14 (same `editor:addElements` event as GE), GL-21 (visibility only), GL-25
   (translation mechanism, `en` only).
-- **Missing:** GL-10, 11, 15, 17, 19–23, 26, 32, 35–41 — the same work in either
-  library.
+- **Missing:** GL-10, 11, 15, 17, 19–23, 26, 32, 35–41, 44–53 — the same work in
+  either library.
 
 Costs: ESM-only with a React peer dependency (import map or a Vite build), and a
 rewrite of `sparql-graph.js`, `schema-graph.js`, `graph-memory-store.js` and the
