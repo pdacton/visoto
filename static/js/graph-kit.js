@@ -341,6 +341,7 @@
       kit.commands.history.events.on('historyChanged', scheduleAutosave);
       wireToolbar();
       if (window.VisotoGraphSelection) window.VisotoGraphSelection.install(kit);
+      if (window.VisotoGraphTools) window.VisotoGraphTools.install(kit);
       updateHistoryButtons();
       updateLanguage();
       updateLayoutMenu();
@@ -410,6 +411,7 @@
           algorithm: algorithm,
           selection: selection,
           centre: centre,
+          reversed: kit.reversedTypes ? kit.reversedTypes() : undefined, // GL-21, 22
         }, {
           force: c.force,
           elk: loadElk,
@@ -582,11 +584,13 @@
         language: c.language(),
         layout: kit.algorithm || kit.defaultLayout,
         pins: kit.pinnedIds ? kit.pinnedIds() : [],
+        reversed: kit.reverseOverrides ? kit.reverseOverrides() : {},
         fingerprint: kit.spec ? kit.spec.fingerprint : '',
         diagram: c.exportDiagram(),
       };
     };
 
+    kit.scheduleAutosave = function () { scheduleAutosave(); };
     function scheduleAutosave() {
       if (!tracking || suppressAutosave || !Store) return;
       clearTimeout(autosaveTimer);
@@ -614,6 +618,7 @@
         done();
         if (saved.language) c.setLanguage(saved.language);
         if (kit.loadPins) kit.loadPins(saved.pins);
+        if (kit.applyReverseOverrides) kit.applyReverseOverrides(saved.reversed);
         kit.algorithm = saved.layout || null;
         updateLanguage();
         updateLayoutMenu();

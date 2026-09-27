@@ -385,6 +385,70 @@
           .then(function () { workspace.getDiagram().performSyncUpdate(); return ids; });
         return { ids: ids, loaded: loading };
       },
+      // --- A4: link types, search, details, menu additions ------------------
+      // Link types drawn on the canvas with their edge counts and labels (GL-20).
+      linkTypeCounts: function () {
+        var view = workspace.getDiagram();
+        var counts = {};
+        model.links.forEach(function (link) { counts[link.typeId] = (counts[link.typeId] || 0) + 1; });
+        return Object.keys(counts).map(function (typeId) {
+          var type = model.getLinkType(typeId);
+          return {
+            id: typeId,
+            label: view.formatLabel(type ? type.label : [], typeId),
+            count: counts[typeId],
+          };
+        }).sort(function (a, b) { return a.label.localeCompare(b.label); });
+      },
+      // GL-47: resources whose label matches `text`, via the provider's
+      // filter() — the lookup GE's Instances panel uses.
+      search: function (text, limit) {
+        var view = workspace.getDiagram();
+        return model.dataProvider.filter({
+          text: text, offset: 0, limit: limit, languageCode: view.getLanguage(),
+        }).then(function (dict) {
+          return Object.keys(dict).map(function (iri) {
+            return { iri: iri, label: view.formatLabel(dict[iri].label.values, iri) };
+          });
+        });
+      },
+      iriOnCanvas: function (iri) {
+        var el = model.elements.find(function (e) { return e.iri === iri; });
+        return el ? el.id : null;
+      },
+      isExpanded: function (id) {
+        var el = model.getElement(id);
+        return !!(el && el.isExpanded);
+      },
+      // GL-48, inside the caller's batch: one GE command per element.
+      setExpanded: function (ids, expanded) {
+        var setElementExpanded = GE().setElementExpanded;
+        ids.forEach(function (id) {
+          var el = model.getElement(id);
+          if (el && el.isExpanded !== expanded) model.history.execute(setElementExpanded(el, expanded));
+        });
+      },
+      // GL-14 / GL-15 for additions from GE's connections menu. `before(n)`
+      // may veto the addition (returns false); `after(ids)` runs once GE has
+      // placed the new elements around their source. Drag-and-drop from the
+      // panels also fires GE's addElements, but lands where it was dropped,
+      // so only the menu path is wrapped.
+      // GE-UPSTREAM: B2 (placement through the layout hook).
+      onMenuAdd: function (before, after) {
+        var editor = workspace.getEditor();
+        var inner = editor.onAddElementsInConnectionMenu.bind(editor);
+        var pending = false;
+        editor.onAddElementsInConnectionMenu = function (iris, target, linkType) {
+          if (before && before(iris.length) === false) return;
+          pending = true;
+          return inner(iris, target, linkType);
+        };
+        editor.events.on('addElements', function (e) {
+          if (!pending) return;
+          pending = false;
+          if (after) after(e.elements.map(function (el) { return el.id; }));
+        });
+      },
       // --- Saving (A3) -----------------------------------------------------
       // GE's SerializedDiagram: element ids, IRIs, positions, expanded state,
       // links with vertices, link-type visibility. Labels and data are not in

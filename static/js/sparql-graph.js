@@ -69,6 +69,7 @@
       // GL-2: a constructed diagram is a class model, read as a tree; a browse
       // graph is a network. Radial centres on the page's resource (GL-19).
       kit.defaultLayout = CONSTRUCT ? 'tree-right' : 'network';
+      kit.searchEndpoint = !CONSTRUCT; // Add resource: endpoint search (GL-47)
       kit.pageIri = singleIri || urlIri;
       var constructedStore = null;
 

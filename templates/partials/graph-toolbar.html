@@ -17,6 +17,20 @@
   <div id="{{ $id }}-toolbar" class="graph-toolbar d-flex flex-wrap align-items-center justify-content-center gap-1 px-2 py-1"
        role="toolbar" aria-label="{{ t "graph.toolbar" "Graph tools" }}">
 
+    <!-- GL-47: search by label or paste an IRI; results filled by graph-tools.js. -->
+    <div class="dropdown" data-graph-add>
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+              aria-expanded="false" aria-label="{{ t "graph.addResource" "Add resource" }}" title="{{ t "graph.addResource" "Add resource" }}">
+        <i data-lucide="plus" class="icon"></i>
+      </button>
+      <div class="dropdown-menu p-2 graph-add-menu">
+        <input type="search" class="form-control form-control-sm mb-1" autocomplete="off"
+               placeholder="{{ t "graph.addPlaceholder" "Search by label or paste an IRI" }}"
+               aria-label="{{ t "graph.addPlaceholder" "Search by label or paste an IRI" }}">
+        <div data-graph-add-results aria-live="polite"></div>
+      </div>
+    </div>
+
     <div class="dropdown">
       <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
               aria-expanded="false" title="{{ t "graph.layoutMenu" "Layout" }}">
@@ -37,6 +51,10 @@
         </button>
         <button type="button" class="dropdown-item" role="menuitemradio" data-graph-layout="radial">
           <i data-lucide="orbit" class="icon dropdown-item-icon"></i>{{ t "graph.layoutRadial" "Radial" }}
+        </button>
+        <div class="dropdown-divider"></div>
+        <button type="button" class="dropdown-item" data-graph-action="layout-options">
+          <i data-lucide="sliders-horizontal" class="icon dropdown-item-icon"></i>{{ t "graph.layoutOptions" "Layout options…" }}
         </button>
       </div>
     </div>
@@ -78,6 +96,11 @@
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="fit"
             aria-label="{{ t "graph.fit" "Fit to view" }}" title="{{ t "graph.fit" "Fit to view" }}">
       <i data-lucide="scan" class="icon"></i>
+    </button>
+    <!-- GL-48: property cards of the selection, else of every node. -->
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="details"
+            aria-label="{{ t "graph.details" "Details: show or hide property cards" }}" title="{{ t "graph.details" "Details: show or hide property cards" }}">
+      <i data-lucide="list-collapse" class="icon"></i>
     </button>
 
     <div class="vr mx-1"></div>
@@ -239,6 +262,36 @@
           {{ t "graph.diagramsNote" "Saved diagrams stay in this browser only." }}
         </div>
       </div>
+    </div>
+  </div>
+{{ end }}
+
+<!--
+  Layout options panel (GL-20–23): the link types on the canvas with their edge
+  counts and a "reverse for layout" switch each; Redraw applies the changes.
+  Hidden until opened from the Layout menu; rows filled by graph-tools.js.
+
+  Usage (inside the graph stage):
+    template "graphLayoutOptions" (dict "id" $id)
+-->
+{{ define "graphLayoutOptions" }}
+  {{ $id := .id }}
+  <div id="{{ $id }}-layoutoptions" class="graph-options card shadow-sm" hidden
+       role="region" aria-label="{{ t "graph.layoutOptionsTitle" "Layout options" }}">
+    <div class="card-header py-2 px-3 d-flex align-items-center">
+      <h4 class="card-title mb-0 small fw-bold flex-fill">{{ t "graph.layoutOptionsTitle" "Layout options" }}</h4>
+      <button type="button" class="btn-close" data-graph-action="close-options" aria-label="{{ t "graph.close" "Close" }}"></button>
+    </div>
+    <div class="px-3 pt-2 small text-secondary">
+      {{ t "graph.reverseHint" "Reverse turns a property upside down for Tree ↓ and Tree → only; the arrows keep their direction. Hide a property in the Connections panel to leave it out of every layout." }}
+    </div>
+    <div class="list-group list-group-flush graph-options-list" data-graph-options-list></div>
+    <p class="small text-secondary px-3 my-2" data-graph-options-empty hidden>{{ t "graph.noLinks" "No links on the diagram." }}</p>
+    <div class="card-footer py-2 px-3 d-flex align-items-center gap-2">
+      <button type="button" class="btn btn-sm btn-outline-secondary" data-graph-action="redraw">
+        <i data-lucide="refresh-cw" class="icon"></i>{{ t "graph.redraw" "Redraw" }}
+      </button>
+      <span class="small text-secondary" data-graph-options-dirty hidden>{{ t "graph.unapplied" "Changes not applied yet" }}</span>
     </div>
   </div>
 {{ end }}

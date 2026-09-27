@@ -926,6 +926,7 @@ func main() {
 	router.GET("/api/monitoring/data", monitoringDataHandler)
 	router.POST("/api/cache/purge", cachePurgeHandler)
 	router.GET("/api/metric/:id", epFromURL, langFromURL, metricHandler)
+	router.GET("/api/search", epFromURL, langFromURL, searchAPIHandler)
 	router.GET("/api/async-table/:id", epFromURL, langFromURL, asyncTableHandler)
 	router.GET("/api/async-table-data/:id", epFromURL, langFromURL, asyncTableDataHandler)
 	// Backs the sparqlCube partial. Unlike the async-table routes it takes no

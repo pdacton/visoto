@@ -1200,3 +1200,28 @@
 .graph-select-mode .graph-explorer-paper-area {
   touch-action: none;
 }
+
+/* Add resource dropdown (graph-tools.js): wide enough for labels and IRIs. */
+.graph-add-menu {
+  width: min(24rem, 90vw);
+  max-height: 22rem;
+  overflow-y: auto;
+}
+/* Layout options panel (GL-20–23): docked top-right under the toolbar. */
+.graph-options {
+  position: absolute;
+  top: 3.75rem;
+  right: .75rem;
+  z-index: 102;
+  width: min(20rem, calc(100% - 1.5rem));
+  max-height: calc(100% - 5rem);
+  display: flex;
+  flex-direction: column;
+}
+.graph-options[hidden] {
+  display: none !important;
+}
+.graph-options-list {
+  overflow-y: auto;
+  min-height: 0;
+}
