@@ -56,6 +56,33 @@
     return known ? known() : title;
   }
 
+  // GL-46: above this many nodes a layout asks before it starts.
+  var LARGE_GRAPH = 500;
+
+  // elkjs for the Tree layouts, loaded on first use. Unmodified from the CDN
+  // (EPL-2.0 OR GPL-3.0-or-later); src and integrity move together.
+  var ELK_SRC = 'https://cdn.jsdelivr.net/npm/elkjs@0.12.0/lib/elk.bundled.js';
+  var ELK_SRI = 'sha384-ww57TDqx4cGknIavPm0QKO+aygLUR1BLSn2Vhbnt1XdYKWcwLyWTFKX7aZMaKIi2';
+  var elkLoading = null;
+  function loadElk() {
+    if (elkLoading) return elkLoading;
+    elkLoading = new Promise(function (resolve, reject) {
+      if (window.ELK) { resolve(new window.ELK()); return; }
+      var script = document.createElement('script');
+      script.src = ELK_SRC;
+      script.integrity = ELK_SRI;
+      script.crossOrigin = 'anonymous';
+      script.addEventListener('load', function () {
+        if (window.ELK) resolve(new window.ELK());
+        else reject(new Error('elkjs did not register window.ELK'));
+      });
+      script.addEventListener('error', function () { reject(new Error('elkjs failed to load')); });
+      document.head.appendChild(script);
+    });
+    elkLoading.catch(function () { elkLoading = null; }); // Retry loads again
+    return elkLoading;
+  }
+
   function readIsland(id, suffix) {
     var el = document.getElementById(id + suffix);
     if (!el) return null;
@@ -297,6 +324,7 @@
       wireToolbar();
       updateHistoryButtons();
       updateLanguage();
+      updateLayoutMenu();
       return kit;
     };
 
@@ -327,16 +355,73 @@
       if (kit.commands) kit.commands.zoomToFit();
     };
 
-    kit.layout = function () {
-      if (!kit.commands) return Promise.resolve();
-      var title = vsT('js.graph.layout.network', 'Network');
-      return kit.task(vsT('js.graph.layingOut', 'Laying out…'), function () {
-        kit.batch(vsTf('js.graph.cmd.layoutAs', 'Layout — {name}', { name: title }), function () {
-          kit.commands.forceLayout();
+    // --- Layout (GL-11, 13, 16, 17, 19; engines in graph-layout.js) -------------
+    // The embed sets kit.defaultLayout (GL-2) and kit.pageIri (Radial's centre
+    // fallback, GL-19). kit.algorithm is the last one applied.
+    kit.defaultLayout = 'network';
+    kit.pageIri = null;
+    kit.algorithm = null;
+
+    // layout(algorithm, { initial }) lays out the selection (2+ nodes) or the
+    // whole graph as ONE undo step, behind a spinner whose Cancel discards the
+    // result. `initial` is the page's own first layout: no size warning.
+    kit.layout = function (algorithm, opts) {
+      opts = opts || {};
+      var c = kit.commands;
+      if (!c) return Promise.resolve();
+      algorithm = algorithm || kit.algorithm || kit.defaultLayout;
+      var graph = c.layoutGraph();
+      if (!graph.nodes.length) return Promise.resolve();
+      if (!opts.initial && graph.nodes.length > LARGE_GRAPH &&
+          !window.confirm(vsTf('js.graph.largeLayout', 'The diagram has {n} nodes; laying it out may take a while. Continue?', { n: graph.nodes.length }))) {
+        return Promise.resolve();
+      }
+      var selected = c.selectedIds();
+      var selection = selected.length >= 2 ? selected : null;
+      var centre = selection ? null : (selected[0] || c.elementIdByIri(kit.pageIri));
+      var title = vsTf('js.graph.cmd.layoutAs', 'Layout — {name}', { name: layoutName(algorithm) });
+      return kit.task(vsT('js.graph.layingOut', 'Laying out…'), function (signal) {
+        return window.VisotoLayout.layout(graph, {
+          algorithm: algorithm,
+          selection: selection,
+          centre: centre,
+        }, {
+          force: c.force,
+          elk: loadElk,
+          signal: signal,
+        }).then(function (positions) {
+          if (signal.aborted) return;
+          kit.batch(title, function () { c.applyPositions(positions); });
+          kit.algorithm = algorithm;
+          updateLayoutMenu();
+          if (!selection) kit.fit();
         });
-        kit.fit();
+      }).catch(function (err) {
+        if (err && err.name === 'AbortError') return;
+        kit.showMessage(vsT('js.graph.layoutFailed', 'The layout could not be computed.'), {
+          retry: function () { kit.layout(algorithm, opts); },
+        });
       });
     };
+
+    function layoutName(algorithm) {
+      switch (algorithm) {
+        case 'tree-down': return vsT('js.graph.layout.treeDown', 'Tree ↓');
+        case 'tree-right': return vsT('js.graph.layout.treeRight', 'Tree →');
+        case 'radial': return vsT('js.graph.layout.radial', 'Radial');
+        default: return vsT('js.graph.layout.network', 'Network');
+      }
+    }
+
+    function updateLayoutMenu() {
+      if (!toolbar) return;
+      var current = kit.algorithm || kit.defaultLayout;
+      toolbar.querySelectorAll('[data-graph-layout]').forEach(function (el) {
+        var on = el.getAttribute('data-graph-layout') === current;
+        el.classList.toggle('active', on);
+        el.setAttribute('aria-checked', String(on));
+      });
+    }
 
     function updateHistoryButtons() {
       if (!kit.commands) return;
@@ -371,6 +456,12 @@
       wired = true;
       toolbar.addEventListener('click', function (e) {
         var target = e.target instanceof Element ? e.target : null;
+        var layoutItem = target && target.closest('[data-graph-layout]');
+        if (layoutItem) {
+          e.preventDefault();
+          kit.layout(layoutItem.getAttribute('data-graph-layout'));
+          return;
+        }
         var langItem = target && target.closest('[data-graph-lang]');
         if (langItem) {
           e.preventDefault();
@@ -400,7 +491,6 @@
         case 'fit': kit.fit(); break;
         case 'zoom-in': c.zoomIn(); break;
         case 'zoom-out': c.zoomOut(); break;
-        case 'layout-network': kit.layout(); break;
         case 'export-svg': c.exportSvg(fileName('svg')); break;
         case 'export-png': c.exportPng(fileName('png')); break;
         case 'print': c.print(); break;

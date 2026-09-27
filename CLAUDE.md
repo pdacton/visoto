@@ -8,6 +8,7 @@ is no database for RDF data. (The only local store is a SQLite file under
 ## Build & run
 
 - Build: `go build ./...` — Test: `go test ./...`
+- JS: `node --test tests/js/` (dependency-free; covers `static/js/graph-layout.js`)
 - Run: `go run ./cmd/visoto/` (port from `visoto.config`, currently 8060).
   `PORT=8061 go run ./cmd/visoto/` overrides it — use a different port than the
   one the user is already running on.

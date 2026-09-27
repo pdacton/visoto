@@ -93,3 +93,8 @@
 "js.graph.cmd.remove" = "Remove"
 "js.graph.cmd.linkVisibility" = "Show / hide links"
 "js.graph.cmd.clearAll" = "Clear all"
+"js.graph.layout.treeDown" = "Tree ↓"
+"js.graph.layout.treeRight" = "Tree →"
+"js.graph.layout.radial" = "Radial"
+"js.graph.largeLayout" = "The diagram has {n} nodes; laying it out may take a while. Continue?"
+"js.graph.layoutFailed" = "The layout could not be computed."

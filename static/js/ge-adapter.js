@@ -219,11 +219,63 @@
       zoomIn: function () { workspace.zoomIn(); },
       zoomOut: function () { workspace.zoomOut(); },
       zoomToFit: function () { workspace.zoomToFit(); },
-      // `workspace.forceLayout` is looked up at call time: construct mode wraps
-      // it with its island packing (sparql-graph.js).
-      forceLayout: function () {
-        workspace.forceLayout();
+      // The diagram as graph-layout.js's plain graph. Sizes come from the
+      // rendered boxes, so render first. model.links holds only visible links:
+      // GE removes a hidden link type's links (GL-21 "hidden = left out").
+      layoutGraph: function () {
         workspace.getDiagram().performSyncUpdate();
+        var nodes = model.elements.map(function (el) {
+          return {
+            id: el.id, iri: el.iri,
+            x: el.position.x, y: el.position.y,
+            width: el.size.width, height: el.size.height,
+            fixed: false, // pinning (GL-26) arrives in A2
+          };
+        });
+        var edges = [];
+        model.links.forEach(function (link) {
+          var s = model.sourceOf(link), t = model.targetOf(link);
+          if (s && t) edges.push({ source: s.id, target: t.id, type: link.typeId });
+        });
+        return { nodes: nodes, edges: edges };
+      },
+      // Moves elements; call inside a history batch. The captured geometry is
+      // the undo step; link vertices are cleared so edges are straight (GL-16).
+      applyPositions: function (positions) {
+        model.history.registerToUndo(GE().RestoreGeometry.capture(model));
+        Object.keys(positions).forEach(function (id) {
+          var el = model.getElement(id);
+          if (el) el.setPosition(positions[id]);
+        });
+        model.links.forEach(function (link) {
+          if (link.vertices && link.vertices.length) link.setVertices([]);
+        });
+        workspace.getDiagram().performSyncUpdate();
+      },
+      // The WebCola step of GE's own force layout, on plain nodes (mutated in
+      // place). Same recipe as GE's forceLayout(), with our link length.
+      // GE-UPSTREAM: B2 (an async layout hook would take graph-layout.js whole).
+      force: function (nodes, links, linkLength) {
+        var I = GE().InternalApi;
+        var anyFixed = nodes.some(function (n) { return n.fixed; });
+        if (anyFixed) {
+          I.biasFreePadded(nodes, { x: 50, y: 50 }, function () {
+            I.groupForceLayout({ nodes: nodes, links: links, preferredLinkLength: linkLength, avoidOvelaps: true });
+          });
+        } else {
+          I.groupForceLayout({ nodes: nodes, links: links, preferredLinkLength: linkLength });
+          I.biasFreePadded(nodes, { x: 50, y: 50 }, function () { I.groupRemoveOverlaps(nodes); });
+        }
+      },
+      selectedIds: function () {
+        var Element = GE().Element;
+        return workspace.getEditor().selection
+          .filter(function (item) { return item instanceof Element; })
+          .map(function (el) { return el.id; });
+      },
+      elementIdByIri: function (iri) {
+        var found = iri && model.elements.find(function (el) { return el.iri === iri; });
+        return found ? found.id : null;
       },
       clearAll: function () { workspace.clearAll(); },
       exportSvg: function (name) { workspace.exportSvg(name); },

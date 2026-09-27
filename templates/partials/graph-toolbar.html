@@ -23,9 +23,20 @@
         <i data-lucide="network" class="icon"></i>
         <span class="d-none d-sm-inline">{{ t "graph.layoutMenu" "Layout" }}</span>
       </button>
-      <div class="dropdown-menu">
-        <button type="button" class="dropdown-item" data-graph-action="layout-network">
+      <!-- Items carry data-graph-layout (graph-layout.js ALGORITHMS); graph-kit.js
+           marks the one last applied as .active. -->
+      <div class="dropdown-menu" role="menu">
+        <button type="button" class="dropdown-item" role="menuitemradio" data-graph-layout="network">
           <i data-lucide="share-2" class="icon dropdown-item-icon"></i>{{ t "graph.layoutNetwork" "Network" }}
+        </button>
+        <button type="button" class="dropdown-item" role="menuitemradio" data-graph-layout="tree-down">
+          <i data-lucide="network" class="icon dropdown-item-icon"></i>{{ t "graph.layoutTreeDown" "Tree ↓" }}
+        </button>
+        <button type="button" class="dropdown-item" role="menuitemradio" data-graph-layout="tree-right">
+          <i data-lucide="network" class="icon dropdown-item-icon graph-icon-rotate"></i>{{ t "graph.layoutTreeRight" "Tree →" }}
+        </button>
+        <button type="button" class="dropdown-item" role="menuitemradio" data-graph-layout="radial">
+          <i data-lucide="orbit" class="icon dropdown-item-icon"></i>{{ t "graph.layoutRadial" "Radial" }}
         </button>
       </div>
     </div>

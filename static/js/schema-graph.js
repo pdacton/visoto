@@ -171,6 +171,10 @@
 
     function renderSchema(store, mode, cls) {
       var container = kit.container;
+      // GL-2: the schema is a class model, read as a tree; Radial centres on
+      // the anchor class (GL-19).
+      kit.defaultLayout = 'tree-right';
+      kit.pageIri = cls;
       var summary = Object.keys(store.elements).length + ' classes, ' + store.links.length + ' relations';
       if (mode === 'class') {
         setStatus('derived from up to 50 sampled instances of <code>' + escapeHtml(localName(cls)) + '</code> &mdash; ' + summary);
@@ -213,9 +217,7 @@
               if (hasAttrs && el.setExpanded) el.setExpanded(true);
             });
             setTimeout(function () {
-              kit.commands.forceLayout();
-              kit.fit();
-              kit.ready();
+              kit.layout(null, { initial: true }).then(kit.ready);
             }, 300);
           });
       }
