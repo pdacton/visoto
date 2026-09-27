@@ -227,6 +227,19 @@ Only if B1–B5 land smoothly.
 
 | Phase | Decision | Why |
 |---|---|---|
+| A0 | Visoto supplies its own remembering `CommandHistory` (`ge-adapter.js`), passed as the Workspace `history` prop. Batches nest; `batch.history` is the history itself; `execute` keeps the forward action's title. | GE 2.1.0 records into `model.history` but ships only `NonRememberingHistory` (undo throws). GE calls `model.history.execute` inside open batches, so commands must land in the innermost batch. Inverse commands carry the inverse's title ("Add element" for a remove). |
+| A0 | Touch spike, from source: GE 2.1 is mouse-only (React `onMouseDown` + document `mousemove`/`mouseup`, no pointer or touch handlers). Taps work (emulated click), the paper area pans by native scrolling, but touch drag of a node does nothing. **GL-40 re-scope:** A2's Select-mode listener uses Pointer Events, which also gives touch node drag and box selection; no GE change needed. | Checked in `paperArea.tsx`/`elementLayer.tsx`; not yet on a device. |
+| A0 | API: `VisotoGraph.create(id)` before GE loads, then `kit.attach(workspace)`, instead of `attach(workspace, rootEl, opts)`. | The kit shows the loading spinner and load errors (with Retry) before a workspace exists. |
+| A0 | `ge-adapter.js` holds the loader (with SRI), history, render, SparqlDataProvider construction and every toolbar command. Embed files still call the diagram model directly (`createElement`, `importLayout`, `setPosition`, the island packing). | Moving model calls belongs with `graph-layout.js` in A1; A0 stays a no-behaviour-change refactor plus toolbar. |
+| A0 | Toolbar keeps **Zoom in / Zoom out** next to Fit. | GL-44 parity: GE's toolbar had them; wheel zoom needs Ctrl. |
+| A0 | Clear all confirms with `window.confirm`; it is one undo step ("Clear all"). | Simplest accessible confirmation; Reset diagram and its dialog arrive in A3. |
+| A0 | Language menu: Deutsch / English / Français / Italiano (native names), default = site language, else English. No Romansh. | GL-44 default; LINDAS labels are practically never `rm`. |
+| A0 | GL-45: a failed provider call stays pending while the inline message shows; Retry re-runs every pending call, Dismiss rejects them as before. `classTree` is not guarded. Empty page-level results (construct / schema query) show an info message; GE's own search and connections panels already say "no results". | `classTree` over all of LINDAS times out on every page and only fills the sidebar — a permanent banner. Expand-all "found nothing" lands with Expand all (A2). |
+| A0 | Hotkeys (Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y) go to the graph last pointed at or focused; ignored while typing. | Several graphs per page (T1 has three). |
+| A0 | GL-46 Cancel in A0 only aborts before a layout starts (the spinner paints first); GE's force layout is synchronous. | Real mid-run cancel comes with async ELK in A1. |
+| A0 | `zoomOptions.min` 0.05 (GE default 0.2) for every embed. | Fit could not fit T4's 341 nodes at 0.2 — the overview never appeared. |
+| A0 | Fixed two pre-existing bugs found on the test set: (1) T3 drew nothing — seeding raced `importLayout`'s async `linkTypes()` → "Link type … already exists"; all embeds now seed after `importLayout` settles. (2) `classInfo` was asked for blank-node type ids (`<b0_genid…>`) → 400 for the whole batch; the adapter filters to absolute IRIs. | Both reproduced on the pre-A0 code; T3 is in the test set. |
+| A0 | Left as found (pre-existing, not A0): schema view labels the anchor box "rdf:langString" on T1 (its `rdfs:label` attribute row collides with the box label); GE's SVG/PNG export requests `/undefined` (404, export still succeeds); the Classes sidebar spins forever when `classTree` times out. | Out of A0's scope; noted for later phases. |
 
 ### Test set (LINDAS prod, `endpoint=lindas-prod`)
 
