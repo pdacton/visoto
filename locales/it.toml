@@ -1451,3 +1451,4 @@
 "js.graph.cmd.remove" = "Rimuovi"
 "js.graph.cmd.linkVisibility" = "Mostra / nascondi collegamenti"
 "js.graph.cmd.clearAll" = "Rimuovi tutto"
+"graph.more" = "Altre azioni"

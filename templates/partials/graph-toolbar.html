@@ -63,7 +63,6 @@
         <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
                 aria-expanded="false" aria-label="{{ t "graph.labelLanguage" "Label language" }}"
                 title="{{ t "graph.labelLanguage" "Label language" }}">
-          <i data-lucide="languages" class="icon"></i>
           <span data-graph-lang-current></span>
         </button>
         <div class="dropdown-menu dropdown-menu-end" role="menu">
@@ -90,7 +89,16 @@
           <button type="button" class="dropdown-item" data-graph-action="print">
             <i data-lucide="printer" class="icon dropdown-item-icon"></i>{{ t "graph.print" "Print" }}
           </button>
-          <div class="dropdown-divider"></div>
+        </div>
+      </div>
+
+      <!-- More: rarely used and destructive actions, out of the main row. -->
+      <div class="dropdown">
+        <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown"
+                aria-expanded="false" aria-label="{{ t "graph.more" "More actions" }}" title="{{ t "graph.more" "More actions" }}">
+          <i data-lucide="more-vertical" class="icon"></i>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end">
           <button type="button" class="dropdown-item text-danger" data-graph-action="clear-all">
             <i data-lucide="trash-2" class="icon dropdown-item-icon"></i>{{ t "graph.clearAll" "Clear all" }}
           </button>
