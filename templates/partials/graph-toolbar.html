@@ -41,6 +41,19 @@
       </div>
     </div>
 
+    <!-- GL-5: what a plain drag on empty canvas does. Shift+drag draws a box in
+         either mode; graph-selection.js keeps aria-pressed in step. -->
+    <div class="btn-group" role="group" aria-label="{{ t "graph.pointerMode" "Pointer mode" }}">
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon active" data-graph-mode="pan" aria-pressed="true"
+              aria-label="{{ t "graph.modePan" "Pan: drag moves the canvas" }}" title="{{ t "graph.modePan" "Pan: drag moves the canvas" }}">
+        <i data-lucide="hand" class="icon"></i>
+      </button>
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-mode="select" aria-pressed="false"
+              aria-label="{{ t "graph.modeSelect" "Select: drag draws a selection box" }}" title="{{ t "graph.modeSelect" "Select: drag draws a selection box" }}">
+        <i data-lucide="square-dashed-mouse-pointer" class="icon"></i>
+      </button>
+    </div>
+
     <div class="vr mx-1"></div>
 
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon disabled" data-graph-action="undo" disabled
@@ -116,5 +129,70 @@
         </div>
       </div>
     </div>
+  </div>
+{{ end }}
+
+<!--
+  Selection bar: floats bottom-centre over the canvas while one or more nodes
+  are selected (GL-12, GL-51). graph-selection.js shows/hides it, fills the
+  count, and dispatches on data-graph-action / data-graph-align.
+
+  Usage (inside the graph stage):
+    template "graphSelectionBar" (dict "id" $id)
+-->
+{{ define "graphSelectionBar" }}
+  {{ $id := .id }}
+  <div id="{{ $id }}-selectionbar" class="graph-selectionbar d-flex flex-wrap align-items-center justify-content-center gap-1 px-2 py-1"
+       role="toolbar" aria-label="{{ t "graph.selectionTools" "Selection tools" }}" hidden>
+    <span class="small fw-medium px-1" data-graph-selection-count aria-live="polite"></span>
+    <div class="vr mx-1"></div>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="expand-all"
+            aria-label="{{ t "graph.expandAll" "Expand all: add every neighbour" }}" title="{{ t "graph.expandAll" "Expand all: add every neighbour" }}">
+      <i data-lucide="git-branch-plus" class="icon"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="select-neighbours"
+            aria-label="{{ t "graph.selectNeighbours" "Select neighbours" }}" title="{{ t "graph.selectNeighbours" "Select neighbours" }}">
+      <i data-lucide="waypoints" class="icon"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="layout-selection" data-graph-needs-two
+            aria-label="{{ t "graph.layoutSelection" "Lay out selection" }}" title="{{ t "graph.layoutSelection" "Lay out selection" }}">
+      <i data-lucide="layout-dashboard" class="icon"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="pin-toggle" aria-pressed="false"
+            aria-label="{{ t "graph.pin" "Pin" }}" title="{{ t "graph.pin" "Pin" }}">
+      <i data-lucide="pin" class="icon"></i>
+    </button>
+    <div class="dropup">
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-graph-needs-two
+              aria-expanded="false" aria-label="{{ t "graph.align" "Align and distribute" }}" title="{{ t "graph.align" "Align and distribute" }}">
+        <i data-lucide="align-start-vertical" class="icon"></i>
+      </button>
+      <div class="dropdown-menu">
+        <button type="button" class="dropdown-item" data-graph-align="left"><i data-lucide="align-start-vertical" class="icon dropdown-item-icon"></i>{{ t "graph.alignLeft" "Align left" }}</button>
+        <button type="button" class="dropdown-item" data-graph-align="center"><i data-lucide="align-center-vertical" class="icon dropdown-item-icon"></i>{{ t "graph.alignCenter" "Align centre" }}</button>
+        <button type="button" class="dropdown-item" data-graph-align="right"><i data-lucide="align-end-vertical" class="icon dropdown-item-icon"></i>{{ t "graph.alignRight" "Align right" }}</button>
+        <div class="dropdown-divider"></div>
+        <button type="button" class="dropdown-item" data-graph-align="top"><i data-lucide="align-start-horizontal" class="icon dropdown-item-icon"></i>{{ t "graph.alignTop" "Align top" }}</button>
+        <button type="button" class="dropdown-item" data-graph-align="middle"><i data-lucide="align-center-horizontal" class="icon dropdown-item-icon"></i>{{ t "graph.alignMiddle" "Align middle" }}</button>
+        <button type="button" class="dropdown-item" data-graph-align="bottom"><i data-lucide="align-end-horizontal" class="icon dropdown-item-icon"></i>{{ t "graph.alignBottom" "Align bottom" }}</button>
+        <div class="dropdown-divider"></div>
+        <button type="button" class="dropdown-item" data-graph-align="distribute-h"><i data-lucide="align-horizontal-distribute-center" class="icon dropdown-item-icon"></i>{{ t "graph.distributeH" "Distribute horizontally" }}</button>
+        <button type="button" class="dropdown-item" data-graph-align="distribute-v"><i data-lucide="align-vertical-distribute-center" class="icon dropdown-item-icon"></i>{{ t "graph.distributeV" "Distribute vertically" }}</button>
+      </div>
+    </div>
+    <div class="vr mx-1"></div>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="keep-only"
+            aria-label="{{ t "graph.keepOnly" "Keep only these" }}" title="{{ t "graph.keepOnly" "Keep only these" }}">
+      <i data-lucide="funnel" class="icon"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-ghost-danger btn-icon" data-graph-action="remove"
+            aria-label="{{ t "graph.removeSelected" "Remove from diagram" }}" title="{{ t "graph.removeSelected" "Remove from diagram" }}">
+      <i data-lucide="trash-2" class="icon"></i>
+    </button>
+    <div class="vr mx-1"></div>
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="clear-selection"
+            aria-label="{{ t "graph.clearSelection" "Clear selection (Esc)" }}" title="{{ t "graph.clearSelection" "Clear selection (Esc)" }}">
+      <i data-lucide="x" class="icon"></i>
+    </button>
   </div>
 {{ end }}

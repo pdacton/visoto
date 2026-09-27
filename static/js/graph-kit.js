@@ -96,13 +96,23 @@
 
   // Hotkeys go to the graph the user last touched, so two graphs on one page do
   // not both undo on one Ctrl+Z.
+  // A press anywhere else on the page makes no graph active, so Ctrl+A and Esc
+  // go back to the page (the card's own capture listener runs after this one).
   var activeKit = null;
+  document.addEventListener('pointerdown', function () { activeKit = null; }, true);
   document.addEventListener('keydown', function (e) {
     if (!activeKit || !activeKit.commands || isTyping(e.target)) return;
+    if (e.key === 'Escape' && activeKit.clearSelection) {
+      activeKit.clearSelection(); // GL-8
+      return;
+    }
     var mod = e.ctrlKey || e.metaKey;
     if (!mod || e.altKey) return;
     var key = e.key.toLowerCase();
-    if (key === 'z' && !e.shiftKey) {
+    if (key === 'a' && !e.shiftKey && activeKit.selectAll) {
+      e.preventDefault();
+      activeKit.selectAll(); // GL-8
+    } else if (key === 'z' && !e.shiftKey) {
       e.preventDefault();
       activeKit.undo();
     } else if ((key === 'z' && e.shiftKey) || key === 'y') {
@@ -110,6 +120,8 @@
       activeKit.redo();
     }
   });
+
+  var kits = {};
 
   function create(id) {
     var card = document.getElementById(id + '-card');
@@ -121,7 +133,7 @@
     var h = readIsland(id, '-height');
     if (container && h) container.style.height = h;
 
-    var kit = {
+    var kit = kits[id] = {
       id: id,
       card: card,
       container: container,
@@ -313,6 +325,11 @@
         // GE's default minimum scale (0.2) stops Fit short of a few hundred
         // nodes (the system diagram): the overview would never fit.
         zoomOptions: { min: 0.05 },
+        // Selection, group drag and pinning ride on GE's paper pointer events
+        // (graph-selection.js installs kit.onPointer*).
+        onPointerDown: window.VisotoGE.pointerHandler(function (e) { if (kit.onPointerDown) kit.onPointerDown(e); }),
+        onPointerMove: window.VisotoGE.pointerHandler(function (e) { if (kit.onPointerMove) kit.onPointerMove(e); }),
+        onPointerUp: window.VisotoGE.pointerHandler(function (e) { if (kit.onPointerUp) kit.onPointerUp(e); }),
       }, props);
     };
 
@@ -322,6 +339,7 @@
       kit.commands = window.VisotoGE.commands(workspace);
       kit.commands.history.events.on('historyChanged', updateHistoryButtons);
       wireToolbar();
+      if (window.VisotoGraphSelection) window.VisotoGraphSelection.install(kit);
       updateHistoryButtons();
       updateLanguage();
       updateLayoutMenu();
@@ -372,6 +390,8 @@
       algorithm = algorithm || kit.algorithm || kit.defaultLayout;
       var graph = c.layoutGraph();
       if (!graph.nodes.length) return Promise.resolve();
+      // GL-26: pinned nodes are fixed in every layout.
+      if (kit.isPinned) graph.nodes.forEach(function (n) { n.fixed = kit.isPinned(n.id); });
       if (!opts.initial && graph.nodes.length > LARGE_GRAPH &&
           !window.confirm(vsTf('js.graph.largeLayout', 'The diagram has {n} nodes; laying it out may take a while. Continue?', { n: graph.nodes.length }))) {
         return Promise.resolve();
@@ -402,6 +422,24 @@
           retry: function () { kit.layout(algorithm, opts); },
         });
       });
+    };
+
+    // GL-14: places newly added nodes (ids) with every other node fixed, by a
+    // Network pass. Not an undo step of its own: the batch that added the
+    // nodes removes them on undo, and re-adds them where they end up.
+    kit.placeNew = function (ids) {
+      var c = kit.commands;
+      if (!c || !ids.length) return Promise.resolve();
+      var fresh = {};
+      ids.forEach(function (i) { fresh[i] = true; });
+      var graph = c.layoutGraph();
+      graph.nodes.forEach(function (n) { n.fixed = !fresh[n.id]; });
+      return window.VisotoLayout.layout(graph, { algorithm: 'network' }, { force: c.force, elk: loadElk })
+        .then(function (positions) {
+          var moves = {};
+          ids.forEach(function (i) { if (positions[i]) moves[i] = positions[i]; });
+          c.movePositions(moves);
+        });
     };
 
     function layoutName(algorithm) {
@@ -488,7 +526,7 @@
       switch (name) {
         case 'undo': kit.undo(); break;
         case 'redo': kit.redo(); break;
-        case 'fit': kit.fit(); break;
+        case 'fit': (kit.fitSelection || kit.fit)(); break; // GL-12: selection-aware
         case 'zoom-in': c.zoomIn(); break;
         case 'zoom-out': c.zoomOut(); break;
         case 'export-svg': c.exportSvg(fileName('svg')); break;
@@ -542,6 +580,8 @@
   }
 
   window.VisotoGraph = {
+    // The kit of graph `id` (for other scripts and for debugging).
+    get: function (id) { return kits[id] || null; },
     create: create,
     readIsland: readIsland,
   };

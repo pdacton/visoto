@@ -83,6 +83,7 @@
       <div id="{{ $id }}-frame" class="graph-frame">
       <div class="graph-stage">
       {{ template "graphToolbar" (dict "id" $id) }}
+      {{ template "graphSelectionBar" (dict "id" $id) }}
       <div id="{{ $id }}-root" class="graph-canvas" style="width: 100%;"
            data-sparql-graph
            data-sparql-graph-id="{{ $id }}"
@@ -116,6 +117,7 @@
   <!-- The GE adapter and the shared controller; both must precede the graph script. -->
   <script src="/static/js/ge-adapter.js" defer></script>
   <script src="/static/js/graph-layout.js" defer></script>
+  <script src="/static/js/graph-selection.js" defer></script>
   <script src="/static/js/graph-kit.js" defer></script>
   <!-- In-memory store + DataProvider for CONSTRUCTed graphs; must precede the graph script. -->
   <script src="/static/js/graph-memory-store.js" defer></script>

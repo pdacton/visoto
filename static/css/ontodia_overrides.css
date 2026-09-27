@@ -1162,3 +1162,41 @@
 .graph-icon-rotate {
   transform: rotate(-90deg);
 }
+
+/* Selection bar: floats bottom-centre while nodes are selected (graph-selection.js). */
+.graph-selectionbar {
+  position: absolute;
+  bottom: .75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 101;
+  max-width: calc(100% - 1.5rem);
+  width: max-content;
+  background: var(--tblr-bg-surface, #fff);
+  border: 1px solid var(--tblr-border-color, #e6e7e9);
+  border-radius: var(--tblr-border-radius-lg, 8px);
+  box-shadow: var(--tblr-box-shadow-dropdown, 0 4px 16px rgba(0,0,0,.08));
+}
+.graph-selectionbar[hidden] {
+  display: none !important;
+}
+.graph-selectionbar .vr {
+  align-self: stretch;
+  margin-block: .35rem;
+}
+/* Rubber band for box selection (GL-5), in stage coordinates. */
+.graph-selection-box {
+  position: absolute;
+  z-index: 99;
+  pointer-events: none;
+  border: 1px dashed var(--tblr-primary, #066fd1);
+  background: color-mix(in srgb, var(--tblr-primary, #066fd1) 8%, transparent);
+}
+/* Select mode: crosshair on empty canvas, and no browser panning by touch, so a
+   finger draws boxes and drags nodes instead (GL-40). */
+.graph-select-mode .graph-explorer-paper-area__area {
+  cursor: crosshair;
+}
+.graph-select-mode .graph-explorer-paper-area {
+  touch-action: none;
+}

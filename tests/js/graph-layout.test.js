@@ -161,3 +161,22 @@ test('islands go below a dominant component, not beside it', async () => {
   const mainBottom = Math.max(...nodes.slice(0, 10).map((n) => pos[n.id].y)) + 40;
   assert.ok(pos.i1.y >= mainBottom, 'island below the main component');
 });
+
+test('align left / middle and distribute horizontally', () => {
+  const nodes = [
+    node('a', { x: 10, y: 0, width: 100, height: 40 }),
+    node('b', { x: 300, y: 100, width: 50, height: 20 }),
+    node('c', { x: 120, y: 50, width: 60, height: 60 }),
+  ];
+  const left = L.align(nodes, 'left');
+  assert.deepEqual([left.a.x, left.b.x, left.c.x], [10, 10, 10]);
+  assert.equal(left.b.y, 100, 'align left keeps y');
+  const mid = L.align(nodes, 'middle'); // box 0..120, middle 60
+  assert.deepEqual([mid.a.y + 20, mid.b.y + 10, mid.c.y + 30], [60, 60, 60]);
+  const dist = L.align(nodes, 'distribute-h'); // span 10..350 = 340, widths 210, 2 gaps of 65
+  assert.deepEqual([dist.a.x, dist.c.x, dist.b.x], [10, 175, 300]);
+});
+
+test('align needs two nodes', () => {
+  assert.deepEqual(L.align([node('a')], 'left'), {});
+});

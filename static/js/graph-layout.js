@@ -384,10 +384,56 @@
     });
   }
 
+  // --- Align / distribute (GL-51) ---------------------------------------------
+  // mode: left | center | right | top | middle | bottom  (align to the
+  // selection's bounding box), or distribute-h | distribute-v (first and last
+  // stay, equal gaps between the boxes in between). Returns { id: {x, y} }.
+  var ALIGN_MODES = ['left', 'center', 'right', 'top', 'middle', 'bottom', 'distribute-h', 'distribute-v'];
+
+  function align(nodes, mode) {
+    var pos = {};
+    if (nodes.length < 2) return pos;
+    var b = bounds(nodes);
+    if (mode === 'distribute-h' || mode === 'distribute-v') {
+      var horizontal = mode === 'distribute-h';
+      var sorted = nodes.slice().sort(function (p, q) {
+        return horizontal ? (p.x + sizeOf(p).width / 2) - (q.x + sizeOf(q).width / 2)
+                          : (p.y + sizeOf(p).height / 2) - (q.y + sizeOf(q).height / 2);
+      });
+      var total = 0;
+      sorted.forEach(function (n) { total += horizontal ? sizeOf(n).width : sizeOf(n).height; });
+      var span = horizontal ? b.right - b.left : b.bottom - b.top;
+      var gap = (span - total) / (sorted.length - 1);
+      var at = horizontal ? b.left : b.top;
+      sorted.forEach(function (n) {
+        var s = sizeOf(n);
+        pos[n.id] = horizontal ? { x: at, y: n.y } : { x: n.x, y: at };
+        at += (horizontal ? s.width : s.height) + gap;
+      });
+      return pos;
+    }
+    nodes.forEach(function (n) {
+      var s = sizeOf(n);
+      var x = n.x, y = n.y;
+      switch (mode) {
+        case 'left': x = b.left; break;
+        case 'center': x = (b.left + b.right) / 2 - s.width / 2; break;
+        case 'right': x = b.right - s.width; break;
+        case 'top': y = b.top; break;
+        case 'middle': y = (b.top + b.bottom) / 2 - s.height / 2; break;
+        case 'bottom': y = b.bottom - s.height; break;
+      }
+      pos[n.id] = { x: x, y: y };
+    });
+    return pos;
+  }
+
   return {
     ALGORITHMS: ALGORITHMS,
+    ALIGN_MODES: ALIGN_MODES,
     DEFAULT_REVERSED: DEFAULT_REVERSED,
     layout: layout,
+    align: align,
     // exposed for tests
     _components: components,
     _radial: radial,

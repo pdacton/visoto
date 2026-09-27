@@ -211,7 +211,32 @@
   // Everything the toolbar and graph-kit do to a mounted workspace.
   function commands(workspace) {
     var model = workspace.getModel();
+
+    // GE 2.1 bug: ElementLayer.requestRedraw(element, RedrawFlags.None) — what
+    // the model's changeCells event sends for an added or removed element —
+    // returns early (`forAll | 0 === forAll`), so the layer never re-renders
+    // for it. GE's own flows get away with it because a selection change
+    // follows and redraws everything; an undo, redo or Visoto action does
+    // not, and the canvas keeps showing removed nodes (and omits added ones).
+    // Any element's redraw() recomputes the whole layer, so nudge one after
+    // every history change. GE-UPSTREAM: B1 (report with the undo PR).
+    // With no element left (redo of Clear all), a language round trip is the
+    // one public path to the layer's redraw-all.
+    function refresh() {
+      var any = model.elements[0];
+      if (any) {
+        any.redraw();
+        return;
+      }
+      var view = workspace.getDiagram();
+      var lang = view.getLanguage();
+      view.setLanguage(lang === 'en' ? 'de' : 'en');
+      view.setLanguage(lang);
+    }
+    model.history.events.on('historyChanged', refresh);
+
     return {
+      refresh: refresh,
       model: model,
       history: model.history,
       undo: function () { workspace.undo(); },
@@ -267,6 +292,99 @@
           I.biasFreePadded(nodes, { x: 50, y: 50 }, function () { I.groupRemoveOverlaps(nodes); });
         }
       },
+      // --- Selection and element access (A2) -------------------------------
+      // GE-UPSTREAM: B3 — multi-selection, box selection and group drag are
+      // Visoto's (graph-selection.js); GE itself selects one cell per click.
+      setSelection: function (ids) {
+        var els = ids.map(function (id) { return model.getElement(id); }).filter(Boolean);
+        workspace.getEditor().setSelection(els);
+      },
+      onSelectionChange: function (fn) {
+        workspace.getEditor().events.on('changeSelection', fn);
+      },
+      elementIds: function () {
+        return model.elements.map(function (el) { return el.id; });
+      },
+      exists: function (id) { return !!model.getElement(id); },
+      box: function (id) {
+        var el = model.getElement(id);
+        return el && { id: id, x: el.position.x, y: el.position.y, width: el.size.width, height: el.size.height };
+      },
+      // Ids of the elements on the canvas linked to any of `ids`.
+      neighbourIds: function (ids) {
+        var out = {};
+        ids.forEach(function (id) {
+          var el = model.getElement(id);
+          if (!el) return;
+          el.links.forEach(function (link) {
+            var s = model.sourceOf(link), t = model.targetOf(link);
+            [s, t].forEach(function (n) { if (n && n.id !== id) out[n.id] = true; });
+          });
+        });
+        return Object.keys(out);
+      },
+      pageToPaper: function (pageX, pageY) {
+        return workspace._getPaperArea().pageToPaperCoords(pageX, pageY);
+      },
+      fitRect: function (rect) { workspace.zoomToFitRect(rect); },
+      // Opens a history batch whose undo step restores every position as it
+      // is NOW; the caller moves elements (movePositions) and stores it.
+      startGeometryBatch: function (title) {
+        var batch = model.history.startBatch(title);
+        model.history.registerToUndo(GE().RestoreGeometry.capture(model));
+        return batch;
+      },
+      // Positions without history: inside a geometry batch, or for elements
+      // an enclosing batch already records (new elements being placed).
+      movePositions: function (positions) {
+        Object.keys(positions).forEach(function (id) {
+          var el = model.getElement(id);
+          if (el) el.setPosition(positions[id]);
+        });
+        workspace.getDiagram().performSyncUpdate();
+      },
+      removeElements: function (ids) {
+        var els = ids.map(function (id) { return model.getElement(id); }).filter(Boolean);
+        if (els.length) workspace.getEditor().removeItems(els);
+      },
+      // Neighbour IRIs of `ids` in the data (not only on the canvas), with the
+      // canvas element each was found from: [{ iri, from }].
+      neighbourIris: function (ids, limit) {
+        var provider = model.dataProvider;
+        var onCanvas = {};
+        model.elements.forEach(function (el) { onCanvas[el.iri] = true; });
+        return Promise.all(ids.map(function (id) {
+          var el = model.getElement(id);
+          if (!el) return [];
+          return provider.linkElements({ elementId: el.iri, linkId: null, offset: 0, limit: limit })
+            .then(function (dict) {
+              return Object.keys(dict).map(function (iri) { return { iri: iri, from: id }; });
+            });
+        })).then(function (lists) {
+          var seen = {};
+          return [].concat.apply([], lists).filter(function (item) {
+            if (onCanvas[item.iri] || seen[item.iri]) return false;
+            seen[item.iri] = true;
+            return true;
+          });
+        });
+      },
+      // Adds elements (recorded in the open batch) at the given positions and
+      // loads their data and links. Resolves to the new element ids.
+      addElements: function (items) {
+        var ids = [];
+        items.forEach(function (item) {
+          var el = model.createElement(item.iri);
+          if (!el) return;
+          el.setPosition({ x: item.x, y: item.y });
+          ids.push(el.id);
+        });
+        var iris = items.map(function (item) { return item.iri; });
+        var loading = Promise.resolve(model.requestElementData(iris))
+          .then(function () { return model.requestLinksOfType(); })
+          .then(function () { workspace.getDiagram().performSyncUpdate(); return ids; });
+        return { ids: ids, loaded: loading };
+      },
       selectedIds: function () {
         var Element = GE().Element;
         return workspace.getEditor().selection
@@ -287,7 +405,22 @@
     };
   }
 
+  // GE's paper pointer events, reduced to what graph-selection.js needs:
+  // { elementId, sourceEvent, click } (elementId null on empty paper or a link).
+  function pointerHandler(fn) {
+    return function (e) {
+      var Element = GE().Element;
+      fn({
+        elementId: e.target instanceof Element ? e.target.id : null,
+        onLink: !!e.target && !(e.target instanceof Element),
+        sourceEvent: e.sourceEvent,
+        click: !!e.triggerAsClick,
+      });
+    };
+  }
+
   window.VisotoGE = {
+    pointerHandler: pointerHandler,
     load: load,
     createHistory: createHistory,
     render: render,
