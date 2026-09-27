@@ -210,6 +210,24 @@ Only if B1–B5 land smoothly.
 - Every phase's exit additionally requires: all three embeds checked on the test
   set below, and undo covering every action the phase added.
 
+### Running autonomously
+
+- Per phase: build + test → verify the test set in headless Chromium (Playwright
+  MCP or a script) with screenshots → commit → push → short report.
+- Ambiguity: pick the simplest option consistent with `graph-layout.md` and record
+  it in the decisions log below instead of stopping.
+- Stop and ask only for: a spec contradiction that changes user-visible behaviour,
+  a GE limitation with no workaround, anything destructive or outside this repo.
+- Review cadence: pause for review after **A0** and **A1** (toolbar and layouts set
+  the look and feel); A2–A6 run through.
+- Setup: `cp visoto.config.example visoto.config` if missing; run on a port other
+  than the one already in use (`PORT=8061 go run ./cmd/visoto/`).
+
+### Decisions log
+
+| Phase | Decision | Why |
+|---|---|---|
+
 ### Test set (LINDAS prod, `endpoint=lindas-prod`)
 
 | # | Page | Covers |
