@@ -539,10 +539,10 @@
         case 'fit': (kit.fitSelection || kit.fit)(); break; // GL-12: selection-aware
         case 'zoom-in': c.zoomIn(); break;
         case 'zoom-out': c.zoomOut(); break;
-        case 'export-svg': c.exportSvg(fileName('svg')); break;
+        case 'export-svg': c.exportSvg(fileName('svg'), kit.dressForExport); break;
         case 'export-ttl': downloadText(window.VisotoTurtle.toTurtle(c.drawnGraph()), 'text/turtle', fileName('ttl')); break;
-        case 'export-png': c.exportPng(fileName('png')); break;
-        case 'print': c.print(); break;
+        case 'export-png': c.exportPng(fileName('png'), kit.dressForExport); break;
+        case 'print': c.print(kit.dressForExport); break;
         case 'save-as': saveAs(); break;
         case 'my-diagrams': showDiagrams(); break;
         case 'download': download(); break;
@@ -587,6 +587,7 @@
         language: c.language(),
         layout: kit.algorithm || kit.defaultLayout,
         pins: kit.pinnedIds ? kit.pinnedIds() : [],
+        colors: kit.nodeColors ? kit.nodeColors() : {}, // GL-55
         reversed: kit.reverseOverrides ? kit.reverseOverrides() : {},
         filter: kit.filterState ? kit.filterState() : null, // GL-49, GL-52
         fingerprint: kit.spec ? kit.spec.fingerprint : '',
@@ -622,6 +623,7 @@
         done();
         if (saved.language) c.setLanguage(saved.language);
         if (kit.loadPins) kit.loadPins(saved.pins);
+        if (kit.loadColors) kit.loadColors(saved.colors);
         if (kit.applyReverseOverrides) kit.applyReverseOverrides(saved.reversed);
         if (kit.loadFilterState) kit.loadFilterState(saved.filter);
         kit.algorithm = saved.layout || null;
@@ -656,6 +658,7 @@
       clearMessage();
       kit.algorithm = null;
       if (kit.loadPins) kit.loadPins([]);
+      if (kit.loadColors) kit.loadColors({});
       if (kit.loadFilterState) kit.loadFilterState(null);
       return kit.spec.fresh();
     };

@@ -295,6 +295,13 @@ checked here with `node --test`.
 Part A done on this branch (A0–A6, 2026-09-27): every phase checked on T1–T4 in
 headless Chromium; JS unit tests `node --test tests/js/`.
 
+GL-54, GL-55 and GL-56–59 done (2026-09-28), checked on T1 in headless Chromium:
+pan to a panel entry (`panelIri` reads the class tree's `href` and an Instances
+entry's `<IRI>` title), node colours (scoped rules, inlined into the DOM for the
+moment GE clones it on export), hover via GE's own `setHighlighter`. The
+Instances-panel half of GL-54 is unverified: T1's classes have no instances on
+LINDAS.
+
 Part B on hold (2026-09-27): Zazuko has not answered, and Part A already gives users
 everything B1–B5 would. Part B would only retire the `GE-UPSTREAM` workarounds;
 revisit if Zazuko responds or a GE release breaks one of them.

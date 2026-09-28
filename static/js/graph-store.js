@@ -14,7 +14,8 @@
 
   A saved canvas (FORMAT, VERSION 1):
     { format, version, savedAt, page, graph, endpoint, language, layout,
-      pins: [id], fingerprint, diagram: <GE SerializedDiagram> }
+      pins: [id], colors: { id: colour name }, fingerprint,
+      diagram: <GE SerializedDiagram> }
 */
 (function () {
   'use strict';

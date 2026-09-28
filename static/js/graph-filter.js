@@ -103,10 +103,19 @@
         var pinnedBack = back.filter(function (r) { return r.pinned; });
         var records = c.hide(toHide.map(function (d) { return d.id; }));
         records.forEach(function (r) { r.pinned = kit.isPinned ? toHide.some(function (d) { return d.iri === r.iri && kit.isPinned(d.id); }) : false; });
+        records.forEach(function (r) {
+          var d = toHide.find(function (x) { return x.iri === r.iri; });
+          r.color = d && kit.colorOf ? kit.colorOf(d.id) : null;
+        });
         shown = back.length ? c.show(back) : null;
         c.history.execute(setState({ rules: nextRules, hidden: stay.concat(records) }, title));
         if (shown && pinnedBack.length && kit.addPins) {
           kit.addPins(shown.ids.filter(function (nid, i) { return back[i] && back[i].pinned; }));
+        }
+        if (shown && kit.addColors) {
+          var colorsBack = {};
+          shown.ids.forEach(function (nid, i) { if (back[i] && back[i].color) colorsBack[nid] = back[i].color; });
+          kit.addColors(colorsBack);
         }
       });
       if (shown) shown.loaded.then(render);

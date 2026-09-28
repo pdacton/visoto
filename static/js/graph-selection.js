@@ -1,7 +1,8 @@
 /* eslint-disable */
 /*
   Selection, pinning and selection actions for a Graph Explorer embed
-  (GL-5–9, 12, 26, 51). Installed by graph-kit.js on kit.attach(); markup is the
+  (GL-5–9, 12, 26, 51, 55), plus the hover neighbourhood (GL-57) and panning
+  to a node picked in GE's side panels (GL-54). Installed by graph-kit.js on kit.attach(); markup is the
   Pan/Select toggle and the selection bar in templates/partials/graph-toolbar.html.
 
   GE 2.1 selects one cell per click, ignores modifier clicks and has no box
@@ -19,6 +20,8 @@
     attribute selectors survive that where classes on its nodes would not.
   - Pins are Visoto state, changed only through undoable commands; a drag
     records its pin inside GE's own drag batch, so undo takes both back.
+  - Node colours (GL-55) work like pins: Visoto state, one undoable command,
+    painted by the same <style> element, saved with the canvas.
 */
 (function () {
   'use strict';
@@ -30,9 +33,40 @@
   var CONFIRM_ADDITIONS = 20;  // GL-15
 
   var BADGE = 24;              // px, check and pin badges (paper coordinates)
-  // Lucide "check" and "pin", white / dark stroke, as data URIs.
+  // Lucide "check" and "pin" as data URIs; the pin is drawn in `stroke`.
   var CHECK_ICON = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E\")";
-  var PIN_ICON = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23182433' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E%3C/svg%3E\")";
+  function pinIcon(stroke) {
+    return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='" + encodeURIComponent(stroke) +
+      "' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E%3C/svg%3E\")";
+  }
+  // GL-58: pin and ring share one grey so the badge stays quiet; on hover
+  // both darken like a Tabler ghost-secondary button. Hex, because a data-URI
+  // stroke cannot read a CSS variable.
+  var PIN_GREY = '#9ba3af';
+  var PIN_GREY_HOVER = '#49566c';
+  var PIN_ICON = pinIcon(PIN_GREY);
+  var PIN_ICON_HOVER = pinIcon(PIN_GREY_HOVER);
+
+  // GL-57: hover neighbourhood on/off, one setting for every graph in this
+  // browser; off by default.
+  var HOVER_KEY = 'visoto-graph:hover-focus';
+  var hoverFocus = false;
+  try { hoverFocus = window.localStorage.getItem(HOVER_KEY) === '1'; } catch (e) { /* stays off */ }
+  function setHoverFocus(on) {
+    hoverFocus = on;
+    try { window.localStorage.setItem(HOVER_KEY, on ? '1' : '0'); } catch (e) { /* per-viewer convenience only */ }
+    document.querySelectorAll('[data-graph-action="hover-focus"]').forEach(function (btn) {
+      btn.classList.toggle('active', on);
+      btn.setAttribute('aria-pressed', String(on));
+    });
+  }
+
+  // GL-55: node colours, Tabler palette. A tint of the colour over the card
+  // surface, so the text colour of either theme stays readable on it.
+  var COLORS = ['red', 'orange', 'yellow', 'green', 'teal', 'blue', 'purple', 'pink'];
+  function tint(name) {
+    return 'color-mix(in srgb, var(--tblr-' + name + ') 22%, var(--tblr-bg-surface, #fff))';
+  }
 
   function quote(value) {
     return '"' + String(value).replace(/["\\]/g, '\\$&') + '"';
@@ -46,6 +80,7 @@
     var bar = document.getElementById(id + '-selectionbar');
     var toolbar = document.getElementById(id + '-toolbar');
     var pinned = {};
+    var colors = {}; // element id -> COLORS name (GL-55)
     var mode = 'pan';
 
     kit.isPinned = function (elementId) { return !!pinned[elementId]; };
@@ -67,6 +102,43 @@
     };
     kit.selectedIds = function () { return c.selectedIds(); };
 
+    kit.colorOf = function (elementId) { return colors[elementId] || null; };
+    kit.nodeColors = function () {
+      var out = {};
+      Object.keys(colors).forEach(function (eid) { if (c.exists(eid)) out[eid] = colors[eid]; });
+      return out;
+    };
+    kit.loadColors = function (map) {
+      colors = {};
+      Object.keys(map || {}).forEach(function (eid) {
+        if (COLORS.indexOf(map[eid]) >= 0) colors[eid] = map[eid];
+      });
+      decorate();
+    };
+    // Colours of nodes shown again after a hide (graph-filter.js), like addPins.
+    kit.addColors = function (map) {
+      Object.keys(map).forEach(function (eid) { if (map[eid]) colors[eid] = map[eid]; });
+      decorate();
+    };
+    // Exports clone the canvas DOM, where the scoped rules below do not reach:
+    // inline each coloured card's resolved background for the moment of the
+    // clone (ge-adapter.js exportSvg), and return what takes it back.
+    kit.dressForExport = function () {
+      var dressed = [];
+      Object.keys(colors).forEach(function (eid) {
+        var host = container.querySelector('[data-element-id=' + quote(eid) + ']');
+        if (!host) return;
+        host.querySelectorAll('.graph-explorer-standard-template__body, .graph-explorer-standard-template__dropdown').forEach(function (el) {
+          var bg = getComputedStyle(el).backgroundColor;
+          el.style.setProperty('background-color', bg, 'important');
+          dressed.push(el);
+        });
+      });
+      return function () {
+        dressed.forEach(function (el) { el.style.removeProperty('background-color'); });
+      };
+    };
+
     // --- Marking (GL-7, GL-26) ---------------------------------------------
     var style = document.createElement('style');
     style.setAttribute('data-graph-decor', id);
@@ -75,9 +147,16 @@
 
     function decorate() {
       var rules = [];
+      Object.keys(colors).forEach(function (eid) {
+        var host = scope + ' [data-element-id=' + quote(eid) + ']';
+        rules.push(host + ' .graph-explorer-standard-template__body,' + host + ' .graph-explorer-standard-template__dropdown{background-color:' +
+          tint(colors[eid]) + ' !important}');
+      });
       c.selectedIds().forEach(function (eid) {
         var host = scope + ' [data-element-id=' + quote(eid) + ']';
-        rules.push(host + ' .graph-explorer-standard-template{outline:2px solid var(--tblr-primary,#066fd1);outline-offset:3px}');
+        // GL-59: the frame follows the card's corners (outline traces
+        // border-radius, grown by the offset).
+        rules.push(host + ' .graph-explorer-standard-template{outline:2px solid var(--tblr-primary,#066fd1);outline-offset:3px;border-radius:var(--tblr-border-radius,6px)}');
         rules.push(host + ' .graph-explorer-standard-template::before{content:"";position:absolute;left:-' + (BADGE / 2 + 3) + 'px;top:-' + (BADGE / 2 + 3) +
           'px;width:' + BADGE + 'px;height:' + BADGE + 'px;border-radius:50%;background:var(--tblr-primary,#066fd1) ' + CHECK_ICON +
           ' center/15px no-repeat;z-index:2;pointer-events:none}');
@@ -85,10 +164,14 @@
       Object.keys(pinned).forEach(function (eid) {
         if (!pinned[eid]) return;
         var host = scope + ' [data-element-id=' + quote(eid) + ']';
+        // GL-58: turned 30° like a pin stuck into a pinboard.
         rules.push(host + '::before{content:"";position:absolute;right:-' + (BADGE / 2) + 'px;top:-' + (BADGE / 2) + 'px;width:' + BADGE +
           'px;height:' + BADGE + 'px;border-radius:50%;background:#fff ' + PIN_ICON +
-          ' center/15px no-repeat;border:1px solid var(--tblr-border-color,#dce1e7);z-index:3;cursor:pointer}');
+          ' center/15px no-repeat;border:1px solid ' + PIN_GREY + ';transform:rotate(30deg);z-index:3;cursor:pointer;' +
+          'transition:background-color .15s,border-color .15s}');
       });
+      rules.push(scope + ' [data-element-id][data-pin-hover]::before{background-color:var(--tblr-bg-surface-secondary,#f6f8fb);background-image:' +
+        PIN_ICON_HOVER + ';border-color:' + PIN_GREY_HOVER + '}');
       style.textContent = rules.join('\n');
     }
 
@@ -112,6 +195,28 @@
       var state = {};
       ids.forEach(function (eid) { state[eid] = value; });
       c.history.execute(setPins(state, title || (value ? vsT('js.graph.cmd.pin', 'Pin') : vsT('js.graph.cmd.unpin', 'Unpin'))));
+    }
+
+    // --- Node colours (GL-55): undoable, like pins -------------------------------
+    function setColors(state, title) {
+      return {
+        title: title,
+        invoke: function () {
+          var before = {};
+          Object.keys(state).forEach(function (eid) {
+            before[eid] = colors[eid] || null;
+            if (state[eid]) colors[eid] = state[eid]; else delete colors[eid];
+          });
+          decorate();
+          updateBar();
+          return setColors(before, title);
+        },
+      };
+    }
+    function color(ids, name) {
+      var state = {};
+      ids.forEach(function (eid) { state[eid] = name || null; });
+      c.history.execute(setColors(state, vsT('js.graph.cmd.color', 'Colour')));
     }
 
     // --- Selection helpers ---------------------------------------------------
@@ -289,6 +394,50 @@
       window.addEventListener('pointercancel', up);
     }
 
+    // GL-58: the pin badge is a pseudo-element, so :hover cannot single it
+    // out from its node; the pointer position does.
+    var pinHover = null;
+    function setPinHover(host) {
+      if (pinHover === host) return;
+      if (pinHover) pinHover.removeAttribute('data-pin-hover');
+      pinHover = host;
+      if (host) host.setAttribute('data-pin-hover', '');
+    }
+    container.addEventListener('pointermove', function (ev) {
+      var host = ev.target instanceof Element && ev.target.closest('[data-element-id]');
+      setPinHover(host && !ev.buttons && onPinBadge(host, ev) ? host : null);
+    });
+
+    // --- Hover neighbourhood (GL-57) -------------------------------------------
+    // Only while switched on in the toolbar. Mouse only; a press ends it, so it
+    // never shows during a drag. Moving onto the node's halo buttons keeps it.
+    var hoverId = null;
+    function hover(eid) {
+      if (!hoverFocus) eid = null;
+      if (eid === hoverId) return;
+      hoverId = eid;
+      c.hover(eid);
+    }
+    container.addEventListener('pointerover', function (ev) {
+      if (ev.pointerType !== 'mouse' || ev.buttons || !(ev.target instanceof Element)) return;
+      if (ev.target.closest('.graph-explorer-halo')) return;
+      var host = ev.target.closest('.graph-explorer-paper-area [data-element-id]');
+      hover(host ? host.getAttribute('data-element-id') : null);
+    });
+    container.addEventListener('pointerleave', function () { hover(null); setPinHover(null); });
+    container.addEventListener('pointerdown', function () { hover(null); }, true);
+
+    // --- Side panels (GL-54) ---------------------------------------------------
+    // A class in the class tree, or a resource in the Instances panel, that is
+    // on the canvas: pan it to the centre. GE's own handling (listing the
+    // class's instances, selecting the entry) runs as before.
+    container.addEventListener('click', function (ev) {
+      if (!(ev.target instanceof Element) || ev.target.closest('.graph-explorer-class-leaf__toggle')) return;
+      var iri = c.panelIri(ev.target);
+      var eid = iri && c.elementIdByIri(iri);
+      if (eid) c.centerOn(eid);
+    });
+
     // --- Selection bar (GL-12, GL-51) ----------------------------------------
     function updateBar() {
       if (!bar) return;
@@ -303,6 +452,13 @@
         btn.setAttribute('aria-label', label);
         btn.setAttribute('aria-pressed', String(allPinned));
         btn.classList.toggle('active', allPinned);
+      });
+      var shared = ids.length ? (colors[ids[0]] || '') : null;
+      ids.forEach(function (eid) { if ((colors[eid] || '') !== shared) shared = null; });
+      bar.querySelectorAll('[data-graph-color]').forEach(function (btn) {
+        var on = btn.getAttribute('data-graph-color') === shared;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-pressed', String(on));
       });
       bar.querySelectorAll('[data-graph-needs-two]').forEach(function (btn) {
         btn.disabled = ids.length < 2;
@@ -395,6 +551,8 @@
     if (bar) {
       bar.addEventListener('click', function (e) {
         var t = e.target instanceof Element ? e.target : null;
+        var swatch = t && t.closest('[data-graph-color]');
+        if (swatch) { e.preventDefault(); color(c.selectedIds(), swatch.getAttribute('data-graph-color')); return; }
         var alignItem = t && t.closest('[data-graph-align]');
         if (alignItem) { e.preventDefault(); align(alignItem.getAttribute('data-graph-align')); return; }
         var btn = t && t.closest('[data-graph-action]');
@@ -405,10 +563,21 @@
     }
     if (toolbar) {
       toolbar.addEventListener('click', function (e) {
-        var btn = e.target instanceof Element && e.target.closest('[data-graph-mode]');
+        var t = e.target instanceof Element ? e.target : null;
+        if (t && t.closest('[data-graph-action="hover-focus"]')) {
+          e.preventDefault();
+          setHoverFocus(!hoverFocus);
+          if (!hoverFocus) hover(null);
+          return;
+        }
+        var btn = t && t.closest('[data-graph-mode]');
         if (!btn) return;
         e.preventDefault();
         setMode(btn.getAttribute('data-graph-mode'));
+      });
+      toolbar.querySelectorAll('[data-graph-action="hover-focus"]').forEach(function (btn) {
+        btn.classList.toggle('active', hoverFocus);
+        btn.setAttribute('aria-pressed', String(hoverFocus));
       });
     }
 

@@ -99,6 +99,7 @@
 "js.graph.largeLayout" = "The diagram has {n} nodes; laying it out may take a while. Continue?"
 "js.graph.layoutFailed" = "The layout could not be computed."
 "js.graph.cmd.pin" = "Pin"
+"js.graph.cmd.color" = "Colour"
 "js.graph.cmd.unpin" = "Unpin"
 "js.graph.cmd.align" = "Align"
 "js.graph.cmd.expandAll" = "Expand all"

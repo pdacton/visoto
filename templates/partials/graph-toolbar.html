@@ -126,6 +126,12 @@
             aria-label="{{ t "graph.filter" "Classes and namespaces" }}" title="{{ t "graph.filter" "Classes and namespaces" }}">
       <i data-lucide="layers" class="icon"></i>
     </button>
+    <!-- GL-57: fade what is not linked to the hovered node. Off by default,
+         remembered per browser; graph-selection.js keeps aria-pressed in step. -->
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="hover-focus" aria-pressed="false"
+            aria-label="{{ t "graph.hoverFocus" "Highlight neighbours on hover" }}" title="{{ t "graph.hoverFocus" "Highlight neighbours on hover" }}">
+      <i data-lucide="focus" class="icon"></i>
+    </button>
 
     <div class="vr mx-1"></div>
 
@@ -222,7 +228,7 @@
 
 <!--
   Selection bar: floats bottom-centre over the canvas while one or more nodes
-  are selected (GL-12, GL-51). graph-selection.js shows/hides it, fills the
+  are selected (GL-12, GL-51, GL-55). graph-selection.js shows/hides it, fills the
   count, and dispatches on data-graph-action / data-graph-align.
 
   Usage (inside the graph stage):
@@ -250,6 +256,35 @@
             aria-label="{{ t "graph.pin" "Pin" }}" title="{{ t "graph.pin" "Pin" }}">
       <i data-lucide="pin" class="icon"></i>
     </button>
+    <div class="dropup">
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown"
+              aria-expanded="false" aria-label="{{ t "graph.color" "Node colour" }}" title="{{ t "graph.color" "Node colour" }}">
+        <i data-lucide="palette" class="icon"></i>
+      </button>
+      <div class="dropdown-menu p-2">
+        <div class="graph-color-grid" role="group" aria-label="{{ t "graph.color" "Node colour" }}">
+          <button type="button" class="graph-color-swatch" data-graph-color="red" style="--graph-swatch: var(--tblr-red)" aria-pressed="false"
+                  aria-label="{{ t "graph.color.red" "Red" }}" title="{{ t "graph.color.red" "Red" }}"></button>
+          <button type="button" class="graph-color-swatch" data-graph-color="orange" style="--graph-swatch: var(--tblr-orange)" aria-pressed="false"
+                  aria-label="{{ t "graph.color.orange" "Orange" }}" title="{{ t "graph.color.orange" "Orange" }}"></button>
+          <button type="button" class="graph-color-swatch" data-graph-color="yellow" style="--graph-swatch: var(--tblr-yellow)" aria-pressed="false"
+                  aria-label="{{ t "graph.color.yellow" "Yellow" }}" title="{{ t "graph.color.yellow" "Yellow" }}"></button>
+          <button type="button" class="graph-color-swatch" data-graph-color="green" style="--graph-swatch: var(--tblr-green)" aria-pressed="false"
+                  aria-label="{{ t "graph.color.green" "Green" }}" title="{{ t "graph.color.green" "Green" }}"></button>
+          <button type="button" class="graph-color-swatch" data-graph-color="teal" style="--graph-swatch: var(--tblr-teal)" aria-pressed="false"
+                  aria-label="{{ t "graph.color.teal" "Teal" }}" title="{{ t "graph.color.teal" "Teal" }}"></button>
+          <button type="button" class="graph-color-swatch" data-graph-color="blue" style="--graph-swatch: var(--tblr-blue)" aria-pressed="false"
+                  aria-label="{{ t "graph.color.blue" "Blue" }}" title="{{ t "graph.color.blue" "Blue" }}"></button>
+          <button type="button" class="graph-color-swatch" data-graph-color="purple" style="--graph-swatch: var(--tblr-purple)" aria-pressed="false"
+                  aria-label="{{ t "graph.color.purple" "Purple" }}" title="{{ t "graph.color.purple" "Purple" }}"></button>
+          <button type="button" class="graph-color-swatch" data-graph-color="pink" style="--graph-swatch: var(--tblr-pink)" aria-pressed="false"
+                  aria-label="{{ t "graph.color.pink" "Pink" }}" title="{{ t "graph.color.pink" "Pink" }}"></button>
+        </div>
+        <button type="button" class="dropdown-item mt-1" data-graph-color="" aria-pressed="false">
+          <i data-lucide="eraser" class="icon dropdown-item-icon"></i>{{ t "graph.colorDefault" "Default" }}
+        </button>
+      </div>
+    </div>
     <div class="dropup">
       <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-graph-needs-two
               aria-expanded="false" aria-label="{{ t "graph.align" "Align and distribute" }}" title="{{ t "graph.align" "Align and distribute" }}">

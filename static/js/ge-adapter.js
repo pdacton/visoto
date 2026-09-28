@@ -266,6 +266,7 @@
   // Everything the toolbar and graph-kit do to a mounted workspace.
   function commands(workspace) {
     var model = workspace.getModel();
+    var findHighlighter; // GL-32's, restored over GL-57's hover
 
     // GE 2.1 bug: ElementLayer.requestRedraw(element, RedrawFlags.None) — what
     // the model's changeCells event sends for an added or removed element —
@@ -523,9 +524,47 @@
       },
       // GL-32: blur every element for which `match(id)` is false; null clears.
       highlight: function (match) {
-        workspace.getDiagram().setHighlighter(match ? function (item) {
+        findHighlighter = match ? function (item) {
           return item instanceof GE().Element ? match(item.id) : false;
-        } : undefined);
+        } : undefined;
+        workspace.getDiagram().setHighlighter(findHighlighter);
+      },
+      // GL-57: blur everything but the element `id`, its neighbours and the
+      // links between them; null clears. Find on canvas (above) wins while on.
+      hover: function (id) {
+        if (findHighlighter) return;
+        var el = id && model.getElement(id);
+        if (!el) {
+          workspace.getDiagram().setHighlighter(undefined);
+          return;
+        }
+        var keep = {};
+        var links = {};
+        keep[el.id] = true;
+        el.links.forEach(function (link) {
+          links[link.id] = true;
+          var s = model.sourceOf(link), t = model.targetOf(link);
+          if (s) keep[s.id] = true;
+          if (t) keep[t.id] = true;
+        });
+        workspace.getDiagram().setHighlighter(function (item) {
+          return item instanceof GE().Element ? !!keep[item.id] : !!links[item.id];
+        });
+      },
+      // GL-54: pans (zoom unchanged) so the element sits in the centre.
+      centerOn: function (id) {
+        var el = model.getElement(id);
+        if (!el) return;
+        workspace.centerTo({ x: el.position.x + el.size.width / 2, y: el.position.y + el.size.height / 2 });
+      },
+      // The IRI behind an entry of GE's left panels: the class tree links each
+      // class (<a href=IRI>), an Instances entry titles itself "label <IRI>".
+      panelIri: function (target) {
+        var cls = target.closest('.graph-explorer-class-tree a.graph-explorer-class-leaf__body');
+        if (cls) return cls.getAttribute('href');
+        var inst = target.closest('.graph-explorer-instances-search .graph-explorer-list-element-view');
+        var m = inst && /<([^>\s]+)>/.exec(inst.getAttribute('title') || '');
+        return m ? m[1] : null;
       },
       // GL-49 / GL-52, inside the caller's batch. hide() removes elements and
       // returns what show() needs to bring them back; show() re-creates them
@@ -622,13 +661,22 @@
         return found ? found.id : null;
       },
       clearAll: function () { workspace.clearAll(); },
-      exportSvg: function (name) { workspace.exportSvg(name); },
-      exportPng: function (name) { workspace.exportPng(name); },
-      print: function () { workspace.print(); },
+      // GE clones the canvas DOM synchronously at the start of each export,
+      // before its first await; `dressed` runs around exactly that moment.
+      // Node colours (GL-55) live in a scoped stylesheet the clone cannot
+      // match, so the caller inlines them there and takes them back after.
+      exportSvg: function (name, dressed) { dress(dressed, function () { workspace.exportSvg(name); }); },
+      exportPng: function (name, dressed) { dress(dressed, function () { workspace.exportPng(name); }); },
+      print: function (dressed) { dress(dressed, function () { workspace.print(); }); },
       language: function () { return workspace.getDiagram().getLanguage(); },
       setLanguage: function (code) { workspace.changeLanguage(code); },
       elementCount: function () { return model.elements.length; },
     };
+  }
+
+  function dress(dressed, run) {
+    var undress = dressed ? dressed() : null;
+    try { run(); } finally { if (undress) undress(); }
   }
 
   // GE's paper pointer events, reduced to what graph-selection.js needs:

@@ -537,13 +537,14 @@
       var LINK_WIDE    = makeLinkTemplate({ 'stroke-width': 4 });
       // UML generalization: hollow triangle at the superclass end. Construct mode
       // only — there the diagram is a class model, and subClassOf is inheritance
-      // rather than one more "is-a" edge to de-emphasize.
-      var GENERALIZATION_LINE = '#9ba3af';
+      // rather than one more "is-a" edge to de-emphasize. Dotted like rdf:type
+      // (GL-56); the triangle keeps it apart.
+      var GENERALIZATION_LINE = LINK_LINE; // same grey as every other edge
       var LINK_GENERALIZATION = {
         markerTarget: { d: 'M0,0 L0,12 L14,6 z', width: 14, height: 12, fill: '#ffffff', stroke: GENERALIZATION_LINE },
         renderLink: function() {
           return {
-            connection: { stroke: GENERALIZATION_LINE, 'stroke-width': 1.5 },
+            connection: { stroke: GENERALIZATION_LINE, 'stroke-width': 4, 'stroke-dasharray': '4,4' },
             label: { attrs: LINK_LABEL_ATTRS },
           };
         },

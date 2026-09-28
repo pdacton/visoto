@@ -17,24 +17,14 @@
 }
 
 /* HALO (selection overlay with buttons) */
-/* Selection highlight: a translucent light-grey ring hugging the node box.
- * Constraints that shape this: we can't FILL the halo (it's painted on top of
- * the node in a separate widgets layer, so a fill greys the node out), and we
- * don't touch z-index (that risks hiding the action buttons). The halo box is
- * measured to sit exactly 5px outside the node card on every side, and the
- * card uses a 6px (--tblr-border-radius) corner. So we draw the ring with an
- * `outline` pulled inward 5px via a NEGATIVE outline-offset — its outer edge
- * lands flush on the card edge — and match the card's radius. outline follows
- * border-radius and never affects layout, the halo box, or the buttons. */
+/* No ring of its own: the selection frame and check badge come from
+ * graph-selection.js (GL-7, GL-59), and a second, translucent ring here drew a
+ * double frame. The halo stays transparent so it only carries the buttons. */
 .graph-explorer-halo {
   border: none !important;
   background-color: transparent !important;
   box-shadow: none !important;
-  /* Ring corners sit ~5px outside the card, so add to the card's 6px radius to
-   * trace (mirror) the node's rounded corner rather than cut inside it. */
-  border-radius: calc(var(--tblr-border-radius) + 8px) !important;
-  outline: 2px solid rgba(var(--tblr-primary-rgb), 0.5) !important;
-  outline-offset: -5px !important;
+  outline: none !important;
 }
 
 /* Miro-style white BAR behind the top button row. Drawn as a ::before pseudo
@@ -964,16 +954,6 @@
     background-color: var(--tblr-bg-surface-tertiary) !important;
   }
 
-  /* Selection halo - snug translucent ring around node, no fill (dark mode).
-   * Same outline technique as light mode; only the tint alpha differs. */
-  .graph-explorer-halo {
-    background-color: transparent !important;
-    box-shadow: none !important;
-    border-radius: calc(var(--tblr-border-radius) + 8px) !important;
-    outline: 2px solid rgba(var(--tblr-primary-rgb), 0.6) !important;
-    outline-offset: -5px !important;
-  }
-
   /* Tooltips and popovers */
   .graph-explorer-tooltip,
   .graph-explorer-popover {
@@ -1202,6 +1182,34 @@
 .graph-selectionbar .vr {
   align-self: stretch;
   margin-block: .35rem;
+}
+/* Node colour picker (GL-55): Tabler colour swatches, painted as the same
+   tint the node gets (graph-selection.js tint()), ringed by the full colour. */
+.graph-color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1.75rem);
+  gap: .375rem;
+}
+.graph-color-swatch {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: background-color .15s;
+  border: 2px solid var(--graph-swatch);
+  background-color: color-mix(in srgb, var(--graph-swatch) 22%, var(--tblr-bg-surface));
+}
+.graph-color-swatch:hover {
+  background-color: color-mix(in srgb, var(--graph-swatch) 40%, var(--tblr-bg-surface));
+  border-color: var(--graph-swatch);
+}
+.graph-color-swatch:focus-visible {
+  outline: 2px solid var(--tblr-primary);
+  outline-offset: 2px;
+}
+.graph-color-swatch.active {
+  box-shadow: 0 0 0 2px var(--tblr-bg-surface), 0 0 0 4px var(--graph-swatch);
 }
 /* Rubber band for box selection (GL-5), in stage coordinates. */
 .graph-selection-box {
