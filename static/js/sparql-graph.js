@@ -105,10 +105,6 @@
         kit.attach(workspace);
         enableElementResize(container, workspace.getModel());
 
-        if (constructedStore) {
-          mountConstructed(workspace, constructedStore);
-          return;
-        }
 
         // OWLStatsSettings with LINDAS-specific label properties and prefixes.
         var settings = {
@@ -197,6 +193,13 @@
         };
         // Endpoint errors surface as an inline message with Retry (GL-45).
         kit.guardProvider(dataProvider);
+
+        // Construct mode: the CONSTRUCT is the first picture, this provider the
+        // endpoint behind it (instances, further connections).
+        if (constructedStore) {
+          mountConstructed(workspace, constructedStore, dataProvider);
+          return;
+        }
 
         var model = workspace.getModel();
         // data-sparql-graph-hide-type-edges hides rdf:type / rdfs:subClassOf
@@ -405,16 +408,20 @@
       // Every constructed node is placed on a grid, nodes with attribute rows
       // are expanded (the rest would show GE's "no properties" placeholder),
       // then force layout once the links are in.
-      function mountConstructed(workspace, store) {
+      //
+      // The diagram is a facade over the live endpoint (makeHybridProvider):
+      // the store answers for its own nodes, the endpoint for everything else.
+      function mountConstructed(workspace, store, live) {
         var MEM = window.VisotoMemoryGraph;
         var model = workspace.getModel();
+        var provider = MEM.makeHybridProvider(store, live);
         kit.boot({
-          provider: function () { return MEM.makeProvider(store); },
+          provider: function () { return provider; },
           fingerprint: window.VisotoGraphStore.fingerprint(Object.keys(store.elements)),
           // Seeded after importLayout settles, as in browse mode (see seed()).
           fresh: function () {
             return Promise.resolve(model.importLayout({
-              dataProvider: MEM.makeProvider(store),
+              dataProvider: provider,
               preloadedElements: {},
               layoutData: undefined,
             })).then(function () { return seedConstructed(workspace, store); });

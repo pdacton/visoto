@@ -344,11 +344,149 @@
     };
   }
 
-  window.VisotoMemoryGraph = {
+  // ---------------------------------------------------------------------------
+  // The diagram as a facade over a live endpoint (construct mode of
+  // sparql-graph.js). The first picture is exactly the store; past it, GE
+  // behaves as if the triple store were behind it: a class click lists its
+  // instances, Connections lists the endpoint's links too, and whatever is
+  // pulled in renders like in browse mode. Plan: .project/todo/ontology-live-provider.md
+  //
+  // GE's own CompositeDataProvider does not fit: fetchAll injects a "data
+  // provider" row into every box, duplicates properties and sums connection
+  // counts; sequentialFetching asks the second source only when the first
+  // answered nothing, so Connections on a class node never reaches the endpoint.
+  //
+  // `live` is a SparqlDataProvider. A failed live call leaves the diagram's
+  // answer standing: a dead endpoint must not break the facade.
+  // ---------------------------------------------------------------------------
+  function makeHybridProvider(store, live) {
+    var base = makeProvider(store);
+
+    function isNode(id) { return !!store.elements[id]; }
+    // Placeholders and attribute aliases (urn:visoto:*) exist only here.
+    function forEndpoint(id) { return /^https?:\/\//i.test(id); }
+    function soft(promise) { return promise.catch(function () { return null; }); }
+    // A diagram node keeps the diagram's model whoever reported it, so its
+    // attribute rows and marker image never mix with endpoint data.
+    function withOwnModels(dict) {
+      var out = {};
+      Object.keys(dict || {}).forEach(function (id) { out[id] = store.elements[id] || dict[id]; });
+      return out;
+    }
+    function mergeDicts(a, b) { return Object.assign({}, withOwnModels(b), a); }
+
+    // Schema lookups: the diagram answers what it knows (its own labels), the
+    // endpoint the ids only it brought in.
+    function schemaLookup(method, key, known) {
+      return function (params) {
+        var ids = params[key];
+        var missing = ids.filter(function (id) { return !known(id) && forEndpoint(id); });
+        var own = base[method](params);
+        if (!missing.length) return own;
+        var q = {}; q[key] = missing;
+        return Promise.all([own, soft(live[method](q))]).then(function (r) {
+          if (!r[1]) return r[0];
+          if (Array.isArray(r[0])) {
+            var fromLive = {};
+            r[1].forEach(function (m) { fromLive[m.id] = m; });
+            return r[0].map(function (m) { return fromLive[m.id] || m; });
+          }
+          return Object.assign({}, r[0], r[1]);
+        });
+      };
+    }
+    function hasLabel(id) { return isNode(id) || !!store.labels[id]; }
+
+    return {
+      classTree: base.classTree,
+      linkTypes: base.linkTypes,
+      classInfo: schemaLookup('classInfo', 'classIds', hasLabel),
+      propertyInfo: schemaLookup('propertyInfo', 'propertyIds', hasLabel),
+      linkTypesInfo: schemaLookup('linkTypesInfo', 'linkTypeIds', hasLabel),
+
+      elementInfo: function (params) {
+        var rest = params.elementIds.filter(function (id) { return !isNode(id) && forEndpoint(id); });
+        var own = base.elementInfo(params);
+        if (!rest.length) return own;
+        return Promise.all([own, soft(live.elementInfo({ elementIds: rest }))]).then(function (r) {
+          return Object.assign({}, r[1] || {}, r[0]);
+        });
+      },
+
+      // Endpoint links only when one end is not a diagram node: two class
+      // boxes never gain an edge the CONSTRUCT did not draw. Nothing but
+      // diagram nodes on the canvas (the first picture) asks the endpoint nothing.
+      linksInfo: function (params) {
+        var own = base.linksInfo(params);
+        var ids = params.elementIds.filter(forEndpoint);
+        if (!ids.some(function (id) { return !isNode(id); })) return own;
+        return Promise.all([own, soft(live.linksInfo(Object.assign({}, params, { elementIds: ids })))]).then(function (r) {
+          var links = r[0].slice();
+          var seen = {};
+          links.forEach(function (l) { seen[l.sourceId + ' ' + l.linkTypeId + ' ' + l.targetId] = true; });
+          (r[1] || []).forEach(function (l) {
+            if (isNode(l.sourceId) && isNode(l.targetId)) return;
+            var key = l.sourceId + ' ' + l.linkTypeId + ' ' + l.targetId;
+            if (seen[key]) return;
+            seen[key] = true;
+            links.push(l);
+          });
+          return links;
+        });
+      },
+
+      // Merged by link type. An edge both sources know (a generalization is the
+      // endpoint's rdfs:subClassOf) must not count twice, so each direction
+      // takes the larger count rather than the sum.
+      linkTypesOf: function (params) {
+        var own = base.linkTypesOf(params);
+        if (!forEndpoint(params.elementId)) return own;
+        return Promise.all([own, soft(live.linkTypesOf(params))]).then(function (r) {
+          var byId = {};
+          r[0].concat(r[1] || []).forEach(function (c) {
+            var m = byId[c.id];
+            byId[c.id] = m ? { id: c.id, inCount: Math.max(m.inCount, c.inCount), outCount: Math.max(m.outCount, c.outCount) } : c;
+          });
+          return Object.keys(byId).map(function (k) { return byId[k]; });
+        });
+      },
+
+      linkElements: function (params) {
+        var own = base.linkElements(params);
+        if (!forEndpoint(params.elementId)) return own;
+        return Promise.all([own, soft(live.linkElements(params))]).then(function (r) {
+          return mergeDicts(r[0], r[1]);
+        });
+      },
+
+      // - a class picked in the tree: its instances, from the endpoint (the
+      //   diagram holds classes, not instances);
+      // - Connections "show elements": both sources;
+      // - text search over the diagram: the diagram.
+      filter: function (params) {
+        if (params.refElementId) {
+          var own = base.filter(params);
+          if (!forEndpoint(params.refElementId)) return own;
+          return Promise.all([own, soft(live.filter(params))]).then(function (r) {
+            return mergeDicts(r[0], r[1]);
+          });
+        }
+        if (params.elementTypeId && forEndpoint(params.elementTypeId)) {
+          return live.filter(params).then(withOwnModels);
+        }
+        return base.filter(params);
+      },
+    };
+  }
+
+  var api = {
     localName: localName,
     parseNTriples: parseNTriples,
     buildStore: buildStore,
     makeProvider: makeProvider,
+    makeHybridProvider: makeHybridProvider,
     isDeclaredClass: isDeclaredClass,
   };
+  if (typeof module === 'object' && module.exports) module.exports = api;
+  else window.VisotoMemoryGraph = api;
 })();

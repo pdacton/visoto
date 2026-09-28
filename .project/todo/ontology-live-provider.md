@@ -1,6 +1,6 @@
 # Ontology diagram: CONSTRUCT facade over a live endpoint
 
-Status: **plan**, no code written.
+Status: **implemented** (`makeHybridProvider`, tests in `tests/js/graph-memory-store.test.js`). Not yet checked on QLever.
 
 ## Intent
 
