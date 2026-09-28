@@ -451,10 +451,21 @@
       // (see static/js/visoto-icons.js) — one definition of "own name first, then
       // any exact type match, then any .fallback".
       var ICONS = window.VisotoIcons;
+      var OWL_CLASS = 'http://www.w3.org/2002/07/owl#Class';
 
       // typeStyleResolver: resolves the icon from rdf:type values (instances like Bern).
+      //
+      // The class tree calls it with [classIri] alone. In construct mode a class
+      // the diagram declares (owl:Class / rdfs:Class) but has no icon for falls
+      // back to Class.svg, as its box on the canvas does via its owl:Class type;
+      // only undeclared nodes keep the grey default.
       function typeStyleResolver(types) {
-        return { icon: ICONS.resolve('', types, AVAILABLE_ICONS) || '/static/img/resource/defaultClass.svg' };
+        var url = ICONS.resolve('', types, AVAILABLE_ICONS);
+        if (!url && constructedStore && types.length === 1 &&
+            window.VisotoMemoryGraph.isDeclaredClass(constructedStore, types[0])) {
+          url = ICONS.resolve('', [OWL_CLASS], AVAILABLE_ICONS);
+        }
+        return { icon: url || '/static/img/resource/defaultClass.svg' };
       }
 
       // No element template override: icons ride on data.image (see above), which

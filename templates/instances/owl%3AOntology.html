@@ -40,6 +40,12 @@
      QUDT's datatype schema alone has dozens. An owl:DatatypeProperty without a
      range is an rdfs:Literal attribute, as OWL implies.
 
+     The property branch repeats the membership subselect. A `{ … }` group is
+     evaluated on its own before the join, so an OPTIONAL at its head sees ?m
+     unbound and only ever yields properties that HAVE a domain: every
+     domain-less property vanished on QLever. (GraphDB feeds the outer ?m into
+     the group, which hid this on LINDAS.)
+
      rdf:type and rdfs:label are skipped when an ontology re-declares them (prov#
      does): the projection uses both as its own node-type and node-label predicates.
 
@@ -120,6 +126,18 @@ CONSTRUCT {
       FILTER (isIRI(?super) && ?super != owl:Thing)
       BIND (?m AS ?sub)
     } UNION {
+      {
+        SELECT DISTINCT ?m WHERE {
+          { ?m rdfs:isDefinedBy ?? . }
+          UNION
+          {
+            FILTER NOT EXISTS { ?anyMember rdfs:isDefinedBy ?? . }
+            VALUES ?memberType { owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
+            ?m a ?memberType .
+            FILTER (isIRI(?m) && ?m != ?? && STRSTARTS(STR(?m), STR(??)))
+          }
+        }
+      }
       FILTER (?m NOT IN (rdf:type, rdfs:label))
       FILTER EXISTS {
         { VALUES ?propertyType { rdf:Property owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty } ?m a ?propertyType . }

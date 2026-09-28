@@ -47,6 +47,13 @@
   var MARKER_PREFIX = 'urn:visoto:';
   var MARKER_FALLBACK_IMAGE = '/static/img/resource/defaultClass.svg';
 
+  // StandardTemplate titles a box with its foaf:name property value in preference
+  // to the model label, so an attribute row "foaf:name: rdf:langString" (the
+  // ontology diagram's foaf:Agent) would rename the box "rdf:langString". Such a
+  // row is keyed by an alias IRI instead; the alias carries foaf:name's label.
+  var FOAF_NAME = 'http://xmlns.com/foaf/0.1/name';
+  var FOAF_NAME_ALIAS = 'urn:visoto:attribute:' + FOAF_NAME;
+
   function localName(iri) {
     var decoded;
     try { decoded = decodeURIComponent(iri); } catch (e) { decoded = iri; }
@@ -123,8 +130,9 @@
       if (t.p === RDF_TYPE && t.o.type === 'iri') {
         if (el.types.indexOf(t.o.value) < 0) el.types.push(t.o.value);
       } else if (t.o.type === 'literal') {
-        if (!el.properties[t.p]) el.properties[t.p] = { type: 'string', values: [] };
-        var vals = el.properties[t.p].values;
+        var propKey = t.p === FOAF_NAME ? FOAF_NAME_ALIAS : t.p;
+        if (!el.properties[propKey]) el.properties[propKey] = { type: 'string', values: [] };
+        var vals = el.properties[propKey].values;
         if (!vals.some(function (v) { return v.value === t.o.value; })) {
           vals.push({ value: t.o.value, language: t.o.language });
         }
@@ -156,6 +164,8 @@
       }
     });
 
+    if (labels[FOAF_NAME]) labels[FOAF_NAME_ALIAS] = labels[FOAF_NAME];
+
     return { elements: elements, links: links, labels: labels };
   }
 
@@ -163,6 +173,12 @@
   // DataProvider over a store (implements the interface the CDN bundle expects,
   // so search / class tree / connections menus work locally).
   // ---------------------------------------------------------------------------
+  // A node the CONSTRUCT itself types owl:Class / rdfs:Class.
+  function isDeclaredClass(store, iri) {
+    var el = store.elements[iri];
+    return !!el && (el.types.indexOf(OWL_CLASS) >= 0 || el.types.indexOf(RDFS_CLASS) >= 0);
+  }
+
   function makeProvider(store) {
     function label(iri) {
       var vals = store.labels[iri];
@@ -190,8 +206,7 @@
     }
     function classNodeIds() {
       return Object.keys(store.elements).filter(function (id) {
-        var types = store.elements[id].types;
-        return types.indexOf(OWL_CLASS) >= 0 || types.indexOf(RDFS_CLASS) >= 0;
+        return isDeclaredClass(store, id);
       });
     }
     function sortByLabel(nodes) {
@@ -334,5 +349,6 @@
     parseNTriples: parseNTriples,
     buildStore: buildStore,
     makeProvider: makeProvider,
+    isDeclaredClass: isDeclaredClass,
   };
 })();
