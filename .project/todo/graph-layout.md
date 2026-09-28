@@ -231,6 +231,28 @@ that no longer resolve are shown as bare IRIs, not dropped.
   `schema:` or `owl:`). Builds on the existing shading of external classes; works
   like GL-49 (non-destructive, saved with the canvas).
 
+### Visual polish
+
+- **GL-56** **Dotted `rdfs:subClassOf`:** subClassOf edges use the same dotted line
+  as `rdf:type` in every embed. Browse mode already shares `LINK_DASHED`; the
+  ontology diagram (construct mode) draws a solid `LINK_GENERALIZATION` line — it
+  becomes dotted too and keeps its hollow UML triangle
+  (`linkTemplateResolver` in `static/js/sparql-graph.js`).
+- **GL-57** **Hover neighbourhood:** hovering a node dims every node (and link)
+  not directly attached to it; leaving the node restores the canvas. Reuse GE's
+  own highlighting if it has one (check `canvas.renderingState` / element
+  highlighter API in 2.1.0) before writing a custom one. Pointer only — no effect
+  on touch or during a drag. Revives the dimming of the retired GL-31 (a toolbar toggle
+  that dimmed all but the selected node's neighbours) as a transient hover effect:
+  changes nothing and adds no undo step. Not related to GL-54 (pan to a node).
+- **GL-58** **Pin badge:** the pin badge top-right of a pinned node uses the same
+  grey as its enclosing circle so it no longer stands out, gets the standard
+  Tabler button hover effect, and is rotated 30° so it reads as a pin stuck into a
+  pinboard (`BADGE` / pin data URI in `static/js/graph-selection.js`).
+- **GL-59** **Rounded selection frame:** the blue selection frame of a selected
+  node has the same corner radius as the node card, so the frame follows the
+  card's shape.
+
 ### Across the board
 
 - **GL-24** Everything works identically on the resource graph and the ontology
@@ -281,6 +303,8 @@ leave it out by hiding `rdf:type` (GL-21).
 4. GL-20–23, 47–48 — layout options panel, Add resource, Details toggle.
 5. GL-10, 49, 52, 32 — class-tree menu and hide, namespace filter, find on canvas.
 6. GL-38–41, 53 — Turtle export, list view, touch and a11y polish, help page.
+7. GL-56–59 — visual polish: dotted subClassOf, hover neighbourhood, pin badge,
+   rounded selection frame.
 
 ## 6. Implementation notes (from the brainstorming, non-binding)
 
