@@ -242,7 +242,7 @@
 "js.graph.toggleSidePanel" = "Mussar u zuppentar il panel lateral"
 
 # Monitoring page: daily class-instance counts (class-stats-monitor.js, monitoring.html)
-"js.monitoring.classStatsNoRun" = "Anc nagina execuziun. L’emprima cumenza cun il server, lura mintga di a las 03:00."
+"js.monitoring.classStatsNoRun" = "Anc nagina execuziun. L’emprima cumenza cun il server, lura mintga di a las 07:00."
 "js.monitoring.classStatsEngineStats" = "statistica GraphDB (approximativa)"
 "js.monitoring.classStatsEngineCount" = "dumbraziuns directas"
 "js.monitoring.classStatsSummary" = "Stadi dals {day}: {classes} classas, {triples} triplets, dumbrads cun {engine} en {seconds} s."

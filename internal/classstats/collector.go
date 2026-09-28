@@ -24,6 +24,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	_ "time/tzdata" // Europe/Zurich for runZone, whatever the container ships
 
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
@@ -39,7 +40,7 @@ const (
 )
 
 const (
-	runHour       = 3 // daily run at 03:00 local time
+	runHour       = 7 // daily run at 07:00 Swiss time, after LINDAS's nightly reloads
 	staleAfter    = 24 * time.Hour
 	listTimeout   = 60 * time.Second
 	statsTimeout  = 20 * time.Second
@@ -47,6 +48,15 @@ const (
 	classTimeout  = 60 * time.Second
 	defaultBudget = 30 * time.Minute
 )
+
+// runZone is the schedule's clock. Explicit, because the container's local time
+// is UTC; the embedded tzdata (import below) makes it independent of the image.
+var runZone = func() *time.Location {
+	if loc, err := time.LoadLocation("Europe/Zurich"); err == nil {
+		return loc
+	}
+	return time.Local
+}()
 
 // Snapshot is one endpoint's latest completed run.
 type Snapshot struct {
@@ -117,7 +127,7 @@ func (c *Collector) Enabled() bool {
 }
 
 // Start launches the scheduler: a catch-up run for every endpoint whose last
-// run is older than a day, then one run per day at 03:00 local time.
+// run is older than a day, then one run per day at 07:00 Swiss time.
 func (c *Collector) Start() {
 	if !c.Enabled() {
 		return
@@ -133,8 +143,8 @@ func (c *Collector) Stop() {
 func (c *Collector) schedule() {
 	c.runAll(true)
 	for {
-		now := c.now()
-		next := time.Date(now.Year(), now.Month(), now.Day(), runHour, 0, 0, 0, now.Location())
+		now := c.now().In(runZone)
+		next := time.Date(now.Year(), now.Month(), now.Day(), runHour, 0, 0, 0, runZone)
 		if !next.After(now) {
 			next = next.AddDate(0, 0, 1)
 		}

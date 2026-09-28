@@ -1597,7 +1597,7 @@
 "js.graph.toggleSidePanel" = "Afficher ou masquer le panneau latéral"
 
 # Monitoring page: daily class-instance counts (class-stats-monitor.js, monitoring.html)
-"js.monitoring.classStatsNoRun" = "Aucune exécution pour l’instant. La première démarre avec le serveur, puis chaque jour à 03:00."
+"js.monitoring.classStatsNoRun" = "Aucune exécution pour l’instant. La première démarre avec le serveur, puis chaque jour à 07:00."
 "js.monitoring.classStatsEngineStats" = "statistiques GraphDB (approximatives)"
 "js.monitoring.classStatsEngineCount" = "comptages en direct"
 "js.monitoring.classStatsSummary" = "Instantané du {day} : {classes} classes, {triples} triplets, comptés avec {engine} en {seconds} s."

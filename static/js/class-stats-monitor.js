@@ -47,7 +47,7 @@
     function showSummary(st, ch) {
       summary.replaceChildren();
       if (!st || !st.day) {
-        summary.textContent = vsT('js.monitoring.classStatsNoRun', 'No run yet. The first one starts when the server starts, then every day at 03:00.');
+        summary.textContent = vsT('js.monitoring.classStatsNoRun', 'No run yet. The first one starts when the server starts, then every day at 07:00.');
         return;
       }
       var engine = st.engine === 'graphdb'

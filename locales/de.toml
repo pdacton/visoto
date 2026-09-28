@@ -1598,7 +1598,7 @@
 "js.graph.toggleSidePanel" = "Seitenpanel ein- oder ausblenden"
 
 # Monitoring page: daily class-instance counts (class-stats-monitor.js, monitoring.html)
-"js.monitoring.classStatsNoRun" = "Noch kein Lauf. Der erste startet mit dem Server, danach täglich um 03:00."
+"js.monitoring.classStatsNoRun" = "Noch kein Lauf. Der erste startet mit dem Server, danach täglich um 07:00."
 "js.monitoring.classStatsEngineStats" = "GraphDB-Statistik (ungefähr)"
 "js.monitoring.classStatsEngineCount" = "Live-Zählung"
 "js.monitoring.classStatsSummary" = "Stand vom {day}: {classes} Klassen, {triples} Tripel, gezählt mit {engine} in {seconds} s."
