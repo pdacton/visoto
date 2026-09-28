@@ -66,6 +66,12 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
 - **GL-8** Click on empty canvas or **Esc** clears the selection; **Ctrl+A** selects
   all.
 - **GL-9** Dragging any selected node moves the whole selection.
+- **GL-55** **Node colour:** while nodes are selected, the selection bar (bottom
+  toolbar) offers a background-colour picker for their boxes — a small palette of
+  Tabler colours plus "Default". Applies to every selected node as one undo step;
+  text stays readable on every palette colour (contrast checked). Saved with the
+  canvas and in the `.visoto-graph.json` file, kept in SVG/PNG exports. A colour
+  is the user's own marking and carries no meaning of its own (GL-7).
 
 ### Class tree (left sidebar)
 
@@ -76,6 +82,15 @@ select more than one node, keep a hand-made arrangement, or save the canvas.
   - Remove all — remove that class's nodes from the diagram.
   - *"Add all" dropped:* GE's Instances panel already lists a class's instances
     for adding.
+- **GL-54** Clicking an entry in the side panels pans the canvas so its node sits
+  in the centre (zoom unchanged):
+  - a **class** in the class tree — when the class itself is a node on the
+    diagram (ontology diagram, schema view);
+  - a **resource** in the Instances panel — when it is already on the canvas.
+
+  If the entry is not on the canvas, the view stays where it is. GE's own
+  reaction to the click (listing a class's instances, dragging an instance onto
+  the canvas) is unchanged.
 - **GL-49** An eye toggle per class in the class tree **hides / shows** that class's
   nodes on the canvas without removing them. Hidden nodes are left out of layouts
   and exports; the tree shows which classes are hidden. Saved with the canvas.
