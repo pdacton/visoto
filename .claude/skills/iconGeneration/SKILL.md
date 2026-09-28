@@ -40,6 +40,7 @@ Before picking a color, check `static/img/resource/` for semantically related ex
 | Transport, tariffs, zones, stations | `#FFC000` |
 | Rail transport, locations, pricing | `#4EA72E` |
 | Versioning / lifecycle | `#79B1D9` |
+| Provenance qualifications (PROV-O attribution) | `#800020` |
 
 An explicit color outside this table may always be passed when the user asks for one or no domain fits.
 
