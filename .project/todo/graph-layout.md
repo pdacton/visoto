@@ -216,6 +216,55 @@ that no longer resolve are shown as bare IRIs, not dropped.
   `schema:` or `owl:`). Builds on the existing shading of external classes; works
   like GL-49 (non-destructive, saved with the canvas).
 
+### Ontology files (not in the triple store)
+
+Design and rationale: §8. Terms: a **source** is a URL (GitHub or any HTTP(S)
+host) or a local file; **preview** shows it without writing anywhere; **load**
+writes it into a triple store as a named graph.
+
+- **GL-54** **Open an ontology file** from a URL or a local file (drag & drop).
+  Formats: Turtle, N-Triples, RDF/XML (`.rdf`/`.owl`/`.xml`), JSON-LD — as
+  `/api/upload` already recognises them (`mimeForExtension`). GitHub `blob/` URLs are rewritten to their raw form; a
+  URL may pin a branch, tag or commit.
+- **GL-55** **Preview is the default:** the file is shown immediately without
+  being written to any store. It gets its own page — the owl:Ontology page layout
+  (UML diagram, term tables) rendered from the file — at a URL that identifies
+  the source (`/ontology-file?src=<url>`), so it is shareable, bookmarkable and a
+  pure, cacheable function of the URL. A local file is addressed by content hash
+  (`?sha256=…`) and lives only as long as the server's cache.
+- **GL-56** Everything reachable from the preview stays inside the preview: a
+  node or term link opens that term's page **scoped to the file**, not the
+  endpoint (where it may not exist). A banner states the source, its version
+  (GL-60) and "Not in a triple store — preview".
+- **GL-57** For each term, the preview says whether the IRI **also exists in the
+  current endpoint**, with a link to the endpoint's page; the diagram marks such
+  terms (e.g. a small badge), so the user sees what the file adds or overrides.
+- **GL-58** **Load into triple store** is an explicit action on the preview page,
+  never automatic. It reuses `/api/upload` (URL mode) and needs a writable
+  endpoint with credentials; it is hidden when no such endpoint is configured.
+  After loading, the banner links to the loaded ontology's normal page.
+- **GL-59** **Target graph** for a load is derived, not typed: the ontology's
+  `owl:versionIRI` if present, else `urn:ontology:<ontology-IRI>@<version>` (GL-60).
+  Reloading the same version replaces that graph; a different version goes into
+  its own graph. The user can override the name before loading.
+- **GL-60** **Version identity** of a source, in this order: `owl:versionIRI`,
+  `owl:versionInfo`, the pinned Git ref / commit, else the content hash (short).
+  Shown on the banner, stored with loads, part of the preview cache key.
+- **GL-61** **Multiple versions:** where the endpoint holds more than one graph
+  whose `owl:Ontology` has the same IRI (or where the preview's ontology IRI
+  already exists in the endpoint), the owl:Ontology page shows a **version
+  selector**, and the diagram and term tables are scoped to the selected
+  version's graph — never a silent union of two versions.
+- **GL-62** A **term page** for an IRI defined in several graphs shows a
+  "Defined in" list (graph, ontology, version) and marks values that differ
+  between them (label, comment, domain, range, superclass).
+- **GL-63** `owl:imports` are listed on the preview page. Imported terms appear on
+  the diagram as external (existing shading), not fetched; an **Open import**
+  link previews the imported ontology on its own (GL-55).
+- **GL-64** Limits and safety: size cap (configurable, e.g. 20 MB), fetch timeout,
+  the existing SSRF guard (`allow_private_upload_urls`); parse errors are shown
+  with line/column instead of an empty page.
+
 ### Across the board
 
 - **GL-24** Everything works identically on the resource graph and the ontology
@@ -266,6 +315,8 @@ leave it out by hiding `rdf:type` (GL-21).
 4. GL-20–23, 47–48 — layout options panel, Add resource, Details toggle.
 5. GL-10, 49, 52, 32 — class-tree menu and hide, namespace filter, find on canvas.
 6. GL-38–41, 53 — Turtle export, list view, touch and a11y polish, help page.
+7. GL-54–64 — ontology files: preview store + entry route, then load, then
+   version-aware pages (§8).
 
 ## 6. Implementation notes (from the brainstorming, non-binding)
 
@@ -336,3 +387,71 @@ rewrite of `sparql-graph.js`, `schema-graph.js`, `graph-memory-store.js` and the
 CSS overrides. It saves mainly the selection block. Worth a time-boxed spike
 against LINDAS via `/api/sparql`; it does not block the layout work. Forking GE is
 the last resort.
+
+## 8. Ontology files — design discussion
+
+### 8.1 Where is the ontology shown if it is not in the store?
+
+Every Visoto page is built from SPARQL against an endpoint, so a file-only
+ontology has no page by default, and every link out of its diagram would land on
+an empty `/resource` page. Options:
+
+| Option | What renders | Cost |
+|---|---|---|
+| a. Browser-only: parse in JS (N3.js), project to the UML diagram in JS | the diagram only; term links dead | duplicates the `$ontologyDiagram` CONSTRUCT in JS |
+| b. Browser SPARQL store (Oxigraph WASM) | the diagram, same CONSTRUCT unchanged | several MB of WASM; still only the diagram |
+| **c. Server-side preview store** exposed as a **virtual endpoint** per source | **all templates** (owl:Ontology, owl:Class, schema view, tables) unchanged, scoped to the file | an in-process or sidecar SPARQL store; new service in `docker-compose.yml`, `Dockerfile`, `deploy.sh` |
+
+**Recommendation: c.** It keeps "every page is SPARQL" intact: the preview is just
+another endpoint whose slug identifies the source (`file:<hash>`), so GL-56's
+"links stay inside the preview" falls out of the existing `endpoint=<slug>`
+mechanism. Candidate stores: the existing Docker-private QLever (if it accepts
+fast ad-hoc loads/updates — to verify) or a small Oxigraph sidecar (in-memory,
+SPARQL 1.1 + `LOAD`). Evict previews by LRU / TTL.
+
+The preview page (`/ontology-file`) is a thin entry route: fetch → hash → load
+into the preview store if not cached → redirect to the owl:Ontology resource page
+with `endpoint=file:<hash>`. That keeps `/resource` a pure function of its URL.
+
+GL-57 ("also in the endpoint") needs one extra query per page against the user's
+current endpoint, e.g. a `VALUES`-batched `ASK`/`SELECT` over the term IRIs.
+
+### 8.2 Load into the store always, or as an option?
+
+**Option, default preview.** Reasons:
+- LINDAS prod and most configured endpoints are read-only; writes need a token.
+- Loading is persistent and shared: it changes what every other user sees and
+  can introduce a second version of an ontology next to the official one (8.3).
+- Most "look at this ontology" use cases are exploratory; a preview is instant
+  and leaves nothing behind.
+- The upload pipeline already exists (`/api/upload`, `[[ontologies]]`,
+  named-graph listing / delete), so "load" is a button on the preview, not new
+  infrastructure.
+
+### 8.3 Versioning
+
+- **Identity** = ontology IRI + version (GL-60). A Git commit SHA is the most
+  reliable version for GitHub sources; `owl:versionInfo` strings are free text and
+  not necessarily unique.
+- **Isolation**: one version per named graph (GL-59). Never merge two versions
+  into one graph — the same `rdfs:label`, `rdfs:domain`, `rdfs:range` would then
+  carry values from both, and the diagram could not tell them apart.
+- **Queries must become graph-aware** where more than one version exists (GL-61):
+  the owl:Ontology CONSTRUCT and term tables get an optional `GRAPH ?g` scope
+  chosen by the version selector. On an endpoint whose default graph is the
+  union of its named graphs (to check per endpoint, LINDAS included), unscoped
+  queries would otherwise show conflated terms.
+- **Conflicts on term pages** (GL-62): same IRI, different definitions →
+  "Defined in" list with the differing values marked.
+- **Deferred:** a **version diff** view (terms added / removed / changed between
+  two versions), and following `owl:priorVersion` chains. Both fit naturally on
+  top of GL-61 but are not needed for a first release.
+
+### 8.4 Open questions
+
+1. Preview store: reuse the private QLever or add an Oxigraph sidecar? Needs a
+   quick load-time test with T2 (RiC, 593 terms) as a `.ttl`.
+2. Should previews be available to anonymous users (server cost, abuse) or only
+   when a config flag enables them?
+3. Private GitHub repositories (token per user) — out of scope for the first
+   release?
