@@ -231,7 +231,8 @@ writes it into a triple store as a named graph.
   (UML diagram, term tables) rendered from the file — at a URL that identifies
   the source (`/ontology-file?src=<url>`), so it is shareable, bookmarkable and a
   pure, cacheable function of the URL. A local file is addressed by content hash
-  (`?sha256=…`) and lives only as long as the server's cache.
+  (`?sha256=…`) and lives only as long as the server's cache. Private sources:
+  GL-65–66.
 - **GL-56** Everything reachable from the preview stays inside the preview: a
   node or term link opens that term's page **scoped to the file**, not the
   endpoint (where it may not exist). A banner states the source, its version
@@ -261,6 +262,22 @@ writes it into a triple store as a named graph.
 - **GL-63** `owl:imports` are listed on the preview page. Imported terms appear on
   the diagram as external (existing shading), not fetched; an **Open import**
   link previews the imported ontology on its own (GL-55).
+- **GL-65** **Private GitHub repositories** are a supported source (primary use
+  case). Access is **per user**: the user signs in with GitHub (GitHub App user
+  token, read-only `Contents`), and Visoto fetches with that token. A user only
+  ever sees files their own GitHub account can read. No shared server token
+  unlocks private content for everyone.
+- **GL-66** **Private previews are private:** their pages and `/api/*` responses
+  carry `Cache-Control: private, no-store` and must never enter the shared Caddy
+  (Souin) cache; the preview store keeps them per user. A private preview URL is
+  shareable only in the sense that another user with repo access opens the same
+  source through their own token — nobody else can.
+- **GL-67** **Pick from GitHub:** after sign-in, the user can choose repository →
+  branch/tag → file (`.ttl`, `.owl`, …) instead of pasting a URL; the chosen ref
+  is resolved to a commit SHA, which becomes the version (GL-60).
+- **GL-68** **Loading a private ontology** into a store (GL-58) warns that the
+  target endpoint's readers will then see it; loading into a public endpoint
+  (e.g. LINDAS) requires an explicit confirmation.
 - **GL-64** Limits and safety: size cap (configurable, e.g. 20 MB), fetch timeout,
   the existing SSRF guard (`allow_private_upload_urls`); parse errors are shown
   with line/column instead of an empty page.
@@ -453,5 +470,35 @@ current endpoint, e.g. a `VALUES`-batched `ASK`/`SELECT` over the term IRIs.
    quick load-time test with T2 (RiC, 593 terms) as a `.ttl`.
 2. Should previews be available to anonymous users (server cost, abuse) or only
    when a config flag enables them?
-3. Private GitHub repositories (token per user) — out of scope for the first
-   release?
+3. ~~Private GitHub repositories — in scope?~~ **Yes** (primary use case) →
+   GL-65–68, §8.5.
+4. GitHub App vs. OAuth App for sign-in (8.5); who registers and owns it.
+
+### 8.5 Private GitHub access
+
+**Prerequisite discovered:** Visoto has **no user authentication** today (the
+Caddyfile notes that even `/goaccess` is public), and `/resource` + `/api/*` go
+through a **shared Souin cache**. A single server-side GitHub token would
+therefore publish every private ontology to anyone who can reach the server, and
+the shared cache would keep serving it. That rules out the simplest design.
+
+| Option | How | Verdict |
+|---|---|---|
+| a. Server token in `visoto.config` (`${GITHUB_TOKEN}`), allow-listed repos | one fine-grained PAT, read-only | only acceptable if the whole Visoto instance is itself private (source-IP restriction or SSO in front, as sketched for `/goaccess`); otherwise leaks |
+| **b. Per-user sign-in with GitHub** (GitHub App, user-to-server token) | user authorises Visoto once; token kept server-side in the user's session, never in the browser | **recommended**: GitHub enforces repo permissions per user; no shared secret; works on a public instance |
+| c. User pastes a PAT into Visoto | token stored in the browser, sent per request | workable fallback for single-user/dev setups; poor UX and easy to mishandle |
+
+Consequences of (b), all new to Visoto:
+- A minimal **session** (signed cookie, server-side token store in the existing
+  SQLite under `./data/`), sign-in / sign-out routes, CSRF protection on them.
+- Requests for private previews **read the session**, so they are not pure
+  functions of the URL. This is an explicit, scoped exception to the "cacheable
+  routes are pure" rule: such responses are `private, no-store`, and the preview
+  endpoint slug marks them so Caddy/Souin can bypass the cache by matcher, not
+  only by header (verify Souin honours `no-store`; if not, the matcher is
+  mandatory).
+- The preview store must be **partitioned per user** for private sources (key =
+  user + source + commit), and evicted on sign-out.
+- A GitHub App (vs. OAuth App) gives fine-grained, repo-scoped, read-only
+  permissions and short-lived tokens — preferred.
+- Public sources keep working without sign-in and stay cacheable.
