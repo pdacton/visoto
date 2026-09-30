@@ -6,7 +6,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/gin-contrib/multitemplate v1.1.2
 	github.com/gin-gonic/gin v1.12.0
-	github.com/mark3labs/mcp-go v0.58.0
+	github.com/mark3labs/mcp-go v1.1.1
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/prometheus/client_golang v1.24.1
 	golang.org/x/net v0.58.0
