@@ -42,14 +42,17 @@
        ?media is STR(?url): a literal http(s) URL renders as a direct external
        link (renderBinding in static/js/sparql-table.js), where the IRI would link
        to a Visoto resource page for the video file. The row icon tells records
-       and record sets apart. -->
+       and record sets apart. ?mediaType is the same "video" / "document" split
+       as the Media column of classes/rico%3ARecord.html (newsreel clips and
+       debate videos vs scans, minutes and PDFs); plain text, not translated. -->
   <div class="mb-3">
     <sparql-async id="instantiations">
-      SELECT ?item ?period ?media WHERE {
+      SELECT ?item ?period ?media ?mediaType WHERE {
         ?item rico:hasInstantiation ?copy .
         ?copy a rico:Instantiation ;
               schema:url ?url .
         BIND (STR(?url) AS ?media)
+        BIND (IF(CONTAINS(?media, ".mp4") || CONTAINS(?media, "simplex.tv"), "video", "document") AS ?mediaType)
         OPTIONAL { ?item rico:isAssociatedWithDate/rico:expressedDate ?period . }
       }
     </sparql-async>
@@ -57,6 +60,7 @@
       <sparql-column var="item" label="{{ t "facet.title" "Title" }}" icon></sparql-column>
       <sparql-column var="period" label="{{ t "facet.period" "Period" }}"></sparql-column>
       <sparql-column var="media" label="{{ t "facet.media" "Media" }}"></sparql-column>
+      <sparql-column var="mediaType" label="{{ t "facet.mediaType" "Media type" }}"></sparql-column>
     </sparql-columns>
     {{ template "sparqlAsyncTable" (dict
         "queryId" "instantiations"

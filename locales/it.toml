@@ -1364,6 +1364,7 @@
 "facet.hasInstances" = "Ha istanze"
 "facet.level" = "Livello"
 "facet.media" = "Media"
+"facet.mediaType" = "Tipo di media"
 "facet.namespace" = "Spazio dei nomi"
 "facet.period" = "Periodo"
 "facet.referenceCode" = "Segnatura"

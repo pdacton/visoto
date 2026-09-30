@@ -1365,6 +1365,7 @@
 "facet.hasInstances" = "Hat Instanzen"
 "facet.level" = "Stufe"
 "facet.media" = "Medien"
+"facet.mediaType" = "Medientyp"
 "facet.namespace" = "Namensraum"
 "facet.period" = "Zeitraum"
 "facet.referenceCode" = "Signatur"
