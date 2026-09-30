@@ -1,0 +1,58 @@
+<!-- Component: ricoSeeAlso
+     RiC-O specific, not a generic component: the cross-references ("siehe
+     auch") between Federal Archives record sets and records. Renders nothing
+     when there are none.
+     Usage: {{ template "ricoSeeAlso" . }}
+
+     On LINDAS each cross-reference is a BLANK-NODE
+     rico:RecordResourceToRecordResourceRelation (8,597) with a
+     relationHasSource and a relationHasTarget. The node itself has nothing
+     worth a page — a name and empty dates — so this skips it and links the
+     two records directly. Mostly record set to record set (7,554), then record
+     to record (800) and record to record set (243); at most 892 from one source.
+
+     The relations are stored ONE WAY ONLY (none has a reverse twin), so both
+     directions are queried: the records this one points to, and the records
+     that point to it.
+
+     rico:name carries BOTH readings as '"forward"/"inverse"' — e.g.
+     '"Frühere Unterlagen in"/"Fortsetzung in"', '"siehe auch (gültig)"/…' —
+     quotes included (the same data quirk as the activities). The source's
+     side takes the first half, the target's side the second. Some names also
+     carry mojibake from the source ("Fr�here"); that is in the data.
+
+     Synchronous: two indexed lookups from ??, 0.2s. -->
+
+<sparql-query id="ricoSeeAlso">
+  SELECT ?record ?relation ?period WHERE {
+    {
+      ?rel rico:relationHasSource ?? ;
+           rico:relationHasTarget ?record .
+      OPTIONAL { ?rel rico:name ?name . }
+      BIND (REPLACE(STR(?name), "^\\s*\"\\s*([^\"]*)\".*$", "$1") AS ?relation)
+    } UNION {
+      ?rel rico:relationHasTarget ?? ;
+           rico:relationHasSource ?record .
+      OPTIONAL { ?rel rico:name ?name . }
+      BIND (REPLACE(STR(?name), "^.*/\\s*\"\\s*([^\"]*)\"\\s*$", "$1") AS ?relation)
+    }
+    OPTIONAL { ?record rico:isAssociatedWithDate/rico:expressedDate ?period . }
+  }
+</sparql-query>
+
+{{ define "ricoSeeAlso" }}
+{{ if .QueryResults.ricoSeeAlso.Bindings }}
+  <div class="mb-3">
+    <sparql-columns for="ricoSeeAlso">
+      <sparql-column var="record" label="{{ t "facet.title" "Title" }}" icon></sparql-column>
+      <sparql-column var="relation" label="{{ t "facet.relation" "Relation" }}"></sparql-column>
+      <sparql-column var="period" label="{{ t "facet.period" "Period" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.ricoSeeAlso
+        "id" "ricoSeeAlso"
+        "title" (t "card.seeAlso" "See also")
+        "icon" "link") }}
+  </div>
+{{ end }}
+{{ end }}

@@ -250,6 +250,19 @@
         var display = escapeHtml(binding.DisplayText || binding.Value);
         return '<a href="/resource?iri=' + encodeURIComponent(binding.Value) + '">' + display + '</a>';
       }
+      // A LITERAL holding an http(s) URL is a link out of Visoto, not a resource
+      // to explore — an IRI above stays a resource link. A template projects
+      // STR(?url) to get this (classes/rico%3AInstantiation.html: the media URL
+      // of a digital copy, clickable straight from the table). Built through the
+      // DOM so outerHTML escapes the href; escapeHtml leaves quotes alone.
+      if (binding.Type === 'literal' && /^https?:\/\/\S+$/.test(binding.Value || '')) {
+        var a = document.createElement('a');
+        a.href = binding.Value;
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.textContent = binding.DisplayText || binding.Value;
+        return a.outerHTML;
+      }
       return escapeHtml(binding.DisplayText || binding.Value);
     }
     function htmlCellFormatter(cell) { return renderBinding(cell.getValue()); }

@@ -1,0 +1,71 @@
+<!-- rico:Instantiation Class Template
+
+     On LINDAS every rico:Instantiation (~42k, graph sfa/ais) is a BLANK NODE: the
+     digital copy of one Federal Archives record (25k) or record set (16.5k),
+     attached by rico:hasInstantiation and carrying a rico:name and a schema:url.
+     A blank node has no page, so this class page lists the RESOURCES that have a
+     copy, with the copy's URL as a direct link. On the record pages themselves
+     the copy is shown by components/ricoDigitalCopy.html.
+
+     No instance template exists or can exist for this class, so unlike the other
+     RiC-O class templates this one is not guarding against an instance-template
+     takeover; it replaces the default class page, whose instance table would
+     list unlinkable blank nodes. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+  {{ template "literals" . }}
+
+  <!-- Queried live: LINDAS counts drift between requests. -->
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <!-- One row per record or record set with a digital copy.
+
+       The class is written out as rico:Instantiation, NOT as ??, on purpose: the
+       "?x a ??" shape would make the blank-node copy the key of the working-set
+       model (sparql.DeriveKeyVar), which pages by binding key IRIs in VALUES —
+       impossible for blank nodes. Without it the query takes the inline path and
+       loads every row at once; at ~42k rows that is the whole class, so every
+       filter and the search box answer authoritatively.
+
+       ?media is STR(?url): a literal http(s) URL renders as a direct external
+       link (renderBinding in static/js/sparql-table.js), where the IRI would link
+       to a Visoto resource page for the video file. The row icon tells records
+       and record sets apart. -->
+  <div class="mb-3">
+    <sparql-async id="instantiations">
+      SELECT ?item ?period ?media WHERE {
+        ?item rico:hasInstantiation ?copy .
+        ?copy a rico:Instantiation ;
+              schema:url ?url .
+        BIND (STR(?url) AS ?media)
+        OPTIONAL { ?item rico:isAssociatedWithDate/rico:expressedDate ?period . }
+      }
+    </sparql-async>
+    <sparql-columns for="instantiations">
+      <sparql-column var="item" label="{{ t "facet.title" "Title" }}" icon></sparql-column>
+      <sparql-column var="period" label="{{ t "facet.period" "Period" }}"></sparql-column>
+      <sparql-column var="media" label="{{ t "facet.media" "Media" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "instantiations"
+        "iri" .ResourceIRI
+        "title" (t "card.digitalCopies" "Records with a digital copy")
+        "icon" "film")
+    }}
+  </div>
+
+  {{ template "relationships" . }}
+</div>
+{{ end }}
