@@ -62,7 +62,9 @@
     level query that says ORDER BY ?label WITHOUT projecting ?label sorts by
     whatever the endpoint has (usually the IRI), takes that page of rows, and only
     then relabels them — silently the wrong nodes. When you use a limit with an
-    ORDER BY, PROJECT the variable you order by. Startup logs a warning otherwise.
+    ORDER BY, the variable you order by must be BOUND in the query (projected or
+    not). Startup logs a warning otherwise. Bind-but-don't-project a pure sort key
+    such as an archival position: every projected extra variable becomes a column.
 
   Parameters (via dict):
     - queryId:         (required) matches <sparql-tree-queries for="...">

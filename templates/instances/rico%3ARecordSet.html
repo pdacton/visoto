@@ -1,0 +1,228 @@
+<!-- rico:RecordSet Instance Template
+
+     The Swiss Federal Archives' holdings on LINDAS (graph sfa/ais): 4.8 million
+     record sets and 263k records in ONE hierarchy under a single root, "Gesamtbestand
+     des Schweizerischen Bundesarchivs" (ais/1), linked child → parent by
+     rico:isOrWasIncludedIn. The levels (Archiv, Hauptabteilung, Bestand, Serie,
+     Dossier, …) are rico:RecordSetType nodes named with rico:name, which is why
+     rico:name is in the label resolution (internal/sparql/labels.go).
+
+     Same split layout as instances/schema%3AGovernmentOrganization.html: the lazy
+     tree navigates on the left, this record set's own content on the right.
+     rico:Record is a leaf of the same tree and has its own template
+     (instances/rico%3ARecord.html) carrying the same tree queries. -->
+
+{{ template "pageHeader" . }}
+
+<!-- The ancestor chain for the page breadcrumb, root first: Home / RecordSet /
+     Gesamtbestand … / Archiv des Bundesstaates … / … / this page. Each ancestor's
+     depth is the number of ITS ancestors, which orders the chain without a
+     position property. 0.3s for a dossier seven levels down, so synchronous.
+     Unscoped by graph on purpose: the edges only exist in sfa/ais, and a GRAPH
+     clause would need the &lt; &gt; escaping for nothing. -->
+<sparql-query id="ancestors">
+  SELECT ?ancestor (COUNT(?up) AS ?depth) WHERE {
+    ?? rico:isOrWasIncludedIn+ ?ancestor .
+    OPTIONAL { ?ancestor rico:isOrWasIncludedIn+ ?up . }
+  } GROUP BY ?ancestor ORDER BY ?depth
+</sparql-query>
+{{ define "breadcrumb" }}
+  {{ with .TemplateType }}
+    <li class="breadcrumb-item"><a href="{{ resourceHref . }}">{{ lastPathSegment . }}</a></li>
+  {{ end }}
+  {{ range $binding := .QueryResults.ancestors.Bindings }}
+    <li class="breadcrumb-item">{{ render (index $binding "ancestor") }}</li>
+  {{ end }}
+{{ end }}
+
+<!-- The period, resolved one hop through the rico:DateRange node. One row per
+     ?property/?value pair (the sparqlGrid shape), ordered by ?ord. ?property is the
+     predicate IRI, so `render` labels it in the display language. -->
+<sparql-query id="period">
+  SELECT ?property ?value WHERE {
+    ?? rico:isAssociatedWithDate ?date .
+    {
+      ?date rico:expressedDate ?value .
+      BIND(rico:expressedDate AS ?property) BIND(1 AS ?ord)
+    } UNION {
+      ?date rico:beginningDate ?value .
+      BIND(rico:beginningDate AS ?property) BIND(2 AS ?ord)
+    } UNION {
+      ?date rico:endDate ?value .
+      BIND(rico:endDate AS ?property) BIND(3 AS ?ord)
+    }
+  } ORDER BY ?ord
+</sparql-query>
+
+{{ define "pageContent" }}
+
+  <div class="row vs-split">
+
+    <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
+      <div class="mb-3">
+
+        <!-- The same four role queries appear in instances/rico%3ARecord.html and
+             both class templates: <sparql-tree-queries> ids are scoped to the
+             template set, so they cannot be shared. Keep them in step.
+
+             Scoped to the sfa/ais graph, like the Staatskalender tree to its graph.
+             The graph IRI's angle brackets MUST be written &lt; &gt; — written
+             literally the component parser strips them as an HTML tag.
+
+             ROOTS are found by level, not by "has no parent": the level is indexed
+             (0.1s), while FILTER NOT EXISTS over 4.8M record sets took 60s.
+             recordSetTypes/1 is "Archiv", the top level.
+
+             ORDER BY schch:position, the archival order. Bound but NOT projected:
+             every projected extra variable becomes a treegrid column, and a bound
+             variable orders correctly without being projected. With an ORDER BY
+             the limit is a page size, which matters: some dossiers hold ~11k
+             children.
+
+             Titles are untagged; the dispLang filter is there for the day they
+             are not. -->
+        <sparql-tree-queries for="recordSetTree">
+          <sparql-tree-query role="roots">
+            SELECT ?node ?label ?hasChildren WHERE {
+              GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+                ?node rico:hasRecordSetType &lt;https://culture.ld.admin.ch/ais/vocabularies/recordSetTypes/1&gt; .
+                OPTIONAL { ?node rico:title ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
+                OPTIONAL { ?node schch:position ?position . }
+                BIND (EXISTS { ?child rico:isOrWasIncludedIn ?node } AS ?hasChildren)
+              }
+            } ORDER BY ?position ?label
+          </sparql-tree-query>
+          <sparql-tree-query role="children">
+            SELECT ?node ?label ?hasChildren WHERE {
+              GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+                ?node rico:isOrWasIncludedIn ?parent .
+                OPTIONAL { ?node rico:title ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
+                OPTIONAL { ?node schch:position ?position . }
+                BIND (EXISTS { ?child rico:isOrWasIncludedIn ?node } AS ?hasChildren)
+              }
+            } ORDER BY ?position ?label
+          </sparql-tree-query>
+          <sparql-tree-query role="parents">
+            SELECT ?node ?parent WHERE {
+              GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+                ?node rico:isOrWasIncludedIn ?parent .
+              }
+            }
+          </sparql-tree-query>
+          <!-- Search goes through the LINDAS Lucene connector lindas_label, which
+               indexes rico:title. An unindexed CONTAINS over 4.8M titles took 40s
+               for a term with no hits; this answers in well under a second.
+
+               The term is rebuilt INSIDE one BIND into label:(+w1* +w2* zzqqx):
+               every word required and prefix-matched, anything that is not a
+               letter or digit dropped, so no user input can reach Lucene syntax.
+               The trailing optional sentinel keeps an all-punctuation term from
+               becoming the empty query "label:()", which GraphDB answers with a
+               full scan. It must stay ONE expression at the top level of WHERE,
+               right after the VALUES the server prepends: split into chained BINDs
+               or moved into a subquery, the connector is evaluated with ?q unbound
+               and returns arbitrary rows after a minute.
+
+               GraphDB-only, like the data: on another engine the pattern matches
+               nothing and search reports no hits. -->
+          <sparql-tree-query role="search">
+            SELECT ?node ?label WHERE {
+              BIND (CONCAT("label:(", REPLACE(REPLACE(LCASE(STR(?__token__)), "[^\\p{L}\\p{N}]+", " "), "([\\p{L}\\p{N}]+)", "+$1*"), " zzqqx)") AS ?q)
+              ?search a &lt;http://www.ontotext.com/connectors/lucene/instance#lindas_label&gt; ;
+                      &lt;http://www.ontotext.com/connectors/lucene#query&gt; ?q ;
+                      &lt;http://www.ontotext.com/connectors/lucene#entities&gt; ?node .
+              GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+                ?node rico:isOrWasIncludedIn ?anyParent ;
+                      rico:title ?label .
+              }
+            }
+          </sparql-tree-query>
+        </sparql-tree-queries>
+
+        {{ template "sparqlLazyTree" (dict
+            "queryId" "recordSetTree"
+            "iri" .ResourceIRI
+            "ResourceIRI" .ResourceIRI
+            "title" (t "card.hierarchy" "Hierarchy")
+            "icon" "list-tree"
+            "breadcrumb" true
+            "splitToggle" true)
+        }}
+      </div>
+    </div>
+
+    <div class="vs-split-handle" role="separator" tabindex="0"
+         aria-orientation="vertical"
+         aria-valuemin="15" aria-valuemax="60" aria-valuenow="33"
+         aria-label="{{ t "split.resize" "Resize the hierarchy column" }}"
+         title="{{ t "split.resizeHint" "Drag to resize, double-click to reset" }}"></div>
+
+    <div class="col-lg-8 vs-split-main">
+      <button type="button" class="btn btn-sm mb-3 vs-split-reopen" data-vs-split-reopen>
+        <i data-lucide="panel-left-open"></i>
+        {{ t "split.showTree" "Show hierarchy" }}
+      </button>
+
+      {{ template "literals" . }}
+
+      {{ template "ricoDigitalCopy" . }}
+
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.period
+            "id" "period"
+            "title" (t "card.period" "Period")
+            "icon" "calendar-range") }}
+      </div>
+
+      <!-- The units directly below this one — one level; the tree is for the rest.
+           ?items counts each row's own children in a subquery, so the table says
+           which rows lead deeper and how far. Measured 1.7s for the largest
+           dossier (ais/22509538, 10,837 children), so every set loads complete
+           under the 20,000-row working-set cap and needs no filter= declarations.
+
+           ORDER BY the archival position, which is not projected: this is the
+           inline path (no working-set rewrite at this size), so the order reaches
+           the table as written, and the rows open in the order the archive keeps
+           them until the reader sorts a column. -->
+      <div class="mb-3">
+        <sparql-async id="recordSetContents">
+          SELECT ?item ?level ?referenceCode ?period ?items WHERE {
+            GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+              ?item rico:isOrWasIncludedIn ?? .
+              OPTIONAL { ?item rico:hasRecordSetType ?level . }
+              OPTIONAL { ?item schch:referenceCode ?referenceCode . }
+              OPTIONAL { ?item rico:isAssociatedWithDate/rico:expressedDate ?period . }
+              OPTIONAL { ?item schch:position ?position . }
+              {
+                SELECT ?item (COUNT(?sub) AS ?items) WHERE {
+                  ?item rico:isOrWasIncludedIn ?? .
+                  OPTIONAL { ?sub rico:isOrWasIncludedIn ?item . }
+                } GROUP BY ?item
+              }
+            }
+          } ORDER BY ?position
+        </sparql-async>
+        <sparql-columns for="recordSetContents">
+          <sparql-column var="item" label="{{ t "facet.title" "Title" }}" icon></sparql-column>
+          <sparql-column var="level" label="{{ t "facet.level" "Level" }}"></sparql-column>
+          <sparql-column var="referenceCode" label="{{ t "facet.referenceCode" "Reference code" }}"></sparql-column>
+          <sparql-column var="period" label="{{ t "facet.period" "Period" }}"></sparql-column>
+          <sparql-column var="items" label="{{ t "facet.subUnits" "Sub-units" }}" badge></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "recordSetContents"
+            "iri" .ResourceIRI
+            "title" (t "card.contents" "Contents")
+            "icon" "folder-tree")
+        }}
+      </div>
+
+      {{ template "relationships" . }}
+    </div>
+
+  </div>
+
+  <script src="/static/js/split-layout.js" defer></script>
+
+{{ end }}

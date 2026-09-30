@@ -164,6 +164,16 @@ func TestWarnOrderByUnprojected(t *testing.T) {
 			want:  []string{"label"},
 		},
 		{
+			name:  "bound in the body but not projected, no warning",
+			query: `SELECT ?node ?label WHERE { ?node skos:broader ?parent ; ex:position ?position } ORDER BY ?position ?label`,
+			want:  nil,
+		},
+		{
+			name:  "prefix of a bound var is still missing",
+			query: `SELECT ?node WHERE { ?node ex:labelText ?labelText } ORDER BY ?label`,
+			want:  []string{"label"},
+		},
+		{
 			name:  "prefix of a projected var is still missing",
 			query: `SELECT ?node ?labelText WHERE { ?node skos:broader ?parent } ORDER BY ?label`,
 			want:  []string{"label"},

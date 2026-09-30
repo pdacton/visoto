@@ -54,6 +54,22 @@ func TestParseAcceptLanguage(t *testing.T) {
 	}
 }
 
+func TestUnwrapQuotes(t *testing.T) {
+	cases := map[string]string{
+		`"1000/00893 Bundesverwaltung (Bern)"`: `1000/00893 Bundesverwaltung (Bern)`,
+		`plain`:                                `plain`,
+		`"Foo" und "Bar"`:                      `"Foo" und "Bar"`,
+		`"starts only`:                         `"starts only`,
+		`""`:                                   ``,
+		`"`:                                    `"`,
+	}
+	for in, want := range cases {
+		if got := unwrapQuotes(in); got != want {
+			t.Errorf("unwrapQuotes(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
 func TestExtractLastSegment(t *testing.T) {
 	tests := []struct {
 		name string

@@ -1,0 +1,54 @@
+<!-- Component: ricoDigitalCopy
+     RiC-O specific, not a generic component: the digital copy of a Federal Archives record or record set (RiC-O), shown
+     inline. Renders nothing when the resource has none.
+     Usage: {{ template "ricoDigitalCopy" . }}
+
+     The copy is a BLANK-NODE rico:Instantiation hanging off the resource by
+     rico:hasInstantiation (25k records, 16k record sets on LINDAS; never more
+     than one per resource), so it can have no page of its own — this card is the
+     only place it is visible. It carries a rico:name and a schema:url, and the
+     URL decides the preview:
+
+       media.zem.ch/*.mp4#t=…        20,883  newsreel clips   → <video>, the #t=
+                                                                  fragment plays
+                                                                  just the item
+       commons.wikimedia.org/wiki/…   5,330  scans            → thumbnail
+       chgov IIIF viewer             15,218  Federal Council  → link
+       simplex.tv player                284  debate videos    → link
+       sfa-laboratory PDFs              247  documents        → link
+
+     The Commons URL is the File: description page, not an image. Special:FilePath
+     redirects to the rendered file, and ?width= makes Commons render a JPEG
+     thumbnail even from the .tif originals (a browser cannot display a TIFF)
+     and from the one PDF (its first page).
+
+     The card itself is the generic partials/media-card.html; this component
+     only finds the copy and decides its kind and preview. -->
+
+<sparql-query id="ricoDigitalCopy">
+  SELECT ?name ?url ?kind ?preview WHERE {
+    ?? rico:hasInstantiation ?copy .
+    ?copy schema:url ?u .
+    OPTIONAL { ?copy rico:name ?name . }
+    BIND (STR(?u) AS ?url)
+    BIND (IF(CONTAINS(?url, "commons.wikimedia.org/wiki/File:"), "image",
+          IF(CONTAINS(?url, "media.zem.ch/") && CONTAINS(?url, ".mp4"), "video", "link")) AS ?kind)
+    BIND (IF(?kind = "image",
+             CONCAT(REPLACE(?url, "/wiki/File:", "/wiki/Special:FilePath/"), "?width=800"),
+             "") AS ?preview)
+  } LIMIT 1
+</sparql-query>
+
+{{ define "ricoDigitalCopy" }}
+{{ range $b := .QueryResults.ricoDigitalCopy.Bindings }}
+  <div class="mb-3">
+    {{ template "mediaCard" (dict
+        "url"     (index $b "url").Value
+        "kind"    (index $b "kind").Value
+        "preview" (index $b "preview").Value
+        "alt"     (index $b "name").Value
+        "caption" (index $b "name").Value
+        "title"   (t "card.digitalCopy" "Digital copy")) }}
+  </div>
+{{ end }}
+{{ end }}

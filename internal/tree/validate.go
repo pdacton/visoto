@@ -159,20 +159,27 @@ var orderByRe = regexp.MustCompile(`(?is)\bORDER\s+BY\s+(.*?)(?:\bLIMIT\b|\bOFFS
 // first page of THAT order, and only then relabels the rows. The page is silently
 // the wrong set of nodes, in an order that looks arbitrary.
 //
+// Only a variable the query never BINDS is the trap. One bound in the body but
+// left out of the projection (an archival ?position, say) orders the level
+// correctly — ORDER BY and LIMIT run before projection — and projecting it would
+// only turn it into an unwanted treegrid column.
+//
 // A warning rather than an error: templates predating this rule are merely
 // imprecise, and failing the boot over an ORDER BY would be a poor trade. It is
 // only misleading when combined with a limit, but the limit can come from the
 // partial rather than the query text, so warn whenever the projection is missing.
 func WarnOrderByUnprojected(query string) []string {
-	order := orderByRe.FindStringSubmatch(query)
+	order := orderByRe.FindStringSubmatchIndex(query)
 	if order == nil {
 		return nil
 	}
-	proj := projectionRe.FindStringSubmatch(query)
-	if proj == nil {
+	proj := projectionRe.FindStringSubmatchIndex(query)
+	if proj == nil || proj[1] > order[0] {
 		return nil
 	}
-	projected := proj[1]
+	projected := query[proj[2]:proj[3]]
+	body := query[proj[1]:order[0]]
+	orderBy := query[order[2]:order[3]]
 	// SELECT * projects everything, so nothing can be missing.
 	if strings.Contains(projected, "*") {
 		return nil
@@ -180,13 +187,13 @@ func WarnOrderByUnprojected(query string) []string {
 
 	var missing []string
 	seen := make(map[string]bool)
-	for _, m := range regexp.MustCompile(`\?([A-Za-z_][A-Za-z0-9_]*)`).FindAllStringSubmatch(order[1], -1) {
+	for _, m := range regexp.MustCompile(`\?([A-Za-z_][A-Za-z0-9_]*)`).FindAllStringSubmatch(orderBy, -1) {
 		name := m[1]
 		if seen[name] {
 			continue
 		}
 		seen[name] = true
-		if !varRe(name).MatchString(projected + " ") {
+		if !varRe(name).MatchString(projected+" ") && !varRe(name).MatchString(body+" ") {
 			missing = append(missing, name)
 		}
 	}

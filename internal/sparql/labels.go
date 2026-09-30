@@ -131,7 +131,7 @@ func parseAcceptLanguage(header string) []string {
 }
 
 // buildLabelQuery constructs SPARQL query to fetch labels for given IRIs
-// Checks rdfs:label, skos:prefLabel, schema:name, dct:title, dc:title, rico:title (in priority order)
+// Checks rdfs:label, skos:prefLabel, schema:name, dct:title, dc:title, rico:title, rico:name (in priority order)
 // Filters by language preferences
 func buildLabelQuery(iris []string, languages []string) string {
 	if len(iris) == 0 {
@@ -186,6 +186,7 @@ SELECT ?iri ?label WHERE {
         (dct:title "5")
         (dc:title "6")
         (rico:title "7")
+        (rico:name "8")
       }
 
       ?iri ?prop ?val .
@@ -225,6 +226,26 @@ SELECT ?iri ?label WHERE {
 }
 
 // ── Label fetching & enrichment ───────────────────────────────────────────────
+
+// unwrapQuotes strips ONE pair of double quotes enclosing the whole label.
+//
+// Some sources serialise the quote characters into the literal itself: every
+// rico:title on the Federal Archives' 17,657 rico:Activity deliveries on LINDAS
+// reads "\"1000/00893 Bundesverwaltung (Bern) (1843 (ca.)-1965)\"", and those
+// deliveries are linked from 4.7M record sets, so the quotes surfaced in every
+// relationship table. A label that is quoted end to end is never meant that way;
+// A label that merely starts with a quote, or quotes two parts of itself
+// ("Foo" und "Bar"), is left alone.
+func unwrapQuotes(label string) string {
+	if len(label) < 2 || !strings.HasPrefix(label, `"`) || !strings.HasSuffix(label, `"`) {
+		return label
+	}
+	inner := label[1 : len(label)-1]
+	if strings.Contains(inner, `"`) {
+		return label
+	}
+	return inner
+}
 
 // extractLastSegment extracts the last path segment from an IRI as fallback label
 // Examples:
@@ -287,7 +308,7 @@ func fetchLabelsBatch(p *Preprocessor, endpointURL string, iris []string, langua
 	// Build mapping from results — one row per IRI guaranteed by GROUP BY in subquery
 	for _, binding := range sparqlResp.Results.Bindings {
 		iriValue := binding["iri"].Value
-		labelValue := binding["label"].Value
+		labelValue := unwrapQuotes(binding["label"].Value)
 		if labelValue == "" {
 			continue
 		}

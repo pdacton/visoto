@@ -1,0 +1,110 @@
+<!-- rico:Activity Instance Template
+
+     One delivery to the Swiss Federal Archives (see classes/rico%3AActivity.html
+     for the data model). The page is about what the delivery brought in: the
+     record sets and records that point at it with rico:resultsOrResultedFrom.
+
+     Own header queries instead of the pageHeader component: the title is
+     rico:title, which on these activities is wrapped in literal double quotes
+     (a data quirk on every one of the 17,657), and the component would show
+     them. The delivery number (rico:name) is the subtitle. -->
+
+<sparql-query id="title">
+  SELECT ?title WHERE {
+    ?? rico:title ?t .
+    FILTER (langMatches(lang(?t), visoto:dispLang) || !langMatches(lang(?t), "*"))
+    BIND (REPLACE(STR(?t), "^\"|\"$", "") AS ?title)
+  }
+</sparql-query>
+{{ define "pageTitle" }}{{ or (firstValue .QueryResults.title "title") (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "metaTitle" }}{{ or (firstValue .QueryResults.title "title") (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "metaIcon" }}{{ resourceIcon . }}{{ end }}
+
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+
+<sparql-query id="deliveryNumber">SELECT ?name WHERE { ?? rico:name ?name . }</sparql-query>
+{{ define "pageSubtitle" }}{{ with firstValue .QueryResults.deliveryNumber "name" }}{{ t "facet.deliveryNumber" "Delivery number" }}: {{ . }}{{ end }}{{ end }}
+
+<!-- The delivery's type and period as one grid, quotes stripped (see above).
+     One row per ?property/?value pair, ordered by ?ord; ?property is the
+     predicate IRI so `render` labels it in the display language. -->
+<sparql-query id="delivery">
+  SELECT ?property ?value WHERE {
+    {
+      ?? rico:hasActivityType ?value .
+      BIND (rico:hasActivityType AS ?property) BIND (1 AS ?ord)
+    } UNION {
+      ?? rico:beginningDate ?b .
+      BIND (REPLACE(STR(?b), "^\"|\"$", "") AS ?value)
+      BIND (rico:beginningDate AS ?property) BIND (2 AS ?ord)
+    } UNION {
+      ?? rico:endDate ?e .
+      BIND (REPLACE(STR(?e), "^\"|\"$", "") AS ?value)
+      BIND (rico:endDate AS ?property) BIND (3 AS ?ord)
+    }
+  } ORDER BY ?ord
+</sparql-query>
+
+{{ define "pageContent" }}
+
+  <div class="mb-3">
+    {{ template "sparqlGrid" (dict
+        "result" .QueryResults.delivery
+        "id" "delivery"
+        "title" (t "card.delivery" "Delivery")
+        "icon" "truck") }}
+  </div>
+
+  <!-- Live count of what this delivery produced: 266 on average, 89,045 for
+       the largest (Event/16884) — 0.3s either way. -->
+  <sparql-async id="deliveredCount">
+    SELECT (COUNT(?item) AS ?count) WHERE { ?item rico:resultsOrResultedFrom ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "deliveredCount"
+        "iri" .ResourceIRI
+        "title" (t "card.deliveredCount" "Delivered units")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <!-- The record sets and records from this delivery — fonds, series, dossiers
+       and documents mixed, told apart by the row icon and Level.
+
+       No "?x a ??" membership triple, so this renders on the inline path, not
+       the working-set model; hence the LIMIT. Almost every delivery loads
+       complete under it (average 266 items) and its header filters answer
+       authoritatively. Only the few above 20,000 are cut, and the count above
+       says by how much. 0.2s for the largest. No ORDER BY: it would sort all
+       89k rows before the LIMIT applied. -->
+  <div class="mb-3">
+    <sparql-async id="deliveredUnits">
+      SELECT ?item ?level ?referenceCode ?period WHERE {
+        ?item rico:resultsOrResultedFrom ?? .
+        OPTIONAL { ?item rico:hasRecordSetType ?level . }
+        OPTIONAL { ?item schch:referenceCode ?referenceCode . }
+        OPTIONAL { ?item rico:isAssociatedWithDate/rico:expressedDate ?period . }
+      } LIMIT 20000
+    </sparql-async>
+    <sparql-columns for="deliveredUnits">
+      <sparql-column var="item" label="{{ t "facet.title" "Title" }}" icon></sparql-column>
+      <sparql-column var="level" label="{{ t "facet.level" "Level" }}"></sparql-column>
+      <sparql-column var="referenceCode" label="{{ t "facet.referenceCode" "Reference code" }}"></sparql-column>
+      <sparql-column var="period" label="{{ t "facet.period" "Period" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "deliveredUnits"
+        "iri" .ResourceIRI
+        "title" (t "card.deliveredUnits" "Delivered record sets and records")
+        "icon" "folder-tree")
+    }}
+  </div>
+
+  {{ template "relationships" . }}
+
+{{ end }}

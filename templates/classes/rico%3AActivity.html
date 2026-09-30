@@ -1,0 +1,67 @@
+<!-- rico:Activity Class Template
+
+     On LINDAS every rico:Activity (17,657, all in graph sfa/ais) is a DELIVERY
+     to the Swiss Federal Archives — rico:hasActivityType is activityTypes/Delivery
+     on all of them. Each carries a delivery number (rico:name, "1000/893"), a
+     title and a date span; the record sets and records it produced point at it
+     with rico:resultsOrResultedFrom (4.7M edges, up to 89k per delivery).
+
+     Exists alongside instances/rico%3AActivity.html so that template does not
+     take over this class page (template resolution step 5).
+
+     DATA QUIRK: every rico:title, rico:beginningDate and rico:endDate on these
+     activities is wrapped in literal double quotes ('"1843-01-01"', typed
+     xsd:date, which makes it an invalid date). The queries strip them. A few
+     beginning dates are not dates at all ("2"), so they stay strings rather than
+     being cast — ISO strings sort correctly as text anyway. The ?instance cell's
+     label comes from the shared label resolution, which unwraps the quotes
+     itself (unwrapQuotes in internal/sparql/labels.go). -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+  {{ template "literals" . }}
+
+  <!-- Queried live: LINDAS counts drift between requests. -->
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <!-- 17,657 instances, under the 20,000-row working-set cap: the table loads
+       complete in under a second, so the header filters and search box answer
+       authoritatively and no column declares filter= (the declaration rule).
+       No activity type column: it is "Delivery" on every row. -->
+  <div class="mb-3">
+    <sparql-async id="activityInstances">
+      SELECT ?instance ?deliveryNumber ?beginning ?end WHERE {
+        ?instance a ?? .
+        OPTIONAL { ?instance rico:name ?deliveryNumber . }
+        OPTIONAL { ?instance rico:beginningDate ?b . BIND (REPLACE(STR(?b), "^\"|\"$", "") AS ?beginning) }
+        OPTIONAL { ?instance rico:endDate ?e . BIND (REPLACE(STR(?e), "^\"|\"$", "") AS ?end) }
+      }
+    </sparql-async>
+    <sparql-columns for="activityInstances">
+      <sparql-column var="instance" label="{{ t "facet.title" "Title" }}" icon></sparql-column>
+      <sparql-column var="deliveryNumber" label="{{ t "facet.deliveryNumber" "Delivery number" }}"></sparql-column>
+      <sparql-column var="beginning" label="{{ t "facet.beginning" "From" }}"></sparql-column>
+      <sparql-column var="end" label="{{ t "facet.end" "To" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "activityInstances"
+        "iri" .ResourceIRI
+        "title" (t "card.allActivities" "All activities")
+        "icon" "truck")
+    }}
+  </div>
+
+  {{ template "relationships" . }}
+</div>
+{{ end }}

@@ -1,0 +1,149 @@
+<!-- rico:Record Instance Template
+
+     A record — a single document — is a LEAF of the Federal Archives hierarchy
+     that instances/rico%3ARecordSet.html describes (263k of them, all inside
+     record sets via rico:isOrWasIncludedIn). Same split layout and the same tree,
+     focused on this record; no contents table, since a record includes nothing.
+     Digital copies (rico:hasInstantiation) and the sld: author/form/format fields
+     come through the shared literals and relationships components. -->
+
+{{ template "pageHeader" . }}
+
+<!-- The ancestor chain for the page breadcrumb, root first: Home / RecordSet /
+     Gesamtbestand … / Archiv des Bundesstaates … / … / this page. Each ancestor's
+     depth is the number of ITS ancestors, which orders the chain without a
+     position property. 0.3s for a dossier seven levels down, so synchronous.
+     Unscoped by graph on purpose: the edges only exist in sfa/ais, and a GRAPH
+     clause would need the &lt; &gt; escaping for nothing. -->
+<sparql-query id="ancestors">
+  SELECT ?ancestor (COUNT(?up) AS ?depth) WHERE {
+    ?? rico:isOrWasIncludedIn+ ?ancestor .
+    OPTIONAL { ?ancestor rico:isOrWasIncludedIn+ ?up . }
+  } GROUP BY ?ancestor ORDER BY ?depth
+</sparql-query>
+{{ define "breadcrumb" }}
+  {{ with .TemplateType }}
+    <li class="breadcrumb-item"><a href="{{ resourceHref . }}">{{ lastPathSegment . }}</a></li>
+  {{ end }}
+  {{ range $binding := .QueryResults.ancestors.Bindings }}
+    <li class="breadcrumb-item">{{ render (index $binding "ancestor") }}</li>
+  {{ end }}
+{{ end }}
+
+<!-- The period, resolved one hop through the rico:DateRange node. One row per
+     ?property/?value pair (the sparqlGrid shape), ordered by ?ord. ?property is the
+     predicate IRI, so `render` labels it in the display language. -->
+<sparql-query id="period">
+  SELECT ?property ?value WHERE {
+    ?? rico:isAssociatedWithDate ?date .
+    {
+      ?date rico:expressedDate ?value .
+      BIND(rico:expressedDate AS ?property) BIND(1 AS ?ord)
+    } UNION {
+      ?date rico:beginningDate ?value .
+      BIND(rico:beginningDate AS ?property) BIND(2 AS ?ord)
+    } UNION {
+      ?date rico:endDate ?value .
+      BIND(rico:endDate AS ?property) BIND(3 AS ?ord)
+    }
+  } ORDER BY ?ord
+</sparql-query>
+
+{{ define "pageContent" }}
+
+  <div class="row vs-split">
+
+    <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
+      <div class="mb-3">
+
+        <!-- Copied from instances/rico%3ARecordSet.html, which explains them (roots
+             by level, the position ordering, the Lucene search). Also in both class
+             templates: <sparql-tree-queries> ids are scoped to the
+             template set, so they cannot be shared. Keep them in step. -->
+        <sparql-tree-queries for="recordTree">
+          <sparql-tree-query role="roots">
+            SELECT ?node ?label ?hasChildren WHERE {
+              GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+                ?node rico:hasRecordSetType &lt;https://culture.ld.admin.ch/ais/vocabularies/recordSetTypes/1&gt; .
+                OPTIONAL { ?node rico:title ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
+                OPTIONAL { ?node schch:position ?position . }
+                BIND (EXISTS { ?child rico:isOrWasIncludedIn ?node } AS ?hasChildren)
+              }
+            } ORDER BY ?position ?label
+          </sparql-tree-query>
+          <sparql-tree-query role="children">
+            SELECT ?node ?label ?hasChildren WHERE {
+              GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+                ?node rico:isOrWasIncludedIn ?parent .
+                OPTIONAL { ?node rico:title ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
+                OPTIONAL { ?node schch:position ?position . }
+                BIND (EXISTS { ?child rico:isOrWasIncludedIn ?node } AS ?hasChildren)
+              }
+            } ORDER BY ?position ?label
+          </sparql-tree-query>
+          <sparql-tree-query role="parents">
+            SELECT ?node ?parent WHERE {
+              GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+                ?node rico:isOrWasIncludedIn ?parent .
+              }
+            }
+          </sparql-tree-query>
+          <sparql-tree-query role="search">
+            SELECT ?node ?label WHERE {
+              BIND (CONCAT("label:(", REPLACE(REPLACE(LCASE(STR(?__token__)), "[^\\p{L}\\p{N}]+", " "), "([\\p{L}\\p{N}]+)", "+$1*"), " zzqqx)") AS ?q)
+              ?search a &lt;http://www.ontotext.com/connectors/lucene/instance#lindas_label&gt; ;
+                      &lt;http://www.ontotext.com/connectors/lucene#query&gt; ?q ;
+                      &lt;http://www.ontotext.com/connectors/lucene#entities&gt; ?node .
+              GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
+                ?node rico:isOrWasIncludedIn ?anyParent ;
+                      rico:title ?label .
+              }
+            }
+          </sparql-tree-query>
+        </sparql-tree-queries>
+
+        {{ template "sparqlLazyTree" (dict
+            "queryId" "recordTree"
+            "iri" .ResourceIRI
+            "ResourceIRI" .ResourceIRI
+            "title" (t "card.hierarchy" "Hierarchy")
+            "icon" "list-tree"
+            "breadcrumb" true
+            "splitToggle" true)
+        }}
+      </div>
+    </div>
+
+    <div class="vs-split-handle" role="separator" tabindex="0"
+         aria-orientation="vertical"
+         aria-valuemin="15" aria-valuemax="60" aria-valuenow="33"
+         aria-label="{{ t "split.resize" "Resize the hierarchy column" }}"
+         title="{{ t "split.resizeHint" "Drag to resize, double-click to reset" }}"></div>
+
+    <div class="col-lg-8 vs-split-main">
+      <button type="button" class="btn btn-sm mb-3 vs-split-reopen" data-vs-split-reopen>
+        <i data-lucide="panel-left-open"></i>
+        {{ t "split.showTree" "Show hierarchy" }}
+      </button>
+
+      {{ template "literals" . }}
+
+      {{ template "ricoDigitalCopy" . }}
+
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+            "result" .QueryResults.period
+            "id" "period"
+            "title" (t "card.period" "Period")
+            "icon" "calendar-range") }}
+      </div>
+
+
+      {{ template "relationships" . }}
+    </div>
+
+  </div>
+
+  <script src="/static/js/split-layout.js" defer></script>
+
+{{ end }}

@@ -35,7 +35,7 @@
   <div class="row row-deck row-cards mb-3">
 
     <!-- Klosters card -->
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-4 col-xl">
       <div class="card h-100">
         <img src="https://upload.wikimedia.org/wikipedia/commons/3/37/Blick_aus_dem_Zug_auf_Klosters-Dorf_%282006%29.jpg" class="card-img-top" alt="{{ t "page.home.viewOfKlostersDorfFrom" "View of Klosters-Dorf from the train" }}" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">
@@ -46,7 +46,7 @@
     </div>
 
     <!-- LINDAS card -->
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-4 col-xl">
       <div class="card h-100">
         <img src="https://lindas.admin.ch/static-assets/img/lindaslogo_web.png" class="card-img-top" alt="{{ t "page.home.lindasLogo" "LINDAS logo" }}" style="height: 200px; object-fit: contain; background-color: white; padding: 1rem;">
         <div class="card-body d-flex flex-column">
@@ -57,7 +57,7 @@
     </div>
 
     <!-- NOGA card -->
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-4 col-xl">
       <div class="card h-100">
         <img src="https://www.bkw.ch/fileadmin/user_upload/02_Gebaeude/02_04_Gebaeudetechnik/Elektro/Elektro__c__BKW_Building_Solutions_AG_51.jpg" class="card-img-top" alt="{{ t "page.home.industrialBuilding" "Industrial building" }}" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">
@@ -67,8 +67,24 @@
       </div>
     </div>
 
+    <!-- Federal Archives card: a newsreel clip from the Swiss Federal Archives
+         (RiC-O, graph sfa/ais), through the same partials/media-card.html as the
+         Digital copy card on the record page. The #t= fragment plays just this
+         item out of the weekly reel. -->
+    <div class="col-sm-6 col-lg-4 col-xl">
+      {{ template "mediaCard" (dict
+          "url"       "https://media.zem.ch/01WS/1957/SFW_0761.mp4#t=43,144"
+          "kind"      "video"
+          "compact"   true
+          "hideOpen"  true
+          "cardClass" "h-100"
+          "alt"       (t "page.home.unterbaechVideo" "Newsreel: women's suffrage in Unterbäch, 1957")
+          "subheader" (t "page.home.federalArchives" "Swiss Federal Archives")
+          "body"      (tHTML "page.home.unterbaech" "In March 1957 the women of Unterbäch cast the first women's votes in Switzerland, 14 years before national suffrage. Watch the newsreel and explore <a href=\"/resource?iri=https%3A%2F%2Fculture.ld.admin.ch%2Fais%2F21684135\">the record</a> in the Federal Archives' holdings.")) }}
+    </div>
+
     <!-- Development card -->
-    <div class="col-sm-6 col-lg-3">
+    <div class="col-sm-6 col-lg-4 col-xl">
       <div class="card h-100">
         <img src="/static/img/ricepattern.png" class="card-img-top" alt="{{ t "page.home.ricePattern" "Rice pattern" }}" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">

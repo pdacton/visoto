@@ -1,0 +1,99 @@
+<!--
+  Partial: a card that shows one piece of media — a playable video, an image
+  preview, or just a link — with an optional header, caption or teaser text and
+  an "Open original" button. No SPARQL: the caller passes the data.
+
+  Used by components/ricoDigitalCopy.html (the digital copy of an archive record)
+  and the Federal Archives teaser on pages/home.html.
+
+    {{ template "mediaCard" (dict
+          "url"     "https://media.zem.ch/01WS/1957/SFW_0761.mp4#t=43,144"
+          "title"   (t "card.digitalCopy" "Digital copy")
+          "caption" "Stream SFW_0761") }}
+
+  Parameters (via dict):
+    - url:       (required) the media or landing-page URL; http(s) only
+    - kind:      (optional) "video" | "image" | "link". Default: "image" when a
+                 preview is given, "video" when the URL contains ".mp4", else
+                 "link". A media fragment (#t=43,144) plays just that segment.
+    - preview:   (optional) image URL shown for kind "image"; the image links to url
+    - alt:       (optional) alt text / accessible name of the media
+    - title:     (optional) card header title; no header when absent
+    - icon:      (optional) Lucide icon for the header; defaults by kind
+    - subheader: (optional) small uppercase line in the body (teaser style)
+    - body:      (optional) body text; pass tHTML output for links
+    - caption:   (optional) muted text beside the Open button
+    - hideOpen:  (optional) omit the "Open original" button
+    - compact:   (optional) fixed 200px media band cropped to fill, as in the home
+                 page cards; otherwise the media keeps its aspect up to 480px
+    - cardClass: (optional) extra classes on the card, e.g. "h-100"
+
+  Heights are two fixed variants rather than a parameter: a template value inside
+  a style="" attribute is escaped to ZgotmplZ by html/template.
+
+  CSP: video hosts need a media-src entry in the Caddyfile (media.zem.ch is
+  there); images are covered by img-src https:.
+-->
+
+{{ define "mediaCard" }}
+{{ $url := safeURL .url }}
+{{ $kind := .kind }}
+{{ if not $kind }}
+  {{ if .preview }}{{ $kind = "image" }}{{ else if contains .url ".mp4" }}{{ $kind = "video" }}{{ else }}{{ $kind = "link" }}{{ end }}
+{{ end }}
+{{ $icon := .icon }}
+{{ if not $icon }}
+  {{ if eq $kind "video" }}{{ $icon = "film" }}{{ else if eq $kind "image" }}{{ $icon = "image" }}{{ else }}{{ $icon = "file-symlink" }}{{ end }}
+{{ end }}
+
+<div class="card{{ with .cardClass }} {{ . }}{{ end }}">
+  {{ if .title }}
+    <div class="card-header">
+      <div class="d-flex align-items-center gap-2">
+        <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <h3 class="card-title mb-0">{{ .title }}</h3>
+      </div>
+    </div>
+  {{ end }}
+
+  {{ if eq $kind "video" }}
+    {{ if .compact }}
+      <video class="card-img-top d-block bg-dark" controls preload="metadata" src="{{ $url }}"
+             {{ with .alt }}aria-label="{{ . }}"{{ end }}
+             style="height: 200px; object-fit: cover;"></video>
+    {{ else }}
+      <video class="w-100 d-block bg-dark" controls preload="metadata" src="{{ $url }}"
+             {{ with .alt }}aria-label="{{ . }}"{{ end }}></video>
+    {{ end }}
+  {{ else if eq $kind "image" }}
+    <a href="{{ $url }}" target="_blank" rel="noopener" class="d-block bg-body-secondary text-center">
+      {{ if .compact }}
+        <img src="{{ safeURL .preview }}" alt="{{ .alt }}" loading="lazy"
+             class="card-img-top" style="height: 200px; object-fit: cover;">
+      {{ else }}
+        <img src="{{ safeURL .preview }}" alt="{{ .alt }}" loading="lazy"
+             class="img-fluid" style="max-height: 480px; object-fit: contain;">
+      {{ end }}
+    </a>
+  {{ end }}
+
+  {{ if or .subheader .body }}
+    <div class="card-body d-flex flex-column">
+      {{ with .subheader }}<div class="subheader">{{ . }}</div>{{ end }}
+      {{ with .body }}<p class="text-secondary mt-auto mb-0">{{ . }}</p>{{ end }}
+    </div>
+  {{ end }}
+
+  {{ if or .caption (not .hideOpen) }}
+    <div class="card-body d-flex align-items-center justify-content-between gap-3 flex-wrap">
+      <span class="text-secondary">{{ .caption }}</span>
+      {{ if not .hideOpen }}
+        <a class="btn btn-sm" href="{{ $url }}" target="_blank" rel="noopener">
+          <i data-lucide="external-link"></i>
+          {{ t "mediaCard.openOriginal" "Open original" }}
+        </a>
+      {{ end }}
+    </div>
+  {{ end }}
+</div>
+{{ end }}

@@ -504,8 +504,10 @@ cap** and the tree reports "showing N of many" instead.
 > query returns. So `ORDER BY ?label` **without projecting `?label`** sorts by
 > whatever the endpoint has (usually the IRI), takes that page of rows, and only
 > then relabels them — silently the wrong nodes, in an order that looks arbitrary.
-> **When you use a limit with an `ORDER BY`, project the variable you order by.**
-> Startup logs a warning otherwise.
+> **When you use a limit with an `ORDER BY`, bind the variable you order by in the
+> query.** Startup logs a warning otherwise. It need not be projected — and a pure
+> sort key (an archival position) should not be, since every projected extra
+> variable becomes a treegrid column.
 
 **Scoping roots to the scheme.** A root is a node with no parent *inside the
 hierarchy you are showing*, which is not the same as a node with no parent at all: a
