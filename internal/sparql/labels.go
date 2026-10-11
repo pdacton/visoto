@@ -277,7 +277,7 @@ const labelQueryBatchSize = 1000
 // and merges results into labelMap. Falls back to last-segment for any IRI without a label.
 func fetchLabelsBatch(p *Preprocessor, endpointURL string, iris []string, languages []string, labelMap map[string]string) {
 	query := buildLabelQuery(iris, languages)
-	finalizedQuery := p.finalizeQuery(query, "")
+	finalizedQuery := p.finalizeQuery(query, "", endpointURL)
 	response, err := p.querySparqlEndpoint(context.Background(), endpointURL, finalizedQuery)
 	if err != nil {
 		log := logger.Get()

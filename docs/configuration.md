@@ -135,6 +135,7 @@ Each `[[application.sparqlEndpoints]]` block defines one entry in the endpoint-s
 | `search_provider` | string | `"stardog"` | Full-text search backend for this endpoint: `"stardog"`, `"graphdb"` (Simple FTS), `"graphdb-lucene"` (auto-discovered Lucene connectors), `"fuseki"`, `"qlever"` or `"sparql-query"`. Different triple stores expose FTS through different vendor predicates; `"sparql-query"` is the portable `CONTAINS` fallback that needs no index. Also exposed to templates as `.SearchProvider`, the hint pages use to pick an engine-specific query. |
 | `class_stats` | boolean | `false` | Counts the instances of every used class once a day (07:00 Swiss time — after LINDAS's nightly reloads — plus a catch-up at startup when the last run is over a day old) and keeps the history in `./data/classstats.db`. On GraphDB the counts come from the index statistics, one query per class (≈35 s for all of LINDAS); other stores get a live `COUNT` per class with a 60 s timeout and a 30-minute run budget. Feeds the Graph Explorer class tree, the "Class instances" card on `/monitoring`, the MCP tools `count_instances` / `class_trends`, and `/metrics`. See [Class statistics](#class-statistics). |
 | `class_stats_from` | string | — | Slug of an endpoint with `class_stats = true` whose counts this endpoint serves — for a cached twin of the same store (`lindas-cached` → `lindas-prod`), so it is not counted twice. Startup fails if the slug does not name a collecting endpoint. |
+| `prefixes` | list of strings | — | Redeclares [`[rdf] prefixes`](#rdf) for this endpoint only, in the same formats. See [Per-endpoint prefixes](#endpoint-prefixes). |
 | `export_provider` | string | auto | Overrides how named-graph export is performed: `"graphdb"`, `"gsp"` (Graph Store Protocol) or `"construct"`. Autodetected when omitted. |
 | `access_token` | string | — | Bearer token for write operations (upload, graph deletion). Takes precedence over `username`/`password`. |
 | `username` / `password` | string | — | Basic-auth credentials for write operations, used only when `access_token` is absent. |
@@ -158,6 +159,32 @@ A daily run per `class_stats` endpoint:
 The Graph Explorer Classes panel reads the tree from `/api/class-tree` on these
 endpoints (with count badges) instead of running GE's own query, which counts
 over the whole store and times out on LINDAS. Other endpoints keep GE's query.
+
+### Per-endpoint prefixes {#endpoint-prefixes}
+
+Some vocabularies have two namespaces in the wild; schema.org exists as both
+`http://schema.org/` (LINDAS) and `https://schema.org/` (Stadt Zürich). An
+endpoint can redeclare a global prefix so that the same template works on both:
+
+```toml
+[[application.sparqlEndpoints]]
+name = "Stadt Zürich"
+slug = "stadt-zuerich"
+prefixes = ["schema: https://schema.org/"]
+```
+
+An entry replaces the global prefix of the same name (new names are appended).
+The merged list is used for everything sent to or derived from that endpoint:
+
+- the PREFIX block of every template query, including prefixes used by
+  [magic properties](#magic-properties);
+- IRI shortening and therefore template resolution. `https://schema.org/DefinedTerm`
+  shortens to `schema:DefinedTerm` and finds `schema%3ADefinedTerm.html`;
+- `type_priority`, whose entries are moved into the endpoint's namespace.
+
+Don't query both spellings at once (`(schema:name|schema2:name)`). That doubles
+the cost, and on Stadt Zürich it turns a 46 s query into a timeout. The
+browser-side SPARQL proxy (Graph Explorer) does not use these prefixes.
 
 ### Slugs {#slugs}
 

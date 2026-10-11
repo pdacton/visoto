@@ -69,7 +69,7 @@ func asyncTableDataHandler(c *gin.Context) {
 	defer cancel()
 
 	term := c.Query("search")
-	searchProp := c.DefaultQuery("searchProp", "http://www.w3.org/2000/01/rdf-schema#label")
+	searchProp := searchPropParam(c)
 
 	// One capped query loads the working set: browse mode returns the first max
 	// keys of the class; search mode restricts to instances whose name property or

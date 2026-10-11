@@ -42,6 +42,10 @@ type QueryInput struct {
 	Prefixes        []config.Prefix   // RDF prefix declarations
 	NamedEndpoints  map[string]string // Named endpoints: name -> URL mapping
 	MagicProperties map[string]string // visoto:<key> tokens expanded to property paths
+	// EndpointPrefixes holds per-endpoint prefix lists (global prefixes merged
+	// with an endpoint's own overrides), keyed by endpoint URL. A URL missing
+	// here uses Prefixes.
+	EndpointPrefixes map[string][]config.Prefix
 }
 
 // QueryResult stores simplified SPARQL results for template consumption

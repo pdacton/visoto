@@ -133,7 +133,12 @@ func namedGraphsQuery(iri string) (string, bool) {
 // It stays empty for the direct-IRI matches (steps 1-2), where the template was
 // chosen by the resource's own IRI and no class was involved, and the breadcrumb
 // then simply omits the segment.
-func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriority []string, prefixes []config.Prefix) error {
+//
+// prefixes are the active endpoint's; globalPrefixes are the [rdf] ones that
+// type_priority is written against. They differ only when the endpoint
+// redeclares a prefix, and then type_priority is moved into its namespace.
+func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriority []string, prefixes, globalPrefixes []config.Prefix) error {
+	typePriority = localizeTypePriority(typePriority, globalPrefixes, prefixes)
 
 	log := logger.Get()
 	fullIRITemplate := normalizeToFilename(r.IRI)
@@ -325,6 +330,22 @@ func sortTypesByPriority(types []string, priority []string) []string {
 	})
 
 	return append(append(prioritized, others...), generic...)
+}
+
+// localizeTypePriority rewrites type_priority entries, written as full IRIs
+// against the global prefixes, into the namespace an endpoint's own prefix
+// declarations give them. With schema: redeclared as https://schema.org/,
+// "http://schema.org/Person" becomes "https://schema.org/Person", so the
+// configured order still applies there. Entries no prefix covers pass through.
+func localizeTypePriority(priority []string, global, endpoint []config.Prefix) []string {
+	out := make([]string, len(priority))
+	for i, iri := range priority {
+		out[i] = iri
+		if short := shortenIRI(iri, global); short != iri {
+			out[i] = expandPrefixedIRI(short, endpoint)
+		}
+	}
+	return out
 }
 
 // expandPrefixedIRI expands a prefixed IRI like "schema:Person" to full IRI

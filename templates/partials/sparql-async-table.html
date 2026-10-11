@@ -29,8 +29,10 @@
     - collapsed: (optional) if truthy, the loaded table's card starts collapsed
     - trigger:  (optional) HTMX trigger; defaults to "load" (eager, like metrics).
                 Pass a custom event (e.g. "showData") to defer until first reveal.
-    - searchProp: (optional) name property IRI used by the working-set "Search all"
-                rebuild on large classes (e.g. "http://schema.org/name").
+    - searchProp: (optional) name property used by the working-set "Search all"
+                rebuild on large classes: a full IRI or a CURIE ("schema:name").
+                Prefer the CURIE: it expands with the active endpoint's prefixes,
+                so it follows a per-endpoint override (schema: → https).
     - max:      (optional) working-set row cap for large classes (default 20000).
 
   Per-column behaviour has no dict-param shorthand: row icons, badges and the

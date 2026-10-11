@@ -542,7 +542,7 @@ when the placeholder is triggered.
 | `title` / `icon` | `string` | — | Card heading and Lucide icon. |
 | `collapsed` | `bool` | `false` | Start the loaded card collapsed. |
 | `trigger` | `string` | `"load"` | HTMX trigger. Pass a custom event (e.g. `"showData"`) to defer until the view is first revealed. |
-| `searchProp` | `string` | — | Name property IRI used by the working-set "Search all" rebuild. |
+| `searchProp` | `string` | — | Name property used by the working-set "Search all" rebuild: a full IRI or, preferably, a CURIE (`schema:name`), which expands with the active endpoint's prefixes. |
 | `max` | `int` | `20000` | Working-set row cap for large classes. |
 
 Per-column behaviour has no dict-param shorthand — declare row icons, badges and the

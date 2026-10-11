@@ -286,6 +286,15 @@ func endpointTemplateData(c *gin.Context, h gin.H) gin.H {
 	return h
 }
 
+// searchPropParam reads the working-set ?searchProp= (default rdfs:label). A
+// template may pass a CURIE such as "schema:name"; it is expanded with the
+// active endpoint's prefixes so it follows a per-endpoint override, where a
+// hard-coded full IRI would search the wrong namespace.
+func searchPropParam(c *gin.Context) string {
+	prop := c.DefaultQuery("searchProp", "http://www.w3.org/2000/01/rdf-schema#label")
+	return config.ExpandCURIE(prop, cfg.PrefixesFor(activeEndpointURL(c)))
+}
+
 // prepareQueryInputs creates a preprocessor defaulting to the request's resolved endpoint
 func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 
@@ -293,11 +302,12 @@ func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 
 	// Create query inputs for preprocessor
 	return parser.New(sparql.QueryInput{
-		EndpointURL:     activeEndpointURL(c),
-		Timeout:         cfg.GetTimeout(),
-		Prefixes:        cfg.RDF.ParsedPrefixes,
-		NamedEndpoints:  namedEndpoints,
-		MagicProperties: cfg.RDF.MagicProperties,
+		EndpointURL:      activeEndpointURL(c),
+		Timeout:          cfg.GetTimeout(),
+		Prefixes:         cfg.RDF.ParsedPrefixes,
+		NamedEndpoints:   namedEndpoints,
+		MagicProperties:  cfg.RDF.MagicProperties,
+		EndpointPrefixes: cfg.Application.EndpointPrefixesMap(),
 	})
 }
 
@@ -416,8 +426,12 @@ func resourcePageHandler(c *gin.Context) {
 	// Create preprocessor with user-selected endpoint (inside cookie)
 	preprocessor := prepareQueryInputs(c)
 
+	// The active endpoint's prefixes, so a per-endpoint override (schema: →
+	// https://schema.org/) also governs IRI shortening and template lookup.
+	prefixes := cfg.PrefixesFor(activeEndpointURL(c))
+
 	// create Resource instance
-	r, err := resource.New(iri, cfg.RDF.ParsedPrefixes)
+	r, err := resource.New(iri, prefixes)
 	if err != nil {
 		log.Error("invalid resource IRI", slog.String("iri", iri), slog.String("error", err.Error()))
 		c.Header("Cache-Control", "no-store")
@@ -426,7 +440,7 @@ func resourcePageHandler(c *gin.Context) {
 	}
 
 	// Resolve template based on IRI and RDF types (use per-request preprocessor)
-	if err := r.ResolveTemplate(preprocessor, cfg.RDF.TypePriority, cfg.RDF.ParsedPrefixes); err != nil {
+	if err := r.ResolveTemplate(preprocessor, cfg.RDF.TypePriority, prefixes, cfg.RDF.ParsedPrefixes); err != nil {
 		log.Error("template resolution failed",
 			slog.String("iri", iri),
 			slog.String("error", err.Error()))
@@ -450,7 +464,7 @@ func resourcePageHandler(c *gin.Context) {
 	r.Data.TemplateType = r.TemplateType
 
 	// List the named graphs containing this resource (shown in the IRI dropdown)
-	r.FetchNamedGraphs(c.Request.Context(), preprocessor, cfg.RDF.ParsedPrefixes)
+	r.FetchNamedGraphs(c.Request.Context(), preprocessor, prefixes)
 
 	markCacheable(c)
 	// native gin template rendering
@@ -550,11 +564,11 @@ func metricHandler(c *gin.Context) {
 	// working on an errored metric, mirroring sparqlTable hanging its own YASGUI
 	// action off the card rather than the rows.
 	finalQuery, endpoint := result.Query, result.Endpoint
-	if finalQuery == "" {
-		finalQuery = preprocessor.FinalizeQuery(query, dataLang)
-	}
 	if endpoint == "" {
 		endpoint = activeEndpointURL(c)
+	}
+	if finalQuery == "" {
+		finalQuery = preprocessor.FinalizeQuery(query, dataLang, endpoint)
 	}
 
 	// dataLang, not activeLang: this route runs langFromURL rather than
@@ -657,7 +671,7 @@ func asyncTableHandler(c *gin.Context) {
 	if keyVar != "" && iri != "" {
 		endpoint := activeEndpointURL(c)
 		ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
-		searchProp := c.DefaultQuery("searchProp", "http://www.w3.org/2000/01/rdf-schema#label")
+		searchProp := searchPropParam(c)
 		total := cachedInstanceCount(ctx, preprocessor, id, endpoint, iri, keyVar, "", searchProp, dataLang)
 		cancel()
 		if total > defaultMaxWorkingSet {
@@ -680,7 +694,7 @@ func asyncTableHandler(c *gin.Context) {
 			// and lazily from /api/async-table-data/:id — this query is NOT executed
 			// here, so query cost stays flat.
 			params["result"] = sparql.QueryResult{
-				Query:    preprocessor.FinalizeQuery(fullQuery, dataLang),
+				Query:    preprocessor.FinalizeQuery(fullQuery, dataLang, endpoint),
 				Endpoint: endpoint,
 			}
 			// Never executes the class query itself, so always cheap and safe to cache.
@@ -879,11 +893,12 @@ func main() {
 
 	// Build MCP handler (fixed default endpoint, no per-request cookie logic)
 	mcpPreprocessor := sparql.New(sparql.QueryInput{
-		EndpointURL:     cfg.Application.SparqlEndpoint,
-		Timeout:         cfg.GetTimeout(),
-		Prefixes:        cfg.RDF.ParsedPrefixes,
-		NamedEndpoints:  cfg.Application.GetNamedEndpointsMap(),
-		MagicProperties: cfg.RDF.MagicProperties,
+		EndpointURL:      cfg.Application.SparqlEndpoint,
+		Timeout:          cfg.GetTimeout(),
+		Prefixes:         cfg.RDF.ParsedPrefixes,
+		NamedEndpoints:   cfg.Application.GetNamedEndpointsMap(),
+		MagicProperties:  cfg.RDF.MagicProperties,
+		EndpointPrefixes: cfg.Application.EndpointPrefixesMap(),
 	})
 	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor, classStats)
 

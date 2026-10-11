@@ -134,6 +134,14 @@ type SparqlEndpoint struct {
 	// ClassStatsFrom names (by slug) another endpoint whose snapshot this one
 	// serves — for a cached twin of the same store, so it is not counted twice.
 	ClassStatsFrom string `toml:"class_stats_from"`
+	// Prefixes optionally redeclares [rdf] prefixes for this endpoint only, in
+	// the same formats. An entry replaces the global prefix of the same name, so
+	// e.g. `schema: https://schema.org/` points every schema: term — in template
+	// queries, magic properties and template resolution — at the https namespace
+	// on an endpoint that uses it, without doubling any query.
+	Prefixes []string `toml:"prefixes"`
+	// ParsedPrefixes is the global prefix list merged with Prefixes (set by Load).
+	ParsedPrefixes []Prefix `toml:"-" json:"-"`
 }
 
 // ClassStatsSlug is the slug whose class-count snapshot serves this endpoint:
@@ -321,6 +329,7 @@ func Load(configPath string) (*Config, error) {
 
 	// Parse prefix strings into Prefix structs
 	cfg.RDF.ParsedPrefixes = cfg.RDF.ParsePrefixStrings()
+	cfg.Application.mergeEndpointPrefixes(cfg.RDF.ParsedPrefixes)
 
 	// The slug is the only endpoint identifier that crosses the wire (URL params,
 	// cookie, API params), so every configured endpoint must carry a usable one.
@@ -501,6 +510,69 @@ func (a *ApplicationConfig) GetEndpointByURL(url string) *SparqlEndpoint {
 	return nil
 }
 
+// mergeEndpointPrefixes sets each endpoint's ParsedPrefixes: the global list
+// with the endpoint's own entries replacing same-named ones in place and new
+// names appended. Endpoints without overrides share the global slice.
+func (a *ApplicationConfig) mergeEndpointPrefixes(global []Prefix) {
+	for i := range a.SparqlEndpoints {
+		ep := &a.SparqlEndpoints[i]
+		overrides := parsePrefixLines(ep.Prefixes)
+		if len(overrides) == 0 {
+			ep.ParsedPrefixes = global
+			continue
+		}
+		merged := append([]Prefix(nil), global...)
+		for _, o := range overrides {
+			replaced := false
+			for j := range merged {
+				if merged[j].Name == o.Name {
+					merged[j] = o
+					replaced = true
+					break
+				}
+			}
+			if !replaced {
+				merged = append(merged, o)
+			}
+		}
+		ep.ParsedPrefixes = merged
+	}
+}
+
+// EndpointPrefixesMap returns each endpoint's merged prefixes keyed by URL, for
+// sparql.QueryInput.EndpointPrefixes.
+func (a *ApplicationConfig) EndpointPrefixesMap() map[string][]Prefix {
+	m := make(map[string][]Prefix, len(a.SparqlEndpoints))
+	for _, ep := range a.SparqlEndpoints {
+		m[ep.URL] = ep.ParsedPrefixes
+	}
+	return m
+}
+
+// ExpandCURIE expands "name:local" against prefixes. Anything that is not a
+// CURIE with a declared prefix name, including a full IRI, is returned unchanged.
+func ExpandCURIE(s string, prefixes []Prefix) string {
+	name, local, ok := strings.Cut(s, ":")
+	if !ok || strings.HasPrefix(local, "//") {
+		return s
+	}
+	for _, p := range prefixes {
+		if p.Name == name {
+			return strings.Trim(p.URI, "<>") + local
+		}
+	}
+	return s
+}
+
+// PrefixesFor returns the prefixes in effect for the endpoint at endpointURL:
+// its merged list, or the global [rdf] prefixes for an unconfigured URL.
+func (c *Config) PrefixesFor(endpointURL string) []Prefix {
+	if ep := c.Application.GetEndpointByURL(endpointURL); ep != nil && ep.ParsedPrefixes != nil {
+		return ep.ParsedPrefixes
+	}
+	return c.RDF.ParsedPrefixes
+}
+
 // GetEndpointBySlug returns the SparqlEndpoint with the given slug (case-insensitive),
 // or nil if no endpoint has that slug configured. Endpoints with an empty Slug never match.
 func (a *ApplicationConfig) GetEndpointBySlug(slug string) *SparqlEndpoint {
@@ -516,6 +588,12 @@ func (a *ApplicationConfig) GetEndpointBySlug(slug string) *SparqlEndpoint {
 // Supports both SPARQL notation (PREFIX rdf: <uri>) and Turtle notation (@prefix rdf: <uri> .)
 // Also supports short notation (key: uri)
 func (r *RDFConfig) ParsePrefixStrings() []Prefix {
+	return parsePrefixLines(r.Prefixes)
+}
+
+// parsePrefixLines parses prefix declarations in any of the formats accepted
+// by ParsePrefixStrings.
+func parsePrefixLines(lines []string) []Prefix {
 	var prefixes []Prefix
 
 	// Regex patterns for different prefix formats (case-insensitive for PREFIX)
@@ -524,7 +602,7 @@ func (r *RDFConfig) ParsePrefixStrings() []Prefix {
 	turtlePattern := regexp.MustCompile(`^\s*@prefix\s+(\w+)\s*:\s*<([^>]+)>\s*\.\s*$`)
 	shortPattern := regexp.MustCompile(`^\s*(\w+)\s*:\s*(.+?)\s*$`)
 
-	for _, line := range r.Prefixes {
+	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" {
 			continue

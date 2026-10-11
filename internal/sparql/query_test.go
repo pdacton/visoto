@@ -211,7 +211,7 @@ func TestFinalizeQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := preproc.finalizeQuery(tt.query, "")
+			got := preproc.finalizeQuery(tt.query, "", "")
 			for _, want := range tt.wantContain {
 				if !strings.Contains(got, want) {
 					t.Errorf("finalizeQuery() should contain %q, got:\n%s", want, got)
@@ -251,7 +251,7 @@ func TestFinalizeQueryDispLangAcceptsBareCode(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := preproc.finalizeQuery(query, tt.lang)
+			got := preproc.finalizeQuery(query, tt.lang, "")
 			if !strings.Contains(got, "lang(?d) = "+tt.want) {
 				t.Errorf("finalizeQuery(%q) should resolve dispLang to %s, got:\n%s", tt.lang, tt.want, got)
 			}
@@ -313,7 +313,7 @@ func TestFinalizeQueryMagicProperties(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := preproc.finalizeQuery(tt.query, "")
+			got := preproc.finalizeQuery(tt.query, "", "")
 			for _, want := range tt.wantContain {
 				if !strings.Contains(got, want) {
 					t.Errorf("finalizeQuery() should contain %q, got:\n%s", want, got)
@@ -331,8 +331,41 @@ func TestFinalizeQueryMagicProperties(t *testing.T) {
 func TestFinalizeQueryNoMagicProperties(t *testing.T) {
 	preproc := New(QueryInput{EndpointURL: "http://example.com/sparql"})
 	query := "SELECT ?d WHERE { ?s visoto:description ?d }"
-	got := preproc.finalizeQuery(query, "")
+	got := preproc.finalizeQuery(query, "", "")
 	if !strings.Contains(got, "visoto:description") {
 		t.Errorf("with no magic properties configured the token should pass through, got:\n%s", got)
+	}
+}
+
+// TestFinalizeQueryEndpointPrefixes checks that the PREFIX block follows the
+// endpoint the query is sent to, including prefixes used inside a magic
+// property expansion.
+func TestFinalizeQueryEndpointPrefixes(t *testing.T) {
+	global := []config.Prefix{{Name: "schema", URI: "<http://schema.org/>"}}
+	override := []config.Prefix{{Name: "schema", URI: "<https://schema.org/>"}}
+	preproc := New(QueryInput{
+		EndpointURL:      "https://default.example/sparql",
+		Prefixes:         global,
+		MagicProperties:  map[string]string{"description": "schema:description"},
+		EndpointPrefixes: map[string][]config.Prefix{"https://zh.example/sparql": override},
+	})
+	query := "SELECT * WHERE { ?s a schema:DefinedTerm ; visoto:description ?d }"
+
+	tests := []struct {
+		endpoint string
+		want     string
+	}{
+		{"https://zh.example/sparql", "PREFIX schema: <https://schema.org/>"},
+		{"https://default.example/sparql", "PREFIX schema: <http://schema.org/>"},
+		{"https://unknown.example/sparql", "PREFIX schema: <http://schema.org/>"},
+	}
+	for _, tt := range tests {
+		got := preproc.finalizeQuery(query, "", tt.endpoint)
+		if !strings.Contains(got, tt.want) {
+			t.Errorf("finalizeQuery(endpoint %s) should contain %q, got:\n%s", tt.endpoint, tt.want, got)
+		}
+		if !strings.Contains(got, "(schema:description)") {
+			t.Errorf("magic property not expanded:\n%s", got)
+		}
 	}
 }

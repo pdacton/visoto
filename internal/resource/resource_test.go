@@ -272,3 +272,41 @@ func TestSortTypesByPriorityPutsClassTypesLast(t *testing.T) {
 		}
 	}
 }
+
+// TestEndpointPrefixOverride checks that an endpoint redeclaring schema: as
+// https://schema.org/ shortens https IRIs to the schema: CURIE (so they find the
+// schema%3A*.html templates) and moves type_priority into that namespace.
+func TestEndpointPrefixOverride(t *testing.T) {
+	global := []config.Prefix{
+		{Name: "schema", URI: "<http://schema.org/>"},
+		{Name: "schema2", URI: "<https://schema.org/>"},
+		{Name: "schch", URI: "<https://schema.ld.admin.ch/>"},
+	}
+	endpoint := []config.Prefix{
+		{Name: "schema", URI: "<https://schema.org/>"},
+		{Name: "schema2", URI: "<https://schema.org/>"},
+		{Name: "schch", URI: "<https://schema.ld.admin.ch/>"},
+	}
+
+	r, err := New("https://schema.org/DefinedTerm", endpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.ShortIRI != "schema:DefinedTerm" {
+		t.Errorf("ShortIRI = %q, want schema:DefinedTerm", r.ShortIRI)
+	}
+
+	priority := []string{"https://schema.ld.admin.ch/Term", "http://schema.org/DefinedTerm", "urn:x:Unprefixed"}
+	got := localizeTypePriority(priority, global, endpoint)
+	want := []string{"https://schema.ld.admin.ch/Term", "https://schema.org/DefinedTerm", "urn:x:Unprefixed"}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("localizeTypePriority[%d] = %q, want %q", i, got[i], want[i])
+		}
+	}
+
+	types := []string{"https://schema.org/DefinedTerm", "https://schema.ld.admin.ch/Term"}
+	if sorted := sortTypesByPriority(types, got); sorted[0] != "https://schema.ld.admin.ch/Term" {
+		t.Errorf("sortTypesByPriority = %v, want schch:Term first", sorted)
+	}
+}

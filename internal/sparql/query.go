@@ -144,18 +144,29 @@ func (p *Preprocessor) expandMagicProperties(query string) string {
 	return query
 }
 
+// prefixesFor returns the prefix declarations in effect for endpointURL: the
+// endpoint's merged list when it overrides any, the global list otherwise.
+func (p *Preprocessor) prefixesFor(endpointURL string) []config.Prefix {
+	if prefixes, ok := p.config.EndpointPrefixes[endpointURL]; ok && prefixes != nil {
+		return prefixes
+	}
+	return p.config.Prefixes
+}
+
 // finalizeQuery substitutes magic tokens and adds PREFIX declarations to a query.
+// The declarations are those of endpointURL, the endpoint the query is sent to,
+// so a per-endpoint override (e.g. schema: → https://schema.org/) applies.
 // visoto:dispLang is replaced with the browser's top language preference (e.g. "de");
 // other visoto:<key> tokens come from [rdf.magic_properties] in visoto.config.
 // Magic properties expand before prefix extraction, so prefixes used inside an
 // expansion are declared automatically.
-func (p *Preprocessor) finalizeQuery(query string, acceptLanguage string) string {
+func (p *Preprocessor) finalizeQuery(query string, acceptLanguage string, endpointURL string) string {
 	lang := topLanguage(acceptLanguage)
 	query = strings.ReplaceAll(query, "visoto:dispLang", fmt.Sprintf("%q", lang))
 	query = p.expandMagicProperties(query)
 	declaredPrefixes := extractDeclaredPrefixes(query)
 	usedPrefixes := extractUsedPrefixes(query)
-	prefixBlock := buildNeededPrefixBlock(p.config.Prefixes, usedPrefixes, declaredPrefixes)
+	prefixBlock := buildNeededPrefixBlock(p.prefixesFor(endpointURL), usedPrefixes, declaredPrefixes)
 	return prefixBlock + query
 }
 
@@ -164,8 +175,8 @@ func (p *Preprocessor) finalizeQuery(query string, acceptLanguage string) string
 // WITHOUT executing it. Used by the working-set table shell to embed the same
 // query string the inline path would surface, so the "Execute on endpoint" button
 // opens the identical query without a network round-trip.
-func (p *Preprocessor) FinalizeQuery(query string, acceptLanguage string) string {
-	return p.finalizeQuery(query, acceptLanguage)
+func (p *Preprocessor) FinalizeQuery(query string, acceptLanguage string, endpointURL string) string {
+	return p.finalizeQuery(query, acceptLanguage, endpointURL)
 }
 
 // --- Endpoint resolution ---
@@ -276,7 +287,7 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string, resolveLabels bool, acceptLanguage string, endpoint string, opts ...Option) (QueryResult, error) {
 	settings := newOptions(opts)
 	targetEndpoint := p.resolveEndpoint(endpoint)
-	finalizedQuery := p.finalizeQuery(query, acceptLanguage)
+	finalizedQuery := p.finalizeQuery(query, acceptLanguage, targetEndpoint)
 
 	response, err := p.querySparqlEndpoint(ctx, targetEndpoint, finalizedQuery)
 	if err != nil {
@@ -372,7 +383,7 @@ func (p *Preprocessor) ExecuteQueriesParallelN(queries []ExtractedQuery, maxConc
 					ID: query.ID,
 					Result: QueryResult{
 						Error:    "Query timeout exceeded",
-						Query:    p.finalizeQuery(query.Query, acceptLanguage),
+						Query:    p.finalizeQuery(query.Query, acceptLanguage, p.resolveEndpoint(query.Endpoint)),
 						Endpoint: p.resolveEndpoint(query.Endpoint),
 					},
 				}
@@ -433,7 +444,7 @@ func (p *Preprocessor) QueryIsClass(iri string) (bool, error) {
 		{ ?x a <%s> }
 	}`, iri, iri, iri)
 
-	finalizedQuery := p.finalizeQuery(query, "")
+	finalizedQuery := p.finalizeQuery(query, "", p.config.EndpointURL)
 	response, err := p.querySparqlEndpoint(context.Background(), p.config.EndpointURL, finalizedQuery)
 	if err != nil {
 		return false, fmt.Errorf("failed to query class status for IRI %s: %w", iri, err)
@@ -454,7 +465,7 @@ func (p *Preprocessor) QueryIsClass(iri string) (bool, error) {
 func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 	query := fmt.Sprintf("SELECT ?type WHERE { <%s> a ?type }", iri)
 
-	finalizedQuery := p.finalizeQuery(query, "")
+	finalizedQuery := p.finalizeQuery(query, "", p.config.EndpointURL)
 	response, err := p.querySparqlEndpoint(context.Background(), p.config.EndpointURL, finalizedQuery)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query types for IRI %s: %w", iri, err)

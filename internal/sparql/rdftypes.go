@@ -74,7 +74,7 @@ SELECT ?iri ?type WHERE {
 // every page view would re-ask for the same untyped IRIs. On a transport or
 // parse failure nothing is cached, so the next request retries.
 func fetchTypesBatch(p *Preprocessor, endpointURL string, iris []string, typeMap map[string][]string) {
-	query := p.finalizeQuery(buildTypeQuery(iris), "")
+	query := p.finalizeQuery(buildTypeQuery(iris), "", endpointURL)
 	response, err := p.querySparqlEndpoint(context.Background(), endpointURL, query)
 	if err != nil {
 		logger.Get().Warn("type query failed, icons will be unresolved",

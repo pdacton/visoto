@@ -806,3 +806,93 @@ username = "${VISOTO_TEST_DOTENV_USER}"
 		t.Errorf("Username = %q, want %q (environment must win over .env)", ep.Username, "from-shell")
 	}
 }
+
+// TestEndpointPrefixOverrides checks the per-endpoint prefix merge: an
+// endpoint entry replaces the same-named global prefix in place, a new name is
+// appended, an endpoint without overrides shares the global list, and an
+// unconfigured URL falls back to the global list.
+func TestEndpointPrefixOverrides(t *testing.T) {
+	configPath := filepath.Join(t.TempDir(), "test.toml")
+	configContent := `
+[application]
+port = 8080
+sparqlEndpoint = "https://a.example/sparql"
+
+[[application.sparqlEndpoints]]
+name = "A"
+url = "https://a.example/sparql"
+slug = "a"
+
+[[application.sparqlEndpoints]]
+name = "B"
+url = "https://b.example/sparql"
+slug = "b"
+prefixes = ["schema: https://schema.org/", "PREFIX ex: <https://ex.example/>"]
+
+[rdf]
+prefixes = [
+	"PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>",
+	"PREFIX schema: <http://schema.org/>",
+	"PREFIX schema2: <https://schema.org/>"
+]
+`
+	if err := os.WriteFile(configPath, []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := Load(configPath)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+
+	uri := func(prefixes []Prefix, name string) string {
+		for _, p := range prefixes {
+			if p.Name == name {
+				return p.URI
+			}
+		}
+		return ""
+	}
+
+	a := cfg.PrefixesFor("https://a.example/sparql")
+	if got := uri(a, "schema"); got != "<http://schema.org/>" {
+		t.Errorf("endpoint A schema = %q, want the global http namespace", got)
+	}
+
+	b := cfg.PrefixesFor("https://b.example/sparql")
+	if got := uri(b, "schema"); got != "<https://schema.org/>" {
+		t.Errorf("endpoint B schema = %q, want the https override", got)
+	}
+	if got := uri(b, "ex"); got != "<https://ex.example/>" {
+		t.Errorf("endpoint B ex = %q, want the appended prefix", got)
+	}
+	if len(b) != len(cfg.RDF.ParsedPrefixes)+1 {
+		t.Errorf("endpoint B has %d prefixes, want %d (one replaced, one appended)", len(b), len(cfg.RDF.ParsedPrefixes)+1)
+	}
+	// Replaced in place, ahead of schema2:, so IRI shortening still picks schema:.
+	if b[1].Name != "schema" {
+		t.Errorf("endpoint B prefix[1] = %q, want schema replaced in place", b[1].Name)
+	}
+	if got := uri(cfg.RDF.ParsedPrefixes, "schema"); got != "<http://schema.org/>" {
+		t.Errorf("global schema mutated to %q", got)
+	}
+
+	if got := uri(cfg.PrefixesFor("https://unknown.example/sparql"), "schema"); got != "<http://schema.org/>" {
+		t.Errorf("unknown endpoint schema = %q, want the global fallback", got)
+	}
+}
+
+func TestExpandCURIE(t *testing.T) {
+	prefixes := []Prefix{{Name: "schema", URI: "<https://schema.org/>"}}
+	tests := map[string]string{
+		"schema:name":            "https://schema.org/name",
+		"http://schema.org/name": "http://schema.org/name",
+		"urn:x:y":                "urn:x:y",
+		"rdfs:label":             "rdfs:label",
+		"https://ld.example/a:b": "https://ld.example/a:b",
+	}
+	for in, want := range tests {
+		if got := ExpandCURIE(in, prefixes); got != want {
+			t.Errorf("ExpandCURIE(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
