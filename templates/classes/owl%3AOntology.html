@@ -50,7 +50,8 @@
         <!-- Terms and imports are counted in their own subqueries so they are not
              multiplied by the description/creator OPTIONALs. Terms are counted the
              way the ontology page's "Defined Terms" table lists them (isDefinedBy,
-             or a class/property in the ontology's namespace), so the two agree.
+             rdfs:member, or a class/property in the ontology's namespace), so the
+             two agree.
 
              Version: owl:versionInfo, else owl:versionIRI — except where the
              versionIRI is the ontology IRI itself (all of QUDT), which says nothing.
@@ -78,6 +79,8 @@
                 ?instance a ?? .
                 FILTER (isIRI(?instance))
                 { ?term_ rdfs:isDefinedBy ?instance . }
+                UNION
+                { ?instance rdfs:member ?term_ . }
                 UNION
                 { VALUES ?kind_ { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
                   ?term_ a ?kind_ .

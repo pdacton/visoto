@@ -9,10 +9,14 @@
 
      Membership: a class or property belongs to the ontology when it is
      `rdfs:isDefinedBy` it — the only "defined by" predicate on LINDAS pointing
-     at an owl:Ontology. Several LINDAS ontologies (the agriculture system map,
-     inspection and plant-protection vocabularies) assert no isDefinedBy at all;
-     for those, and only those, membership falls back to classes and properties
-     whose IRI starts with the ontology IRI.
+     at an owl:Ontology — or when the ontology lists it with `rdfs:member`.
+     rdfs:member is for application profiles (DCAT-AP, DCAT-AP CH): they reuse
+     terms of other vocabularies, whose isDefinedBy keeps pointing at the
+     defining vocabulary, so only the profile itself can say which terms it
+     uses (SEMIC's DCAT-AP SHACL lists its shapes the same way). Several LINDAS
+     ontologies (the agriculture system map, inspection and plant-protection
+     vocabularies) assert neither; for those, and only those, membership falls
+     back to classes and properties whose IRI starts with the ontology IRI.
 
      Projection (what the CONSTRUCT emits, see static/js/graph-memory-store.js):
        - every member class           -> a class box
@@ -109,8 +113,10 @@ CONSTRUCT {
       SELECT DISTINCT ?m WHERE {
         { ?m rdfs:isDefinedBy ?? . }
         UNION
+        { ?? rdfs:member ?m . }
+        UNION
         {
-          FILTER NOT EXISTS { ?anyMember rdfs:isDefinedBy ?? . }
+          FILTER NOT EXISTS { { ?anyMember rdfs:isDefinedBy ?? . } UNION { ?? rdfs:member ?anyMember . } }
           VALUES ?memberType { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
           ?m a ?memberType .
           FILTER (isIRI(?m) && ?m != ?? && STRSTARTS(STR(?m), STR(??)))
@@ -130,8 +136,10 @@ CONSTRUCT {
         SELECT DISTINCT ?m WHERE {
           { ?m rdfs:isDefinedBy ?? . }
           UNION
+          { ?? rdfs:member ?m . }
+          UNION
           {
-            FILTER NOT EXISTS { ?anyMember rdfs:isDefinedBy ?? . }
+            FILTER NOT EXISTS { { ?anyMember rdfs:isDefinedBy ?? . } UNION { ?? rdfs:member ?anyMember . } }
             VALUES ?memberType { owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
             ?m a ?memberType .
             FILTER (isIRI(?m) && ?m != ?? && STRSTARTS(STR(?m), STR(??)))
@@ -166,7 +174,8 @@ CONSTRUCT {
       FILTER (isIRI(?external))
       FILTER (!(STRSTARTS(STR(?external), STR(xsd:)) || ?external IN (rdfs:Literal, rdf:langString, rdf:PlainLiteral, rdf:HTML, rdf:XMLLiteral, rdf:JSON)))
       FILTER NOT EXISTS { ?external rdfs:isDefinedBy ?? . }
-      FILTER (EXISTS { ?anyMember rdfs:isDefinedBy ?? . } || !STRSTARTS(STR(?external), STR(??)))
+      FILTER NOT EXISTS { ?? rdfs:member ?external . }
+      FILTER (EXISTS { { ?anyMember rdfs:isDefinedBy ?? . } UNION { ?? rdfs:member ?anyMember . } } || !STRSTARTS(STR(?external), STR(??)))
     } UNION {
       ?m (rdfs:domain|rdfs:range|rdfs:subClassOf)?/(owl:unionOf/rdf:rest*/rdf:first)? ?node .
       FILTER (isIRI(?node))
@@ -181,9 +190,11 @@ CONSTRUCT {
 
   <!-- terms defined by this ontology
 
-       Two ways a term belongs to an ontology, and LINDAS uses both:
+       Three ways a term belongs to an ontology:
        - rdfs:isDefinedBy ?? — QUDT and RiC-O. This branch takes ANY resource, not
          only classes and properties: 2,933 of QUDT's are qudt:Unit individuals.
+       - ?? rdfs:member — application profiles that reuse other vocabularies'
+         terms (DCAT-AP, DCAT-AP CH); also any resource.
        - the ontology IRI as a namespace prefix — OWL Time, the agriculture
          schemas and most others carry no isDefinedBy at all. This branch is
          restricted to class and property types, so the STRSTARTS only runs over
@@ -196,6 +207,9 @@ CONSTRUCT {
           SELECT DISTINCT ?term ?kind ?description WHERE {
             {
               ?term rdfs:isDefinedBy ?? .
+              OPTIONAL { ?term a ?kind . }
+            } UNION {
+              ?? rdfs:member ?term .
               OPTIONAL { ?term a ?kind . }
             } UNION {
               VALUES ?kind { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
