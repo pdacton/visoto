@@ -51,6 +51,9 @@ services:
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Language maps imported by the Caddyfile, generated from visoto.config
+      # by deploy.sh (`go run ./cmd/caddylang > site-lang.caddy`).
+      - ./site-lang.caddy:/etc/caddy/site-lang.caddy:ro
       - caddy_data:/data
       - caddy_config:/config
       # Access log, written as JSON and rolled by Caddy itself (see the `log`

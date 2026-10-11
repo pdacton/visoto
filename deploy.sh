@@ -86,10 +86,18 @@ echo -e "${YELLOW}[4/6] Copying files to server...${NC}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCP_OPTS="-P ${SSH_PORT}"
 
+# Generate the Caddyfile's language maps from visoto.config, so the closed set
+# of codes Caddy keys its cache on can never drift from the configured languages.
+# Fails the deploy on an invalid config rather than shipping stale maps.
+(cd "${SCRIPT_DIR}" && go run ./cmd/caddylang visoto.config > site-lang.caddy.tmp) \
+    && mv "${SCRIPT_DIR}/site-lang.caddy.tmp" "${SCRIPT_DIR}/site-lang.caddy"
+echo "Generated site-lang.caddy from visoto.config"
+
 # Copy essential files
 scp ${SCP_OPTS} "${SCRIPT_DIR}/Dockerfile" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/docker-compose.yml" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/Caddyfile" "${SSH_TARGET}:${REMOTE_DIR}/"
+scp ${SCP_OPTS} "${SCRIPT_DIR}/site-lang.caddy" "${SSH_TARGET}:${REMOTE_DIR}/"
 scp ${SCP_OPTS} "${SCRIPT_DIR}/visoto.config" "${SSH_TARGET}:${REMOTE_DIR}/"
 # .env carries the secrets that visoto.config and docker-compose.yml reference
 # as ${VAR}. It is gitignored, so it must be copied explicitly — without it

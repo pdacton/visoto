@@ -78,55 +78,36 @@ visoto.hutzli.org {
     # Accept-Language) into one header with a small, closed value set, so both
     # the cache key and the origin see a single normalized input.
     #
-    # This list must match `languages` in visoto.config. Drift is safe but not
-    # silent-correct: visoto re-validates X-Site-Lang against its own configured
-    # set, so a code listed only here falls back to default_language.
+    # The codes are generated from `languages` / `default_language` in
+    # visoto.config: deploy.sh runs `go run ./cmd/caddylang > site-lang.caddy`,
+    # which defines two maps — {al_lang} from Accept-Language and {site_lang}
+    # from the site-lang cookie, falling back to {al_lang}. Adding a language is
+    # a config change only.
+    #
+    # The set stays CLOSED, one line per configured code rather than a regexp
+    # capture: whatever the maps output becomes part of the cache key, so a
+    # capture would let any client mint new cache variants (site-lang=zzz).
     #
     # Why not vary on Accept-Language directly: its value space is effectively
     # unbounded ("de-CH,de;q=0.9,en-US;q=0.8,en;q=0.7" and endless variants), so
     # keying the cache on it fragmented entries per browser profile. X-Site-Lang
-    # has at most six values, so each page has at most six cached variants.
-    map {http.request.header.Accept-Language} {al_lang} {
-        ~^\s*de  de
-        ~^\s*fr  fr
-        ~^\s*it  it
-        ~^\s*rm  rm
-        default  en
-    }
-    # The cookie is the explicit user choice and outranks Accept-Language, so it
-    # is resolved first and only falls back to {al_lang} when absent.
+    # has one value per configured language.
     #
-    # Why one map rather than a base `request_header` refined by two matcher-
-    # scoped ones: the conditional form silently stopped applying in production —
-    # the unconditional line still ran (responses kept reporting
-    # `Vary: X-Site-Lang`), but the cookie lines never did, so every request was
-    # rendered from Accept-Language alone and the topbar picker appeared to do
-    # nothing. A single map has no matcher ordering to get wrong, and it keeps
-    # the one property that matters for safety: the field is always REPLACED
-    # from a closed value set, so a client-supplied X-Site-Lang can never be
-    # injected and the cache key space stays bounded.
+    # Why maps rather than a base `request_header` refined by matcher-scoped
+    # ones: the conditional form silently stopped applying in production — the
+    # unconditional line still ran (responses kept reporting `Vary: X-Site-Lang`),
+    # but the cookie lines never did, so every request was rendered from
+    # Accept-Language alone and the topbar picker appeared to do nothing. A map
+    # has no matcher ordering to get wrong, and the field is always REPLACED from
+    # the closed set, so a client-supplied X-Site-Lang can never be injected.
     #
     # The empty cookie is a real choice ("no language"), distinct from having no
     # cookie at all, so it maps to the empty string rather than falling through.
     # That depends on Caddy setting a present-but-empty header rather than
     # omitting it. Verify with
     #   curl -sI -H 'Cookie: site-lang=' https://visoto.hutzli.org/about.html
-    # and check the response says `Vary: X-Site-Lang`. If Caddy omits it, visoto
-    # degrades gracefully: it falls through to the cookie, still renders the
-    # no-language variant, and only reports Vary: Accept-Language.
-    # One line per code rather than a capture group: a regexp capture would work
-    # here, but enumerating the closed set needs no placeholder-expansion
-    # semantics to be true, and the list has to be kept in sync with
-    # visoto.config either way.
-    map {http.request.header.Cookie} {site_lang} {
-        ~(?:^|;\s*)site-lang=de(?:;|$)  de
-        ~(?:^|;\s*)site-lang=fr(?:;|$)  fr
-        ~(?:^|;\s*)site-lang=it(?:;|$)  it
-        ~(?:^|;\s*)site-lang=en(?:;|$)  en
-        ~(?:^|;\s*)site-lang=rm(?:;|$)  rm
-        ~(?:^|;\s*)site-lang=(?:;|$)    ""
-        default                          {al_lang}
-    }
+    # and check the response says `Vary: X-Site-Lang`.
+    import site-lang.caddy
     request_header X-Site-Lang {site_lang}
 
     # Compress responses (zstd preferred, gzip fallback). Ordered inside `cache`

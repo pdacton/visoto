@@ -62,10 +62,10 @@ type ApplicationConfig struct {
 	// and for UI strings it renders the base catalog. Every non-empty code needs
 	// a locales/<code>.toml catalog.
 	//
-	// The codes are duplicated in the Caddyfile, which normalizes the request
-	// into X-Site-Lang and cannot read this file. That duplication is safe:
-	// lang.Set re-cleans the header against this list, so a Caddyfile that drifts
-	// ahead can only fall back to DefaultLanguage, never inject an unknown code.
+	// Caddy normalizes the request into X-Site-Lang and cannot read this file,
+	// so deploy.sh generates its language maps from this list (cmd/caddylang).
+	// lang.Set still re-cleans the header against it, so a stale map can only
+	// fall back to DefaultLanguage, never inject an unknown code.
 	Languages []Language `toml:"languages"`
 
 	// DefaultLanguage is used when the request expresses no usable preference.

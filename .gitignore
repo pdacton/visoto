@@ -12,6 +12,9 @@
 
 # config files (have potentially API keys)
 visoto.config
+# Generated from visoto.config by deploy.sh (go run ./cmd/caddylang)
+site-lang.caddy
+site-lang.caddy.tmp
 
 # Test binary, built with `go test -c`
 *.test
