@@ -4,9 +4,8 @@
   <li class="breadcrumb-item">{{ tHTML "type.materialCitation.plazi" "<a href=\"/plazi.html\">Plazi</a>" }}</li>
 {{ end }}
 
-<sparql-query id="title">SELECT ?title WHERE { ?? (rdfs:label|skos:prefLabel|schema:name) ?title . FILTER (langMatches(lang(?title), visoto:dispLang) || !langMatches(lang(?title), "*")) }</sparql-query>
-{{ define "pageTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Material Citation{{ end }}{{ end }}
-{{ define "metaTitle" }}{{ with firstValue .QueryResults.title "title" }}{{ . }}{{ else }}Material Citation{{ end }}{{ end }}
+{{ define "pageTitle" }}{{ .Title }}{{ end }}
+{{ define "metaTitle" }}{{ .Title }}{{ end }}
 
 <sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}

@@ -414,6 +414,7 @@
           selection: selection,
           centre: centre,
           reversed: kit.reversedTypes ? kit.reversedTypes() : undefined, // GL-21, 22
+          prefixes: window.VisotoPrefixes.fromPage(),
         }, {
           force: c.force,
           elk: loadElk,
@@ -540,7 +541,7 @@
         case 'zoom-in': c.zoomIn(); break;
         case 'zoom-out': c.zoomOut(); break;
         case 'export-svg': c.exportSvg(fileName('svg'), kit.dressForExport); break;
-        case 'export-ttl': downloadText(window.VisotoTurtle.toTurtle(c.drawnGraph()), 'text/turtle', fileName('ttl')); break;
+        case 'export-ttl': downloadText(window.VisotoTurtle.toTurtle(c.drawnGraph(), window.VisotoPrefixes.fromPage()), 'text/turtle', fileName('ttl')); break;
         case 'export-png': c.exportPng(fileName('png'), kit.dressForExport); break;
         case 'print': c.print(kit.dressForExport); break;
         case 'save-as': saveAs(); break;

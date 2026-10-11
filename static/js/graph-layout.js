@@ -9,7 +9,9 @@
     options { algorithm: 'network' | 'tree-down' | 'tree-right' | 'radial',
               selection: [id, …] | null,   lay out only these, keep the rest
               centre: id | null,           Radial's centre (GL-19)
-              reversed: { <type IRI>: true } }  edges flipped for Tree ↓ / →
+              reversed: { <type IRI>: true },  edges flipped for Tree ↓ / →
+              prefixes: VisotoPrefixes }       expands the default reversed
+                                               types when `reversed` is absent
     deps    { force(nodes, links, linkLength),  WebCola step, from ge-adapter.js
               elk(): Promise<ELK instance>,     lazy elkjs, for the trees
               signal: AbortSignal }             checked between components
@@ -38,13 +40,22 @@
   var ALGORITHMS = ['network', 'tree-down', 'tree-right', 'radial'];
 
   // GL-22: superclasses, broader concepts and wholes on top.
-  var DEFAULT_REVERSED = {
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#type': true,
-    'http://www.w3.org/2000/01/rdf-schema#subClassOf': true,
-    'http://www.w3.org/2004/02/skos/core#broader': true,
-    'http://schema.org/isPartOf': true,
-    'https://schema.org/isPartOf': true,
-  };
+  // Written as CURIEs: defaultReversed() expands them with the active
+  // endpoint's prefixes (static/js/prefixes.js), so schema:isPartOf matches the
+  // namespace that endpoint uses, whichever spelling it is.
+  var DEFAULT_REVERSED_CURIES = ['rdf:type', 'rdfs:subClassOf', 'skos:broader', 'schema:isPartOf'];
+
+  // { <type IRI>: true } for the default reversed types. `prefixes` is a
+  // VisotoPrefixes instance; without one nothing is reversed by default.
+  function defaultReversed(prefixes) {
+    var out = {};
+    if (!prefixes || typeof prefixes.expand !== 'function') return out;
+    DEFAULT_REVERSED_CURIES.forEach(function (curie) {
+      var iri = prefixes.expand(curie);
+      if (iri !== curie) out[iri] = true;
+    });
+    return out;
+  }
 
   var DEFAULT_SIZE = { width: 180, height: 60 }; // a node GE has not measured yet
   var COMPONENT_GAP = 80;   // between packed components
@@ -319,7 +330,7 @@
 
     var idSet = {};
     nodes.forEach(function (n) { idSet[n.id] = true; });
-    var reversed = algorithm === 'tree-down' || algorithm === 'tree-right' ? (options.reversed || DEFAULT_REVERSED) : null;
+    var reversed = algorithm === 'tree-down' || algorithm === 'tree-right' ? (options.reversed || defaultReversed(options.prefixes)) : null;
     var edges = edgesWithin(graph.edges || [], idSet, reversed);
     var comps = components(nodes, edges);
     var before = bounds(nodes);
@@ -431,7 +442,8 @@
   return {
     ALGORITHMS: ALGORITHMS,
     ALIGN_MODES: ALIGN_MODES,
-    DEFAULT_REVERSED: DEFAULT_REVERSED,
+    DEFAULT_REVERSED_CURIES: DEFAULT_REVERSED_CURIES,
+    defaultReversed: defaultReversed,
     layout: layout,
     align: align,
     // exposed for tests

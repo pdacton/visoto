@@ -8,40 +8,20 @@ import (
 // internal/cache, which owns the implementation. What stays here is the part
 // specific to labels: the key, and the round trip through it.
 
-// TestLabelCacheKey covers what is specific to labels: the same IRI under
-// different language preferences is a different cache entry, and equivalent
-// preference sets in a different order are the same one.
-func TestLabelCacheKey(t *testing.T) {
+// TestBestCacheKey: the same IRI is a different entry per magic property,
+// endpoint and language ORDER — ranking is language first, so [en de] and
+// [de en] can resolve to different labels.
+func TestBestCacheKey(t *testing.T) {
 	iri := "http://example.com/thing"
-
-	if labelCacheKey(iri, []string{"en"}) == labelCacheKey(iri, []string{"de"}) {
-		t.Error("labelCacheKey() must distinguish languages")
-	}
-	if labelCacheKey(iri, []string{"en", "de"}) != labelCacheKey(iri, []string{"de", "en"}) {
-		t.Error("labelCacheKey() must be order-independent")
-	}
-}
-
-func TestLabelCacheRoundTrip(t *testing.T) {
-	iri := "http://example.com/label-cache"
-	langs := []string{"en", "de"}
-
-	if _, found := getCachedLabel(iri, langs); found {
-		t.Error("getCachedLabel() should miss for an uncached IRI")
-	}
-
-	setCachedLabel(iri, "Test Label", langs)
-
-	label, found := getCachedLabel(iri, langs)
-	if !found {
-		t.Fatal("getCachedLabel() should hit after set")
-	}
-	if label != "Test Label" {
-		t.Errorf("getCachedLabel() = %q, want %q", label, "Test Label")
-	}
-
-	// A different language preference is a different entry, not a stale hit.
-	if _, found := getCachedLabel(iri, []string{"fr"}); found {
-		t.Error("getCachedLabel() should miss for a different language set")
+	base := bestCacheKey("label", "https://a.example/sparql", iri, []string{"en", "de"})
+	for name, other := range map[string]string{
+		"language":       bestCacheKey("label", "https://a.example/sparql", iri, []string{"fr", "de"}),
+		"language order": bestCacheKey("label", "https://a.example/sparql", iri, []string{"de", "en"}),
+		"endpoint":       bestCacheKey("label", "https://b.example/sparql", iri, []string{"en", "de"}),
+		"property":       bestCacheKey("description", "https://a.example/sparql", iri, []string{"en", "de"}),
+	} {
+		if other == base {
+			t.Errorf("bestCacheKey() must distinguish %s", name)
+		}
 	}
 }

@@ -174,17 +174,16 @@ Use the `render` function to output a `Binding` as HTML — it renders URIs as c
 SPARQL queries are embedded in template files using `<sparql-query>` custom elements:
 
 ```html
-<sparql-query id="title" class="d-none">
-  SELECT ?title WHERE {
-    BIND (?? AS ?s)
-    ?s rdfs:label ?title .
-    FILTER (langMatches(lang(?title), "en") || !langMatches(lang(?title), "*"))
-  }
+<sparql-query id="members" class="d-none">
+  SELECT ?member WHERE { ?? schema:member ?member . }
 </sparql-query>
 ```
 
 **Rules:**
-- The `id` attribute is the key under which results are stored: `.QueryResults.title`.
+- The `id` attribute is the key under which results are stored: `.QueryResults.members`.
+- Don't write a title or subtitle query. The page title is `.Title` and the subtitle
+  is `.Subtitle`: the resource's single best `label` / `description` magic property
+  value, resolved by the server (see [Page title and subtitle](#page-title-and-subtitle)).
 - `??` is replaced with the current resource IRI (wrapped in `<...>`) before execution.
 - All prefix declarations from `rdf.prefixes` are prepended to the query automatically.
 - `class="d-none"` hides the element from browser display (Bootstrap utility class).
@@ -259,7 +258,7 @@ avoids it; a bare `<sparql-column>` with no attributes is recognised as prose an
 | `toJSON` | Serializes a value to HTML-safe JSON (for `<script>` tags). | `{{ toJSON .QueryResults.foo }}` |
 | `toJSONRaw` | Same as `toJSON` but without HTML-escaping `<`, `>`, `&`. Use when the JSON is passed to `encodeURIComponent`. | `{{ toJSONRaw $query }}` |
 | `toJSONPretty` | Indented JSON for display. | `{{ toJSONPretty . }}` |
-| `firstValue` | Returns the first `.Value` for a given variable from a `QueryResult`. Returns `""` if no results. | `{{ firstValue .QueryResults.title "title" }}` |
+| `firstValue` | Returns the first `.Value` for a given variable from a `QueryResult`. Returns `""` if no results. | `{{ firstValue .QueryResults.stats "count" }}` |
 | `lastPathSegment` | Returns the fragment after `#`, or the last `/`-separated segment of an IRI. | `{{ lastPathSegment .ResourceIRI }}` |
 | `groupByValue` | Deduplicates bindings by `value`, merging `property` labels. Used internally by the `literals` component. | `{{ groupByValue $bindings }}` |
 | `t` | Translated UI string for the page's language. See [UI strings](#ui-strings). | `{{ t "table.download" }}` |
@@ -775,7 +774,7 @@ Components are called with `{{ template "<name>" . }}` — pass the full `.` con
 
 | Component | Description |
 |---|---|
-| `pageHeader` | Standard page header: queries for title, subtitle, and `rdf:type` list. Defines the `pageTitle`, `metaTitle`, `metaIcon`, `pageSubtitle`, and `pageClasses` blocks. **Include this in almost every template.** |
+| `pageHeader` | Standard page header: title and subtitle from `.Title` / `.Subtitle`, and a query for the `rdf:type` list. Defines the `pageTitle`, `metaTitle`, `metaIcon`, `pageSubtitle`, and `pageClasses` blocks. **Include this in almost every template.** |
 | `literals` | Renders all literal (non-IRI) properties of the resource in a `sparqlGrid`. |
 | `relationships` | Renders outgoing and incoming IRI-valued relationship tables (collapsed by default). |
 
@@ -800,7 +799,23 @@ The base layout (`templates/layout/base.html`) provides named blocks that page t
 | `breadcrumb` | Breadcrumb trail (`<li>` elements). |
 | `pageContent` | Main content area. **Required — every template must define this.** |
 
-The `pageHeader` component defines `pageTitle`, `metaTitle`, `metaIcon`, `pageSubtitle`, and `pageClasses` automatically from SPARQL queries — include it and you only need to define `breadcrumb` and `pageContent`.
+The `pageHeader` component defines `pageTitle`, `metaTitle`, `metaIcon`, `pageSubtitle`, and `pageClasses` automatically — include it and you only need to define `breadcrumb` and `pageContent`.
+
+### Page title and subtitle {#page-title-and-subtitle}
+
+`.Title` and `.Subtitle` are resolved once per page by the server
+(`internal/sparql/labels.go`), the same way every IRI in a table gets its label:
+
+- **Candidates:** the alternatives of the `label` (title) and `description`
+  (subtitle) magic properties in `visoto.config`, in written order.
+- **Ranking:** language first — the page language, then the site languages in
+  their configured order (`""` = untagged), then any other language — and within
+  one language, the earlier property.
+- **Result:** always exactly one value. A title falls back to the IRI's last
+  segment; a resource without a description has an empty subtitle.
+
+A template that defines its own `pageTitle` writes `{{ .Title }}`; there is no
+language FILTER to repeat.
 
 ---
 

@@ -310,3 +310,22 @@ func TestEndpointPrefixOverride(t *testing.T) {
 		t.Errorf("sortTypesByPriority = %v, want schch:Term first", sorted)
 	}
 }
+
+// TestEndpointPrefixOverrideInverse: type_priority written against an https
+// global prefix moves to http on an endpoint that overrides schema: to http.
+func TestEndpointPrefixOverrideInverse(t *testing.T) {
+	global := []config.Prefix{{Name: "schema", URI: "<https://schema.org/>"}}
+	endpoint := []config.Prefix{{Name: "schema", URI: "<http://schema.org/>"}}
+
+	got := localizeTypePriority([]string{"https://schema.org/DefinedTerm"}, global, endpoint)
+	if got[0] != "http://schema.org/DefinedTerm" {
+		t.Errorf("localizeTypePriority = %q, want the http IRI", got[0])
+	}
+	r, err := New("http://schema.org/DefinedTerm", endpoint)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.ShortIRI != "schema:DefinedTerm" {
+		t.Errorf("ShortIRI = %q, want schema:DefinedTerm", r.ShortIRI)
+	}
+}

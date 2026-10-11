@@ -3,18 +3,22 @@
      Usage: {{ template "pageHeader" . }}
 -->
 
-<sparql-query id="pageTitle">SELECT ?title { ?? (rdfs:label|schema:name|skos:prefLabel|dc:title|rico:title|rico:name) ?title . FILTER (langMatches(lang(?title), visoto:dispLang) || !langMatches(lang(?title), "*")) }</sparql-query>
-<sparql-query id="pageSubtitle">SELECT ?description { ?? visoto:description ?description . FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }</sparql-query>
+<!-- Title and subtitle are the resource's single best label and description,
+     resolved by the server (.Title / .Subtitle, internal/sparql/labels.go): the
+     candidate properties are the "label" and "description" magic properties in
+     visoto.config, ranked language first (page language, then the site
+     languages, then any other), then by property order. No template needs a
+     title query of its own. -->
 <sparql-query id="pageClasses">SELECT ?class { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 
-{{ define "pageTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}
-{{ define "pageSubtitle" }}{{ firstValue .QueryResults.pageSubtitle "description" }}{{ end }}
+{{ define "pageTitle" }}{{ .Title }}{{ end }}
+{{ define "pageSubtitle" }}{{ .Subtitle }}{{ end }}
 {{ define "pageClasses" }}
   {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
     {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
   {{ end }}
 {{ end }}
-{{ define "metaTitle" }}{{ or (firstValue .QueryResults.pageTitle "title") (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "metaTitle" }}{{ .Title }}{{ end }}
 {{ define "metaIcon"  }}{{ resourceIcon . }}{{ end }}
 
 {{/* render-time no-op — included only to trigger preprocessor component discovery */}}

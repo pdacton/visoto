@@ -106,23 +106,22 @@
         enableElementResize(container, workspace.getModel());
 
 
-        // OWLStatsSettings with LINDAS-specific label properties and prefixes.
+        // OWLStatsSettings. The prefixes are the active endpoint's and the label
+        // property is the "label" magic property, both from visoto.config via
+        // static/js/prefixes.js — so labels here use the same properties as the
+        // server's, and follow an endpoint that redeclares a namespace.
+        var prefixes = window.VisotoPrefixes.fromPage();
+        var labelProperty = window.VisotoPrefixes.labelPath();
+        labelProperty.split('|').forEach(function (curie) {
+          curie = curie.trim();
+          if (prefixes.expand(curie) === curie) {
+            console.warn('sparqlGraph: label property ' + curie + ' uses an undeclared prefix');
+          }
+        });
         var settings = {
-          defaultPrefix:
-            'PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n' +
-            'PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n' +
-            'PREFIX owl:    <http://www.w3.org/2002/07/owl#>\n' +
-            'PREFIX skos:   <http://www.w3.org/2004/02/skos/core#>\n' +
-            'PREFIX schema: <http://schema.org/>\n' +
-            'PREFIX schch:  <https://schema.ld.admin.ch/>\n' +
-            'PREFIX gtfs:   <http://vocab.gtfs.org/terms#>\n' +
-            'PREFIX vl:     <https://version.link/>\n' +
-            'PREFIX rico:   <https://www.ica.org/standards/RiC/ontology#>\n' +
-            'PREFIX regch:  <https://register.ld.admin.ch/>\n' +
-            'PREFIX refch:  <https://reference.data.admin.ch/>\n' +
-            'PREFIX dcterms: <http://purl.org/dc/terms/>\n',
-          dataLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
-          schemaLabelProperty: 'schema:name | skos:prefLabel | dcterms:title | rdfs:label',
+          defaultPrefix: prefixes.sparqlBlock(),
+          dataLabelProperty: labelProperty,
+          schemaLabelProperty: labelProperty,
         };
 
         // POST, not GET: GET puts the whole query in the URL, and the edge query
@@ -500,10 +499,13 @@
       // Full IRIs the resolver dispatches on (it receives the EXPANDED link type IRI,
       // not the prefixed form). Structural "schema" edges get a dashed line to set
       // them apart from ordinary data relations while keeping the same grey palette.
-      var RDF_TYPE       = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
-      var RDFS_SUBCLASS  = 'http://www.w3.org/2000/01/rdf-schema#subClassOf';
-      var SCHEMA_HASPART = 'http://schema.org/hasPart';
-      var SCHEMA_ISPART  = 'http://schema.org/isPartOf';
+      // Written as CURIEs and expanded with the active endpoint's prefixes, so
+      // the match follows the namespace that endpoint actually uses.
+      var P = window.VisotoPrefixes.fromPage();
+      var RDF_TYPE       = P.expand('rdf:type');
+      var RDFS_SUBCLASS  = P.expand('rdfs:subClassOf');
+      var SCHEMA_HASPART = P.expand('schema:hasPart');
+      var SCHEMA_ISPART  = P.expand('schema:isPartOf');
 
       // Shared white-pill label — identical across all link types.
       var LINK_LABEL_ATTRS = {

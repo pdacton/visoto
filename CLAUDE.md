@@ -72,6 +72,10 @@ CSS; overrides go in `static/css/*_overrides.css`.
 Templates emit markup and `<template>` config islands only — **no inline JS**.
 Behaviour lives in `static/js/`, keyed off a `data-<name>` marker.
 
+JS never hard-codes a vocabulary namespace: write the term as a CURIE and
+expand it through `VisotoPrefixes.fromPage()` (`static/js/prefixes.js`), which
+carries the active endpoint's prefixes (an endpoint may redeclare e.g. `schema:`).
+
 ## Go backend
 
 - Idiomatic Go; prefer methods on structs over standalone functions.

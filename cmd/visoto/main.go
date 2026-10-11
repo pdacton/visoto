@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -255,6 +256,11 @@ func stampEndpointData(c *gin.Context, data *parser.TemplateData) {
 		data.SearchProvider = ep.SearchProvider
 	}
 	data.GraphQueryURL = proxyEndpointURL(c)
+	data.EndpointPrefixes = parser.NewPagePrefixes(cfg.PrefixesFor(activeEndpointURL(c)))
+	data.LabelPath = sparql.DefaultLabelPath
+	if path, ok := cfg.RDF.MagicProperties["label"]; ok {
+		data.LabelPath = path
+	}
 }
 
 // proxyEndpointURL is the URL the BROWSER uses for SPARQL — the same-origin
@@ -308,6 +314,7 @@ func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
 		NamedEndpoints:   namedEndpoints,
 		MagicProperties:  cfg.RDF.MagicProperties,
 		EndpointPrefixes: cfg.Application.EndpointPrefixesMap(),
+		LabelLanguages:   cfg.Application.LanguageCodes(),
 	})
 }
 
@@ -447,9 +454,19 @@ func resourcePageHandler(c *gin.Context) {
 		// Continue with fallback already set by ResolveTemplate
 	}
 
+	// The page title and subtitle are the resource's single best label and
+	// description (internal/sparql/labels.go), resolved alongside the template's
+	// own queries rather than by a title query in every template.
+	var title, subtitle string
+	var heading sync.WaitGroup
+	heading.Add(2)
+	go func() { defer heading.Done(); title = preprocessor.ResolveBest("label", r.IRI, language) }()
+	go func() { defer heading.Done(); subtitle = preprocessor.ResolveBest("description", r.IRI, language) }()
+
 	// TODO: refactor, move into Resource method
 	// extract SPARQL query from template and retrieve data (use per-request preprocessor)
 	r.Data, err = preprocessor.ProcessTemplateFile(r.TemplatePath, r.IRI, language)
+	heading.Wait()
 	if err != nil {
 		c.Header("Cache-Control", "no-store")
 		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
@@ -460,6 +477,8 @@ func resourcePageHandler(c *gin.Context) {
 	// like Graph and Schema) to template data
 	stampEndpointData(c, &r.Data)
 	r.Data.ShortIRI = r.ShortIRI
+	r.Data.Title = title
+	r.Data.Subtitle = subtitle
 	r.Data.TemplateName = r.TemplateName
 	r.Data.TemplateType = r.TemplateType
 
@@ -899,6 +918,7 @@ func main() {
 		NamedEndpoints:   cfg.Application.GetNamedEndpointsMap(),
 		MagicProperties:  cfg.RDF.MagicProperties,
 		EndpointPrefixes: cfg.Application.EndpointPrefixesMap(),
+		LabelLanguages:   cfg.Application.LanguageCodes(),
 	})
 	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor, classStats)
 

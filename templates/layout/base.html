@@ -75,6 +75,16 @@
       {{ toJSON jsStrings }}
     </script>
     <script src="/static/js/i18n.js"></script>
+    <!-- The active endpoint's prefix declarations (global [rdf] prefixes merged
+         with the endpoint's own overrides). The only namespace source for browser
+         JS: graph code names vocabulary terms as CURIEs and expands them through
+         static/js/prefixes.js, so an endpoint that redeclares e.g. schema: is
+         followed without any namespace hard-coded in JS. A <template> island,
+         not a JSON <script>: html/template string-encodes toJSON inside <script>. -->
+    <template id="vs-prefixes">{{ toJSON .EndpointPrefixes }}</template>
+    <!-- The "label" magic property: the label properties, in priority order. -->
+    <template id="vs-label-path">{{ toJSON .LabelPath }}</template>
+    <script src="/static/js/prefixes.js"></script>
 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

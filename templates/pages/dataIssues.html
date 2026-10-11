@@ -13,11 +13,10 @@
     <!-- Municipalities without identifiers -->
     <div class="mb-3">
       <sparql-query id="municipalitiesWithoutIdentifier">
-        SELECT ?municipality ?name ?graph WHERE {
+        SELECT ?municipality ?graph WHERE {
           GRAPH ?graph {
             ?municipality a schch:Municipality .
           }
-          OPTIONAL { ?municipality (rdfs:label|skos:prefLabel|schema:name) ?name }
           FILTER NOT EXISTS { ?municipality schema:identifier ?identifier }
         }
       </sparql-query>

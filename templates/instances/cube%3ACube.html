@@ -3,14 +3,8 @@
 
 {{ template "pageHeader" . }}
 
-<sparql-query id="title">
-  SELECT ?title WHERE {
-    ?? schema:name ?title .
-    FILTER(langMatches(lang(?title), visoto:dispLang) || !langMatches(lang(?title), "*"))
-  } LIMIT 1
-</sparql-query>
-{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
-{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "pageTitle" }}{{ .Title }}{{ end }}
+{{ define "metaTitle" }}{{ .Title }}{{ end }}
 
 <sparql-query id="pageSubtitle">
   SELECT ?description WHERE {

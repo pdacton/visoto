@@ -197,100 +197,60 @@ func TestExtractIRIs(t *testing.T) {
 	}
 }
 
-// The /api tier feeds these functions a single bare code instead of a parsed
-// Accept-Language header. A one-entry preference list is the well-behaved case:
-// it cannot trip the single-character priority concatenation in buildLabelQuery,
-// and it cannot collide in labelCacheKey (which sorts, discarding order).
-func TestBareCodeLanguageHandling(t *testing.T) {
+func TestBareCodeParse(t *testing.T) {
 	if got := parseAcceptLanguage("fr"); len(got) != 1 || got[0] != "fr" {
 		t.Errorf("parseAcceptLanguage(\"fr\") = %v, want [fr]", got)
 	}
+}
 
-	q := buildLabelQuery([]string{"http://example.com/Person"}, []string{"fr"})
-	if !containsString(q, "IF(?lang = 'fr', '1', 1/0)") {
-		t.Errorf("buildLabelQuery did not rank the bare code first:\n%s", q)
-	}
-	// Exactly one caller-supplied rung ahead of the hardcoded de/fr/it/en/rm
-	// ladder — more would risk two-digit priorities in the CONCAT below it.
-	// Caller rungs use single quotes; the hardcoded ones use double.
-	if n := strings.Count(q, "IF(?lang = '"); n != 1 {
-		t.Errorf("buildLabelQuery emitted %d caller priority rungs, want 1:\n%s", n, q)
-	}
-
-	if labelCacheKey("http://x", []string{"de"}) == labelCacheKey("http://x", []string{"fr"}) {
-		t.Error("labelCacheKey collides across single-code languages")
+// rankLanguages: requested first (as base codes), then the site languages,
+// no repeats; "" (untagged) keeps its configured place; unsafe codes dropped.
+func TestRankLanguages(t *testing.T) {
+	p := New(QueryInput{LabelLanguages: []string{"de", "fr", "it", "en", "rm", ""}})
+	got := strings.Join(p.rankLanguages([]string{"en-US", "x'y", "de"}), ",")
+	if want := "en,de,fr,it,rm,"; got != want {
+		t.Errorf("rankLanguages = %q, want %q", got, want)
 	}
 }
 
-func TestBuildLabelQuery(t *testing.T) {
-	tests := []struct {
-		name      string
-		iris      []string
-		languages []string
-		wantEmpty bool
-	}{
-		{
-			name:      "empty IRIs",
-			iris:      []string{},
-			languages: []string{"en"},
-			wantEmpty: true,
-		},
-		{
-			name:      "single IRI with language",
-			iris:      []string{"http://example.com/Person"},
-			languages: []string{"en", "de"},
-			wantEmpty: false,
-		},
-		{
-			name:      "multiple IRIs no language",
-			iris:      []string{"http://example.com/Person", "http://example.com/name"},
-			languages: []string{},
-			wantEmpty: false,
-		},
+// bestProperties: the "label" magic property's alternatives in written order,
+// a built-in default without one, and multi-step paths skipped.
+func TestBestProperties(t *testing.T) {
+	p := New(QueryInput{MagicProperties: map[string]string{
+		"label":       "schema:name | rdfs:label|<http://ex.org/t>",
+		"description": "rdfs:comment|schema:address/schema:name",
+	}})
+	if got := strings.Join(p.bestProperties("label"), ","); got != "schema:name,rdfs:label,<http://ex.org/t>" {
+		t.Errorf("bestProperties(label) = %q", got)
 	}
+	if got := strings.Join(p.bestProperties("description"), ","); got != "rdfs:comment" {
+		t.Errorf("bestProperties(description) = %q, want the path dropped", got)
+	}
+	if got := New(QueryInput{}).bestProperties("label"); strings.Join(got, "|") != DefaultLabelPath {
+		t.Errorf("bestProperties without config = %v, want the default path", got)
+	}
+}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := buildLabelQuery(tt.iris, tt.languages)
-
-			if tt.wantEmpty {
-				if got != "" {
-					t.Errorf("buildLabelQuery() should return empty string for empty IRIs")
-				}
-				return
-			}
-
-			// Check query contains expected elements
-			if got == "" {
-				t.Errorf("buildLabelQuery() returned empty string unexpectedly")
-			}
-
-			// Should contain VALUES clause
-			if !containsString(got, "VALUES ?iri") {
-				t.Errorf("buildLabelQuery() missing VALUES clause")
-			}
-
-			// Should contain all IRIs
-			for _, iri := range tt.iris {
-				if !containsString(got, "<"+iri+">") {
-					t.Errorf("buildLabelQuery() missing IRI: %v", iri)
-				}
-			}
-
-			// Should contain COALESCE for language priority ranking
-			if !containsString(got, "COALESCE") {
-				t.Errorf("buildLabelQuery() missing COALESCE for language priority")
-			}
-
-			// Should contain language IF expressions if languages provided
-			if len(tt.languages) > 0 {
-				for _, lang := range tt.languages {
-					if !containsString(got, lang) {
-						t.Errorf("buildLabelQuery() missing language: %v", lang)
-					}
-				}
-			}
-		})
+// buildBestQuery ranks language before property: the language rank is the
+// first two characters of the concatenation, the property rank the next two.
+func TestBuildBestQuery(t *testing.T) {
+	if buildBestQuery(nil, []string{"rdfs:label"}, []string{"en"}) != "" {
+		t.Error("no IRIs should give an empty query")
+	}
+	q := buildBestQuery([]string{"http://ex.org/a"}, []string{"rdfs:label", "schema:name"}, []string{"en", ""})
+	for _, want := range []string{
+		"VALUES ?iri { <http://ex.org/a> }",
+		`(rdfs:label "00")`,
+		`(schema:name "01")`,
+		`IF(?lang = "en" || STRSTARTS(?lang, "en-"), "00", 1/0)`,
+		`IF(?lang = "", "01", 1/0)`,
+		`"99"`,
+		"CONCAT(?lRank, ?pRank, STR(?val))",
+		"SUBSTR(?best, 5)",
+	} {
+		if !strings.Contains(q, want) {
+			t.Errorf("buildBestQuery missing %q:\n%s", want, q)
+		}
 	}
 }
 

@@ -896,3 +896,22 @@ func TestExpandCURIE(t *testing.T) {
 		}
 	}
 }
+
+// TestEndpointPrefixOverridesInverse is the mirror case: https globally, an
+// endpoint overriding back to http. Nothing in the merge depends on direction.
+func TestEndpointPrefixOverridesInverse(t *testing.T) {
+	a := ApplicationConfig{SparqlEndpoints: []SparqlEndpoint{
+		{URL: "https://a.example/sparql"},
+		{URL: "https://b.example/sparql", Prefixes: []string{"PREFIX schema: <http://schema.org/>"}},
+	}}
+	global := []Prefix{{Name: "schema", URI: "<https://schema.org/>"}}
+	a.mergeEndpointPrefixes(global)
+	c := &Config{Application: a, RDF: RDFConfig{ParsedPrefixes: global}}
+
+	if got := c.PrefixesFor("https://a.example/sparql")[0].URI; got != "<https://schema.org/>" {
+		t.Errorf("endpoint A schema = %q, want the global https namespace", got)
+	}
+	if got := c.PrefixesFor("https://b.example/sparql")[0].URI; got != "<http://schema.org/>" {
+		t.Errorf("endpoint B schema = %q, want the http override", got)
+	}
+}

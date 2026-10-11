@@ -9,15 +9,8 @@
      (a data quirk on every one of the 17,657), and the component would show
      them. The delivery number (rico:name) is the subtitle. -->
 
-<sparql-query id="title">
-  SELECT ?title WHERE {
-    ?? rico:title ?t .
-    FILTER (langMatches(lang(?t), visoto:dispLang) || !langMatches(lang(?t), "*"))
-    BIND (REPLACE(STR(?t), "^\"|\"$", "") AS ?title)
-  }
-</sparql-query>
-{{ define "pageTitle" }}{{ or (firstValue .QueryResults.title "title") (lastPathSegment .ResourceIRI) }}{{ end }}
-{{ define "metaTitle" }}{{ or (firstValue .QueryResults.title "title") (lastPathSegment .ResourceIRI) }}{{ end }}
+{{ define "pageTitle" }}{{ .Title }}{{ end }}
+{{ define "metaTitle" }}{{ .Title }}{{ end }}
 {{ define "metaIcon" }}{{ resourceIcon . }}{{ end }}
 
 <sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>

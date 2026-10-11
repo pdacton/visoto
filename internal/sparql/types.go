@@ -46,6 +46,9 @@ type QueryInput struct {
 	// with an endpoint's own overrides), keyed by endpoint URL. A URL missing
 	// here uses Prefixes.
 	EndpointPrefixes map[string][]config.Prefix
+	// LabelLanguages is the fallback language order for picking one best label
+	// or description (the configured site languages; "" = untagged literal).
+	LabelLanguages []string
 }
 
 // QueryResult stores simplified SPARQL results for template consumption

@@ -6,6 +6,13 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const Prefixes = require('../../static/js/prefixes.js');
+const W3C = [
+  { name: 'rdf', iri: 'http://www.w3.org/1999/02/22-rdf-syntax-ns#' },
+  { name: 'rdfs', iri: 'http://www.w3.org/2000/01/rdf-schema#' },
+  { name: 'skos', iri: 'http://www.w3.org/2004/02/skos/core#' },
+];
+const P = Prefixes.create(W3C.concat({ name: 'schema', iri: 'http://schema.org/' }));
 const L = require('../../static/js/graph-layout.js');
 
 const SUBCLASS = 'http://www.w3.org/2000/01/rdf-schema#subClassOf';
@@ -48,7 +55,7 @@ test('tree reverses subClassOf so the superclass is on top', async () => {
     nodes: [node('child'), node('parent')],
     edges: [{ source: 'child', target: 'parent', type: SUBCLASS }],
   };
-  const pos = await L.layout(graph, { algorithm: 'tree-down' }, { elk: stubElk(calls), force: noForce });
+  const pos = await L.layout(graph, { algorithm: 'tree-down', prefixes: P }, { elk: stubElk(calls), force: noForce });
   assert.deepEqual(calls[0].edges[0].sources, ['parent']);
   assert.ok(pos.parent.y < pos.child.y, 'parent above child');
 });
@@ -179,4 +186,19 @@ test('align left / middle and distribute horizontally', () => {
 
 test('align needs two nodes', () => {
   assert.deepEqual(L.align([node('a')], 'left'), {});
+});
+
+test('default reversed types follow the endpoint namespace, in both directions', () => {
+  const http = L.defaultReversed(P);
+  assert.ok(http['http://schema.org/isPartOf']);
+  assert.ok(!http['https://schema.org/isPartOf']);
+  const https = L.defaultReversed(Prefixes.create(W3C.concat({ name: 'schema', iri: 'https://schema.org/' })));
+  assert.ok(https['https://schema.org/isPartOf']);
+  assert.ok(!https['http://schema.org/isPartOf']);
+  assert.ok(https['http://www.w3.org/2000/01/rdf-schema#subClassOf']);
+});
+
+test('without prefixes nothing is reversed by default', () => {
+  assert.deepEqual(L.defaultReversed(undefined), {});
+  assert.deepEqual(L.defaultReversed(Prefixes.create([])), {});
 });

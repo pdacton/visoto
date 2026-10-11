@@ -96,16 +96,28 @@ normalized `X-Site-Lang` before the shared cache and folds that header into the
 cache key, so only step 1 runs. Steps 2 and 3 are what make the same code behave
 correctly in development, where there is no cache in front.
 
-### Keeping the Caddyfile in sync
+### Caddy language maps {#caddy-language-maps}
 
-The `languages` list is duplicated in the `Caddyfile`, which cannot read this
-file. The duplication is safe — visoto re-validates `X-Site-Lang` against the
-configured set, so a Caddyfile listing a code visoto does not know only causes a
-fallback to `default_language`. But **adding or removing a language means editing
-both files**, plus adding the catalog.
+Caddy turns the `site-lang` cookie (or, without one, `Accept-Language`) into the
+`X-Site-Lang` header that its cache is keyed on, and it cannot read this file. Its
+two language maps are therefore **generated** from `languages` and
+`default_language`: `deploy.sh` runs
 
-Changing the list also changes every shared-cache key, so a deploy that touches
-it should be followed by a cache purge (Settings → "Clear cache").
+```bash
+go run ./cmd/caddylang visoto.config > site-lang.caddy
+```
+
+and the `Caddyfile` imports `site-lang.caddy` (gitignored; mounted into the Caddy
+container by `docker-compose.yml`). Adding or removing a language is a change to
+this file plus its `locales/<code>.toml` catalog — nothing in the `Caddyfile`.
+For a local `docker compose up`, run the command above once first.
+
+The maps list each configured code explicitly instead of capturing any code: the
+map output is part of the cache key, so a capture would let any client create new
+cache variants. An unknown code falls back to `default_language`.
+
+Changing the list changes the shared-cache keys; `deploy.sh` recreates Caddy,
+which also empties its cache.
 
 ### Response caching
 
@@ -182,9 +194,17 @@ The merged list is used for everything sent to or derived from that endpoint:
   shortens to `schema:DefinedTerm` and finds `schema%3ADefinedTerm.html`;
 - `type_priority`, whose entries are moved into the endpoint's namespace.
 
+- the graph views in the browser. Every page carries the merged list in a
+  `#vs-prefixes` island (`static/js/prefixes.js`). Graph Explorer's label
+  query, link styling, the default tree reversal, the filter panel's namespace
+  names and the Turtle export all take their namespaces from it.
+
+The mechanism has no built-in direction. The global list can just as well
+declare `schema:` as `https://schema.org/`, with an endpoint overriding it back
+to `http://schema.org/`.
+
 Don't query both spellings at once (`(schema:name|schema2:name)`). That doubles
-the cost, and on Stadt Zürich it turns a 46 s query into a timeout. The
-browser-side SPARQL proxy (Graph Explorer) does not use these prefixes.
+the cost, and on Stadt Zürich it turns a 46 s query into a timeout.
 
 ### Slugs {#slugs}
 
@@ -290,8 +310,17 @@ repeating a long alternation in every template query, map a name once:
 
 ```toml
 [rdf.magic_properties]
+label = "rdfs:label|skos:prefLabel|schema:name|dct:title|dc:title|rico:title|rico:name"
 description = "rdfs:comment|schema:description|dct:description|dc:description"
 ```
+
+`label` and `description` also drive the server's **single best value** per
+resource: the page title, the page subtitle and the label of every IRI shown in
+a table. Their alternatives are ranked language first (page language, then the
+`languages` above in order, `""` = untagged, then any other), then by the order
+written here, so each must be a single predicate. `label` is also Graph
+Explorer's label property. Without a `label` entry a built-in default with the
+same value applies.
 
 Template queries can then write `visoto:description`, which is expanded to the
 configured path wrapped in parentheses before the query is sent. Any prefixes used in

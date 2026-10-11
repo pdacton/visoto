@@ -7,7 +7,12 @@
       elements: [{ iri, types: [iri], labels: [LocalizedString],
                    properties: { <iri>: { type: 'uri' | 'string', values } } }],
       links:    [{ source: iri, type: iri, target: iri }],
-    }) -> string
+    }, prefixes) -> string
+
+  `prefixes` is a VisotoPrefixes instance (static/js/prefixes.js) — the active
+  endpoint's declarations, so schema: is written with whichever namespace that
+  endpoint uses. Only the prefixes actually used get an @prefix line; without
+  `prefixes` every IRI is written in full.
 
   LocalizedString is GE's { value, language, datatype?: { value } }. What is
   drawn: each node's types and label(s), the property rows of expanded nodes
@@ -20,20 +25,6 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
 
-  var PREFIXES = [
-    ['rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'],
-    ['rdfs', 'http://www.w3.org/2000/01/rdf-schema#'],
-    ['owl', 'http://www.w3.org/2002/07/owl#'],
-    ['xsd', 'http://www.w3.org/2001/XMLSchema#'],
-    ['skos', 'http://www.w3.org/2004/02/skos/core#'],
-    ['schema', 'http://schema.org/'],
-    ['dcterms', 'http://purl.org/dc/terms/'],
-    ['prov', 'http://www.w3.org/ns/prov#'],
-    ['foaf', 'http://xmlns.com/foaf/0.1/'],
-    ['dcat', 'http://www.w3.org/ns/dcat#'],
-    ['schch', 'https://schema.ld.admin.ch/'],
-    ['cube', 'https://cube.link/'],
-  ];
   var RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';
   var RDFS_LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
   var XSD_STRING = 'http://www.w3.org/2001/XMLSchema#string';
@@ -55,16 +46,15 @@
     return dt && dt !== XSD_STRING ? text + '^^' + dt : text; // dt resolved by term() below
   }
 
-  function toTurtle(graph) {
+  function toTurtle(graph, prefixes) {
     var used = {};
+    var compact = prefixes && typeof prefixes.compact === 'function' ? prefixes.compact : function () { return null; };
     function term(iri) {
       if (iri === RDF_TYPE) return 'a';
-      for (var i = 0; i < PREFIXES.length; i++) {
-        var ns = PREFIXES[i][1];
-        if (iri.indexOf(ns) === 0 && LOCAL.test(iri.slice(ns.length))) {
-          used[PREFIXES[i][0]] = true;
-          return PREFIXES[i][0] + ':' + iri.slice(ns.length);
-        }
+      var c = compact(iri);
+      if (c && LOCAL.test(c.local)) {
+        used[c.prefix] = true;
+        return c.prefix + ':' + c.local;
       }
       return iriRef(iri);
     }
@@ -108,8 +98,12 @@
       }).join(' ;\n') + ' .';
     }).join('\n\n');
 
-    var head = PREFIXES.filter(function (p) { return used[p[0]]; })
-      .map(function (p) { return '@prefix ' + p[0] + ': <' + p[1] + '> .'; }).join('\n');
+    var seen = {};
+    var head = (prefixes && prefixes.list || []).filter(function (p) {
+      if (!used[p.name] || seen[p.name]) return false;
+      seen[p.name] = true;
+      return true;
+    }).map(function (p) { return '@prefix ' + p.name + ': <' + p.iri + '> .'; }).join('\n');
     return (head ? head + '\n\n' : '') + body + '\n';
   }
 

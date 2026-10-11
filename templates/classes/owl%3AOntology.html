@@ -95,7 +95,7 @@
             OPTIONAL { ?instance owl:versionInfo ?versionInfo_ . }
             OPTIONAL { ?instance owl:versionIRI ?versionIRI_ . FILTER (?versionIRI_ != ?instance) }
             OPTIONAL { ?instance dct:creator ?creator_ .
-                       OPTIONAL { ?creator_ (rdfs:label|schema:name) ?creatorLabel_ . }
+                       OPTIONAL { ?creator_ visoto:label ?creatorLabel_ . }
                        BIND(COALESCE(?creatorLabel_, STR(?creator_)) AS ?creatorName_) }
           } GROUP BY ?instance
           ORDER BY ?instance

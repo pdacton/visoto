@@ -83,3 +83,23 @@ func TestProxyEndpointURLBareConfig(t *testing.T) {
 		t.Errorf("GraphQueryURL = %q, want %q", got, want)
 	}
 }
+
+// The browser receives the active endpoint's prefixes, override applied —
+// here the inverse of the Stadt Zürich setup: https globally, http on one
+// endpoint — so the vs-prefixes island follows the endpoint in either direction.
+func TestStampEndpointPrefixes(t *testing.T) {
+	global := []config.Prefix{{Name: "schema", URI: "<https://schema.org/>"}}
+	endpointsForTest(t,
+		config.SparqlEndpoint{Name: "A", Slug: "a", URL: "https://a.example/sparql", Default: true, ParsedPrefixes: global},
+		config.SparqlEndpoint{Name: "B", Slug: "b", URL: "https://b.example/sparql",
+			ParsedPrefixes: []config.Prefix{{Name: "schema", URI: "<http://schema.org/>"}}},
+	)
+	cfg.RDF.ParsedPrefixes = global
+
+	for slug, want := range map[string]string{"a": "https://schema.org/", "b": "http://schema.org/"} {
+		got := stamp(t, "/p?endpoint="+slug).EndpointPrefixes
+		if len(got) != 1 || got[0].Name != "schema" || got[0].IRI != want {
+			t.Errorf("endpoint %s: EndpointPrefixes = %+v, want schema -> %s", slug, got, want)
+		}
+	}
+}

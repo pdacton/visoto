@@ -11,9 +11,8 @@
   {{ end }}
 {{ end }}
 
-<sparql-query id="title">SELECT ?title WHERE { ?? dct:title ?title . FILTER (langMatches(lang(?title), visoto:dispLang) || !langMatches(lang(?title), "*")) } LIMIT 1</sparql-query>
-{{ define "pageTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
-{{ define "metaTitle" }}{{ firstValue .QueryResults.title "title" }}{{ end }}
+{{ define "pageTitle" }}{{ .Title }}{{ end }}
+{{ define "metaTitle" }}{{ .Title }}{{ end }}
 
 <sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
 {{ define "pageClasses" }}

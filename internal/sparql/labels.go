@@ -2,16 +2,25 @@ package sparql
 
 // labels.go provides label resolution for RDF IRIs.
 //
-// It fetches human-readable labels from a SPARQL endpoint by querying common
-// labelling properties (rdfs:label, skos:prefLabel, schema:name, etc.) and
-// ranking results by property type and browser language preference. Resolved
-// labels are cached in memory with a TTL to avoid redundant network requests.
+// It picks ONE best literal per IRI for a magic property — "label" for names,
+// "description" for the page subtitle. The candidate properties and their
+// priority are the alternatives of [rdf.magic_properties] in visoto.config, in
+// written order. Ranking is language first, then property:
+//
+//  1. the requested (page) language,
+//  2. the site languages in their configured order, where "" means an
+//     untagged literal,
+//  3. any other language;
+//
+// and within one language rung, the earlier property wins. Resolved values are
+// cached in memory with a TTL to avoid redundant network requests.
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -23,28 +32,15 @@ import (
 
 // ── Cache ────────────────────────────────────────────────────────────────────
 
-// labelCache holds resolved labels. Keyed by IRI *and* language preferences,
-// because the label a visitor should see depends on both (see labelCacheKey).
-// The implementation is the shared expiring map in internal/cache.
+// labelCache holds resolved values, keyed by what decides them (see
+// bestCacheKey). The implementation is the shared expiring map in internal/cache.
 var labelCache = cache.New[string](1 * time.Hour)
 
-// labelCacheKey returns a cache key incorporating the IRI and language preferences.
-// Languages are sorted so that equivalent preference sets produce the same key.
-func labelCacheKey(iri string, languages []string) string {
-	langs := make([]string, len(languages))
-	copy(langs, languages)
-	sort.Strings(langs)
-	return iri + "\x00" + strings.Join(langs, ",")
-}
-
-// getCachedLabel retrieves label from cache if not expired
-func getCachedLabel(iri string, languages []string) (string, bool) {
-	return labelCache.Get(labelCacheKey(iri, languages))
-}
-
-// setCachedLabel stores label in cache with TTL
-func setCachedLabel(iri, label string, languages []string) {
-	labelCache.Set(labelCacheKey(iri, languages), label)
+// bestCacheKey identifies one resolved value: the magic property, the endpoint
+// (its prefixes and data differ), the IRI and the language ORDER — ranking is
+// language first, so [en de] and [de en] can resolve differently.
+func bestCacheKey(kind, endpointURL, iri string, languages []string) string {
+	return kind + "\x00" + endpointURL + "\x00" + iri + "\x00" + strings.Join(languages, ",")
 }
 
 // ── Query building ───────────────────────────────────────────────────────────
@@ -130,99 +126,116 @@ func parseAcceptLanguage(header string) []string {
 	return result
 }
 
-// buildLabelQuery constructs SPARQL query to fetch labels for given IRIs
-// Checks rdfs:label, skos:prefLabel, schema:name, dct:title, dc:title, rico:title, rico:name (in priority order)
-// Filters by language preferences
-func buildLabelQuery(iris []string, languages []string) string {
-	if len(iris) == 0 {
+// DefaultLabelPath is used when visoto.config defines no "label" magic property.
+const DefaultLabelPath = "rdfs:label|skos:prefLabel|schema:name|dct:title|dc:title|rico:title|rico:name"
+
+// simpleTerm matches one predicate — a CURIE or an <IRI> — the only thing a
+// VALUES row can hold. Property paths (a/b, ^a) cannot be ranked this way.
+var simpleTerm = regexp.MustCompile(`^(?:[A-Za-z][\w.-]*:[\w.-]*|<[^<>"{}|^\x60\\\s]+>)$`)
+
+// langCode matches a language code safe to splice into the query.
+var langCode = regexp.MustCompile(`^[a-z]{1,8}$`)
+
+// bestProperties returns the ranked candidate predicates of magic property
+// kind: its alternatives in written order. Entries that are not a single
+// predicate are skipped with a warning.
+func (p *Preprocessor) bestProperties(kind string) []string {
+	path, ok := p.config.MagicProperties[kind]
+	if !ok && kind == "label" {
+		path = DefaultLabelPath
+	}
+	var props []string
+	for _, alt := range strings.Split(path, "|") {
+		alt = strings.TrimSpace(alt)
+		if alt == "" {
+			continue
+		}
+		if !simpleTerm.MatchString(alt) {
+			logger.Get().Warn("magic property alternative is not a single predicate, ignored for ranking",
+				slog.String("property", kind), slog.String("alternative", alt))
+			continue
+		}
+		props = append(props, alt)
+	}
+	return props
+}
+
+// rankLanguages is the language order a value is chosen by: the requested
+// languages (reduced to base codes, "en-US" → "en"), then the configured site
+// languages, without repeats. "" stands for an untagged literal, so its place in
+// the site list decides where untagged values rank.
+func (p *Preprocessor) rankLanguages(requested []string) []string {
+	seen := make(map[string]bool)
+	var out []string
+	add := func(code string) {
+		code = strings.ToLower(strings.SplitN(strings.TrimSpace(code), "-", 2)[0])
+		if seen[code] || (code != "" && !langCode.MatchString(code)) {
+			return
+		}
+		seen[code] = true
+		out = append(out, code)
+	}
+	for _, l := range requested {
+		add(l)
+	}
+	for _, l := range p.config.LabelLanguages {
+		add(l)
+	}
+	return out
+}
+
+// buildBestQuery returns, for each IRI, its single best value among props:
+// ranked by language (the order of languages, then anything else), then by
+// property (the order of props). Ranks are fixed-width two-digit numbers
+// concatenated ahead of the value, so MIN() picks the winner and SUBSTR strips
+// the four rank characters again.
+func buildBestQuery(iris, props, languages []string) string {
+	if len(iris) == 0 || len(props) == 0 {
 		return ""
 	}
 
-	// Build VALUES clause
-	var valuesClause strings.Builder
-	valuesClause.WriteString("VALUES ?iri { ")
+	var values strings.Builder
+	values.WriteString("VALUES ?iri { ")
 	for _, iri := range iris {
-		fmt.Fprintf(&valuesClause, "<%s> ", iri)
+		fmt.Fprintf(&values, "<%s> ", iri)
 	}
-	valuesClause.WriteString("}")
+	values.WriteString("}")
 
-	// Build dynamic BIND/COALESCE clause for languages
-	var userLangPrio string
-	if len(languages) > 0 {
-		langParts := make([]string, len(languages))
-		for i, lang := range languages {
-			langParts[i] = fmt.Sprintf("IF(?lang = '%s', '%d', 1/0),", strings.ToLower(lang), i+1)
+	var propRows strings.Builder
+	for i, prop := range props {
+		fmt.Fprintf(&propRows, "        (%s \"%02d\")\n", prop, i)
+	}
+
+	var langRungs strings.Builder
+	for i, code := range languages {
+		cond := `?lang = ""`
+		if code != "" {
+			cond = fmt.Sprintf(`?lang = "%s" || STRSTARTS(?lang, "%s-")`, code, code)
 		}
-		userLangPrio = strings.Join(langParts, "\n          ")
+		fmt.Fprintf(&langRungs, "          IF(%s, \"%02d\", 1/0),\n", cond, i)
 	}
 
-	query := fmt.Sprintf(`
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-PREFIX schema: <http://schema.org/>
-PREFIX schema2: <https://schema.org/>
-PREFIX dct: <http://purl.org/dc/terms/>
-PREFIX dc: <http://purl.org/dc/elements/1.1/>
-PREFIX rico: <https://www.ica.org/standards/RiC/ontology#>
-
-SELECT ?iri ?label WHERE {
-
-  # 1. VALUES clause with list of IRIs
+	return fmt.Sprintf(`SELECT ?iri ?label WHERE {
   %s
-
-  # 2. Subquery to rank labels by property and language priority
   {
-    SELECT ?iri (MIN(?rankedLabel) AS ?bestEntry) WHERE {
-      # same VALUES clause with same IRIs in subquery for join optimization (reduce result size of subquery)
-	  %s
-
-      # A. Define Property Priority (10-40)
-	  # more properties can be added here...
-      VALUES (?prop ?pPrio) {
-        (rdfs:label "1")
-        (skos:prefLabel "2")
-        (schema:name "3")
-        (schema2:name "4")
-        (dct:title "5")
-        (dc:title "6")
-        (rico:title "7")
-        (rico:name "8")
-      }
-
+    SELECT ?iri (MIN(?ranked) AS ?best) WHERE {
+      %s
+      VALUES (?prop ?pRank) {
+%s      }
       ?iri ?prop ?val .
-      # Some sources publish a labelling triple with an empty literal (LINDAS ships blank
-      # English schema:name values on popular-vote titles). Without this guard MIN() below
-      # actively prefers them, since "" sorts ahead of any real text at the same priority.
+      # Some sources publish an empty literal (LINDAS ships blank English
+      # schema:name values on popular-vote titles); MIN() would prefer it.
       FILTER (STR(?val) != "")
-      BIND(lang(?val) AS ?lang)
-
-	  # B. Define Language Priority (1-9)
-      BIND(
-        COALESCE(
-          # dynamic language priority based on browser language settings
-          %s
-          # hardcoded language priority if no language preferences are provided
-          IF(?lang = "de", "4", 1/0),
-          IF(?lang = "fr", "5", 1/0),
-          IF(?lang = "it", "6", 1/0),
-          IF(?lang = "en", "7", 1/0),
-          IF(?lang = "rm", "8", 1/0),
-          "9" # Default/Fallback
-        )
-	  AS ?lPrio)
-
-      # C. Create the sortable rank: "14LabelText" (PropPrio=1, LangPrio=4)
-      BIND(CONCAT(?pPrio, ?lPrio, STR(?val)) AS ?rankedLabel)
+      BIND (LCASE(lang(?val)) AS ?lang)
+      BIND (COALESCE(
+%s          "99"
+        ) AS ?lRank)
+      BIND (CONCAT(?lRank, ?pRank, STR(?val)) AS ?ranked)
     }
     GROUP BY ?iri
   }
-
-  # 3. Remove the two-digit prefix from the subquery (PropPrio + LangPrio) to get the clean label
-  BIND(SUBSTR(?bestEntry, 3) AS ?label)
-
-}`, valuesClause.String(), valuesClause.String(), userLangPrio)
-
-	return query
+  BIND (SUBSTR(?best, 5) AS ?label)
+}`, values.String(), values.String(), propRows.String(), langRungs.String())
 }
 
 // ── Label fetching & enrichment ───────────────────────────────────────────────
@@ -273,104 +286,116 @@ func extractLastSegment(iri string) string {
 
 const labelQueryBatchSize = 1000
 
-// fetchLabelsBatch queries the endpoint for a single batch of IRIs (≤ labelQueryBatchSize)
-// and merges results into labelMap. Falls back to last-segment for any IRI without a label.
-func fetchLabelsBatch(p *Preprocessor, endpointURL string, iris []string, languages []string, labelMap map[string]string) {
-	query := buildLabelQuery(iris, languages)
+// fetchBestBatch resolves one batch of IRIs (≤ labelQueryBatchSize) into out.
+// IRIs without a value get extractLastSegment when fallback is set, and are
+// left out otherwise; either answer is cached.
+func (p *Preprocessor) fetchBestBatch(kind, endpointURL string, iris, languages []string, fallback bool, out map[string]string) {
+	remember := func(iri, value string) {
+		if value != "" {
+			out[iri] = value
+		}
+		labelCache.Set(bestCacheKey(kind, endpointURL, iri, languages), value)
+	}
+	miss := func(iri string) {
+		if fallback {
+			remember(iri, extractLastSegment(iri))
+		} else {
+			remember(iri, "")
+		}
+	}
+
+	query := buildBestQuery(iris, p.bestProperties(kind), languages)
+	if query == "" {
+		for _, iri := range iris {
+			miss(iri)
+		}
+		return
+	}
 	finalizedQuery := p.finalizeQuery(query, "", endpointURL)
 	response, err := p.querySparqlEndpoint(context.Background(), endpointURL, finalizedQuery)
+	var sparqlResp sparqlResponse
+	if err == nil {
+		err = json.Unmarshal(response, &sparqlResp)
+	}
 	if err != nil {
-		log := logger.Get()
-		log.Warn("label query failed, using fallback",
+		logger.Get().Warn("best-value query failed, using fallback",
+			slog.String("property", kind),
 			slog.String("error", err.Error()),
 			slog.Int("iri_count", len(iris)))
 		for _, iri := range iris {
-			fallback := extractLastSegment(iri)
-			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback, languages)
+			if fallback {
+				out[iri] = extractLastSegment(iri) // not cached: the next request retries
+			}
 		}
 		return
 	}
 
-	var sparqlResp sparqlResponse
-	if err := json.Unmarshal(response, &sparqlResp); err != nil {
-		log := logger.Get()
-		log.Warn("label response parse failed",
-			slog.String("error", err.Error()))
-		for _, iri := range iris {
-			fallback := extractLastSegment(iri)
-			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback, languages)
-		}
-		return
-	}
-
-	// Build mapping from results — one row per IRI guaranteed by GROUP BY in subquery
+	// One row per IRI, guaranteed by the GROUP BY in the subquery.
+	found := make(map[string]bool, len(iris))
 	for _, binding := range sparqlResp.Results.Bindings {
-		iriValue := binding["iri"].Value
-		labelValue := unwrapQuotes(binding["label"].Value)
-		if labelValue == "" {
+		value := unwrapQuotes(binding["label"].Value)
+		if value == "" {
 			continue
 		}
-		labelMap[iriValue] = labelValue
-		setCachedLabel(iriValue, labelValue, languages)
+		iri := binding["iri"].Value
+		found[iri] = true
+		remember(iri, value)
 	}
-
-	// Apply fallback for IRIs without labels
 	for _, iri := range iris {
-		if _, found := labelMap[iri]; !found {
-			fallback := extractLastSegment(iri)
-			labelMap[iri] = fallback
-			setCachedLabel(iri, fallback, languages)
+		if !found[iri] {
+			miss(iri)
 		}
 	}
 }
 
-// fetchLabels queries endpoint for labels and returns IRI→label mapping.
-// Splits the request into batches of labelQueryBatchSize to avoid endpoint limits.
-func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages []string) map[string]string {
-	// Check cache first
-	uncachedIRIs := make([]string, 0, len(iris))
-	labelMap := make(map[string]string)
-
+// fetchBest resolves the best value of magic property kind for each IRI, from
+// cache where possible, querying the rest in parallel batches. requested are
+// the caller's languages (page language first); see rankLanguages.
+func (p *Preprocessor) fetchBest(kind, endpointURL string, iris, requested []string, fallback bool) map[string]string {
+	languages := p.rankLanguages(requested)
+	out := make(map[string]string)
+	var uncached []string
 	for _, iri := range iris {
-		if label, found := getCachedLabel(iri, languages); found {
-			labelMap[iri] = label
-		} else {
-			uncachedIRIs = append(uncachedIRIs, iri)
+		if v, ok := labelCache.Get(bestCacheKey(kind, endpointURL, iri, languages)); ok {
+			if v != "" {
+				out[iri] = v
+			}
+			continue
 		}
+		uncached = append(uncached, iri)
 	}
 
-	// If all cached, return immediately
-	if len(uncachedIRIs) == 0 {
-		return labelMap
-	}
-
-	// Query in batches to stay within endpoint limits (parallel)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-
-	for i := 0; i < len(uncachedIRIs); i += labelQueryBatchSize {
-		end := i + labelQueryBatchSize
-		if end > len(uncachedIRIs) {
-			end = len(uncachedIRIs)
-		}
-		batch := uncachedIRIs[i:end]
+	for i := 0; i < len(uncached); i += labelQueryBatchSize {
+		batch := uncached[i:min(i+labelQueryBatchSize, len(uncached))]
 		wg.Add(1)
 		go func(b []string) {
 			defer wg.Done()
-			batchResult := make(map[string]string)
-			fetchLabelsBatch(p, endpointURL, b, languages, batchResult)
+			part := make(map[string]string)
+			p.fetchBestBatch(kind, endpointURL, b, languages, fallback, part)
 			mu.Lock()
-			for k, v := range batchResult {
-				labelMap[k] = v
+			for k, v := range part {
+				out[k] = v
 			}
 			mu.Unlock()
 		}(batch)
 	}
 	wg.Wait()
+	return out
+}
 
-	return labelMap
+// fetchLabels returns IRI → best label; an IRI without one gets its last segment.
+func fetchLabels(p *Preprocessor, endpointURL string, iris []string, languages []string) map[string]string {
+	return p.fetchBest("label", endpointURL, iris, languages, true)
+}
+
+// ResolveBest returns the single best value of magic property kind ("label",
+// "description") for iri on the preprocessor's endpoint, in the language of
+// acceptLanguage. A label falls back to the IRI's last segment; any other kind
+// returns "" when the resource has no value.
+func (p *Preprocessor) ResolveBest(kind, iri, acceptLanguage string) string {
+	return p.fetchBest(kind, p.config.EndpointURL, []string{iri}, parseAcceptLanguage(acceptLanguage), kind == "label")[iri]
 }
 
 // enrichWithLabels populates the DisplayText field for URI bindings

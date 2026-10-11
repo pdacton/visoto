@@ -36,9 +36,16 @@
   function writeOverrides(v) {
     try { window.localStorage.setItem(REVERSED_KEY, JSON.stringify(v)); } catch (e) { /* per-viewer convenience only */ }
   }
+  // The default reversed types, expanded with the active endpoint's prefixes.
+  var defaults = null;
+  function defaultReversed() {
+    if (!defaults) defaults = window.VisotoLayout.defaultReversed(window.VisotoPrefixes.fromPage());
+    return defaults;
+  }
+
   function isReversed(typeId, overrides) {
     if (Object.prototype.hasOwnProperty.call(overrides, typeId)) return !!overrides[typeId];
-    return !!window.VisotoLayout.DEFAULT_REVERSED[typeId];
+    return !!defaultReversed()[typeId];
   }
 
   function install(kit) {
@@ -51,7 +58,7 @@
     kit.reversedTypes = function () {
       var overrides = readOverrides();
       var out = {};
-      Object.keys(window.VisotoLayout.DEFAULT_REVERSED).forEach(function (t) { if (isReversed(t, overrides)) out[t] = true; });
+      Object.keys(defaultReversed()).forEach(function (t) { if (isReversed(t, overrides)) out[t] = true; });
       Object.keys(overrides).forEach(function (t) { if (overrides[t]) out[t] = true; });
       return out;
     };
@@ -103,7 +110,7 @@
         box.setAttribute('aria-label', vsTf('js.graph.reverseFor', 'Reverse “{name}” for layout', { name: t.label }));
         box.addEventListener('change', function () {
           var v = readOverrides();
-          if (box.checked === !!window.VisotoLayout.DEFAULT_REVERSED[t.id]) delete v[t.id];
+          if (box.checked === !!defaultReversed()[t.id]) delete v[t.id];
           else v[t.id] = box.checked;
           writeOverrides(v);
           setDirty(true); // GL-23: applied by Redraw, not on toggle

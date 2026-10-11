@@ -26,25 +26,12 @@
 
   if (window.VisotoGraphFilter) return;
 
-  // Short names for the namespaces an ontology diagram meets most.
-  var KNOWN = {
-    'http://www.w3.org/1999/02/22-rdf-syntax-ns#': 'rdf:',
-    'http://www.w3.org/2000/01/rdf-schema#': 'rdfs:',
-    'http://www.w3.org/2002/07/owl#': 'owl:',
-    'http://www.w3.org/2001/XMLSchema#': 'xsd:',
-    'http://www.w3.org/2004/02/skos/core#': 'skos:',
-    'http://schema.org/': 'schema:',
-    'https://schema.org/': 'schema:',
-    'http://purl.org/dc/terms/': 'dcterms:',
-    'http://www.w3.org/ns/prov#': 'prov:',
-    'http://xmlns.com/foaf/0.1/': 'foaf:',
-    'http://www.w3.org/ns/dcat#': 'dcat:',
-    'https://schema.ld.admin.ch/': 'schch:',
-    'https://cube.link/': 'cube:',
-    'http://qudt.org/schema/qudt/': 'qudt:',
-    'http://www.w3.org/2006/time#': 'time:',
-    'https://www.ica.org/standards/RiC/ontology#': 'rico:',
-  };
+  // Short name for a namespace: its prefix from the active endpoint's
+  // declarations (static/js/prefixes.js), else the namespace IRI itself.
+  function nsLabel(ns) {
+    var c = window.VisotoPrefixes.fromPage().compact(ns);
+    return c ? c.prefix + ':' + c.local : ns;
+  }
 
   var ABSOLUTE = /^[a-z][a-z0-9+.-]*:/i;
 
@@ -134,7 +121,7 @@
     function toggleNamespace(ns) {
       var next = clone(rules);
       if (next.namespaces[ns]) delete next.namespaces[ns]; else next.namespaces[ns] = true;
-      apply(next, hideShowTitle(!!next.namespaces[ns], KNOWN[ns] || ns));
+      apply(next, hideShowTitle(!!next.namespaces[ns], nsLabel(ns)));
     }
     function membersOf(cls) {
       return c.elementIds().map(c.describe).filter(function (d) { return d && coversType(cls, d.types); })
@@ -247,7 +234,7 @@
       // Count first, then name: rows must not trade places when a toggle moves
       // nodes between the canvas and the hidden records.
       var namespaces = Object.keys(nsCount).sort(function (a, b) {
-        return nsCount[b] - nsCount[a] || (KNOWN[a] || a).localeCompare(KNOWN[b] || b);
+        return nsCount[b] - nsCount[a] || nsLabel(a).localeCompare(nsLabel(b));
       });
 
       var classList = panel.querySelector('[data-graph-filter-classes]');
@@ -265,7 +252,7 @@
       nsList.replaceChildren();
       namespaces.forEach(function (ns) {
         nsList.appendChild(row({
-          iri: ns, label: KNOWN[ns] || ns, count: nsCount[ns], hidden: !!rules.namespaces[ns],
+          iri: ns, label: nsLabel(ns), count: nsCount[ns], hidden: !!rules.namespaces[ns],
           onToggle: function () { toggleNamespace(ns); },
         }));
       });

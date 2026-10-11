@@ -112,6 +112,12 @@ func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string
 	return p.sp.ExecuteQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint, opts...)
 }
 
+// ResolveBest returns the single best value of a magic property ("label",
+// "description") for iri; see sparql.Preprocessor.ResolveBest.
+func (p *Preprocessor) ResolveBest(kind, iri, acceptLanguage string) string {
+	return p.sp.ResolveBest(kind, iri, acceptLanguage)
+}
+
 // FinalizeQuery returns the query as it would be sent to the endpoint (PREFIXes
 // prepended, visoto:dispLang resolved) without executing it.
 func (p *Preprocessor) FinalizeQuery(query string, acceptLanguage string, endpointURL string) string {
