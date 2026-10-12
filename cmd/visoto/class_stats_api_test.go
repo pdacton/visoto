@@ -125,3 +125,41 @@ func TestClassTreeHandler(t *testing.T) {
 		t.Errorf("after a run: %v, want instcount 3 for both", got)
 	}
 }
+
+func TestMetricTrend(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	srv := classTreeStore()
+	defer srv.Close()
+	ex := []config.Prefix{{Name: "ex", URI: "https://example.org/"}}
+	app := &config.ApplicationConfig{SparqlEndpoints: []config.SparqlEndpoint{
+		{Name: "store", URL: srv.URL, Slug: "store", ClassStats: true, ParsedPrefixes: ex},
+		{Name: "plain", URL: srv.URL + "/plain", Slug: "plain", ParsedPrefixes: ex},
+	}}
+	cs, err := classstats.New(app, t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	savedStats, savedCfg := classStats, cfg
+	classStats, cfg = cs, &config.Config{Application: *app}
+	defer func() { classStats, cfg = savedStats, savedCfg }()
+	if _, err := cs.Run(context.Background(), "store"); err != nil {
+		t.Fatal(err)
+	}
+
+	trend := func(slug, query string) *classstats.Trend {
+		c, _ := gin.CreateTestContext(httptest.NewRecorder())
+		c.Request = httptest.NewRequest(http.MethodGet, "/api/metric/x?"+query, nil)
+		ep := app.GetEndpointBySlug(slug)
+		c.Set(activeEndpointKey, ep)
+		return metricTrend(c, ep.URL)
+	}
+	if tr := trend("store", "class=ex%3AA"); tr == nil || tr.Last != 3 {
+		t.Errorf("CURIE class on a stats endpoint: %+v, want a trend ending at 3", tr)
+	}
+	if tr := trend("store", ""); tr != nil {
+		t.Errorf("no class: %+v, want nil", tr)
+	}
+	if tr := trend("plain", "class=ex%3AA"); tr != nil {
+		t.Errorf("endpoint without statistics: %+v, want nil", tr)
+	}
+}

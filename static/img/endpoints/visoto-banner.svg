@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" preserveAspectRatio="xMaxYMid slice">
+  <!-- The Visoto mark's diagonal light strokes, enlarged and faint, for the
+       fallback hero; the gradient itself comes from the CSS underneath. -->
+  <g fill="#F9C88F" opacity=".35" transform="rotate(-35 1300 200)">
+    <ellipse cx="1180" cy="90" rx="150" ry="34"/>
+    <ellipse cx="1360" cy="120" rx="110" ry="30"/>
+    <ellipse cx="1150" cy="190" rx="190" ry="38"/>
+    <ellipse cx="1400" cy="230" rx="130" ry="32"/>
+    <ellipse cx="1210" cy="300" rx="160" ry="36"/>
+    <ellipse cx="1450" cy="340" rx="90" ry="26"/>
+  </g>
+</svg>

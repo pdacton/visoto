@@ -70,60 +70,17 @@
           <div class="vs-theme-header-title">{{ t "topbar.themes" "Themes" }}</div>
           <div class="vs-theme-header-subtitle">{{ t "topbar.themesDescription" "Discover LINDAS content by theme" }}</div>
         </div>
-        <!-- Grouped by subject, not alphabetically: resources & environment,
-             then society & knowledge, then state & data. The icons are
-             decorative here (alt="") because each tile carries a visible label. -->
+        <!-- Tiles live in partials/theme-tiles.html, shared with the homepage. -->
         <div class="vs-theme-grid">
-          <a class="dropdown-item vs-theme-tile" href="/energy.html">
-            <img src="/static/img/resource/Energy.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.energy" "Energy" }}</span>
-          </a>
-          <a class="dropdown-item vs-theme-tile" href="/mobility.html">
-            <img src="/static/img/resource/Traffic.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.mobilityTransport" "Mobility & Transport" }}</span>
-          </a>
-          <a class="dropdown-item vs-theme-tile" href="/environment.html">
-            <img src="/static/img/resource/Environment.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.environmentNature" "Environment & Nature" }}</span>
-          </a>
-          <a class="dropdown-item vs-theme-tile" href="/agriculture.html">
-            <img src="/static/img/resource/Agriculture.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.agricultureFood" "Agriculture & Food" }}</span>
-          </a>
+          {{ template "themeTiles1" (dict "itemClass" "dropdown-item") }}
         </div>
         <div class="dropdown-divider"></div>
         <div class="vs-theme-grid">
-          <a class="dropdown-item vs-theme-tile" href="/health.html">
-            <img src="/static/img/resource/Health.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.health" "Health" }}</span>
-          </a>
-          <a class="dropdown-item vs-theme-tile" href="/media.html">
-            <img src="/static/img/resource/Media.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.mediaCommunications" "Media & Communications" }}</span>
-          </a>
-          <a class="dropdown-item vs-theme-tile" href="/culture.html">
-            <img src="/static/img/resource/Culture.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.cultureArchives" "Culture & Archives" }}</span>
-          </a>
-          <a class="dropdown-item vs-theme-tile" href="/plazi.html">
-            <img src="/static/img/resource/TaxonName.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.plaziClassification" "Plazi Classification" }}</span>
-          </a>
+          {{ template "themeTiles2" (dict "itemClass" "dropdown-item") }}
         </div>
         <div class="dropdown-divider"></div>
         <div class="vs-theme-grid">
-          <a class="dropdown-item vs-theme-tile" href="/politics.html">
-            <img src="/static/img/resource/Government.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.politicsGovernment" "Politics & Government" }}</span>
-          </a>
-          <a class="dropdown-item vs-theme-tile" href="/government.html">
-            <img src="/static/img/resource/Administration.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.governmentAdministration" "Government & Administration" }}</span>
-          </a>
-          <a class="dropdown-item vs-theme-tile" href="/statistics.html">
-            <img src="/static/img/resource/Statistics.svg" alt="" aria-hidden="true">
-            <span>{{ t "nav.statisticsRegisters" "Statistics & Registers" }}</span>
-          </a>
+          {{ template "themeTiles3" (dict "itemClass" "dropdown-item") }}
         </div>
       </div>
     </div>
@@ -189,13 +146,13 @@
       <!-- assistant button -->
       <div class="nav-item d-none d-sm-flex">
         <a href="#" id="right-sidebar-toggle" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "topbar.assistant" "Otto, the assistant" }}" data-bs-original-title="{{ t "topbar.assistant" "Otto, the assistant" }}">
-          <i data-lucide="sparkle" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i data-lucide="bot" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
       </div>
       <!-- settings menu -->
       <div class="nav-item dropdown">
         <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" aria-label="{{ t "topbar.openSettings" "Open settings menu" }}" data-bs-original-title="{{ t "topbar.settings" "Settings" }}">
-          <i data-lucide="more-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i data-lucide="settings" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-end">
           <!-- Endpoint list, narrow screens only: stands in for the hidden
@@ -213,7 +170,7 @@
           {{ end }}
           <!-- Assistant, narrow screens only: its topbar button is hidden there. -->
           <a class="dropdown-item d-sm-none" href="#" id="right-sidebar-toggle-menu">
-            <i data-lucide="sparkle" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.assistant" "Otto, the assistant" }}
+            <i data-lucide="bot" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.assistant" "Otto, the assistant" }}
           </a>
           <div class="dropdown-divider d-sm-none"></div>
           <h6 class="dropdown-header">{{ t "topbar.settings" "Settings" }}</h6>
@@ -229,6 +186,23 @@
           </a>
           <a class="dropdown-item" href="#" id="clear-cache-btn">
             <i data-lucide="refresh-cw" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.clearCache" "Clear cache" }}
+          </a>
+        </div>
+      </div>
+      <!-- more menu -->
+      <div class="nav-item dropdown">
+        <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" aria-label="{{ t "topbar.openMore" "Open more menu" }}" data-bs-original-title="{{ t "topbar.more" "More" }}">
+          <i data-lucide="more-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
+        </a>
+        <div class="dropdown-menu dropdown-menu-end">
+          <a class="dropdown-item" href="/about.html">
+            <i data-lucide="info" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "footer.about" "About" }}
+          </a>
+          <a class="dropdown-item" href="/whatsnew.html">
+            <i data-lucide="sparkles" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "page.whatsnew.title" "What's New" }}
+          </a>
+          <a class="dropdown-item" href="/connectmcp.html">
+            <i data-lucide="bot" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "nav.connectYourAi" "Connect your AI" }}
           </a>
         </div>
       </div>

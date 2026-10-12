@@ -311,7 +311,7 @@ Use `tHTML` when the message deliberately holds inline markup, so a translator
 can move the link inside the sentence instead of reassembling fragments:
 
 ```toml
-"chat.ownAi" = "Prefer your own AI? <a href=\"/connect.html\">Connect Visoto as an MCP server</a>"
+"chat.ownAi" = "Prefer your own AI? <a href=\"/connectmcp.html\">Connect Visoto as an MCP server</a>"
 ```
 
 Reserve it for that case: catalog content is trusted and not escaped, so routing

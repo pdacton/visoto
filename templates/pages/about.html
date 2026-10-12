@@ -5,29 +5,212 @@
 
 {{ define "pageContent" }}
 
-<h2>{{ t "page.about.aboutVisoto" "About Visoto" }}</h2>
+<!-- Hero -->
+<div class="card mb-4">
+  <div class="card-body p-4 p-md-5">
+    <div class="row align-items-center g-4">
+      <div class="col-auto d-none d-md-block">
+        <img src="/static/img/visoto_light.svg" alt="{{ t "topbar.logo" "Logo" }}" width="112" height="112" class="logo-light">
+        <img src="/static/img/visoto_dark.svg" alt="{{ t "topbar.logo" "Logo" }}" width="112" height="112" class="logo-dark">
+      </div>
+      <div class="col">
+        <h2 class="h1 mb-2">{{ t "page.about.tagline" "Linked data you can browse" }}</h2>
+        <p class="lead text-secondary mb-4">{{ t "page.about.visotoIsAGraphExploration" "Visoto is a graph exploration and visualization tool for RDF data. It provides a more intuitive interface for browsing, querying, and understanding linked data." }}</p>
+        <div class="btn-list">
+          <a href="/" class="btn btn-primary">
+            <i data-lucide="compass" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "page.about.startExploring" "Start exploring" }}
+          </a>
+          <a href="/whatsnew.html" class="btn">
+            <i data-lucide="sparkles" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "page.whatsnew.title" "What's New" }}
+          </a>
+          <a href="https://github.com/pdacton/visoto" class="btn" target="_blank" rel="noopener">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" class="me-2"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>{{ t "page.about.sourceCode" "Source code" }}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-<p>{{ t "page.about.visotoIsAGraphExploration" "Visoto is a graph exploration and visualization tool for RDF data. It provides an more intuitive interface for browsing, querying, and understanding linked data." }}</p>
+<!-- Features -->
+<h2 class="mb-3">{{ t "page.about.whatYouCanDo" "What you can do" }}</h2>
+<div class="row row-cards mb-4">
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body d-flex gap-3">
+        <span class="avatar bg-primary-lt flex-shrink-0"><i data-lucide="file-text" style="width: 1.25rem; height: 1.25rem;"></i></span>
+        <div>
+          <h3 class="card-title mb-1">{{ t "page.about.feature.pages" "Resource pages" }}</h3>
+          <div class="text-secondary">{{ t "page.about.feature.pagesText" "Every IRI becomes a readable page, laid out to fit its RDF class." }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body d-flex gap-3">
+        <span class="avatar bg-green-lt flex-shrink-0"><i data-lucide="waypoints" style="width: 1.25rem; height: 1.25rem;"></i></span>
+        <div>
+          <h3 class="card-title mb-1">{{ t "page.about.feature.graph" "Graph explorer" }}</h3>
+          <div class="text-secondary">{{ t "page.about.feature.graphText" "Expand a resource's neighbourhood node by node and save the diagram." }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body d-flex gap-3">
+        <span class="avatar bg-orange-lt flex-shrink-0"><i data-lucide="filter" style="width: 1.25rem; height: 1.25rem;"></i></span>
+        <div>
+          <h3 class="card-title mb-1">{{ t "page.about.feature.tables" "Faceted tables" }}</h3>
+          <div class="text-secondary">{{ t "page.about.feature.tablesText" "Filter, sort and search large result sets, even classes with hundreds of thousands of instances." }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body d-flex gap-3">
+        <span class="avatar bg-azure-lt flex-shrink-0"><i data-lucide="database" style="width: 1.25rem; height: 1.25rem;"></i></span>
+        <div>
+          <h3 class="card-title mb-1">{{ t "page.about.feature.endpoints" "Many endpoints" }}</h3>
+          <div class="text-secondary">{{ t "page.about.feature.endpointsText" "Switch between SPARQL endpoints to compare environments or explore other knowledge graphs." }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body d-flex gap-3">
+        <span class="avatar bg-purple-lt flex-shrink-0"><i data-lucide="bot" style="width: 1.25rem; height: 1.25rem;"></i></span>
+        <div>
+          <h3 class="card-title mb-1">{{ t "topbar.assistant" "Otto, the assistant" }}</h3>
+          <div class="text-secondary">{{ t "page.about.feature.ottoText" "Ask questions about the resource you are looking at, in plain language." }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-4">
+    <div class="card card-sm h-100">
+      <div class="card-body d-flex gap-3">
+        <span class="avatar bg-pink-lt flex-shrink-0"><i data-lucide="plug" style="width: 1.25rem; height: 1.25rem;"></i></span>
+        <div>
+          <h3 class="card-title mb-1"><a href="/connectmcp.html">{{ t "nav.connectYourAi" "Connect your AI" }}</a></h3>
+          <div class="text-secondary">{{ t "page.about.feature.mcpText" "Use Visoto as an MCP server from your own AI assistant." }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
-<div class="card">
+<!-- How it works -->
+<div class="card mb-4">
   <div class="card-header">
-    <h3 class="card-title">{{ t "page.about.acknowledgements" "Acknowledgements" }}</h3>
-    &nbsp;
-    <div class="card-subtitle">{{ t "page.about.thisProjectBuildsUponThe" "This project builds upon the work of many talented teams and open-source communities" }}</div>
+    <h3 class="card-title">{{ t "page.about.howItWorks" "How it works" }}</h3>
   </div>
   <div class="card-body">
-    <ul>
-      <li>{{ tHTML "page.about.fluidopsForTheOriginalConcept" "<a href=\"https://en.wikipedia.org/wiki/Fluid_Operations\" target=\"_blank\">fluidOps</a> for the original concept behind the Information Workbench" }}</li>
-      <li>{{ tHTML "page.about.goForTheProgrammingLanguage" "<a href=\"https://go.dev/\" target=\"_blank\">Go</a> for the programming language" }}</li>
-      <li>{{ tHTML "page.about.ginForTheWebFramework" "<a href=\"https://gin-gonic.com/en/\" target=\"_blank\">Gin</a> for the web framework" }}</li>
-      <li>{{ tHTML "page.about.tabulatorForInteractiveDataTables" "<a href=\"https://tabulator.info/\" target=\"_blank\">Tabulator</a> for interactive data tables" }}</li>
-      <li>{{ tHTML "page.about.mermaidForTheFlowVisualization" "<a href=\"https://github.com/mermaid-js/mermaid\" target=\"_blank\">Mermaid</a> for the flow visualization" }}</li>
-      <li>{{ tHTML "page.about.ontodiaZazukoGraphExplorerFor" "<a href=\"https://github.com/zazuko/graph-explorer\" target=\"_blank\">Ontodia/Zazuko Graph Explorer</a> for the graph explorer" }}</li>
-      <li>{{ tHTML "page.about.tablerForTheAdminDashboard" "<a href=\"https://tabler.io/\" target=\"_blank\">Tabler</a> for the admin dashboard template" }}</li>
-      <li>{{ tHTML "page.about.bootstrapForTheCSSFramework" "<a href=\"https://getbootstrap.com/\" target=\"_blank\">Bootstrap</a> for the CSS framework" }}</li>
-      <li>{{ tHTML "page.about.lucideForTheIconSet" "<a href=\"https://lucide.dev/\" target=\"_blank\">Lucide</a> for the icon set" }}</li>
-      <li>{{ tHTML "page.about.claudeCodeForAIAssisted" "<a href=\"https://claude.ai/\" target=\"_blank\">Claude Code</a> for AI-assisted development" }}</li>
-    </ul>
+    <div class="row g-3 text-center">
+      <div class="col-6 col-md-3">
+        <span class="avatar avatar-lg bg-azure-lt mb-2"><i data-lucide="database" style="width: 1.5rem; height: 1.5rem;"></i></span>
+        <div class="fw-bold">{{ t "page.about.step.endpoint" "SPARQL endpoint" }}</div>
+        <div class="text-secondary small">{{ t "page.about.step.endpointText" "The data stays where it is published." }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <span class="avatar avatar-lg bg-green-lt mb-2"><i data-lucide="code" style="width: 1.5rem; height: 1.5rem;"></i></span>
+        <div class="fw-bold">{{ t "page.about.step.query" "Live queries" }}</div>
+        <div class="text-secondary small">{{ t "page.about.step.queryText" "Each page asks the endpoint for what it needs, on demand." }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <span class="avatar avatar-lg bg-orange-lt mb-2"><i data-lucide="layout-template" style="width: 1.5rem; height: 1.5rem;"></i></span>
+        <div class="fw-bold">{{ t "page.about.step.template" "Class templates" }}</div>
+        <div class="text-secondary small">{{ t "page.about.step.templateText" "A template per RDF class decides what to show and how." }}</div>
+      </div>
+      <div class="col-6 col-md-3">
+        <span class="avatar avatar-lg bg-primary-lt mb-2"><i data-lucide="monitor" style="width: 1.5rem; height: 1.5rem;"></i></span>
+        <div class="fw-bold">{{ t "page.about.step.page" "Readable page" }}</div>
+        <div class="text-secondary small">{{ t "page.about.step.pageText" "Labels, tables, maps and graphs in your language." }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row row-cards mb-4">
+  <!-- Data sources -->
+  {{ if .SparqlEndpoints }}
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <h3 class="card-title">{{ t "page.about.dataSources" "Data sources" }}</h3>
+        <div class="card-actions">
+          <a href="/monitoring" class="btn btn-sm">
+            <i data-lucide="chart-line" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "topbar.monitoring" "Endpoint Monitoring" }}
+          </a>
+        </div>
+      </div>
+      <div class="list-group list-group-flush">
+        {{ range .SparqlEndpoints }}
+        <div class="list-group-item d-flex align-items-center gap-2">
+          <i data-lucide="database" style="width: 1rem; height: 1rem;" class="text-secondary"></i>
+          <span class="flex-fill">{{ .Name }}</span>
+          {{ if eq .Slug $.SelectedEndpointSlug }}<span class="badge bg-green-lt">{{ t "page.about.active" "active" }}</span>{{ end }}
+          {{ if .Tag }}<span class="badge bg-secondary-lt">{{ .Tag }}</span>{{ end }}
+        </div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+  {{ end }}
+
+  <!-- Acknowledgements -->
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">
+        <div>
+          <h3 class="card-title">{{ t "page.about.acknowledgements" "Acknowledgements" }}</h3>
+          <div class="card-subtitle">{{ t "page.about.thisProjectBuildsUponThe" "This project builds upon the work of many talented teams and open-source communities" }}</div>
+        </div>
+      </div>
+      <div class="list-group list-group-flush">
+        <a href="https://en.wikipedia.org/wiki/Fluid_Operations" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">fluidOps</span><span class="text-secondary text-end">{{ t "page.about.credit.fluidops" "Original concept (Information Workbench)" }}</span></a>
+        <a href="https://go.dev/" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">Go</span><span class="text-secondary text-end">{{ t "page.about.credit.go" "Programming language" }}</span></a>
+        <a href="https://gin-gonic.com/en/" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">Gin</span><span class="text-secondary text-end">{{ t "page.about.credit.gin" "Web framework" }}</span></a>
+        <a href="https://github.com/zazuko/graph-explorer" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">Zazuko Graph Explorer</span><span class="text-secondary text-end">{{ t "page.about.credit.graphExplorer" "Graph explorer" }}</span></a>
+        <a href="https://tabulator.info/" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">Tabulator</span><span class="text-secondary text-end">{{ t "page.about.credit.tabulator" "Interactive data tables" }}</span></a>
+        <a href="https://tabler.io/" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">Tabler · Bootstrap</span><span class="text-secondary text-end">{{ t "page.about.credit.tabler" "UI kit and CSS framework" }}</span></a>
+        <a href="https://github.com/mermaid-js/mermaid" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">Mermaid</span><span class="text-secondary text-end">{{ t "page.about.credit.mermaid" "Flow diagrams" }}</span></a>
+        <a href="https://lucide.dev/" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">Lucide</span><span class="text-secondary text-end">{{ t "page.about.credit.lucide" "Icon set" }}</span></a>
+        <a href="https://claude.ai/" target="_blank" rel="noopener" class="list-group-item list-group-item-action d-flex justify-content-between gap-2"><span class="fw-bold">Claude Code</span><span class="text-secondary text-end">{{ t "page.about.credit.claude" "AI-assisted development" }}</span></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Project & legal -->
+<div class="card">
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4 d-flex gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true" class="text-secondary flex-shrink-0"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+        <div>
+          <div class="fw-bold">{{ t "page.about.sourceCode" "Source code" }}</div>
+          <a href="https://github.com/pdacton/visoto" target="_blank" rel="noopener">github.com/pdacton/visoto</a>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <i data-lucide="scale" style="width: 1.25rem; height: 1.25rem;" class="text-secondary flex-shrink-0"></i>
+        <div>
+          <div class="fw-bold">{{ t "page.about.license" "License" }}</div>
+          <a href="https://www.apache.org/licenses/LICENSE-2.0" target="_blank" rel="noopener">Apache License 2.0</a>
+        </div>
+      </div>
+      <div class="col-md-4 d-flex gap-2">
+        <i data-lucide="shield-check" style="width: 1.25rem; height: 1.25rem;" class="text-secondary flex-shrink-0"></i>
+        <div>
+          <div class="fw-bold">{{ t "page.about.privacy" "Privacy" }}</div>
+          <div class="text-secondary">{{ t "page.about.privacyText" "No accounts and no tracking cookies. Cookies only remember your language and endpoint." }}</div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 

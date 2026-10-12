@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 400" preserveAspectRatio="xMidYMid slice">
+  <!-- After the data.europa.eu homepage hero: purple-to-EU-blue field, a lilac
+       band sweeping in from the top, a darker violet wave along the bottom. -->
+  <defs>
+    <linearGradient id="field" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#5257bd"/>
+      <stop offset=".55" stop-color="#2b34a6"/>
+      <stop offset="1" stop-color="#0a1f9e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="400" fill="url(#field)"/>
+  <rect x="1180" y="0" width="140" height="400" fill="#7b62c4" opacity=".55"/>
+  <path d="M760 0 C 820 170 930 250 1130 250 L 1500 250 A 105 105 0 0 0 1500 40 L 1180 40 C 1080 40 1030 20 1010 0 Z" fill="#9673d6"/>
+  <path d="M0 370 C 200 330 420 330 560 400 L 0 400 Z" fill="#4307b4"/>
+</svg>

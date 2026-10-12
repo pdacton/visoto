@@ -492,6 +492,15 @@ body.resizing {
   .vs-metric-actions { transition: none; }
 }
 
+/* Metric card trend: 30-day sparkline from the class statistics plus a change
+   badge beside the count, both delivered with the /api/metric response. */
+.vs-metric-change { font-size: .875rem; font-weight: var(--tblr-font-weight-medium); margin-left: .5rem; white-space: nowrap; }
+.vs-metric-trend:empty { display: none; }
+.vs-metric-trend { margin-top: .75rem; }
+.vs-metric-trend svg { display: block; width: 100%; height: 2.5rem; overflow: visible; }
+.vs-metric-trend .vs-trend-line { fill: none; stroke: var(--tblr-primary); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.vs-metric-trend .vs-trend-dot { fill: none; stroke: var(--tblr-primary); stroke-width: 6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+
 /* ---- Declarative table vocabulary ----------------------------------------
    These custom elements carry CONFIGURATION, never content: the query text of a
    <sparql-query>/<sparql-async>, and the column declarations that describe a
@@ -850,3 +859,253 @@ sparql-tree-query { display: none; }
     }
 }
 
+
+/* ------------------------------------------------------------------------
+   Homepage hero (templates/partials/endpoint-hero.html): introduces the
+   active store over a banner photo. One background class per profiled
+   endpoint tag; vs-hero--plain is the fallback for every other tag.
+   White text on a dark gradient reads the same in light and dark theme.
+   ------------------------------------------------------------------------ */
+.vs-hero {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    min-height: 240px;
+    border-radius: var(--tblr-border-radius-lg);
+    overflow: hidden;
+    background-color: #1e293b;
+    background-size: cover;
+    background-position: center;
+    color: #fff;
+}
+
+.vs-hero::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(15, 23, 42, .85) 0%, rgba(15, 23, 42, .45) 55%, rgba(15, 23, 42, .1) 100%);
+}
+
+.vs-hero--lindas       { background-image: url("/static/img/endpoints/lindas-banner.jpg"); background-position: center 40%; }
+.vs-hero--stadtzuerich { background-image: url("/static/img/endpoints/stadtzuerich-banner.jpg"); }
+.vs-hero--swisstopo    { background-image: url("/static/img/endpoints/swisstopo-banner.jpg"); background-position: center 30%; }
+.vs-hero--fedlex       { background-image: url("/static/img/endpoints/fedlex-banner.jpg"); background-position: center 45%; }
+/* opendata.swiss style: their teal with the Swiss silhouette on the right,
+   no photo, so the darkening overlay is only a light touch. */
+.vs-hero--opendataswiss {
+    background-color: #009688;
+    background-image: url("/static/img/endpoints/opendataswiss-map.svg");
+    background-repeat: no-repeat;
+    background-size: auto 88%;
+    background-position: right 3% center;
+}
+.vs-hero--opendataswiss::before {
+    background: linear-gradient(to top, rgba(0, 63, 57, .45) 0%, rgba(0, 63, 57, 0) 70%);
+}
+/* data.europa.eu style: their violet/EU-blue hero art (a drawn SVG, not a
+   photo) under the pink accent rule their header uses. */
+.vs-hero--dataeuropa {
+    background-color: #2b34a6;
+    background-image: url("/static/img/endpoints/dataeuropa-banner.svg");
+    background-position: right center;
+    border-top: 6px solid #f0758f;
+}
+.vs-hero--dataeuropa::before {
+    background: linear-gradient(to top, rgba(10, 20, 90, .5) 0%, rgba(10, 20, 90, 0) 70%);
+}
+.vs-hero--era          { background-image: url("/static/img/endpoints/era-banner.jpg"); background-position: center 60%; }
+/* Fallback: the Visoto logo's own colours (static/img/visoto_light.svg) —
+   #FFC000 into #E97132 on the same diagonal, plus its light strokes — with
+   only a light warm shade behind the text instead of the photo overlay. */
+.vs-hero--plain {
+    background-image: url("/static/img/endpoints/visoto-banner.svg"), linear-gradient(135deg, #ffc000 0%, #e97132 83%);
+    background-position: right center, center;
+    background-repeat: no-repeat;
+    background-size: cover, cover;
+}
+.vs-hero--plain::before {
+    background: linear-gradient(to top, rgba(122, 46, 8, .4) 0%, rgba(122, 46, 8, 0) 65%);
+}
+.vs-hero--plain .vs-hero-text {
+    text-shadow: 0 1px 3px rgba(90, 30, 0, .35);
+}
+
+.vs-hero-inner {
+    position: relative;
+    width: 100%;
+    padding: 1.5rem;
+}
+
+/* White squircle so every logo, whatever its colours, sits on the same tile. */
+.vs-hero-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 80px;
+    height: 80px;
+    padding: 12px;
+    border-radius: 24px;
+    background: #fff;
+    color: #1e293b;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, .25);
+}
+
+.vs-hero-logo img,
+.vs-hero-logo svg {
+    width: 100%;
+    height: 100%;
+}
+
+.vs-hero-logo.vs-hero-logo--full {
+    padding: 0;
+    overflow: hidden;
+}
+
+.vs-hero-logo.vs-hero-logo--wide {
+    width: auto;
+    padding: 8px 14px;
+}
+
+.vs-hero-logo--wide img {
+    width: auto;
+}
+
+.vs-hero-monogram {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    color: #ea580c;
+    text-transform: uppercase;
+}
+
+.vs-hero h1 {
+    margin: 0 0 .25rem;
+    font-size: 2rem;
+    color: #fff;
+}
+
+.vs-hero-lead {
+    max-width: 48rem;
+    margin-bottom: .5rem;
+    font-size: 1.05rem;
+    color: rgba(255, 255, 255, .92);
+}
+
+.vs-hero-byline {
+    font-size: .8rem;
+    color: rgba(255, 255, 255, .7);
+}
+
+.vs-hero-byline a,
+.vs-hero-credit {
+    color: inherit;
+    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, .4);
+}
+
+.vs-hero-credit {
+    position: absolute;
+    top: .5rem;
+    right: .75rem;
+    max-width: calc(100% - 1.5rem);
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    padding: .1rem .5rem;
+    border-radius: var(--tblr-border-radius-pill);
+    background: rgba(15, 23, 42, .55);
+    font-size: .7rem;
+    color: rgba(255, 255, 255, .85);
+    text-decoration: none;
+}
+
+@media (max-width: 575.98px) {
+    .vs-hero { min-height: 200px; }
+    .vs-hero-inner { padding: 2.25rem 1rem 1rem; }
+    .vs-hero-logo { width: 64px; height: 64px; padding: 10px; border-radius: 19px; }
+    .vs-hero h1 { font-size: 1.5rem; }
+    .vs-hero-lead { font-size: .95rem; }
+}
+
+/* ------------------------------------------------------------------------
+   Homepage "Guided tours" (pages/home.html): the theme tiles from
+   partials/theme-tiles.html inside one card. auto-fit columns put as many
+   tiles on a line as fit and flow the rest onto the next.
+
+   Hover is Tabler's plain item hover (the active background, as on a
+   dropdown item), nothing more. The only motion is decorative, CSS-only and
+   dropped under prefers-reduced-motion:
+   - tiles fade up one after another on load (vs-tour-in);
+   - every 14s a small bounce runs along the icons (vs-tour-nudge), inviting
+     a click; it pauses while the card is hovered.
+   ------------------------------------------------------------------------ */
+.vs-tours {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+    gap: .25rem;
+}
+
+.vs-tours .vs-tour {
+    padding: .75rem .4rem;
+    color: var(--tblr-body-color);
+    text-decoration: none;
+    overflow-wrap: normal;
+    hyphens: auto;
+    animation: vs-tour-in .5s ease-out backwards;
+}
+
+.vs-tours .vs-tour:hover,
+.vs-tours .vs-tour:focus-visible {
+    background-color: var(--tblr-active-bg);
+    color: var(--tblr-body-color);
+}
+
+.vs-tours .vs-tour img {
+    width: 48px;
+    height: 48px;
+    animation: vs-tour-nudge 14s ease-in-out infinite;
+    animation-delay: calc(1.5s + var(--i, 0) * .3s);
+}
+
+.vs-tours:hover .vs-tour img {
+    animation-play-state: paused;
+}
+
+/* Position in the line, for the staggered entrance and the travelling nudge. */
+.vs-tours .vs-tour:nth-child(1)  { --i: 0; }
+.vs-tours .vs-tour:nth-child(2)  { --i: 1; }
+.vs-tours .vs-tour:nth-child(3)  { --i: 2; }
+.vs-tours .vs-tour:nth-child(4)  { --i: 3; }
+.vs-tours .vs-tour:nth-child(5)  { --i: 4; }
+.vs-tours .vs-tour:nth-child(6)  { --i: 5; }
+.vs-tours .vs-tour:nth-child(7)  { --i: 6; }
+.vs-tours .vs-tour:nth-child(8)  { --i: 7; }
+.vs-tours .vs-tour:nth-child(9)  { --i: 8; }
+.vs-tours .vs-tour:nth-child(10) { --i: 9; }
+.vs-tours .vs-tour:nth-child(11) { --i: 10; }
+.vs-tours .vs-tour { animation-delay: calc(var(--i, 0) * 60ms); }
+
+@keyframes vs-tour-in {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* The bounce occupies the first ~5% of the 14s cycle; the rest is stillness. */
+@keyframes vs-tour-nudge {
+    0%, 5%, 100% { transform: none; }
+    1.5%         { transform: translateY(-8px) rotate(-6deg); }
+    3%           { transform: translateY(0) rotate(4deg); }
+    4%           { transform: translateY(-2px) rotate(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .vs-tours .vs-tour,
+    .vs-tours .vs-tour img {
+        animation: none;
+    }
+}
+
+/* Monochrome brand logos (black SVGs, e.g. /connectmcp.html assistant tabs) */
+[data-bs-theme="dark"] .vs-icon-mono {
+  filter: invert(1);
+}

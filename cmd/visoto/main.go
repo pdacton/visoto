@@ -392,7 +392,7 @@ func staticPageHandler(c *gin.Context) {
 	// like Graph Explorer) to template data
 	stampEndpointData(c, &data)
 	data.TemplateName = templateName
-	// Public origin for pages that render absolute URLs (e.g. the MCP URL on /connect.html)
+	// Public origin for pages that render absolute URLs (e.g. the MCP URL on /connectmcp.html)
 	data.BaseURL = mcpserver.BaseURLFromRequest(c.Request, cfg.Application.Port)
 
 	log.Debug("rendering static page",
@@ -541,6 +541,28 @@ func searchHandler(c *gin.Context) {
 	}))
 }
 
+// metricTrendDays is the window of a metric card's sparkline.
+const metricTrendDays = 30
+
+// metricTrend is the sparkline for a metric card declaring ?class= — the class's
+// daily counts from the class-statistics snapshots — or nil when the card names
+// no class or its endpoint has no statistics. The headline number stays the live
+// count; the curve is the snapshot history behind it.
+func metricTrend(c *gin.Context, endpointURL string) *classstats.Trend {
+	class := c.Query("class")
+	ep := activeEndpoint(c)
+	if class == "" || ep == nil || classStats == nil {
+		return nil
+	}
+	iri := config.ExpandCURIE(class, cfg.PrefixesFor(endpointURL))
+	trend, err := classStats.Trend(ep.Slug, iri, metricTrendDays)
+	if err != nil {
+		logger.Get().Warn("metric trend", slog.String("class", iri), slog.String("endpoint", ep.Slug), slog.Any("error", err))
+		return nil
+	}
+	return trend
+}
+
 // metricHandler serves /api/metric/:id — called by HTMX to lazily load metric counts on the home page.
 // It reads the sparql-async element with the matching id, executes its query, and returns the count.
 func metricHandler(c *gin.Context) {
@@ -600,6 +622,7 @@ func metricHandler(c *gin.Context) {
 		"count":    count,
 		"query":    finalQuery,
 		"endpoint": endpoint,
+		"trend":    metricTrend(c, endpoint),
 	})
 	if renderErr != nil {
 		c.Header("Cache-Control", "no-store")

@@ -1,0 +1,82 @@
+{{/* Homepage hero: introduces the store being explored, not Visoto.
+
+     One profile per endpoint TAG (all LINDAS environments share one), except
+     where a tag spans unrelated stores: "datacatalog" covers opendata.next and
+     data.europa.eu, so those two are picked out by slug. The text
+     lives here rather than in visoto.config so it goes through {{ t }} with
+     literal keys like every other UI string. A store without a profile falls
+     back to the endpoint's configured name on a plain gradient with a monogram squircle.
+
+     Banners are CC-licensed photos in static/img/endpoints/; the background is
+     set by a vs-hero--<profile> class in tabler_overrides.css (no dynamic style=,
+     which html/template turns into ZgotmplZ). */}}
+{{ define "endpointHero" }}
+{{ $tag := .EndpointTag }}
+{{ if eq .SelectedEndpointSlug "opendata-next-abn" }}{{ $tag = "opendataswiss" }}{{ end }}
+{{ if eq .SelectedEndpointSlug "data-europa-eu" }}{{ $tag = "dataeuropa" }}{{ end }}
+<section class="vs-hero vs-hero--{{ if or (eq $tag "lindas") (eq $tag "swisstopo") (eq $tag "fedlex") (eq $tag "stadtzuerich") (eq $tag "opendataswiss") (eq $tag "dataeuropa") (eq $tag "era") }}{{ $tag }}{{ else }}plain{{ end }}">
+  <div class="vs-hero-inner d-flex flex-column flex-sm-row align-items-start align-items-sm-end gap-3">
+    {{/* Logos that are a full tile of their own (swisstopo's app icon, the EU
+         flag) fill the squircle instead of sitting on white. */}}
+    {{/* ERA's logo is a wordmark, so its tile is wider rather than square. */}}
+    <div class="vs-hero-logo flex-shrink-0{{ if or (eq $tag "swisstopo") (eq $tag "dataeuropa") }} vs-hero-logo--full{{ else if eq $tag "era" }} vs-hero-logo--wide{{ end }}">
+      {{ if eq $tag "lindas" }}
+        <img src="/static/img/endpoints/lindas-logo.svg" alt="{{ t "endpoint.lindas.logo" "LINDAS logo" }}">
+      {{ else if eq $tag "stadtzuerich" }}
+        <img src="/static/img/endpoints/stadtzuerich-logo.svg" alt="{{ t "endpoint.stadtzuerich.logo" "City of Zürich coat of arms" }}">
+      {{ else if eq $tag "opendataswiss" }}
+        <img src="/static/img/endpoints/opendataswiss-logo.png" alt="{{ t "endpoint.opendataswiss.logo" "opendata.swiss logo" }}">
+      {{ else if eq $tag "dataeuropa" }}
+        <img src="/static/img/endpoints/dataeuropa-logo.svg" alt="{{ t "endpoint.dataeuropa.logo" "Flag of the European Union" }}">
+      {{ else if eq $tag "era" }}
+        <img src="/static/img/endpoints/era-logo.png" alt="{{ t "endpoint.era.logo" "European Union Agency for Railways logo" }}">
+      {{ else if eq $tag "swisstopo" }}
+        <img src="/static/img/endpoints/swisstopo-logo.png" alt="{{ t "endpoint.swisstopo.logo" "swisstopo logo" }}">
+      {{ else if eq $tag "fedlex" }}
+        <i data-lucide="scale" aria-hidden="true"></i>
+      {{ else }}
+        <span class="vs-hero-monogram" aria-hidden="true">{{ printf "%.1s" .SelectedEndpointName }}</span>
+      {{ end }}
+    </div>
+    <div class="vs-hero-text">
+      {{ if eq $tag "lindas" }}
+        <h1>{{ t "endpoint.lindas.title" "LINDAS" }}</h1>
+        <p class="vs-hero-lead">{{ t "endpoint.lindas.description" "Linked data from the Swiss federal administration – municipalities, public transport, energy, statistics, archives and much more, all connected in one knowledge graph." }}</p>
+      {{ else if eq $tag "stadtzuerich" }}
+        <h1>{{ t "endpoint.stadtzuerich.title" "City of Zürich" }}</h1>
+        <p class="vs-hero-lead">{{ t "endpoint.stadtzuerich.description" "Open data of the City of Zürich – statistics on population, housing, economy and more, published as linked data." }}</p>
+      {{ else if eq $tag "opendataswiss" }}
+        <h1>{{ t "endpoint.opendataswiss.title" "opendata.swiss" }}</h1>
+        <p class="vs-hero-lead">{{ t "endpoint.opendataswiss.description" "Swiss Open Government Data – datasets from the Confederation, cantons, municipalities and other organisations, in a preview of the future portal." }}</p>
+      {{ else if eq $tag "dataeuropa" }}
+        <h1>{{ t "endpoint.dataeuropa.title" "data.europa.eu" }}</h1>
+        <p class="vs-hero-lead">{{ t "endpoint.dataeuropa.description" "The official portal for European data – datasets from EU institutions and from the national open data portals across Europe." }}</p>
+      {{ else if eq $tag "era" }}
+        <h1>{{ t "endpoint.era.title" "RINF – Register of Infrastructure" }}</h1>
+        <p class="vs-hero-lead">{{ t "endpoint.era.description" "Europe's railway network as described by the European Union Agency for Railways – lines, tracks, stations, tunnels and the technical characteristics trains need to use them." }}</p>
+      {{ else if eq $tag "swisstopo" }}
+        <h1>{{ t "endpoint.swisstopo.title" "swisstopo" }}</h1>
+        <p class="vs-hero-lead">{{ t "endpoint.swisstopo.description" "Geodata of Switzerland from the Federal Office of Topography – cantons, municipalities, addresses, buildings, place names and more." }}</p>
+      {{ else if eq $tag "fedlex" }}
+        <h1>{{ t "endpoint.fedlex.title" "Fedlex" }}</h1>
+        <p class="vs-hero-lead">{{ t "endpoint.fedlex.description" "The publication platform for Swiss federal law – the Federal Gazette, the Classified Compilation, treaties and consultations." }}</p>
+      {{ else }}
+        <h1>{{ .SelectedEndpointName }}</h1>
+        <p class="vs-hero-lead">{{ t "page.home.subtitle" "Welcome to visoto, the adaptive knowledge graph explorer." }}</p>
+      {{ end }}
+      <p class="vs-hero-byline mb-0">{{ tHTML "page.home.exploredWith" "Explored with <a href=\"/about.html\">Visoto</a>" }}</p>
+    </div>
+  </div>
+  {{ if eq $tag "lindas" }}
+    <a class="vs-hero-credit" href="https://commons.wikimedia.org/wiki/File:Nordfassade_Bundeshaus_-_fr%C3%BCh_morgens.jpg" target="_blank" rel="noopener">{{ t "endpoint.lindas.bannerCredit" "Federal Palace, Bern · Manuel Lopez, CC BY-SA 4.0" }}</a>
+  {{ else if eq $tag "stadtzuerich" }}
+    <a class="vs-hero-credit" href="https://commons.wikimedia.org/wiki/File:Z%C3%BCrich_Grossm%C3%BCnster_panorama_2012.jpg" target="_blank" rel="noopener">{{ t "endpoint.stadtzuerich.bannerCredit" "Limmat and Grossmünster · Marcin Białek, CC BY-SA 3.0" }}</a>
+  {{ else if eq $tag "swisstopo" }}
+    <a class="vs-hero-credit" href="https://commons.wikimedia.org/wiki/File:Aletschgletscher-Eggishorn.jpg" target="_blank" rel="noopener">{{ t "endpoint.swisstopo.bannerCredit" "Aletsch Glacier · Tobias Alt, CC BY-SA 4.0" }}</a>
+  {{ else if eq $tag "era" }}
+    <a class="vs-hero-credit" href="https://commons.wikimedia.org/wiki/File:Ausfahrsignale_im_Gleisvorfeld_des_Bahnhofs_Frankfurt_(Main)_Hbf.jpg" target="_blank" rel="noopener">{{ t "endpoint.era.bannerCredit" "Frankfurt (Main) Hbf track field · Joachim Seyferth, CC BY 4.0" }}</a>
+  {{ else if eq $tag "fedlex" }}
+    <a class="vs-hero-credit" href="https://commons.wikimedia.org/wiki/File:Nationalratssaal_der_Schweiz.jpg" target="_blank" rel="noopener">{{ t "endpoint.fedlex.bannerCredit" "National Council chamber, Bern · Superikonoskop, CC BY-SA 4.0" }}</a>
+  {{ end }}
+</section>
+{{ end }}

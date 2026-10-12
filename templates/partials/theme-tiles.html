@@ -1,0 +1,65 @@
+{{/* The LINDAS theme pages as icon tiles, shared by the topbar theme menu
+     (layout/topbar.html, three grouped grids) and the homepage "Guided tours"
+     row (pages/home.html, all eleven in one line), so the two never drift.
+
+     Grouped by subject, not alphabetically: resources & environment, then
+     society & knowledge, then state & data. Call one group at a time:
+
+       {{ template "themeTiles1" (dict "itemClass" "dropdown-item") }}
+
+     itemClass is added to every tile: the topbar passes "dropdown-item" so the
+     tiles join Bootstrap's dropdown keyboard navigation. The icons are
+     decorative (alt="") because each tile carries a visible label. */}}
+
+{{ define "themeTiles1" }}
+<a class="{{ .itemClass }} vs-theme-tile" href="/energy.html">
+  <img src="/static/img/resource/Energy.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.energy" "Energy" }}</span>
+</a>
+<a class="{{ .itemClass }} vs-theme-tile" href="/mobility.html">
+  <img src="/static/img/resource/Traffic.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.mobilityTransport" "Mobility & Transport" }}</span>
+</a>
+<a class="{{ .itemClass }} vs-theme-tile" href="/environment.html">
+  <img src="/static/img/resource/Environment.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.environmentNature" "Environment & Nature" }}</span>
+</a>
+<a class="{{ .itemClass }} vs-theme-tile" href="/agriculture.html">
+  <img src="/static/img/resource/Agriculture.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.agricultureFood" "Agriculture & Food" }}</span>
+</a>
+{{ end }}
+
+{{ define "themeTiles2" }}
+<a class="{{ .itemClass }} vs-theme-tile" href="/health.html">
+  <img src="/static/img/resource/Health.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.health" "Health" }}</span>
+</a>
+<a class="{{ .itemClass }} vs-theme-tile" href="/media.html">
+  <img src="/static/img/resource/Media.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.mediaCommunications" "Media & Communications" }}</span>
+</a>
+<a class="{{ .itemClass }} vs-theme-tile" href="/culture.html">
+  <img src="/static/img/resource/Culture.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.cultureArchives" "Culture & Archives" }}</span>
+</a>
+<a class="{{ .itemClass }} vs-theme-tile" href="/plazi.html">
+  <img src="/static/img/resource/TaxonName.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.plaziClassification" "Plazi Classification" }}</span>
+</a>
+{{ end }}
+
+{{ define "themeTiles3" }}
+<a class="{{ .itemClass }} vs-theme-tile" href="/politics.html">
+  <img src="/static/img/resource/Government.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.politicsGovernment" "Politics & Government" }}</span>
+</a>
+<a class="{{ .itemClass }} vs-theme-tile" href="/government.html">
+  <img src="/static/img/resource/Administration.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.governmentAdministration" "Government & Administration" }}</span>
+</a>
+<a class="{{ .itemClass }} vs-theme-tile" href="/statistics.html">
+  <img src="/static/img/resource/Statistics.svg" alt="" aria-hidden="true">
+  <span>{{ t "nav.statisticsRegisters" "Statistics & Registers" }}</span>
+</a>
+{{ end }}

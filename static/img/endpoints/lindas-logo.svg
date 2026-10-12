@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="886 66 168 168">
+  <title>LINDAS</title>
+  <!-- The network mark from the LINDAS.admin.ch wordmark, redrawn square for the squircle. -->
+  <g stroke="#5b8ac9" stroke-width="4" stroke-linecap="round">
+    <line x1="973" y1="167" x2="920" y2="118"/>
+    <line x1="973" y1="167" x2="963" y2="92"/>
+    <line x1="973" y1="167" x2="1031" y2="92"/>
+    <line x1="973" y1="167" x2="911" y2="217"/>
+    <line x1="973" y1="167" x2="1016" y2="205"/>
+  </g>
+  <g fill="#5b8ac9">
+    <circle cx="920" cy="118" r="16"/>
+    <circle cx="963" cy="92" r="12"/>
+    <circle cx="1031" cy="92" r="17"/>
+    <circle cx="911" cy="217" r="9"/>
+    <circle cx="1016" cy="205" r="10"/>
+  </g>
+  <circle cx="973" cy="167" r="22" fill="#2b3080"/>
+</svg>

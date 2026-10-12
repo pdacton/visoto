@@ -11,6 +11,10 @@
     - href: URL for the title link
     - icon: (optional) path to an SVG image to display alongside the title
     - iri: (optional) resource IRI; substituted for ?? in the query
+    - class: (optional) CURIE or IRI of the class the card counts. When the
+             endpoint has daily class statistics, the count response also
+             carries a 30-day sparkline and a change badge (out-of-band into
+             the card's -trend slot). The number itself stays the live count.
 
   Two defines live here, mirroring how sparqlTable serves both an inline page
   render and an HTMX fragment render from a single partial:
@@ -41,7 +45,9 @@
   {{ $href := .href }}
   {{ $icon := .icon }}
   {{ $url := printf "/api/metric/%s" $queryId }}
-  {{ with .iri }}{{ $url = printf "%s?iri=%s" $url (urlquery .) }}{{ end }}
+  {{ $sep := "?" }}
+  {{ with .iri }}{{ $url = printf "%s?iri=%s" $url (urlquery .) }}{{ $sep = "&" }}{{ end }}
+  {{ with .class }}{{ $url = printf "%s%sclass=%s" $url $sep (urlquery .) }}{{ end }}
 
   <div class="col-sm-6 col-lg-3">
     <!-- The data-sparql-metric marker is what static/js/sparql-metric.js looks
@@ -82,6 +88,7 @@
             </div>
           </div>
         </div>
+        {{ if .class }}<div id="{{ $queryId }}-trend" class="vs-metric-trend"></div>{{ end }}
       </div>
     </div>
   </div>
@@ -100,8 +107,21 @@
      Written with toJSON (not toJSONRaw): a <template> re-encodes entities when
      read back via innerHTML, and toJSON escapes < > & to backslash-u sequences
      so the angle-bracketed IRIs in the query survive the round trip intact. */}}
-{{ define "sparqlMetricValue" }}{{ formatNum .count }}<template id="{{ .queryId }}-metric-config">{{ toJSON (dict
+{{ define "sparqlMetricValue" }}{{ formatNum .count }}
+{{- with .trend }}{{ with .PctText }}<span class="vs-metric-change {{ if eq $.trend.Dir 1 }}text-green{{ else if eq $.trend.Dir -1 }}text-red{{ else }}text-secondary{{ end }}">{{ . }} {{ if eq $.trend.Dir 1 }}↑{{ else if eq $.trend.Dir -1 }}↓{{ else }}—{{ end }}</span>{{ end }}{{ end -}}
+<template id="{{ .queryId }}-metric-config">{{ toJSON (dict
   "id"       .queryId
   "query"    .query
   "endpoint" .endpoint
-) }}</template>{{ end }}
+) }}</template>
+{{- with .trend }}<div id="{{ $.queryId }}-trend" class="vs-metric-trend" hx-swap-oob="true">
+  {{- /* Sparkline of the class's daily snapshot counts. x = calendar day in the
+         window (classstats.buildTrend), so sparse history is spaced honestly;
+         non-scaling strokes keep the line and dot round under
+         preserveAspectRatio="none". */ -}}
+  <svg viewBox="0 0 100 30" preserveAspectRatio="none" role="img" aria-label="{{ .From }}: {{ formatNum .First }} → {{ .To }}: {{ formatNum .Last }}">
+    <title>{{ .From }}: {{ formatNum .First }} → {{ .To }}: {{ formatNum .Last }}</title>
+    <path class="vs-trend-line" d="{{ .Path }}"/>
+    <path class="vs-trend-dot" d="M{{ .EndX }},{{ .EndY }} h0"/>
+  </svg>
+</div>{{ end }}{{ end }}

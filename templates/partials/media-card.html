@@ -21,6 +21,8 @@
     - title:     (optional) card header title; no header when absent
     - icon:      (optional) Lucide icon for the header; defaults by kind
     - subheader: (optional) small uppercase line in the body (teaser style)
+    - heading:   (optional) card-title heading in the body, the prominent
+                 alternative to subheader (the home page highlight cards)
     - body:      (optional) body text; pass tHTML output for links
     - caption:   (optional) muted text beside the Open button
     - hideOpen:  (optional) omit the "Open original" button
@@ -77,8 +79,9 @@
     </a>
   {{ end }}
 
-  {{ if or .subheader .body }}
+  {{ if or .heading .subheader .body }}
     <div class="card-body d-flex flex-column">
+      {{ with .heading }}<h3 class="card-title fs-3 fw-bold mb-2">{{ . }}</h3>{{ end }}
       {{ with .subheader }}<div class="subheader">{{ . }}</div>{{ end }}
       {{ with .body }}<p class="text-secondary mt-auto mb-0">{{ . }}</p>{{ end }}
     </div>

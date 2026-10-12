@@ -1,7 +1,7 @@
 {{ define "pageTitle" }}{{ t "page.connect.title" "Connect your AI" }}{{ end }}
 {{ define "pageSubtitle" }}{{ t "page.connect.subtitle" "Use your own AI assistant on this data — via the Model Context Protocol (MCP)." }}{{ end }}
-{{ define "pageIcon"}}<img src="/static/img/resource/DataService.svg" alt="{{ t "page.connect.connectYourAI" "Connect your AI" }}" width="48" height="48">{{end}}
-{{ define "metaIcon" }}/static/img/resource/DataService.svg{{ end }}
+{{ define "pageIcon"}}<img src="/static/img/resource/MCP.svg" alt="{{ t "page.connect.connectYourAI" "Connect your AI" }}" width="48" height="48">{{end}}
+{{ define "metaIcon" }}/static/img/resource/MCP.svg{{ end }}
 
 {{ define "pageContent" }}
 
@@ -42,43 +42,44 @@
       </div>
       <div class="card-body">
         <ul class="nav nav-tabs" data-bs-toggle="tabs" role="tablist">
-          <li class="nav-item" role="presentation">{{ tHTML "page.connect.claude" "<a class=\"nav-link active\" data-bs-toggle=\"tab\" href=\"#connect-claude\" role=\"tab\" aria-selected=\"true\">Claude</a>" }}</li>
-          <li class="nav-item" role="presentation">{{ tHTML "page.connect.chatgpt" "<a class=\"nav-link\" data-bs-toggle=\"tab\" href=\"#connect-chatgpt\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">ChatGPT</a>" }}</li>
-          <li class="nav-item" role="presentation">{{ tHTML "page.connect.mistralLeChat" "<a class=\"nav-link\" data-bs-toggle=\"tab\" href=\"#connect-lechat\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Mistral Le Chat</a>" }}</li>
-          <li class="nav-item" role="presentation">{{ tHTML "page.connect.qwen" "<a class=\"nav-link\" data-bs-toggle=\"tab\" href=\"#connect-qwen\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Qwen</a>" }}</li>
-          <li class="nav-item" role="presentation">{{ tHTML "page.connect.openrouter" "<a class=\"nav-link\" data-bs-toggle=\"tab\" href=\"#connect-openrouter\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">OpenRouter</a>" }}</li>
-          <li class="nav-item" role="presentation">{{ tHTML "page.connect.apertus" "<a class=\"nav-link\" data-bs-toggle=\"tab\" href=\"#connect-apertus\" role=\"tab\" aria-selected=\"false\" tabindex=\"-1\">Apertus</a>" }}</li>
+          <li class="nav-item" role="presentation"><a class="nav-link active" data-bs-toggle="tab" href="#connect-claude" role="tab" aria-selected="true"><img src="/static/img/assistants/claude.svg" class="me-2" width="18" height="18" alt="">Claude</a></li>
+          <li class="nav-item" role="presentation"><a class="nav-link" data-bs-toggle="tab" href="#connect-chatgpt" role="tab" aria-selected="false" tabindex="-1"><img src="/static/img/assistants/openai.svg" class="me-2 vs-icon-mono" width="18" height="18" alt="">ChatGPT</a></li>
+          <li class="nav-item" role="presentation"><a class="nav-link" data-bs-toggle="tab" href="#connect-vibe" role="tab" aria-selected="false" tabindex="-1"><img src="/static/img/assistants/mistral.svg" class="me-2" width="18" height="18" alt="">Mistral Vibe</a></li>
+          <li class="nav-item" role="presentation"><a class="nav-link" data-bs-toggle="tab" href="#connect-qwen" role="tab" aria-selected="false" tabindex="-1"><img src="/static/img/assistants/qwen.svg" class="me-2" width="18" height="18" alt="">Qwen</a></li>
+          <li class="nav-item" role="presentation"><a class="nav-link" data-bs-toggle="tab" href="#connect-openrouter" role="tab" aria-selected="false" tabindex="-1"><img src="/static/img/assistants/openrouter.svg" class="me-2 vs-icon-mono" width="18" height="18" alt="">OpenRouter</a></li>
+          <li class="nav-item" role="presentation"><a class="nav-link" data-bs-toggle="tab" href="#connect-apertus" role="tab" aria-selected="false" tabindex="-1"><i data-lucide="mountain-snow" class="me-2" style="width: 18px; height: 18px;" aria-hidden="true"></i>Apertus</a></li>
         </ul>
 
         <div class="tab-content pt-3">
 
           <div class="tab-pane show active" id="connect-claude" role="tabpanel">
-            <p class="text-muted">{{ t "page.connect.requiresAClaudeProPlan" "Requires a Claude Pro plan or higher." }}</p>
+            <p class="text-muted">{{ t "page.connect.claudeAllPlansFreeOne" "Works on all plans; the Free plan allows one custom connector." }}</p>
             <ol>
-              <li>{{ tHTML "page.connect.openClaudeAiSettingsConnectors" "Open <a href=\"https://claude.ai/settings/connectors\" target=\"_blank\">claude.ai → Settings → Connectors</a>" }}</li>
-              <li>{{ tHTML "page.connect.clickAddCustomConnectorName" "Click <strong>Add custom connector</strong>, name it <code>Visoto</code> and paste the MCP URL above" }}</li>
-              <li>{{ tHTML "page.connect.inAChatOpenThe" "In a chat, open the <strong>search & tools</strong> menu and enable the Visoto connector" }}</li>
+              <li>{{ tHTML "page.connect.openClaudeCustomizeConnectors" "Open <a href=\"https://claude.ai/settings/connectors\" target=\"_blank\">claude.ai → Customize → Connectors</a>" }}</li>
+              <li>{{ tHTML "page.connect.claudeAddCustomConnector" "Click <strong>+ Add → Add custom connector</strong>, name it <code>Visoto</code> and paste the MCP URL above" }}</li>
+              <li>{{ tHTML "page.connect.claudeEnableInChat" "In a chat, click <strong>+</strong> → <strong>Connectors</strong> and enable Visoto" }}</li>
             </ol>
-            <p class="mb-1">{{ tHTML "page.connect.claudeDesktopConnectorsAreAccount" "<strong>Claude Desktop</strong> — connectors are account-level: added on claude.ai, it appears in the desktop app automatically." }}</p>
+            <p class="mb-1">{{ tHTML "page.connect.claudeDesktopSameWay" "<strong>Claude Desktop</strong> — custom connectors work there too; add it the same way under <strong>Customize → Connectors</strong>." }}</p>
             <p class="mb-1">{{ tHTML "page.connect.claudeCodeOneCommand" "<strong>Claude Code</strong> — one command:" }}</p>
             <pre><code class="language-bash">claude mcp add --transport http visoto {{ .BaseURL }}/mcp</code></pre>
           </div>
 
           <div class="tab-pane" id="connect-chatgpt" role="tabpanel">
-            <p class="text-muted">{{ t "page.connect.requiresChatGPTPlusOrHigher" "Requires ChatGPT Plus or higher; custom connectors live behind Developer mode." }}</p>
+            <p class="text-muted">{{ t "page.connect.chatgptRequiresPaidPlan" "Requires a paid ChatGPT plan. On Plus and Pro, custom MCP servers are read-only — which is all Visoto needs." }}</p>
             <ol>
-              <li>{{ tHTML "page.connect.openSettingsConnectorsAdvancedAnd" "Open <strong>Settings → Connectors → Advanced</strong> and enable <strong>Developer mode</strong>" }}</li>
-              <li>{{ t "page.connect.createANewConnectorAnd" "Create a new connector and paste the MCP URL above (no authentication)" }}</li>
-              <li>{{ t "page.connect.enableTheConnectorInThe" "Enable the connector in the chat's tools menu — re-enable it per chat if needed" }}</li>
+              <li>{{ tHTML "page.connect.chatgptAddCustomMCPServer" "Click <strong>+</strong> in the chat box (or open <strong>Plugins → Add</strong>) and choose <strong>Add custom MCP server</strong>" }}</li>
+              <li>{{ tHTML "page.connect.chatgptPasteURLNoAuth" "Name it <code>Visoto</code>, paste the MCP URL above and choose no authentication" }}</li>
+              <li>{{ t "page.connect.chatgptEnableInChat" "Enable the Visoto server in your chat" }}</li>
             </ol>
             <p class="text-muted mb-0">{{ t "page.connect.chatgptOnlyAcceptsRemoteHTTPS" "ChatGPT only accepts remote HTTPS MCP servers, so it must reach this instance's public URL." }}</p>
           </div>
 
-          <div class="tab-pane" id="connect-lechat" role="tabpanel">
+          <div class="tab-pane" id="connect-vibe" role="tabpanel">
+            <p class="text-muted">{{ t "page.connect.vibeFormerlyLeChat" "Mistral's assistant was called Le Chat until May 2026." }}</p>
             <ol>
-              <li>{{ tHTML "page.connect.inLeChatOpenThe" "In Le Chat, open the <strong>connectors</strong> panel from the sidebar" }}</li>
-              <li>{{ tHTML "page.connect.clickAddACustomConnector" "Click <strong>Add a custom connector</strong> and paste the MCP URL above (leave the API key empty)" }}</li>
-              <li>{{ t "page.connect.saveThenEnableTheConnector" "Save, then enable the connector in your chat" }}</li>
+              <li>{{ tHTML "page.connect.vibeOpenConnectors" "Open <strong>Connectors</strong> from the sidebar and click <strong>+ Add Connector</strong>" }}</li>
+              <li>{{ tHTML "page.connect.vibeCustomMCPTab" "Switch to the <strong>Custom MCP Connector</strong> tab, name it <code>visoto</code> (no spaces), paste the MCP URL above and click <strong>Connect</strong> — no authentication needed" }}</li>
+              <li>{{ tHTML "page.connect.vibeEnableTools" "In a chat, click <strong>+</strong> (or type <code>/</code>) → <strong>Tools</strong> and enable the connector" }}</li>
             </ol>
           </div>
 
