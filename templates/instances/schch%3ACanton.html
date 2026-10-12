@@ -74,6 +74,15 @@
     </div>
 
   </div>
+  <!-- Boundary from geo:hasGeometry; the WKT lives on geo.ld.admin.ch and is
+       fetched with a federated query (static/js/sparql-map.js). Hidden when the
+       geometry is missing. -->
+  {{ template "sparqlMap" (dict
+        "id" "canton-map"
+        "iri" .ResourceIRI
+        "endpointUrl" .GraphQueryURL
+        "height" "400px") }}
+
   <div class="row mb-3">
 
     <!-- Districts -->

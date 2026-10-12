@@ -160,3 +160,9 @@
 "js.monitoring.classStatsDrop" = "drop"
 "js.monitoring.classStatsMore" = "{n} more changes not shown."
 "js.monitoring.classStatsUnavailable" = "Class statistics are not available."
+
+# Map (templates/partials/sparql-map.html, static/js/sparql-map.js)
+"js.map.layerMap" = "swisstopo map"
+"js.map.layerAerial" = "swisstopo aerial"
+"js.map.unsupportedCrs" = "This geometry uses a coordinate reference system the map cannot display."
+"js.map.libraryFailed" = "Failed to load the map library."

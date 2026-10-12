@@ -485,6 +485,13 @@
                 </div>
               </div>
             </div>
+            <!-- Map view: the resource's geometry on a swisstopo base map. Its header
+                 button stays hidden until static/js/sparql-map.js finds geometry (one
+                 small proxy query after paint), so a resource without any shows no
+                 trace of it. Drawn on first reveal ('map:init'), like the graph. -->
+            <div id="resource-map-view" class="d-none">
+              {{ template "sparqlMap" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "lazy" true "tab" true) }}
+            </div>
             {{ end }}
           </div>
         </div>

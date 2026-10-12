@@ -1,0 +1,73 @@
+/* The sparqlMap partial (templates/partials/sparql-map.html, static/js/sparql-map.js). */
+
+.vs-map-frame {
+  position: relative;
+}
+
+.vs-map-canvas {
+  width: 100%;
+  border-bottom-left-radius: var(--tblr-card-border-radius, 4px);
+  border-bottom-right-radius: var(--tblr-card-border-radius, 4px);
+  /* Leaflet panes use z-index up to 1000; keep them under the topbar and dropdowns. */
+  z-index: 0;
+}
+
+/* Messages over the map (unsupported CRS, library or query failure). */
+.vs-map-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  text-align: center;
+  background: var(--tblr-bg-surface, #fff);
+  color: var(--tblr-secondary, #667382);
+  z-index: 1;
+}
+
+/* Fullscreen: the frame is pinned to the viewport. No Fullscreen API, the same as
+   the graph cards (ontodia_overrides.css .graph-maximized). */
+.card.vs-map-maximized .vs-map-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: var(--tblr-bg-surface, #fff);
+}
+.card.vs-map-maximized .vs-map-canvas {
+  height: 100% !important; /* overrides the JS-set inline height */
+  border-radius: 0;
+}
+
+.vs-map-exit {
+  display: none;
+}
+.card.vs-map-maximized .vs-map-exit {
+  display: inline-flex;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  z-index: 1001; /* above Leaflet's controls */
+}
+
+/* Leaflet's attribution and controls follow the Tabler theme in dark mode. */
+[data-bs-theme="dark"] .vs-map-canvas .leaflet-control-attribution,
+[data-bs-theme="dark"] .vs-map-canvas .leaflet-control-layers,
+[data-bs-theme="dark"] .vs-map-canvas .leaflet-bar a {
+  background: var(--tblr-bg-surface);
+  color: var(--tblr-body-color);
+}
+[data-bs-theme="dark"] .vs-map-canvas .leaflet-control-attribution a {
+  color: var(--tblr-link-color);
+}
+
+/* Point marker (sparql-map.js PIN_SVG). className replaces Leaflet's
+   .leaflet-div-icon, so there is no white box behind the pin. */
+.vs-map-pin {
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.35));
+}
+.vs-map-pin .vs-map-pin-body {
+  fill: var(--tblr-primary, #066fd1);
+  stroke: #fff;
+  stroke-width: 2;
+}

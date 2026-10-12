@@ -1,0 +1,80 @@
+<!-- Instance template for gtfs:Station: the ~54,600 public-transport stops of
+     the DiDok register (lod.opentransportdata.swiss/didok/…), on LINDAS.
+
+     A stop carries its own point (geo:hasGeometry → geo:asWKT, plus WGS84
+     lat/long), its municipality, canton and operator, and is the target of
+     tariff relations (otd:Relation, one per pair of neighbouring stops, each
+     pointing at BOTH stops with gtfs:stop). Those relations are what the
+     generic incoming table showed as 30 opaque relation IRIs; here they are
+     resolved to the station at the other end.
+
+     This template takes over the gtfs:Station CLASS page too (resolution step
+     5), hence templates/classes/gtfs%3AStation.html alongside it. -->
+
+{{ template "pageHeader" . }}
+
+<!-- What the stop links to, one row per value: municipality, canton, operator,
+     mean of transport. No ?type column (it repeated a destination once per
+     type), and the geometry node (drawn on the map) is left out, as are owl:
+     links (owl:sameAs to the geo.ld.admin.ch twin). -->
+<sparql-query id="stationRelationships">
+  SELECT ?property ?value WHERE {
+    ?? ?property ?value .
+    FILTER (isIRI(?value))
+    FILTER (?property NOT IN (rdf:type, geo:hasGeometry))
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
+  } LIMIT 200
+</sparql-query>
+
+<!-- The other end of each tariff relation. A relation names both stops with
+     gtfs:stop, so the neighbour is the gtfs:stop that is not ??. -->
+<sparql-query id="connections">
+  SELECT ?station ?kilometers ?tariffValue WHERE {
+    ?relation gtfs:stop ?? ;
+              gtfs:stop ?station .
+    FILTER (?station != ??)
+    OPTIONAL { ?relation <https://lod.opentransportdata.swiss/vocab/effektiveKilometer> ?kilometers . }
+    OPTIONAL { ?relation <https://lod.opentransportdata.swiss/vocab/tarifwert> ?tariffValue . }
+  } ORDER BY ?kilometers LIMIT 1000
+</sparql-query>
+<sparql-columns for="connections">
+  <sparql-column var="station" label="{{ t "facet.station" "Station" }}" icon></sparql-column>
+  <sparql-column var="kilometers" label="{{ t "facet.kilometers" "Kilometres" }}"></sparql-column>
+  <sparql-column var="tariffValue" label="{{ t "facet.tariffValue" "Tariff value" }}"></sparql-column>
+</sparql-columns>
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- The stop's own point (WKT and lat/long are both in LINDAS). -->
+  {{ template "sparqlMap" (dict
+        "id" "station-map"
+        "iri" .ResourceIRI
+        "endpointUrl" .GraphQueryURL
+        "height" "400px") }}
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlGrid" (dict
+              "result" .QueryResults.stationRelationships
+              "id" "stationRelationships"
+              "title" (t "card.relationships" "Relationships")
+              "icon" "expand") }}
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlTable" (dict
+              "result" .QueryResults.connections
+              "id" "connections"
+              "title" (t "card.tariffConnections" "Tariff connections")
+              "icon" "route") }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

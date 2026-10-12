@@ -1,0 +1,97 @@
+<!-- Class template for gtfs:Station: the ~54,600 public-transport stops of the
+     DiDok register on LINDAS. Also needed because
+     templates/instances/gtfs%3AStation.html would otherwise take over this class
+     page (resolution step 5 beats the rdf:type lookup). -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Above defaultMaxWorkingSet (20000) the table below loads a bounded working
+       set rather than the class, so this metric is what tells you the size of the
+       whole. Queried live: LINDAS counts drift between requests. -->
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+        <!-- One row per stop. Provider, containedInPlace (the country), canton
+             and municipality are single-valued on every stop (measured), so they
+             project plainly. Canton and municipality are bound on only about half
+             of the stops; they are OPTIONAL like the rest.
+
+             Means of transport is the one multi-valued property (up to 3 per stop,
+             943 stops have more than one), so it is concatenated rather than
+             projected: a plain column would repeat the stop once per mode. The
+             values are IRIs with no label (…/mean-of-transport/bus), so the cell
+             shows the last path segment.
+
+             Swiss stops (those with a canton) sort first: by DiDok number the
+             foreign stops lead, and the working set would open on a page of
+             German bus stops with empty canton and municipality columns.
+
+             No LIMIT: the server picks inline vs working-set mode by instance
+             count and strips a trailing LIMIT anyway (see classes/default.html). -->
+        <sparql-async id="stationInstances">
+          SELECT ?station ?provider ?containedIn ?canton ?municipality
+                 (GROUP_CONCAT(DISTINCT ?mode; separator=", ") AS ?meansOfTransport)
+          WHERE {
+            ?station a ?? .
+            OPTIONAL { ?station schema:provider ?provider . }
+            OPTIONAL { ?station schema:containedInPlace ?containedIn . }
+            OPTIONAL { ?station schch:canton ?canton . }
+            OPTIONAL { ?station schch:municipality ?municipality . }
+            OPTIONAL {
+              ?station &lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt; ?mean .
+              BIND (IF(isIRI(?mean), STRAFTER(STR(?mean), "/mean-of-transport/"), STR(?mean)) AS ?mode)
+            }
+          }
+          GROUP BY ?station ?provider ?containedIn ?canton ?municipality
+          ORDER BY (!BOUND(?canton)) ?station
+        </sparql-async>
+        <!-- Every column declares filter + path=: above 20000 rows the table holds
+             a working set, and only a declared path filters the WHOLE class rather
+             than the rows that happened to load.
+
+             ?meansOfTransport must also say root=: it is a GROUP_CONCAT alias,
+             which does not exist in WHERE scope, so a column-mode filter would
+             return zero rows without an error. Routed through the property it
+             filters existentially, keeping a bus-and-train stop whole. -->
+        <sparql-columns for="stationInstances">
+          <sparql-column var="station" label="{{ t "facet.station" "Station" }}" icon filter="text"></sparql-column>
+          <sparql-column var="provider" label="{{ t "facet.provider" "Provider" }}"
+                         path="schema:provider" icon filter></sparql-column>
+          <sparql-column var="containedIn" label="{{ t "facet.containedIn" "Contained in" }}"
+                         path="schema:containedInPlace" icon filter></sparql-column>
+          <sparql-column var="canton" label="{{ t "facet.canton" "Canton" }}"
+                         path="schch:canton" icon filter></sparql-column>
+          <sparql-column var="municipality" label="{{ t "facet.municipality" "Municipality" }}"
+                         path="schch:municipality" icon filter></sparql-column>
+          <sparql-column var="meansOfTransport" label="{{ t "facet.meansOfTransport" "Means of transport" }}"
+                         root="?station" path="&lt;https://lod.opentransportdata.swiss/vocab/meanOfTransport&gt;" filter></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "stationInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.stations" "Stations")
+            "icon" "train-front")
+        }}
+      </div>
+    </div>
+  </div>
+
+</div>
+{{ end }}

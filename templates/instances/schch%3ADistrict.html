@@ -65,6 +65,16 @@
     </div>
 
   </div>
+  <!-- Districts carry no geometry of their own in LINDAS: the map draws the
+       district as its municipalities (schema:hasPart), whose boundaries the
+       map fetches from geo.ld.admin.ch. -->
+  {{ template "sparqlMap" (dict
+        "id" "district-map"
+        "iri" .ResourceIRI
+        "endpointUrl" .GraphQueryURL
+        "height" "400px"
+        "via" "schema:hasPart") }}
+
   <div class="row mb-3">
 
     <!-- Municipalities -->

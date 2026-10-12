@@ -755,6 +755,33 @@ from that one resource, anchored on a detected class.
 {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "lazy" true) }}
 ```
 
+### `sparqlMap`
+
+A Leaflet map of the resource's geometry. It uses swisstopo base maps (map and aerial), and OpenStreetMap when the geometry lies outside Switzerland. There is no query to write: after paint, `static/js/sparql-map.js` probes for the geometry through the `/api/sparql` proxy in this order:
+- `?? geo:hasGeometry/geo:asWKT`
+- `?? geo:asWKT`
+- `schema:latitude`/`schema:longitude`
+- WGS84 `geo:lat`/`geo:long`
+
+The WKT is parsed by `static/js/wkt.js`, which accepts CRS84 or EPSG:4326 only; any other CRS shows a message instead of drawing. When a geometry address is on `geo.ld.admin.ch` but has no WKT on the current endpoint (as for LINDAS municipalities and cantons), a second query fetches it with a federated `SERVICE <https://geo.ld.admin.ch/query>`. The card renders hidden and stays hidden when the resource has no geometry.
+
+| Parameter | Description |
+|---|---|
+| `id` | DOM id suffix, default `sparql-map`. |
+| `iri` | The resource to map. |
+| `endpointUrl` | Pass `.GraphQueryURL`. |
+| `height` | CSS height, default `calc(100vh - 200px)`. |
+| `lazy` | Draw only on a `map:init` event (for a map in a hidden container). |
+| `tab` | This map backs the header's **Map** view button (base layout only). |
+| `via` | A property (CURIE) to follow first, for a resource without geometry of its own: `"via" "schema:hasPart"` draws a district as its municipalities. |
+| `title` / `icon` | Card title and Lucide icon, default "Map" / `map`. |
+
+Every resource page already has a **Map** view: its button appears only when the probe finds geometry. Embed the partial in a template only to show the map inline, as `instances/geo%3AFeature.html` does:
+
+```html
+{{ template "sparqlMap" (dict "id" "feature-map" "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "height" "400px") }}
+```
+
 ### `sparqlMetric`
 
 Async metric card, loaded via HTMX after the page renders. Pairs with `<sparql-async>`.

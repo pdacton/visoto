@@ -40,6 +40,9 @@
     <label for="resource-view-data" class="btn"><i data-lucide="database" class="me-1"></i>{{ t "view.data" "Data" }}</label>
     <input type="radio" class="btn-check" name="resource-view" id="resource-view-schema" data-view="schema" autocomplete="off">
     <label for="resource-view-schema" class="btn"><i data-lucide="shapes" class="me-1"></i>{{ t "view.schema" "Schema" }}</label>
+    <!-- Hidden until static/js/sparql-map.js finds geometry for this resource. -->
+    <input type="radio" class="btn-check d-none" name="resource-view" id="resource-view-map" data-view="map" autocomplete="off">
+    <label for="resource-view-map" class="btn d-none"><i data-lucide="map" class="me-1"></i>{{ t "view.map" "Map" }}</label>
   </div>
   {{ end }}
 </div>

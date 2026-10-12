@@ -1,0 +1,111 @@
+<!-- Instance template for geo:Feature — anything with a place on the map.
+
+     On swisstopo (geo.ld.admin.ch) geo:Feature is the shared type of ~6.7 M
+     resources: postal addresses, transport links and nodes, stops, hydropower
+     plants, municipalities, cantonal territories. None of their co-types has a
+     template of its own except schema:Country, which is listed in type_priority
+     and so keeps its template; geo:Feature stays UNLISTED there on purpose, so it
+     only catches types nobody wrote a template for.
+
+     This template takes over the geo:Feature CLASS page too (resolution step 5),
+     hence templates/classes/geo%3AFeature.html alongside it. -->
+
+{{ template "pageHeader" . }}
+
+<!-- External pages about the feature: the geoportal map, the source record.
+     Rendered as plain links, not through `render`, which would turn them into
+     /resource?iri= links to pages no endpoint describes. -->
+<sparql-query id="featureLinks">
+  SELECT ?property ?url WHERE {
+    ?? ?property ?url .
+    FILTER (?property IN (schema:hasMap, schema:sameAs, schema:url))
+    FILTER (isIRI(?url))
+  } ORDER BY ?property ?url LIMIT 20
+</sparql-query>
+
+<!-- What the feature links to, one row per value. Unlike the generic outgoing
+     table there is no ?type column (it repeated a destination once per type: Bern
+     as AdministrativeArea and again as Feature), and the geometry node (drawn on
+     the map) and the external links above are left out. -->
+<sparql-query id="featureRelationships">
+  SELECT ?property ?value WHERE {
+    ?? ?property ?value .
+    FILTER (isIRI(?value))
+    FILTER (?property NOT IN (rdf:type, geo:hasGeometry, schema:hasMap, schema:sameAs, schema:url))
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+  } LIMIT 200
+</sparql-query>
+
+<!-- Same query as the relationships component. A canton or municipality is
+     pointed at by hundreds of plants and addresses, so it stays collapsed. -->
+<sparql-query id="incoming">
+  SELECT ?source ?property WHERE {
+    BIND (?? AS ?o)
+    ?source ?property ?o .
+    FILTER (?property != rdf:type)
+    FILTER (?property != rdfs:subClassOf)
+    FILTER (?property NOT IN (
+      schema:rangeIncludes,
+      schema:domainIncludes,
+      rdfs:range,
+      rdfs:domain
+    ))
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/2002/07/owl#"))
+    FILTER (!STRSTARTS(STR(?property), "http://www.w3.org/ns/shacl#"))
+  } LIMIT 1000
+</sparql-query>
+<sparql-columns for="incoming">
+  <sparql-column var="source" icon filter></sparql-column>
+</sparql-columns>
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Hidden until static/js/sparql-map.js finds geometry; a feature without any
+       shows no map card. -->
+  {{ template "sparqlMap" (dict
+        "id" "feature-map"
+        "iri" .ResourceIRI
+        "endpointUrl" .GraphQueryURL
+        "height" "400px") }}
+
+  {{ with .QueryResults.featureLinks.Bindings }}
+  <div class="d-flex flex-wrap gap-2 mb-3">
+    {{ range . }}
+    <a class="btn btn-sm" href="{{ .url.Value }}" target="_blank" rel="noopener" title="{{ .url.Value }}">
+      {{ if contains .property.Value "hasMap" }}
+        <i data-lucide="map-pinned" class="me-1"></i>{{ t "map.openMap" "Open in map viewer" }}
+      {{ else if contains .property.Value "sameAs" }}
+        <i data-lucide="link" class="me-1"></i>{{ t "map.sameAs" "Same as" }}
+      {{ else }}
+        <i data-lucide="globe" class="me-1"></i>{{ t "map.website" "Website" }}
+      {{ end }}
+      <span class="text-secondary text-truncate ms-1" style="max-width: 18rem;">{{ .url.Value }}</span>
+      <i data-lucide="external-link" class="ms-1"></i>
+    </a>
+    {{ end }}
+  </div>
+  {{ end }}
+
+  <div class="mb-3">
+    {{ template "sparqlGrid" (dict
+          "result" .QueryResults.featureRelationships
+          "id" "featureRelationships"
+          "title" (t "card.relationships" "Relationships")
+          "icon" "expand") }}
+  </div>
+
+  <div class="mb-3">
+    {{ template "sparqlTable" (dict
+          "result" .QueryResults.incoming
+          "id" "incoming"
+          "title" (t "card.incomingRelationships" "Incoming Relationships")
+          "icon" "shrink"
+          "collapsed" true) }}
+  </div>
+
+</div>
+{{ end }}

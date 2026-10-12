@@ -278,3 +278,9 @@
 "page.monitoring.classStatsBefore" = "Avant"
 "page.monitoring.classStatsNow" = "Ussa"
 "page.monitoring.classStatsChange" = "Midada"
+
+# Map (templates/partials/sparql-map.html, static/js/sparql-map.js)
+"js.map.layerMap" = "Charta swisstopo"
+"js.map.layerAerial" = "Fotografia aviatica swisstopo"
+"js.map.unsupportedCrs" = "Questa geometria utilisescha in sistem da coordinatas che la charta na po betg mussar."
+"js.map.libraryFailed" = "La biblioteca da chartas na pudeva betg vegnir chargiada."

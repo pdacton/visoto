@@ -1,4 +1,4 @@
-/* Resource page Table <-> Graph <-> Data <-> Schema view toggle.
+/* Resource page Table <-> Graph <-> Data <-> Schema <-> Map view toggle.
  *
  * Wiring (see templates/layout/header.html and templates/layout/base.html):
  *   - Header renders a Tabler btn-check radio group with inputs
@@ -36,17 +36,20 @@
     var graphView = document.getElementById('resource-graph-view');
     var dataView = document.getElementById('resource-data-view');
     var schemaView = document.getElementById('resource-schema-view');
+    var mapView = document.getElementById('resource-map-view');
     if (!inputs.length || !tableView) return; // not a resource page
 
     var graphInitialized = false;
     var dataInitialized = false;
     var schemaInitialized = false;
+    var mapInitialized = false;
 
     function hideAll() {
       tableView.classList.add('d-none');
       if (graphView) graphView.classList.add('d-none');
       if (dataView) dataView.classList.add('d-none');
       if (schemaView) schemaView.classList.add('d-none');
+      if (mapView) mapView.classList.add('d-none');
     }
 
     function showTable() {
@@ -102,6 +105,22 @@
       }
     }
 
+    // The Map button is only shown once sparql-map.js has found geometry, but a
+    // #Map deep link can land here first: the map then draws when the probe
+    // answers, or sparql-map.js switches back to the Page view if it finds none.
+    function showMap() {
+      if (!mapView) return;
+      hideAll();
+      // Reveal before initializing so Leaflet measures a non-zero size.
+      mapView.classList.remove('d-none');
+      if (!mapInitialized) {
+        mapInitialized = true;
+        // The map partial defaults its id to "sparql-map" (base.html passes none).
+        var root = document.getElementById('sparql-map-root');
+        if (root) root.dispatchEvent(new Event('map:init'));
+      }
+    }
+
     function selectView(view) {
       if (view === 'graph') {
         showGraph();
@@ -109,17 +128,19 @@
         showData();
       } else if (view === 'schema') {
         showSchema();
+      } else if (view === 'map') {
+        showMap();
       } else {
         showTable();
       }
     }
 
     // Capitalized to match the button labels; table (the default) gets no hash.
-    var HASH_BY_VIEW = { graph: '#Graph', data: '#Data', schema: '#Schema' };
+    var HASH_BY_VIEW = { graph: '#Graph', data: '#Data', schema: '#Schema', map: '#Map' };
 
     function viewFromHash() {
       var h = location.hash.slice(1).toLowerCase();
-      return (h === 'graph' || h === 'data' || h === 'schema' || h === 'table') ? h : null;
+      return (h === 'graph' || h === 'data' || h === 'schema' || h === 'map' || h === 'table') ? h : null;
     }
 
     function syncHash(view) {

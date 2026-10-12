@@ -1,0 +1,91 @@
+<!--
+  Partial template for a map of the current resource's geometry (Leaflet on
+  swisstopo base maps, OpenStreetMap outside Switzerland).
+
+  Usage:
+    {{ template "sparqlMap" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL) }}
+
+    {{ template "sparqlMap" (dict
+          "id" "feature-map"
+          "iri" .ResourceIRI
+          "endpointUrl" .GraphQueryURL
+          "height" "400px") }}
+
+  Parameters (via dict):
+    - id: (optional) unique DOM id suffix; allows multiple maps on one page. Default "sparql-map".
+    - iri: the resource whose geometry is drawn.
+    - endpointUrl: (optional) URL the BROWSER posts SPARQL to. Pass .GraphQueryURL (the
+      same-origin /api/sparql proxy). Falls back to /api/sparql.
+    - height: (optional) CSS height of the map. Default "calc(100vh - 200px)".
+    - lazy: (optional) draw only when a 'map:init' event reaches the -root element (for a
+      map in a hidden container, which Leaflet cannot measure). The geometry probe still
+      runs at load.
+    - tab: (optional) this map backs the resource header's Map view button, which
+      static/js/sparql-map.js un-hides once the probe finds geometry.
+    - via: (optional) a property (CURIE) from the resource to the things to draw, for a
+      resource with no geometry of its own: "schema:hasPart" draws a district as its
+      municipalities.
+    - title / icon: (optional) card title and Lucide icon. Defaults "Map" / "map".
+
+  Notes:
+    - Geometry is found in the browser, after paint, through the proxy:
+      ?? geo:hasGeometry/geo:asWKT, ?? geo:asWKT, schema:latitude/longitude or WGS84
+      geo:lat/long. WKT is parsed by static/js/wkt.js (CRS84 or EPSG:4326 only).
+    - The card renders hidden and stays hidden when the resource has no geometry.
+    - Leaflet is loaded from cdnjs (with SRI) on first draw, once per page.
+-->
+
+{{ define "sparqlMap" }}
+
+  {{ $id := or .id "sparql-map" }}
+  {{ $endpointUrl := or .endpointUrl "/api/sparql" }}
+  {{ $height := or .height "calc(100vh - 200px)" }}
+  {{ $title := or .title (t "map.title" "Map") }}
+  {{ $icon := or .icon "map" }}
+
+  <link rel="stylesheet" href="/static/css/map_overrides.css">
+
+  <div class="card mb-3 d-none" id="{{ $id }}-card">
+    <div class="card-header d-flex align-items-center justify-content-between">
+      <div class="d-flex align-items-center gap-2">
+        <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <h3 class="card-title mb-0">{{ $title }}</h3>
+      </div>
+      <div class="btn-actions">
+        <a class="btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
+          <i data-lucide="maximize"></i>
+        </a>
+        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
+           aria-expanded="true" aria-controls="collapse-{{ $id }}" style="cursor: pointer;">
+          <i data-lucide="chevron-up"></i>
+        </a>
+      </div>
+    </div>
+    <div id="collapse-{{ $id }}" class="collapse show">
+      <div class="card-body p-0 vs-map-frame">
+        <div id="{{ $id }}-root" class="vs-map-canvas"
+             data-sparql-map
+             data-sparql-map-id="{{ $id }}"
+             {{ if .lazy }}data-sparql-map-lazy="true"{{ end }}
+             {{ if .tab }}data-sparql-map-tab="true"{{ end }}></div>
+        <div id="{{ $id }}-overlay" class="vs-map-overlay d-none" aria-live="polite"></div>
+        <button type="button" class="btn btn-icon vs-map-exit" id="{{ $id }}-exit" title="{{ t "graph.exitFullscreen" "Exit fullscreen" }}">
+          <i data-lucide="minimize"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Data islands. Height travels as JSON because html/template rejects a dynamic
+       value inside style="" (ZgotmplZ). -->
+  <template id="{{ $id }}-iri">{{ .iri | toJSON }}</template>
+  <template id="{{ $id }}-endpoint-url">{{ $endpointUrl | toJSON }}</template>
+  <template id="{{ $id }}-height">{{ $height | toJSON }}</template>
+  {{ with .via }}<template id="{{ $id }}-via">{{ . | toJSON }}</template>{{ end }}
+
+  <!-- Behaviour lives in static/js/sparql-map.js; this partial emits only markup,
+       data islands and the data-sparql-map marker it reads. -->
+  <script src="/static/js/wkt.js" defer></script>
+  <script src="/static/js/sparql-map.js" defer></script>
+
+{{ end }}
