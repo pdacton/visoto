@@ -77,23 +77,33 @@
            dct:LocationPeriodOrJurisdiction). Not every subclass of a member:
            on LINDAS that drags data classes (politics activities) into PROV.
          - Labels only for typed members and referenced ends: QUDT units has
-           2935 member individuals whose labels the diagram never shows.
+           2935 member individuals whose labels the diagram never shows. All
+           label predicates of the "label" magic property, written out (the
+           proxy does not expand visoto:); the projection keeps the best.
+         - schema:domainIncludes/rangeIncludes are uses of their own
+           (source "schema"); the projection merges them with rdfs ones.
        The two marker-type labels are the only UI text, spliced in with printf
        from the i18n catalog (%q quotes them as SPARQL string literals). -->
   {{ $core := printf `PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl:  <http://www.w3.org/2002/07/owl#>
 PREFIX sh:   <http://www.w3.org/ns/shacl#>
+PREFIX schema: <http://schema.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX dct:  <http://purl.org/dc/terms/>
+PREFIX dc:   <http://purl.org/dc/elements/1.1/>
+PREFIX rico: <https://www.ica.org/standards/RiC/ontology#>
 CONSTRUCT {
   ?m a <urn:visoto:Member> , ?kind .
   ?sub rdfs:subClassOf ?super .
   ?known a <urn:visoto:Known> .
-  _:use a <urn:visoto:Use> ; <urn:visoto:property> ?p ; <urn:visoto:class> ?d ; <urn:visoto:range> ?r ; <urn:visoto:source> "rdfs" .
-  ?node rdfs:label ?label .
+  ?datatype a rdfs:Datatype .
+  _:use a <urn:visoto:Use> ; <urn:visoto:property> ?p ; <urn:visoto:class> ?d ; <urn:visoto:range> ?r ; <urn:visoto:source> ?source .
+  ?node ?labelPredicate ?label .
 } WHERE {
   {
     %[1]s
-    VALUES ?kind { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
+    VALUES ?kind { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property owl:FunctionalProperty }
     ?m a ?kind .
   } UNION {
     %[1]s
@@ -107,7 +117,7 @@ CONSTRUCT {
     FILTER EXISTS { ?? owl:imports+ ?imp . { ?sub rdfs:isDefinedBy ?imp . } UNION { ?imp rdfs:member ?sub . } }
     BIND (?m AS ?super)
     BIND (?sub AS ?known)
-    OPTIONAL { ?sub rdfs:label ?label . BIND (?sub AS ?node) }
+    OPTIONAL { ?sub rdfs:label ?label . BIND (?sub AS ?node) BIND (rdfs:label AS ?labelPredicate) }
   } UNION {
     %[1]s
     FILTER EXISTS {
@@ -117,9 +127,17 @@ CONSTRUCT {
     OPTIONAL { ?m rdfs:domain/(owl:unionOf/rdf:rest*/rdf:first)? ?d . FILTER (isIRI(?d)) }
     OPTIONAL { ?m rdfs:range/(owl:unionOf/rdf:rest*/rdf:first)? ?r . FILTER (isIRI(?r)) }
     BIND (?m AS ?p)
+    BIND ("rdfs" AS ?source)
   } UNION {
     %[1]s
-    ?m (rdfs:domain|rdfs:range|rdfs:subClassOf)/(owl:unionOf/rdf:rest*/rdf:first)? ?known .
+    FILTER EXISTS { ?m schema:domainIncludes|schema:rangeIncludes ?declared . }
+    OPTIONAL { ?m schema:domainIncludes ?d . FILTER (isIRI(?d)) }
+    OPTIONAL { ?m schema:rangeIncludes ?r . FILTER (isIRI(?r)) }
+    BIND (?m AS ?p)
+    BIND ("schema" AS ?source)
+  } UNION {
+    %[1]s
+    ?m (rdfs:domain|rdfs:range|rdfs:subClassOf|schema:domainIncludes|schema:rangeIncludes)/(owl:unionOf/rdf:rest*/rdf:first)? ?known .
     FILTER (isIRI(?known))
     FILTER EXISTS {
       ?? owl:imports+ ?imp .
@@ -127,17 +145,22 @@ CONSTRUCT {
     }
   } UNION {
     %[1]s
+    ?m (rdfs:range|schema:rangeIncludes)/(owl:unionOf/rdf:rest*/rdf:first)? ?datatype .
+    ?datatype a rdfs:Datatype .
+  } UNION {
+    %[1]s
     {
       VALUES ?kind { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
       ?m a ?kind .
       BIND (?m AS ?node)
     } UNION {
-      ?m (rdfs:domain|rdfs:range|rdfs:subClassOf)/(owl:unionOf/rdf:rest*/rdf:first)? ?node .
+      ?m (rdfs:domain|rdfs:range|rdfs:subClassOf|schema:domainIncludes|schema:rangeIncludes)/(owl:unionOf/rdf:rest*/rdf:first)? ?node .
       FILTER (isIRI(?node))
     }
-    ?node rdfs:label ?label .
+    VALUES ?labelPredicate { rdfs:label skos:prefLabel schema:name dct:title dc:title rico:title rico:name }
+    ?node ?labelPredicate ?label .
   } UNION {
-    VALUES (?node ?label) { (<urn:visoto:ExternalClass> %[2]q) (<urn:visoto:AnyResource> %[3]q) }
+    VALUES (?node ?labelPredicate ?label) { (<urn:visoto:ExternalClass> rdfs:label %[2]q) (<urn:visoto:AnyResource> rdfs:label %[3]q) }
   }
 }` $members (t "graph.uml.externalClass" "external class") (t "graph.uml.notDeclared" "not declared") }}
 

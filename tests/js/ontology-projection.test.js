@@ -114,11 +114,11 @@ test('J5: missing ends are placeholders — per property for edges, shared per l
 
 test('J5: owl:Thing and rdfs:Resource ends count as missing', () => {
   const s = draw(nt([member(EX + 'A', OWL + 'Class'), member(EX + 'p', OWL + 'ObjectProperty'),
-    use('u1', EX + 'p', EX + 'A', OWL + 'Thing'), use('u2', EX + 'p', RDFS + 'Resource', EX + 'A')]));
+    use('u1', EX + 'p', EX + 'A', OWL + 'Thing'), use('u2', EX + 'q', RDFS + 'Resource', EX + 'A')]));
   assert.equal(s.elements[OWL + 'Thing'], undefined);
   assert.equal(s.elements[RDFS + 'Resource'], undefined);
   assert.ok(links(s).includes(`${EX}A ${EX}p ${U}any-range:${EX}p`));
-  assert.ok(links(s).includes(`${U}any-domain:${EX}p ${EX}p ${EX}A`));
+  assert.ok(links(s).includes(`${U}any-domain:${EX}q ${EX}q ${EX}A`));
 });
 
 test('J6: non-member ends are external unless known or a datatype', () => {
@@ -158,4 +158,52 @@ test('blank-node uses from two responses do not merge', () => {
   const triples = M.parseNTriples(text0, 'q0_').concat(M.parseNTriples(text1, 'q1_'));
   const s = M.buildStore(P.project(triples), {});
   assert.deepEqual(links(s), [`${EX}A ${EX}p ${EX}B`, `${EX}C ${EX}q ${EX}D`]);
+});
+
+test('J3: schema.org datatypes are attribute rows', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'), use('u1', EX + 'p', EX + 'A', 'http://schema.org/Text')]));
+  assert.deepEqual(attr(s, EX + 'A', EX + 'p'), ['schema:Text']);
+});
+
+test('J8: a use without class lends its range to the classed uses and is not drawn itself', () => {
+  // DCAT-AP style: schema:rangeIncludes without a domain, the class from elsewhere.
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'),
+    use('u1', EX + 'p', null, XSD + 'string'), use('u2', EX + 'p', EX + 'A')]));
+  assert.deepEqual(attr(s, EX + 'A', EX + 'p'), ['xsd:string']);
+  assert.equal(s.elements[U + 'any-domain:Resource'], undefined);
+});
+
+test('J8: a use without range folds into a ranged use of the same class', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'), member(EX + 'B', OWL + 'Class'),
+    use('u1', EX + 'p', EX + 'A'), use('u2', EX + 'p', EX + 'A', EX + 'B'), use('u3', EX + 'p')]));
+  assert.deepEqual(links(s), [`${EX}A ${EX}p ${EX}B`]);
+});
+
+test('J8/J9: multiplicity — highest source wins, tightest bounds within it', () => {
+  assert.equal(P.multiplicity([]), '');
+  assert.equal(P.multiplicity([{ min: 0, max: null, source: 'shacl' }]), '');
+  assert.equal(P.multiplicity([{ min: 1, max: 1, source: 'shacl' }]), '1');
+  assert.equal(P.multiplicity([{ min: 1, max: null, source: 'owl' }]), '1..*');
+  assert.equal(P.multiplicity([{ min: null, max: 1, source: 'owl' }, { min: 1, max: null, source: 'shacl' }]), '1..*');
+  assert.equal(P.multiplicity([{ min: 0, max: 3, source: 'shacl' }, { min: 1, max: 5, source: 'shacl' }]), '1..3');
+});
+
+test('J9: functional property → max 1 on the edge label and the attribute row', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'), member(EX + 'B', OWL + 'Class'),
+    `<${EX}p> <${RDF}type> <${OWL}FunctionalProperty> .`, `<${EX}p> <${RDFS}label> "has p"@en .`,
+    `<${EX}v> <${RDF}type> <${OWL}FunctionalProperty> .`,
+    use('u1', EX + 'p', EX + 'A', EX + 'B'), use('u2', EX + 'v', EX + 'A', XSD + 'date')]));
+  const lt = `${U}mult:0..1:${EX}p`;
+  assert.deepEqual(links(s), [`${EX}A ${lt} ${EX}B`]);
+  assert.equal(s.labels[lt][0].value, 'has p [0..1]');
+  assert.deepEqual(attr(s, EX + 'A', EX + 'v'), ['xsd:date [0..1]']);
+});
+
+test('S3: the best-ranked label predicate wins per language', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'),
+    `<${EX}A> <http://www.w3.org/2004/02/skos/core#prefLabel> "Pref"@en .`,
+    `<${EX}A> <${RDFS}label> "Label"@en .`,
+    `<${EX}A> <http://purl.org/dc/terms/title> "Titel"@de .`]));
+  const vals = s.elements[EX + 'A'].label.values.map((v) => v.language + ':' + v.value).sort();
+  assert.deepEqual(vals, ['de:Titel', 'en:Label']);
 });
