@@ -129,3 +129,59 @@ timing table.
   than loosen C3.
 - **Shared layer:** per-edge link types (J9) touch `graph-memory-store.js`,
   which the schema diagram also uses; recheck it at Gate 2.
+
+---
+
+## Phase 0 results (2026-10-13)
+
+### Test ontologies
+
+| Ontology | Endpoint | Exercises | Baseline (current query) |
+|---|---|---|---|
+| RiC-O `https://www.ica.org/standards/RiC/ontology` | LINDAS | M1, restrictions (123), size reference | 1440 triples, 0.6 s |
+| QUDT schema `http://qudt.org/schema/qudt` | LINDAS | M1, restrictions (381), `owl:oneOf` (12), `owl:imports` (5) | 852 triples, 0.3 s |
+| QUDT units `http://qudt.org/vocab/unit` | LINDAS | M1 with 2935 non-schema members (units), `owl:imports` (4) | 18313 triples, 2.0 s — mostly labels of unit individuals |
+| OWL Time `http://www.w3.org/2006/time` | LINDAS | M4 fallback, restrictions (52) | 281 triples, 0.2 s |
+| PROV `http://www.w3.org/ns/prov#` | LINDAS | M1, re-declared `rdf:type`/`rdfs:label` (P3), imports (6) | 165 triples, 0.1 s |
+| plant-protection shapes `https://agriculture.ld.admin.ch/plant-protection/shape/` | LINDAS | **real SHACL via M4**: 28 NodeShapes, targetClass, `sh:class`/`sh:datatype`/`sh:or`/`sh:in`/`sh:node`/min/maxCount, 2 untargeted shapes, a meta-shape targeting `owl:Class` | 2 triples (SHACL not supported yet) |
+| plant-protection `https://agriculture.ld.admin.ch/plant-protection/` | LINDAS | M4, restrictions (10); its namespace also covers `…/shape/` | 117 triples, 0.2 s |
+| MDS model `https://register.ld.admin.ch/mds/ontology/ist` | QLever | M1 (now has isDefinedBy, 112), domain/range leak (Q7) | 439 triples, 1.4 s |
+| DCAT-AP 3.0.0 / 2.1.0 | QLever | M2, no domain/range, `rangeIncludes` datatypes | 443 / 436 triples, 0.5 s |
+| DCAT-AP CH v2/v3 + all shapes files | QLever | M6, M7, S2–S5, J8b | **not uploaded yet** |
+
+LINDAS has **no** `rdfs:member` at all and no `owl:Ontology` for schema.org or
+`schema.ld.admin.ch` (where all 2486 `schema:domainIncludes` live), so
+`domainIncludes`/`rangeIncludes` is exercised only by the DCAT-AP fixtures.
+RiC-O is not on QLever, so the 5 s budget on QLever is measured on the
+largest fixture instead.
+
+### Deferred features (§8) — data found
+
+| Feature | LINDAS usage |
+|---|---|
+| `owl:oneOf` | 13 (QUDT schema) |
+| `owl:hasValue` | 13 |
+| `sh:in` | 3 (plant-protection shapes) |
+| `owl:onDatatype` / `withRestrictions` | 3 |
+| `owl:InverseFunctionalProperty` | 1 |
+| `owl:hasKey`, `sh:inversePath`, `sh:targetSubjectsOf` | 0 |
+| untargeted NodeShapes | 2 (plant-protection) |
+
+### Engine checks
+
+- Template blank nodes: fresh per solution on both GraphDB and QLever. **But
+  QLever names them per response (`_:u0_u`, `_:u1_u`, …), so two parallel
+  responses reuse the same labels.** The parser must prefix blank-node labels
+  per response before concatenating (Phase 1, step 1).
+- The `/api/sparql` proxy requires `Content-Type: application/sparql-query`.
+
+### Findings for Gate 0
+
+1. **`owl:imports` closure (M6) is too wide as written.** QUDT units imports the
+   QUDT schema; following it would draw the whole QUDT schema on every QUDT
+   vocabulary page. Proposed refinement: imported terms count as *known* (not
+   external, their axioms apply), but only `O`'s own members and the uses of
+   its shapes (M7) put boxes on the diagram.
+2. **Labels only for drawn IRIs.** The QUDT units baseline is 18k triples
+   because every member's labels are fetched. In the new architecture the label
+   step is restricted to classes and properties, which fixes this.
