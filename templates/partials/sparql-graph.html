@@ -21,11 +21,15 @@
     - height: (optional) CSS height for the container. Default "calc(100vh - 200px)".
     - hideTypeEdges: (optional) hide rdf:type / rdfs:subClassOf edges. Use on architecture
       diagrams, where one type edge per node buries the relations that matter.
-    - construct: (optional) a SPARQL CONSTRUCT whose result IS the diagram. Switches the
+    - construct: (optional) a SPARQL CONSTRUCT whose result IS the diagram, or a
+      (list …) of CONSTRUCTs posted in parallel whose results are combined. Switches the
       graph from browsing the endpoint to rendering exactly the constructed triples (see
       static/js/graph-memory-store.js for how triples map to nodes, attribute rows and
       edges). `??` is replaced by <iri> client-side, so pass "iri" too. The proxy does
       no prefix expansion: declare every PREFIX the query uses. `iris` is ignored.
+    - projection: (optional, with construct) the name of a JS projection that turns the
+      CONSTRUCT results into the diagram's triples first. "ontology" =
+      static/js/ontology-projection.js, used by the owl:Ontology page.
 
   Notes:
     - The partial self-loads the Graph Explorer CDN bundle (with SRI) through
@@ -45,6 +49,7 @@
   {{ $lazy := .lazy }}
   {{ $hideTypeEdges := .hideTypeEdges }}
   {{ $construct := .construct }}
+  {{ $projection := .projection }}
   {{ $title := or .title (t "graph.defaultTitle" "Graph") }}
   {{ $icon := or .icon "share-2" }}
 
@@ -113,6 +118,7 @@
   <template id="{{ $id }}-height">{{ $height | toJSON }}</template>
   {{ if $iri }}<template id="{{ $id }}-iri">{{ $iri | toJSON }}</template>{{ end }}
   {{ if $construct }}<template id="{{ $id }}-construct">{{ $construct | toJSON }}</template>{{ end }}
+  {{ if $projection }}<template id="{{ $id }}-projection">{{ $projection | toJSON }}</template>{{ end }}
 
   <!-- Behaviour lives in static/js/sparql-graph.js; this partial emits only
        markup, data islands and the data-sparql-graph marker it reads. -->
@@ -130,6 +136,8 @@
   <script src="/static/js/graph-kit.js" defer></script>
   <!-- In-memory store + DataProvider for CONSTRUCTed graphs; must precede the graph script. -->
   <script src="/static/js/graph-memory-store.js" defer></script>
+  <!-- Construct projections (see the projection parameter); must precede the graph script. -->
+  <script src="/static/js/ontology-projection.js" defer></script>
   <script src="/static/js/sparql-graph.js" defer></script>
 
 {{ end }}

@@ -61,8 +61,11 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Minimal N-Triples parser — IRIs and plain/typed/language literals. Blank-node
-  // lines are skipped: every caller's CONSTRUCT filters to IRIs.
+  // Minimal N-Triples parser — IRIs, blank nodes and plain/typed/language
+  // literals. A blank node comes back as the string "_:<scope><label>" (object
+  // type 'bnode'): QLever names them per response (_:u0_u, _:u1_u, …), so two
+  // responses parsed for one diagram need different scopes or their nodes merge.
+  // buildStore ignores blank nodes; a projection step consumes them first.
   // ---------------------------------------------------------------------------
   function unescapeNt(s) {
     return s.replace(/\\u([0-9A-Fa-f]{4})/g, function (_, h) { return String.fromCharCode(parseInt(h, 16)); })
@@ -70,18 +73,23 @@
         return c === 'n' ? '\n' : c === 't' ? '\t' : c === 'r' ? '\r' : c;
       });
   }
-  function parseNTriples(text) {
+  function parseNTriples(text, bnodeScope) {
     var triples = [];
-    var lineRe = /^<([^>]*)>\s+<([^>]*)>\s+(.+?)\s*\.\s*$/;
+    var scope = bnodeScope || '';
+    var lineRe = /^(<[^>]*>|_:\S+)\s+<([^>]*)>\s+(.+?)\s*\.\s*$/;
     var litRe = /^"((?:[^"\\]|\\.)*)"(?:@([A-Za-z][A-Za-z0-9-]*)|\^\^<([^>]*)>)?$/;
+    function bnode(raw) { return '_:' + scope + raw.slice(2); }
     text.split('\n').forEach(function (line) {
       line = line.trim();
       if (!line || line.charAt(0) === '#') return;
       var m = line.match(lineRe);
       if (!m) return;
-      var s = m[1], p = m[2], oRaw = m[3], o;
+      var s = m[1].charAt(0) === '<' ? m[1].slice(1, -1) : bnode(m[1]);
+      var p = m[2], oRaw = m[3], o;
       if (oRaw.charAt(0) === '<') {
         o = { type: 'iri', value: oRaw.slice(1, -1) };
+      } else if (oRaw.indexOf('_:') === 0) {
+        o = { type: 'bnode', value: bnode(oRaw) };
       } else {
         var lm = oRaw.match(litRe);
         if (!lm) return;
@@ -97,6 +105,7 @@
   // the IRIs that are only ever predicates.
   // ---------------------------------------------------------------------------
   function buildStore(triples, availableIcons) {
+    triples = triples.filter(function (t) { return t.s.indexOf('_:') !== 0 && t.o.type !== 'bnode'; });
     // Pass 1: which IRIs are nodes. Needed up front because a label triple can
     // arrive before the triple that makes its subject a node.
     var isNode = {};

@@ -14,8 +14,10 @@
   Two modes:
     - browse (default): seed IRIs, then Graph Explorer's SparqlDataProvider
       fetches their data and the links between them from the endpoint.
-    - construct (a -construct island is present): one CONSTRUCT is posted,
-      and its triples ARE the diagram, served from an in-memory provider
+    - construct (a -construct island is present): one CONSTRUCT (or several,
+      posted in parallel) is posted, and its triples ARE the diagram — after an
+      optional projection (-projection island, e.g. static/js/ontology-projection.js)
+      — served from an in-memory provider
       (static/js/graph-memory-store.js). For views whose edges do not exist
       verbatim in the data, e.g. an ontology's domain/range pairs drawn as
       one association per property.
@@ -66,6 +68,13 @@
       // Construct mode: the query text, and the store built from its result
       // before the workspace mounts (see render() at the end of init).
       var CONSTRUCT = readIsland('-construct');
+      // Optional named projection over the CONSTRUCT results (e.g. "ontology").
+      var PROJECTIONS = { ontology: window.VisotoOntologyProjection };
+      var PROJECTION = readIsland('-projection');
+      if (PROJECTION && !PROJECTIONS[PROJECTION]) {
+        console.warn('sparqlGraph: unknown projection ' + PROJECTION);
+        PROJECTION = null;
+      }
       // GL-2: a constructed diagram is a class model, read as a tree; a browse
       // graph is a network. Radial centres on the page's resource (GL-19).
       kit.defaultLayout = CONSTRUCT ? 'tree-right' : 'network';
@@ -385,22 +394,30 @@
         return /^https?:\/\/[^<>"{}|\\^`\s]+$/.test(iri);
       }
 
+      // One or more CONSTRUCTs, posted in parallel; their triples are one
+      // diagram. Each response gets its own blank-node scope (see
+      // parseNTriples). A projection, when named, turns the combined facts into
+      // the store's triples. Any failing query fails the diagram.
       function fetchConstructed() {
+        var MEM = window.VisotoMemoryGraph;
         var iri = singleIri || urlIri;
-        if (CONSTRUCT.indexOf('??') >= 0 && !(iri && validIri(iri))) {
+        var queries = Array.isArray(CONSTRUCT) ? CONSTRUCT : [CONSTRUCT];
+        if (queries.some(function(q) { return q.indexOf('??') >= 0; }) && !(iri && validIri(iri))) {
           return Promise.reject(new Error('No valid resource IRI for the graph query'));
         }
-        var query = CONSTRUCT.split('??').join('<' + iri + '>');
-        return fetch(ENDPOINT_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/sparql-query', 'Accept': 'application/n-triples' },
-          body: query,
-        }).then(function(res) {
-          if (!res.ok) throw new Error('SPARQL request failed: ' + res.status);
-          return res.text();
-        }).then(function(text) {
-          var MEM = window.VisotoMemoryGraph;
-          return MEM.buildStore(MEM.parseNTriples(text), AVAILABLE_ICONS);
+        return Promise.all(queries.map(function(q, i) {
+          return fetch(ENDPOINT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/sparql-query', 'Accept': 'application/n-triples' },
+            body: q.split('??').join('<' + iri + '>'),
+          }).then(function(res) {
+            if (!res.ok) throw new Error('SPARQL request failed: ' + res.status);
+            return res.text();
+          }).then(function(text) { return MEM.parseNTriples(text, 'q' + i + '_'); });
+        })).then(function(parts) {
+          var triples = [].concat.apply([], parts);
+          if (PROJECTION) triples = PROJECTIONS[PROJECTION].project(triples);
+          return MEM.buildStore(triples, AVAILABLE_ICONS);
         });
       }
 

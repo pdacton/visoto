@@ -19,6 +19,7 @@ var funcMap = template.FuncMap{
 	"render":          sparql.Binding.RenderHTML,
 	"resourceHref":    sparql.ResourceHref,
 	"dict":            makeDict,
+	"list":            makeList,
 	"resourceIcon":    resource.GetIconForResource,
 	"iconNames":       icon.Names,
 	"toJSON":          toJSON,
@@ -77,6 +78,12 @@ func makeDict(values ...interface{}) (map[string]interface{}, error) {
 		dict[key] = values[i+1]
 	}
 	return dict, nil
+}
+
+// makeList collects its arguments into a slice
+// Usage: {{ list $query1 $query2 }}
+func makeList(values ...interface{}) []interface{} {
+	return values
 }
 
 // toJSON converts any value to JSON for embedding in script tags

@@ -104,7 +104,7 @@ current ones (element/link counts, screenshots). The expected difference is Q5
 2. Projection: J1 for shapes, J10 (`sh:name`), the J8 merge rules (a–c), with
    tests built from the DCAT-AP CH v3 shapes + range shapes pair.
 3. Reverse imports (M7): shapes documents that import `O` join its diagram.
-4. Any deferred features approved at Gate 0.
+4. Enumerations (J13): `owl:oneOf` (in the owl query) and `sh:in`.
 
 🚦 **Gate 4** — final review: all test ontologies on both endpoints, full
 timing table.
@@ -174,6 +174,11 @@ largest fixture instead.
   responses reuse the same labels.** The parser must prefix blank-node labels
   per response before concatenating (Phase 1, step 1).
 - The `/api/sparql` proxy requires `Content-Type: application/sparql-query`.
+
+### Gate 0 decisions
+
+Approved: imports refinement (M6), enumerations in Phase 4 (J13), Phase 1
+starts before the remaining uploads.
 
 ### Findings for Gate 0
 

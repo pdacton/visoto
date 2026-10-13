@@ -36,7 +36,7 @@ drawn. `O` below is the ontology IRI (`??` in the query).
 | M3 | M1 and M2 are alternatives combined by union: either, both, or mixed per term. | done |
 | M4 | Fallback, **only if `O` asserts neither M1 nor M2 for any term**: a member is an IRI ≠ `O`, starting with `O`, typed `owl:Class`, `rdfs:Class`, `owl:ObjectProperty`, `owl:DatatypeProperty`, `owl:AnnotationProperty`, `rdf:Property`, `sh:NodeShape` or `sh:PropertyShape`. Only typed terms are scanned, never the whole store. | done (shapes new) |
 | M5 | The membership subselect is written once (a Go template variable) and spliced into every query, so all queries and the "Defined Terms" table agree. | new |
-| M6 | `owl:imports` is followed transitively: members of an imported ontology are members of `O`. (DCAT-AP CH v3 imports DCAT-AP 3.0.0; every shapes document imports its vocabulary.) | new |
+| M6 | `owl:imports` is followed transitively, but imported terms are only *known*: they are not drawn as external and their axioms (domain, range, subClassOf, restrictions) apply, yet only `O`'s own members and the uses of its shapes (M7) put boxes on the diagram. (QUDT vocabularies import the QUDT schema; DCAT-AP CH v3 imports DCAT-AP 3.0.0; every shapes document imports its vocabulary.) | new (Gate 0) |
 | M7 | Shapes documents that import `O` (an `owl:Ontology` whose members are `sh:NodeShape`s and which `owl:imports O`) contribute their shapes to `O`'s diagram. Needed because profile vocabularies (DCAT-AP, DCAT-AP CH) deliberately carry no `rdfs:domain`/`rdfs:range`: all structure lives in the shapes. | new (Q6) |
 
 ## 3. Query output — the normalized form
@@ -99,6 +99,8 @@ The projection's output is the existing `graph-memory-store.js` contract
 edges, literal attribute rows, labels), so `buildStore` and the schema diagram
 are unaffected apart from J9's link-type IRIs.
 
+| J13 | Value enumeration: `owl:oneOf (…)` on a class or `rdfs:Datatype`, or `sh:in (…)` on a property shape, makes the range an enumeration box listing its values as rows (labels for IRIs, literals as written). Added at Gate 0: QUDT schema and the plant-protection shapes use it. | new |
+
 ## 6. Out of scope
 
 Sidebar trees for classes and properties (separate queries), `rdfs:subPropertyOf`,
@@ -130,10 +132,8 @@ open-world nor the closed-world reading is evaluated.
 
 ## 8. Deferred until data shows up
 
-To be added only if the Phase 0 survey finds them on LINDAS or QLever:
+Kept deferred at Gate 0 (little or no data on LINDAS):
 
-- value enumerations (`owl:oneOf`, `sh:in`) as an enumeration box or an
-  arrow to a concept scheme;
 - `owl:hasKey` / `owl:InverseFunctionalProperty` → `{id}` on the row;
 - `owl:hasValue` / `sh:hasValue` → `P = v` row;
 - custom datatypes (`owl:onDatatype` + `owl:withRestrictions`) and facets;

@@ -7,63 +7,18 @@
      authority tables that are ALSO skos:ConceptScheme keep the concept-scheme
      template: skos:ConceptScheme is listed in type_priority, owl:Ontology is not.
 
-     Membership: a class or property belongs to the ontology when it is
-     `rdfs:isDefinedBy` it — the only "defined by" predicate on LINDAS pointing
-     at an owl:Ontology — or when the ontology lists it with `rdfs:member`.
-     rdfs:member is for application profiles (DCAT-AP, DCAT-AP CH): they reuse
-     terms of other vocabularies, whose isDefinedBy keeps pointing at the
-     defining vocabulary, so only the profile itself can say which terms it
-     uses (SEMIC's DCAT-AP SHACL lists its shapes the same way). Several LINDAS
-     ontologies (the agriculture system map, inspection and plant-protection
-     vocabularies) assert neither; for those, and only those, membership falls
-     back to classes and properties whose IRI starts with the ontology IRI.
+     The class diagram: the queries below ($members, $core) extract facts —
+     members, their types, generalizations, one record per property use —
+     and static/js/ontology-projection.js draws them: class boxes, edges,
+     attribute rows, placeholder and external boxes. Requirements and the
+     reasons behind each rule: .project/intent/ontology/ontology-construct.md.
 
-     Projection (what the CONSTRUCT emits, see static/js/graph-memory-store.js):
-       - every member class           -> a class box
-       - member rdfs:subClassOf C     -> a generalization edge (hollow triangle);
-                                         owl:Thing is skipped, as UML leaves the
-                                         implicit root out
-       - member property P with rdfs:domain D and an object rdfs:range R
-                                      -> ONE edge D -P-> R, labelled with P's rdfs:label
-       - member property P with rdfs:domain D and a literal range (xsd:*,
-         rdfs:Literal, rdf:langString, …)
-                                      -> an attribute row "P: xsd:type" in D's box
-       - rdfs:label of every node and every property, all languages; the graph
-         shows the page language.
-     owl:unionOf domains and ranges are expanded to their members, so a property
-     with a union domain draws one edge per member class.
-
-     A property with no declared domain and/or range still gets its edge: each
-     missing end is a placeholder box of its own (urn:visoto:any-domain:<P> /
-     any-range:<P>), labelled "Thing" when P is an OWL property and "Resource"
-     otherwise, i.e. what the missing axiom means in OWL resp. RDFS. An EDGE gets
-     one box per property rather than a shared Thing, which would turn every such
-     property into a self-loop on one hub. An ATTRIBUTE (literal range) has no far
-     end to loop back to, so all domain-less attributes share one box per label
-     (urn:visoto:any-domain:Thing / :Resource) instead of one expanded box each;
-     QUDT's datatype schema alone has dozens. An owl:DatatypeProperty without a
-     range is an rdfs:Literal attribute, as OWL implies.
-
-     The property branch repeats the membership subselect. A `{ … }` group is
-     evaluated on its own before the join, so an OPTIONAL at its head sees ?m
-     unbound and only ever yields properties that HAVE a domain: every
-     domain-less property vanished on QLever. (GraphDB feeds the outer ?m into
-     the group, which hid this on LINDAS.)
-
-     rdf:type and rdfs:label are skipped when an ontology re-declares them (prov#
-     does): the projection uses both as its own node-type and node-label predicates.
-
-     Domain/range/superclasses that are NOT members (prov:Entity, svc:Service, …)
-     appear as boxes typed urn:visoto:ExternalClass, which the graph shades darker
-     (see ontodia_overrides.css); placeholders are typed urn:visoto:AnyResource
-     and drawn dashed. The urn:visoto: types are presentation markers only.
-
-     The query runs in the browser through the /api/sparql proxy, which does no
-     prefix expansion and no visoto:dispLang — hence the PREFIX header and the
-     language choice in JS. `??` is substituted client-side with the page IRI.
-     Sized on LINDAS prod: RiC-O, the largest isDefinedBy ontology with
-     domain/range axioms, yields 106 classes, 535 associations, 82 attributes and
-     111 generalizations.
+     The queries run in the browser through the /api/sparql proxy, which does
+     no prefix expansion and no visoto:dispLang — hence the PREFIX headers and
+     the language choice in JS. `??` is substituted client-side with the page
+     IRI. Sized on LINDAS prod: RiC-O, the largest isDefinedBy ontology with
+     domain/range axioms, yields 106 classes, 535 associations, 82 attributes
+     and 111 generalizations.
 -->
 
 {{ define "breadcrumb" }}
@@ -89,25 +44,17 @@
 {{ define "pageContent" }}
 <div>
 
-  <!-- The two marker-type labels are the only UI text in the query, so they are
-       spliced in with printf from the i18n catalog (%q quotes them as SPARQL-safe
-       string literals). Everything else in the raw string is sent verbatim. -->
-  {{ $ontologyDiagram := printf `PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX owl:  <http://www.w3.org/2002/07/owl#>
-PREFIX xsd:  <http://www.w3.org/2001/XMLSchema#>
-CONSTRUCT {
-  ?class a owl:Class .
-  ?external a <urn:visoto:ExternalClass> .
-  ?anyDomain a <urn:visoto:AnyResource> ; rdfs:label ?anyLabel .
-  ?anyRange a <urn:visoto:AnyResource> ; rdfs:label ?anyLabel .
-  ?sub rdfs:subClassOf ?super .
-  ?domain ?prop ?range .
-  ?domain ?prop ?datatype .
-  ?node rdfs:label ?label .
-} WHERE {
-  {
-    {
+  <!-- The diagram's queries only extract facts; static/js/ontology-projection.js
+       draws them (requirements: .project/intent/ontology/ontology-construct.md).
+
+       $members is the membership subselect (M1–M4), spliced into every branch
+       that needs it: a `{ … }` group is evaluated on its own before the join on
+       QLever, so a branch cannot rely on an outer ?m (C2). A term belongs to
+       the ontology when it is rdfs:isDefinedBy it, or the ontology lists it with
+       rdfs:member (application profiles reuse other vocabularies' terms, whose
+       isDefinedBy points elsewhere); only when the ontology asserts neither, a
+       class, property or shape whose IRI starts with the ontology IRI. -->
+  {{ $members := `{
       SELECT DISTINCT ?m WHERE {
         { ?m rdfs:isDefinedBy ?? . }
         UNION
@@ -115,74 +62,84 @@ CONSTRUCT {
         UNION
         {
           FILTER NOT EXISTS { { ?anyMember rdfs:isDefinedBy ?? . } UNION { ?? rdfs:member ?anyMember . } }
-          VALUES ?memberType { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
+          VALUES ?memberType { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property sh:NodeShape sh:PropertyShape }
           ?m a ?memberType .
           FILTER (isIRI(?m) && ?m != ?? && STRSTARTS(STR(?m), STR(??)))
         }
       }
+    }` }}
+
+  <!-- Core query: typed members, generalizations, one use per (domain, range)
+       of each member property (unionOf expanded), the imported ("known") terms
+       among the referenced classes, and labels of classes, properties and ends.
+         - Generalizations: of members, plus those an imported term declares
+           under a member (DCAT-AP CH: dct:Location under
+           dct:LocationPeriodOrJurisdiction). Not every subclass of a member:
+           on LINDAS that drags data classes (politics activities) into PROV.
+         - Labels only for typed members and referenced ends: QUDT units has
+           2935 member individuals whose labels the diagram never shows.
+       The two marker-type labels are the only UI text, spliced in with printf
+       from the i18n catalog (%q quotes them as SPARQL string literals). -->
+  {{ $core := printf `PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+PREFIX sh:   <http://www.w3.org/ns/shacl#>
+CONSTRUCT {
+  ?m a <urn:visoto:Member> , ?kind .
+  ?sub rdfs:subClassOf ?super .
+  ?known a <urn:visoto:Known> .
+  _:use a <urn:visoto:Use> ; <urn:visoto:property> ?p ; <urn:visoto:class> ?d ; <urn:visoto:range> ?r ; <urn:visoto:source> "rdfs" .
+  ?node rdfs:label ?label .
+} WHERE {
+  {
+    %[1]s
+    VALUES ?kind { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
+    ?m a ?kind .
+  } UNION {
+    %[1]s
+    ?m rdfs:subClassOf ?super .
+    FILTER (isIRI(?super))
+    BIND (?m AS ?sub)
+  } UNION {
+    %[1]s
+    ?sub rdfs:subClassOf ?m .
+    FILTER (isIRI(?sub))
+    FILTER EXISTS { ?? owl:imports+ ?imp . { ?sub rdfs:isDefinedBy ?imp . } UNION { ?imp rdfs:member ?sub . } }
+    BIND (?m AS ?super)
+    BIND (?sub AS ?known)
+    OPTIONAL { ?sub rdfs:label ?label . BIND (?sub AS ?node) }
+  } UNION {
+    %[1]s
+    FILTER EXISTS {
+      { VALUES ?propertyType { rdf:Property owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty } ?m a ?propertyType . }
+      UNION { ?m rdfs:domain|rdfs:range ?declared . }
     }
-    {
-      VALUES ?classType { owl:Class rdfs:Class }
-      ?m a ?classType .
-      BIND (?m AS ?class)
-    } UNION {
-      ?m rdfs:subClassOf ?super .
-      FILTER (isIRI(?super) && ?super != owl:Thing)
-      BIND (?m AS ?sub)
-    } UNION {
-      {
-        SELECT DISTINCT ?m WHERE {
-          { ?m rdfs:isDefinedBy ?? . }
-          UNION
-          { ?? rdfs:member ?m . }
-          UNION
-          {
-            FILTER NOT EXISTS { { ?anyMember rdfs:isDefinedBy ?? . } UNION { ?? rdfs:member ?anyMember . } }
-            VALUES ?memberType { owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
-            ?m a ?memberType .
-            FILTER (isIRI(?m) && ?m != ?? && STRSTARTS(STR(?m), STR(??)))
-          }
-        }
-      }
-      FILTER (?m NOT IN (rdf:type, rdfs:label))
-      FILTER EXISTS {
-        { VALUES ?propertyType { rdf:Property owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty } ?m a ?propertyType . }
-        UNION { ?m rdfs:domain|rdfs:range ?declared . }
-      }
-      OPTIONAL { ?m rdfs:domain/(owl:unionOf/rdf:rest*/rdf:first)? ?d . FILTER (isIRI(?d)) }
-      OPTIONAL { ?m rdfs:range/(owl:unionOf/rdf:rest*/rdf:first)? ?r0 . FILTER (isIRI(?r0)) }
-      BIND (COALESCE(?r0, IF(EXISTS { ?m a owl:DatatypeProperty }, rdfs:Literal, ?unbound)) AS ?r)
-      BIND (BOUND(?r) && (STRSTARTS(STR(?r), STR(xsd:)) || ?r IN (rdfs:Literal, rdf:langString, rdf:PlainLiteral, rdf:HTML, rdf:XMLLiteral, rdf:JSON)) AS ?isLiteral)
-      BIND (IF(EXISTS { VALUES ?owlPropertyType { owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty } ?m a ?owlPropertyType . }, "Thing", "Resource") AS ?anyLabel)
-      BIND (IF(BOUND(?d), ?unbound, IRI(CONCAT("urn:visoto:any-domain:", IF(?isLiteral, ?anyLabel, STR(?m))))) AS ?anyDomain)
-      BIND (IF(BOUND(?r), ?unbound, IRI(CONCAT("urn:visoto:any-range:", STR(?m)))) AS ?anyRange)
-      BIND (COALESCE(?d, ?anyDomain) AS ?domain)
-      BIND (IF(?isLiteral, REPLACE(REPLACE(REPLACE(STR(?r), STR(xsd:), "xsd:"), STR(rdfs:), "rdfs:"), STR(rdf:), "rdf:"), ?unbound) AS ?datatype)
-      BIND (IF(?isLiteral, ?unbound, COALESCE(?r, ?anyRange)) AS ?range)
-      BIND (?m AS ?prop)
-    } UNION {
-      {
-        ?m rdfs:domain|rdfs:range ?declaredEnd .
-        FILTER (?m NOT IN (rdf:type, rdfs:label))
-        ?declaredEnd (owl:unionOf/rdf:rest*/rdf:first)? ?external .
-      } UNION {
-        ?m rdfs:subClassOf ?external .
-        FILTER (?external != owl:Thing)
-      }
-      FILTER (isIRI(?external))
-      FILTER (!(STRSTARTS(STR(?external), STR(xsd:)) || ?external IN (rdfs:Literal, rdf:langString, rdf:PlainLiteral, rdf:HTML, rdf:XMLLiteral, rdf:JSON)))
-      FILTER NOT EXISTS { ?external rdfs:isDefinedBy ?? . }
-      FILTER NOT EXISTS { ?? rdfs:member ?external . }
-      FILTER (EXISTS { { ?anyMember rdfs:isDefinedBy ?? . } UNION { ?? rdfs:member ?anyMember . } } || !STRSTARTS(STR(?external), STR(??)))
-    } UNION {
-      ?m (rdfs:domain|rdfs:range|rdfs:subClassOf)?/(owl:unionOf/rdf:rest*/rdf:first)? ?node .
-      FILTER (isIRI(?node))
-      ?node rdfs:label ?label .
+    OPTIONAL { ?m rdfs:domain/(owl:unionOf/rdf:rest*/rdf:first)? ?d . FILTER (isIRI(?d)) }
+    OPTIONAL { ?m rdfs:range/(owl:unionOf/rdf:rest*/rdf:first)? ?r . FILTER (isIRI(?r)) }
+    BIND (?m AS ?p)
+  } UNION {
+    %[1]s
+    ?m (rdfs:domain|rdfs:range|rdfs:subClassOf)/(owl:unionOf/rdf:rest*/rdf:first)? ?known .
+    FILTER (isIRI(?known))
+    FILTER EXISTS {
+      ?? owl:imports+ ?imp .
+      FILTER (STRSTARTS(STR(?known), STR(?imp)) || EXISTS { ?known rdfs:isDefinedBy ?imp . } || EXISTS { ?imp rdfs:member ?known . })
     }
   } UNION {
-    VALUES (?node ?label) { (<urn:visoto:ExternalClass> %q) (<urn:visoto:AnyResource> %q) }
+    %[1]s
+    {
+      VALUES ?kind { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
+      ?m a ?kind .
+      BIND (?m AS ?node)
+    } UNION {
+      ?m (rdfs:domain|rdfs:range|rdfs:subClassOf)/(owl:unionOf/rdf:rest*/rdf:first)? ?node .
+      FILTER (isIRI(?node))
+    }
+    ?node rdfs:label ?label .
+  } UNION {
+    VALUES (?node ?label) { (<urn:visoto:ExternalClass> %[2]q) (<urn:visoto:AnyResource> %[3]q) }
   }
-}` (t "graph.uml.externalClass" "external class") (t "graph.uml.notDeclared" "not declared") }}
+}` $members (t "graph.uml.externalClass" "external class") (t "graph.uml.notDeclared" "not declared") }}
 
   {{ template "literals" . }}
 
@@ -244,7 +201,8 @@ CONSTRUCT {
     {{ template "sparqlGraph" (dict
         "id" "ontologyDiagram"
         "iri" .ResourceIRI
-        "construct" $ontologyDiagram
+        "construct" (list $core)
+        "projection" "ontology"
         "endpointUrl" .GraphQueryURL
         "title" (t "card.ontologyDiagram" "Ontology diagram")
         "icon" "shapes"
