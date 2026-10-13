@@ -34,10 +34,10 @@ drawn. `O` below is the ontology IRI (`??` in the query).
 | M1 | `t` is a member when `t rdfs:isDefinedBy O`. | done |
 | M2 | `t` is a member when `O rdfs:member t` — for application profiles (DCAT-AP, DCAT-AP CH) that reuse terms whose `rdfs:isDefinedBy` points to another vocabulary. | done |
 | M3 | M1 and M2 are alternatives combined by union: either, both, or mixed per term. | done |
-| M4 | Fallback, **only if `O` asserts neither M1 nor M2 for any term**: a member is an IRI ≠ `O`, starting with `O`, typed `owl:Class`, `rdfs:Class`, `owl:ObjectProperty`, `owl:DatatypeProperty`, `owl:AnnotationProperty`, `rdf:Property`, `sh:NodeShape` or `sh:PropertyShape`. Only typed terms are scanned, never the whole store. | done (shapes new) |
+| M4 | Fallback, **only if `O` asserts neither M1 nor M2 for any term**: a member is an IRI ≠ `O`, starting with `O`, typed `owl:Class`, `rdfs:Class`, `owl:ObjectProperty`, `owl:DatatypeProperty`, `owl:AnnotationProperty`, `rdf:Property`, `sh:NodeShape` or `sh:PropertyShape`. Only typed terms are scanned, never the whole store. | done |
 | M5 | The membership subselect is written once (a Go template variable) and spliced into every query, so all queries and the "Defined Terms" table agree. | new |
 | M6 | `owl:imports` is followed transitively, but imported terms are only *known*: they are not drawn as external and their axioms (domain, range, subClassOf, restrictions) apply, yet only `O`'s own members and the uses of its shapes (M7) put boxes on the diagram. (QUDT vocabularies import the QUDT schema; DCAT-AP CH v3 imports DCAT-AP 3.0.0; every shapes document imports its vocabulary.) | new (Gate 0) |
-| M7 | Shapes documents that import `O` (an `owl:Ontology` whose members are `sh:NodeShape`s and which `owl:imports O`) contribute their shapes to `O`'s diagram. Needed because profile vocabularies (DCAT-AP, DCAT-AP CH) deliberately carry no `rdfs:domain`/`rdfs:range`: all structure lives in the shapes. | new (Q6) |
+| M7 | Shapes documents that import `O` (an `owl:Ontology` whose members are `sh:NodeShape`s and which `owl:imports O`) contribute their shapes to `O`'s diagram. Needed because profile vocabularies (DCAT-AP, DCAT-AP CH) deliberately carry no `rdfs:domain`/`rdfs:range`: all structure lives in the shapes. | done |
 
 ## 3. Query output — the normalized form
 
@@ -65,32 +65,32 @@ query: one use per member class.
 | `C rdfs:subClassOf [owl:onProperty P ; owl:allValuesFrom R]` | C | R | — | owl — done |
 | `… owl:someValuesFrom R` | C | R | min 1 | owl — done |
 | `… owl:(min\|max)?(Qualified)?Cardinality n [owl:onClass R]` | C | R if qualified, else P's global range | from n | owl — done |
-| NodeShape `S` (`sh:targetClass C`, or `S` is itself a class) `sh:property [sh:path P]` | C (or S) | `sh:class R`; `sh:datatype T`; `sh:nodeKind sh:Literal` → `rdfs:Literal`; `sh:node S2` (S1) | `sh:minCount`/`sh:maxCount` | shacl — new |
-| `sh:or` / `sh:xone` over `sh:class`/`sh:datatype`/`sh:nodeKind sh:Literal` | as above | one use per alternative | as above | shacl — new |
+| NodeShape `S` (`sh:targetClass C`, or `S` is itself a class) `sh:property [sh:path P]` | C (or S) | `sh:class R`; `sh:datatype T`; `sh:nodeKind sh:Literal` → `rdfs:Literal`; `sh:node S2` (S5); `sh:in` → enumeration (J13) | `sh:minCount`/`sh:maxCount` | shacl — done |
+| `sh:or` / `sh:xone` over `sh:class`/`sh:datatype`/`sh:nodeKind sh:Literal` | as above | one use per alternative | as above | shacl — done |
 
 | ID | Requirement | Status |
 |---|---|---|
 | S1 | A property is a candidate when it is typed as a property (§3 kinds) or has any use. A restricted property may come from another vocabulary (QUDT restricts `qudt:ansiSQLName` from the QUDT datatype schema); the owl query fetches its types, global range and labels. `rdf:type` and `rdfs:label` are skipped even when an ontology re-declares them (PROV does). | done |
-| S2 | Only simple IRI `sh:path`s are used; complex paths are skipped. Property shapes may be blank nodes or skolem IRIs (`…/.well-known/genid/…`, MDS production); both are accepted. | new |
-| S4 | Only property shapes with `sh:severity sh:Violation` or no severity are used. `sh:Warning`/`sh:Info` shapes (DCAT-AP CH: "recommended" `minCount 1`, "deprecated" `maxCount 0`, language-tag checks) are ignored. | new |
-| S5 | `sh:node S2`: if `S2` has a `sh:targetClass`, the range is that class; otherwise `S2`'s own `sh:class`/`sh:datatype`/`sh:or` are read one level deep (e.g. DCAT-AP's `DateOrDateTimeDataType_Shape` = `xsd:date` or `xsd:dateTime` or …). An anonymous `sh:node [ … ]` that only constrains the value's own properties (MDS: `skos:inScheme` `sh:hasValue`) adds nothing. | new |
-| S6 | Value-level constraints are ignored: `sh:pattern`, `sh:languageIn`, `sh:qualifiedValueShape [sh:languageIn …]`, `sh:message`, `sh:description`. | new |
+| S2 | Only simple IRI `sh:path`s are used; complex paths are skipped. Property shapes may be blank nodes or skolem IRIs (`…/.well-known/genid/…`, MDS production); both are accepted. | done |
+| S4 | Only property shapes with `sh:severity sh:Violation` or no severity are used. `sh:Warning`/`sh:Info` shapes (DCAT-AP CH: "recommended" `minCount 1`, "deprecated" `maxCount 0`, language-tag checks) are ignored. | done |
+| S5 | `sh:node S2`: if `S2` has a `sh:targetClass`, the range is that class; otherwise `S2`'s own `sh:class`/`sh:datatype`/`sh:or` are read one level deep (e.g. DCAT-AP's `DateOrDateTimeDataType_Shape` = `xsd:date` or `xsd:dateTime` or …). An anonymous `sh:node [ … ]` that only constrains the value's own properties (MDS: `skos:inScheme` `sh:hasValue`) adds nothing. | done |
+| S6 | Value-level constraints are ignored: `sh:pattern`, `sh:languageIn`, `sh:qualifiedValueShape [sh:languageIn …]`, `sh:message`, `sh:description`. | done |
 | S3 | Labels are read from every predicate of the `label` magic property (`rdfs:label`, `skos:prefLabel`, `schema:name`, `dct:title`, `dc:title`, `rico:title`, `rico:name`, written out); the projection keeps the best-ranked one per language and emits it as `rdfs:label`. `sh:name` labels the use, not the property. | done (sh:name in Phase 4) |
 
 ## 5. Drawing rules (JS projection)
 
 | ID | Requirement | Status |
 |---|---|---|
-| J1 | Every member class is a class box. A member shape with `sh:targetClass C` is drawn as the box of `C`, and `C` counts as a member (not external). | done (shapes new) |
+| J1 | Every member class is a class box. A member shape with `sh:targetClass C` is drawn as the box of `C`, and `C` counts as a member (not external). | done |
 | J2 | `rdfs:subClassOf` → generalization edge (hollow triangle) for every member class. A generalization declared by an imported term (DCAT-AP CH: `dct:Location rdfs:subClassOf dct:LocationPeriodOrJurisdiction`) is drawn only when that term is already on the diagram, so imports add no boxes (M6). Not every subclass of a member: on LINDAS that pulls data classes (politics activities) into PROV. Restrictions and `sh:node` are never generalizations. | done |
 | J3 | A use's range is a **datatype** when it is `xsd:*`, `rdfs:Literal`, `rdf:langString`, `rdf:PlainLiteral`, `rdf:HTML`, `rdf:XMLLiteral`, `rdf:JSON`, a schema.org datatype (`schema:Text`, `Number`, `Integer`, `Float`, `Boolean`, `Date`, `DateTime`, `Time`, `URL`), a GeoSPARQL literal (`geo:wktLiteral`, …; DCAT-AP uses them) or anything typed `rdfs:Datatype`. An `owl:DatatypeProperty` without range is `rdfs:Literal`. | done |
 | J4 | A datatype use is an attribute row `P: xsd:type` in `C`'s box; any other use is an association edge `C —P→ R`. Every property is owned by a class, never a free node. | done |
 | J5 | Missing `C` or `R` → a dashed placeholder box: one per property for edges (no self-loops on one hub), one shared per label for attributes. Labelled "Thing" for OWL properties and "Resource" otherwise. A domain or range of `owl:Thing` or `rdfs:Resource` counts as missing (the MDS model uses both) rather than as an external box. | done (Thing/Resource new) |
 | J6 | A referenced class that is not a member and not a datatype is an external box (shaded). | done |
 | J7 | Several domains or ranges — intersection (`rdfs:domain` ×2) or union (`domainIncludes`, `unionOf`, `sh:or`) — are drawn the same: several arrows. | done |
-| J8 | *(a–c done; SHACL precedence verified in Phase 4)* Merge by `(C, P)`: (a) uses with the same `(C, P, R)` are one edge or row; (b) a use without `R` takes the ranges of the other uses of `(C, P)` and is drawn on its own only if there are none — DCAT-AP CH splits cardinality (`*-shapes.ttl`) and class range (`*-range-shapes.ttl`) into two shapes for the same class; (c) a use without `C` (a global `rdfs:range`/`schema:rangeIncludes`) is drawn only if `P` has no use with a class; (d) a class's use still without range takes `P`'s global ranges (`rdfs:range`, `schema:rangeIncludes`) — an OWL cardinality or SHACL `minCount` says how many, not what; an `owl:DatatypeProperty` with no range anywhere is `rdfs:Literal` — otherwise every profile property would also appear on a placeholder box. Multiplicity: SHACL wins over OWL, OWL over RDFS; several SHACL shapes on one `(C, P)` combine to the tightest bounds (largest min, smallest max). | new |
+| J8 | *(a–c done; SHACL precedence verified in Phase 4)* Merge by `(C, P)`: (a) uses with the same `(C, P, R)` are one edge or row; (b) a use without `R` takes the ranges of the other uses of `(C, P)` and is drawn on its own only if there are none — DCAT-AP CH splits cardinality (`*-shapes.ttl`) and class range (`*-range-shapes.ttl`) into two shapes for the same class; (c) a use without `C` (a global `rdfs:range`/`schema:rangeIncludes`) is drawn only if `P` has no use with a class; (d) a class's use still without range takes `P`'s global ranges (`rdfs:range`, `schema:rangeIncludes`) — an OWL cardinality or SHACL `minCount` says how many, not what; an `owl:DatatypeProperty` with no range anywhere is `rdfs:Literal` — otherwise every profile property would also appear on a placeholder box. Multiplicity: SHACL wins over OWL, OWL over RDFS; several SHACL shapes on one `(C, P)` combine to the tightest bounds (largest min, smallest max). | done |
 | J9 | Multiplicity is shown in UML notation (`1`, `0..1`, `1..*`; the default `0..*` is not shown): on the edge label (`P [1..*]`) or appended to the attribute row (`P: xsd:string [1]`). GE's link-type labels are global, so an edge with a multiplicity gets a link type per (property, multiplicity): `urn:visoto:mult:<m>:<P>`, labelled `P [m]`. Its hover tooltip shows that IRI. | done (owl:FunctionalProperty) |
-| J10 | A use's own label (`sh:name`) replaces `P`'s label on that edge or row only. | new |
+| J10 | A use's own label (`sh:name`) replaces `P`'s label on that edge or row only. | deferred — `sh:name` is used as the property label only when the store has none (S3); a per-use name needs a link type and attribute alias per name |
 | J11 | Each inverse pair (`owl:inverseOf`) stays two arrows. | done |
 | J12 | The node, link-type and attribute labels shown come from the page language. | done |
 
@@ -99,7 +99,7 @@ The projection's output is the existing `graph-memory-store.js` contract
 edges, literal attribute rows, labels), so `buildStore` and the schema diagram
 are unaffected apart from J9's link-type IRIs.
 
-| J13 | Value enumeration: `owl:oneOf (…)` on a class or `rdfs:Datatype`, or `sh:in (…)` on a property shape, makes the range an enumeration box listing its values as rows (labels for IRIs, literals as written). Added at Gate 0: QUDT schema and the plant-protection shapes use it. | new |
+| J13 | Value enumeration: `owl:oneOf (…)` on a class or `rdfs:Datatype`, or `sh:in (…)` on a property shape, makes the range an enumeration box listing its values as rows (labels for IRIs, literals as written). Added at Gate 0: QUDT schema and the plant-protection shapes use it. | done |
 
 ## 6. Out of scope
 

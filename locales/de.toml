@@ -392,6 +392,8 @@
 "graph.defaultTitle" = "Graph"
 "graph.uml.externalClass" = "externe Klasse"
 "graph.uml.notDeclared" = "nicht deklariert"
+"graph.uml.enumeration" = "Aufzählung"
+"graph.uml.value" = "Wert"
 
 # ── Page: politics ────────────────────────────────────────────────
 "page.politics.16MillionTriplesOrganization" = "~1,6 Millionen Tripel — organization ist mit ~975'000 der grösste"

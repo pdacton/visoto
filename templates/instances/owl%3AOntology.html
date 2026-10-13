@@ -82,8 +82,9 @@
            proxy does not expand visoto:); the projection keeps the best.
          - schema:domainIncludes/rangeIncludes are uses of their own
            (source "schema"); the projection merges them with rdfs ones.
-       The two marker-type labels are the only UI text, spliced in with printf
-       from the i18n catalog (%q quotes them as SPARQL string literals). -->
+       The marker-type and enumeration-row labels are the only UI text,
+       spliced in with printf from the i18n catalog (%q quotes them as SPARQL
+       string literals). -->
   {{ $core := printf `PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl:  <http://www.w3.org/2002/07/owl#>
@@ -162,9 +163,12 @@ CONSTRUCT {
     VALUES ?labelPredicate { rdfs:label skos:prefLabel schema:name dct:title dc:title rico:title rico:name }
     ?node ?labelPredicate ?label .
   } UNION {
-    VALUES (?node ?labelPredicate ?label) { (<urn:visoto:ExternalClass> rdfs:label %[2]q) (<urn:visoto:AnyResource> rdfs:label %[3]q) }
+    VALUES (?node ?labelPredicate ?label) {
+      (<urn:visoto:ExternalClass> rdfs:label %[2]q) (<urn:visoto:AnyResource> rdfs:label %[3]q)
+      (<urn:visoto:Enumeration> rdfs:label %[4]q) (<urn:visoto:value> rdfs:label %[5]q)
+    }
   }
-}` $members (t "graph.uml.externalClass" "external class") (t "graph.uml.notDeclared" "not declared") }}
+}` $members (t "graph.uml.externalClass" "external class") (t "graph.uml.notDeclared" "not declared") (t "graph.uml.enumeration" "enumeration") (t "graph.uml.value" "value") }}
 
   <!-- OWL restrictions query (source "owl"): one use per restriction on a
        member class, `C rdfs:subClassOf [ owl:onProperty P ; … ]` — a local
@@ -175,7 +179,8 @@ CONSTRUCT {
        from another vocabulary (QUDT restricts qudt:ansiSQLName, defined in the
        QUDT datatype schema), so its types, global range (a classless "rdfs"
        use) and labels are fetched here; so is what the core query says about
-       the restrictions' ends: imported ("known"), datatype, labels. Runs in
+       the restrictions' ends: imported ("known"), datatype, labels. Also the
+       values of member classes defined by owl:oneOf (J13, QUDT). Runs in
        parallel with the core query. -->
   {{ $owl := printf `PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
@@ -192,9 +197,19 @@ CONSTRUCT {
   ?typed a ?kind .
   ?known a <urn:visoto:Known> .
   ?datatype a rdfs:Datatype .
+  ?enumerated <urn:visoto:oneOf> ?value .
   ?node ?labelPredicate ?label .
 } WHERE {
   {
+    %[1]s
+    ?m owl:oneOf/rdf:rest*/rdf:first ?value .
+    BIND (?m AS ?enumerated)
+    OPTIONAL {
+      VALUES ?labelPredicate { rdfs:label skos:prefLabel schema:name dct:title dc:title rico:title rico:name }
+      ?value ?labelPredicate ?label .
+      BIND (?value AS ?node)
+    }
+  } UNION {
     %[1]s
     ?m rdfs:subClassOf ?restriction .
     ?restriction owl:onProperty ?p .
@@ -245,6 +260,117 @@ CONSTRUCT {
     BIND (?end AS ?node)
   }
 }` $members }}
+
+  <!-- SHACL query (source "shacl"). $shapes: the NodeShapes that are members
+       of the ontology (a shapes document's own page), plus — M7 — the members
+       of every shapes document that owl:imports it: profile vocabularies
+       (DCAT-AP CH) carry no domain/range, their structure is all in shapes.
+       One use per property shape with a simple IRI sh:path on a shape with a
+       target class (or a shape that is itself a class): class = the target,
+       range = sh:class / sh:datatype / sh:nodeKind sh:Literal, read through
+       sh:or / sh:xone alternatives and one level of sh:node (a shape with a
+       target class gives that class; DCAT-AP's DateOrDateTimeDataType_Shape
+       gives its sh:or datatypes), bounds = sh:minCount / sh:maxCount, values
+       of sh:in. Only shapes of severity Violation (or none) count: DCAT-AP CH
+       states "recommended" and "deprecated" as Warning shapes. Target classes
+       are members (J1). Plus the property types, global ranges and labels of
+       shape paths, and what is known about the ends, as in the owl query. -->
+  {{ $shapes := printf `{
+      SELECT DISTINCT ?shape WHERE {
+        { %[1]s BIND (?m AS ?shape) }
+        UNION
+        { ?doc owl:imports ?? . { ?shape rdfs:isDefinedBy ?doc . } UNION { ?doc rdfs:member ?shape . } }
+        ?shape a sh:NodeShape .
+      }
+    }` $members }}
+  {{ $shacl := printf `PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+PREFIX sh:   <http://www.w3.org/ns/shacl#>
+PREFIX schema: <http://schema.org/>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX dct:  <http://purl.org/dc/terms/>
+PREFIX dc:   <http://purl.org/dc/elements/1.1/>
+PREFIX rico: <https://www.ica.org/standards/RiC/ontology#>
+CONSTRUCT {
+  ?target a <urn:visoto:Member> , owl:Class .
+  _:use a ?use ; <urn:visoto:property> ?p ; <urn:visoto:class> ?c ; <urn:visoto:range> ?r ;
+    <urn:visoto:min> ?min ; <urn:visoto:max> ?max ; <urn:visoto:in> ?value ; <urn:visoto:source> ?source .
+  ?typed a ?kind .
+  ?known a <urn:visoto:Known> .
+  ?datatype a rdfs:Datatype .
+  ?node ?labelPredicate ?label .
+} WHERE {
+  {
+    %[1]s
+    { ?shape sh:targetClass ?target . } UNION { ?shape a rdfs:Class . BIND (?shape AS ?target) } UNION { ?shape a owl:Class . BIND (?shape AS ?target) }
+  } UNION {
+    %[1]s
+    { ?shape sh:targetClass ?c . } UNION { ?shape a rdfs:Class . BIND (?shape AS ?c) } UNION { ?shape a owl:Class . BIND (?shape AS ?c) }
+    ?shape sh:property ?ps .
+    ?ps sh:path ?p .
+    FILTER (isIRI(?p))
+    FILTER NOT EXISTS { ?ps sh:severity ?severity . FILTER (?severity != sh:Violation) }
+    FILTER NOT EXISTS { ?ps sh:deactivated true . }
+    OPTIONAL {
+      ?ps ((sh:or|sh:xone)/rdf:rest*/rdf:first)?/(sh:node/((sh:or|sh:xone)/rdf:rest*/rdf:first)?)? ?alternative .
+      { ?alternative sh:class|sh:datatype|sh:targetClass ?r . }
+      UNION
+      { ?alternative sh:nodeKind sh:Literal . BIND (rdfs:Literal AS ?r) }
+      FILTER (isIRI(?r))
+    }
+    OPTIONAL { ?ps sh:minCount ?min . }
+    OPTIONAL { ?ps sh:maxCount ?max . }
+    OPTIONAL { ?ps sh:in/rdf:rest*/rdf:first ?value . }
+    BIND ("shacl" AS ?source)
+    BIND (<urn:visoto:Use> AS ?use)
+  } UNION {
+    %[1]s
+    ?shape sh:property/sh:path ?typed .
+    VALUES ?kind { rdf:Property owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty owl:FunctionalProperty }
+    ?typed a ?kind .
+  } UNION {
+    %[1]s
+    ?shape sh:property/sh:path ?p .
+    ?p (rdfs:range|schema:rangeIncludes)/(owl:unionOf/rdf:rest*/rdf:first)? ?r .
+    FILTER (isIRI(?p) && isIRI(?r))
+    BIND ("rdfs" AS ?source)
+    BIND (<urn:visoto:Use> AS ?use)
+  } UNION {
+    %[1]s
+    ?shape sh:property ?ps .
+    ?ps sh:path ?node .
+    FILTER (isIRI(?node))
+    {
+      VALUES ?labelPredicate { rdfs:label skos:prefLabel schema:name dct:title dc:title rico:title rico:name }
+      ?node ?labelPredicate ?label .
+    } UNION {
+      ?ps sh:name ?label .
+      BIND (sh:name AS ?labelPredicate)
+    }
+  } UNION {
+    %[1]s
+    {
+      ?shape sh:targetClass ?end .
+    } UNION {
+      ?shape sh:property ?ps .
+      ?ps ((sh:or|sh:xone)/rdf:rest*/rdf:first)?/(sh:node/((sh:or|sh:xone)/rdf:rest*/rdf:first)?)?/(sh:class|sh:datatype|sh:targetClass) ?end .
+    } UNION {
+      ?shape sh:property/sh:in/rdf:rest*/rdf:first ?end .
+    }
+    FILTER (isIRI(?end))
+    BIND (IF(EXISTS {
+        ?? owl:imports+ ?imp .
+        FILTER (STRSTARTS(STR(?end), STR(?imp)) || EXISTS { ?end rdfs:isDefinedBy ?imp . } || EXISTS { ?imp rdfs:member ?end . })
+      }, ?end, ?unbound) AS ?known)
+    BIND (IF(EXISTS { ?end a rdfs:Datatype . }, ?end, ?unbound) AS ?datatype)
+    OPTIONAL {
+      VALUES ?labelPredicate { rdfs:label skos:prefLabel schema:name dct:title dc:title rico:title rico:name }
+      ?end ?labelPredicate ?label .
+    }
+    BIND (?end AS ?node)
+  }
+}` $shapes }}
 
   {{ template "literals" . }}
 
@@ -306,7 +432,7 @@ CONSTRUCT {
     {{ template "sparqlGraph" (dict
         "id" "ontologyDiagram"
         "iri" .ResourceIRI
-        "construct" (list $core $owl)
+        "construct" (list $core $owl $shacl)
         "projection" "ontology"
         "endpointUrl" .GraphQueryURL
         "title" (t "card.ontologyDiagram" "Ontology diagram")

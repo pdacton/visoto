@@ -60,7 +60,10 @@
   // in visoto.config, written out because the queries bypass visoto: expansion.
   var LABEL_PREDICATES = [RDFS_LABEL, 'http://www.w3.org/2004/02/skos/core#prefLabel',
     'http://schema.org/name', 'http://purl.org/dc/terms/title', 'http://purl.org/dc/elements/1.1/title',
-    'https://www.ica.org/standards/RiC/ontology#title', 'https://www.ica.org/standards/RiC/ontology#name'];
+    'https://www.ica.org/standards/RiC/ontology#title', 'https://www.ica.org/standards/RiC/ontology#name',
+    // A shape's sh:name for its path: last resort, for profiles whose
+    // vocabularies are not in the store.
+    'http://www.w3.org/ns/shacl#name'];
   // J8: whose multiplicity wins when several sources state one.
   var SOURCE_RANK = { shacl: 3, owl: 2, schema: 1, rdfs: 1 };
 
@@ -101,7 +104,7 @@
 
   // Read the facts into lookups; uses are grouped by their (blank) subject.
   function readFacts(triples) {
-    var f = { member: {}, known: {}, kinds: {}, subclass: [], uses: {}, labels: {} };
+    var f = { member: {}, known: {}, kinds: {}, subclass: [], uses: {}, labels: {}, oneOf: {} };
     triples.forEach(function (t) {
       var o = t.o.value;
       var rank = LABEL_PREDICATES.indexOf(t.p);
@@ -121,6 +124,12 @@
         return;
       }
       if (t.p === RDFS_SUBCLASS) { f.subclass.push([t.s, o]); return; }
+      if (t.p === U + 'oneOf') { (f.oneOf[t.s] = f.oneOf[t.s] || []).push(t.o); return; }
+      if (t.p === U + 'in') {
+        var use = f.uses[t.s] = f.uses[t.s] || {};
+        (use['in'] = use['in'] || []).push(t.o);
+        return;
+      }
       if (t.p.indexOf(U) === 0) {
         (f.uses[t.s] = f.uses[t.s] || {})[t.p.slice(U.length)] = o;
       }
@@ -153,6 +162,21 @@
       emit(id, RDFS_LABEL, literal(label));
     }
     function declared(v) { return v && UNDECLARED.indexOf(v) < 0 ? v : null; }
+    // J13: an enumeration value as a row: an IRI by its label (untagged or
+    // English first: a row is one string), a literal as written.
+    function valueText(o) {
+      if (o.type !== 'iri') return o.value;
+      var byLang = f.labels[o.value];
+      if (byLang) {
+        var lang = ['', 'en'].filter(function (l) { return byLang[l]; })[0] || Object.keys(byLang)[0];
+        return byLang[lang].values[0];
+      }
+      return curie(o.value) === o.value ? localName(o.value) : curie(o.value);
+    }
+    var enumValues = {};  // enumeration box id -> [term]
+    function enumerationRows(id, values) {
+      values.forEach(function (v) { emit(id, U + 'value', literal(valueText(v))); });
+    }
     function number(v) { return v == null || isNaN(parseInt(v, 10)) ? null : parseInt(v, 10); }
 
     // J1: member classes.
@@ -169,6 +193,12 @@
       var p = use.property;
       if (!p || SKIPPED_PROPERTIES.indexOf(p) >= 0) return;
       var r = declared(use.range);
+      // J13: sh:in makes the range an enumeration box of its own.
+      if (use['in']) {
+        // Each value arrives on a row (so a use) of its own: collect them.
+        r = U + 'enum:' + (use['class'] || '') + '|' + p;
+        enumValues[r] = (enumValues[r] || []).concat(use['in']);
+      }
       var bounds = [];
       if (use.min != null || use.max != null) {
         bounds.push({ min: number(use.min), max: number(use.max), source: use.source });
@@ -232,7 +262,10 @@
       var from = c || U + 'any-domain:' + p;
       var to = r || U + 'any-range:' + p;
       if (c) classEnd(c); else placeholder(from, anyLabel);
-      if (r) classEnd(r); else placeholder(to, anyLabel);
+      if (r && enumValues[r]) {
+        emit(r, RDF_TYPE, iri(U + 'Enumeration'));
+        enumerationRows(r, enumValues[r]);
+      } else if (r) classEnd(r); else placeholder(to, anyLabel);
       emit(from, mult ? multLinkType(p, mult) : p, iri(to));
     }
 
@@ -250,6 +283,9 @@
         byLang[lang].values.forEach(function (v) { emit(id, RDFS_LABEL, literal(v.trim() + ' [' + m.mult + ']', lang)); });
       });
     });
+
+    // J13: a member class defined by owl:oneOf lists its individuals.
+    Object.keys(f.oneOf).forEach(function (c) { enumerationRows(c, f.oneOf[c]); });
 
     // J2: generalizations, owl:Thing left out. A member's are always drawn;
     // one an imported term declares (DCAT-AP CH: dct:Location under

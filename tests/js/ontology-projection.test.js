@@ -246,3 +246,39 @@ test('owl: an owl:DatatypeProperty with a restriction but no range anywhere is r
     use('u0', EX + 'v'), bounded('u1', EX + 'v', EX + 'A', null, null, 1, 'owl')]));
   assert.deepEqual(attr(s, EX + 'A', EX + 'v'), ['rdfs:Literal [0..1]']);
 });
+
+test('J13: sh:in makes the range an enumeration box listing its values', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'), use('u1', EX + 'p', EX + 'A', EX + 'Ignored'),
+    `_:u1 <${U}in> <${EX}red> .`, `_:u1 <${U}in> "blue" .`, `<${EX}red> <${RDFS}label> "Red"@en .`]));
+  const box = `${U}enum:${EX}A|${EX}p`;
+  assert.deepEqual(links(s), [`${EX}A ${EX}p ${box}`]);
+  assert.deepEqual(types(s, box), [U + 'Enumeration']);
+  assert.deepEqual(attr(s, box, U + 'value').sort(), ['Red', 'blue']);
+});
+
+test('J13: a class defined by owl:oneOf lists its individuals', () => {
+  const s = draw(nt([member(EX + 'Size', OWL + 'Class'),
+    `<${EX}Size> <${U}oneOf> <${EX}small> .`, `<${EX}Size> <${U}oneOf> <http://www.w3.org/2001/XMLSchema#large> .`]));
+  assert.deepEqual(attr(s, EX + 'Size', U + 'value').sort(), ['small', 'xsd:large']);
+});
+
+test('sh:name labels a property only when nothing better exists', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'), member(EX + 'B', OWL + 'Class'),
+    use('u1', EX + 'p', EX + 'A', EX + 'B'), use('u2', EX + 'q', EX + 'A', EX + 'B'),
+    `<${EX}p> <http://www.w3.org/ns/shacl#name> "shape name"@en .`,
+    `<${EX}q> <http://www.w3.org/ns/shacl#name> "shape name"@en .`, `<${EX}q> <${RDFS}label> "has q"@en .`]));
+  assert.equal(s.labels[EX + 'p'][0].value, 'shape name');
+  assert.deepEqual(s.labels[EX + 'q'].map((l) => l.value), ['has q']);
+});
+
+test('parseNTriples accepts QLever\'s bare numeric and boolean literals', () => {
+  const t = M.parseNTriples(`_:u <${U}min> 0 .\n_:u <${U}max> 12 .\n<${EX}a> <${EX}b> true .`, 'q0_');
+  assert.deepEqual(t.map((x) => x.o.value), ['0', '12', 'true']);
+});
+
+test('J13: sh:in values spread over several uses (one per result row) end up in one box', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'),
+    use('u1', EX + 'p', EX + 'A'), `_:u1 <${U}in> "a" .`,
+    use('u2', EX + 'p', EX + 'A'), `_:u2 <${U}in> "b" .`]));
+  assert.deepEqual(attr(s, `${U}enum:${EX}A|${EX}p`, U + 'value').sort(), ['a', 'b']);
+});

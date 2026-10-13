@@ -90,6 +90,9 @@
         o = { type: 'iri', value: oRaw.slice(1, -1) };
       } else if (oRaw.indexOf('_:') === 0) {
         o = { type: 'bnode', value: bnode(oRaw) };
+      } else if (/^(-?[0-9]+(\.[0-9]+)?|true|false)$/.test(oRaw)) {
+        // QLever writes numbers and booleans bare, Turtle-style, even in N-Triples.
+        o = { type: 'literal', value: oRaw, language: '' };
       } else {
         var lm = oRaw.match(litRe);
         if (!lm) return;
