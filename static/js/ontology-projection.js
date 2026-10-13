@@ -169,27 +169,30 @@
       var p = use.property;
       if (!p || SKIPPED_PROPERTIES.indexOf(p) >= 0) return;
       var r = declared(use.range);
-      if (!r && hasKind(p, [OWL + 'DatatypeProperty'])) r = RDFS + 'Literal';
       var bounds = [];
       if (use.min != null || use.max != null) {
         bounds.push({ min: number(use.min), max: number(use.max), source: use.source });
       }
       if (hasKind(p, [OWL + 'FunctionalProperty'])) bounds.push({ min: null, max: 1, source: 'owl' });
-      (byProperty[p] = byProperty[p] || []).push({ c: declared(use['class']), r: r, bounds: bounds });
+      (byProperty[p] = byProperty[p] || []).push({ c: declared(use['class']), r: r, bounds: bounds, source: use.source });
     });
 
     // J8: merge per property. A use that knows less than another one of the
-    // same property folds into it: without a class when another use has one
-    // (its range becomes the default range), without a range when another use
-    // of the same class has one (its bounds join that class's edges).
+    // same property folds into it: without a class when another use has one,
+    // without a range when another use of the same class has one (its bounds
+    // join that class's edges). A class's use that still has no range takes
+    // the property's global ranges (rdfs:range, schema:rangeIncludes): an OWL
+    // cardinality restriction or a SHACL minCount says how many, not what.
     Object.keys(byProperty).forEach(function (p) {
       var uses = byProperty[p];
-      var classed = uses.filter(function (u) { return u.c; });
       var defaultRanges = [];
-      if (classed.length) {
-        uses.forEach(function (u) { if (!u.c && u.r && defaultRanges.indexOf(u.r) < 0) defaultRanges.push(u.r); });
-        uses = classed;
-      }
+      uses.forEach(function (u) {
+        if (u.r && (u.source === 'rdfs' || u.source === 'schema' || !u.c) && defaultRanges.indexOf(u.r) < 0) {
+          defaultRanges.push(u.r);
+        }
+      });
+      var classed = uses.filter(function (u) { return u.c; });
+      if (classed.length) uses = classed;
       var byClass = {};
       uses.forEach(function (u) {
         var k = u.c || '';
@@ -201,6 +204,8 @@
         var g = byClass[k];
         var ranges = Object.keys(g.ranges);
         if (!ranges.length) {
+          // J3: an owl:DatatypeProperty without any range is an rdfs:Literal.
+          if (!defaultRanges.length && hasKind(p, [OWL + 'DatatypeProperty'])) defaultRanges = [RDFS + 'Literal'];
           defaultRanges.forEach(function (r) { g.ranges[r] = []; });
           ranges = defaultRanges.length ? defaultRanges : [null];
         }
@@ -242,7 +247,7 @@
       var m = multTypes[id];
       var byLang = f.labels[m.p] || { '': { values: [localName(m.p)] } };
       Object.keys(byLang).forEach(function (lang) {
-        byLang[lang].values.forEach(function (v) { emit(id, RDFS_LABEL, literal(v + ' [' + m.mult + ']', lang)); });
+        byLang[lang].values.forEach(function (v) { emit(id, RDFS_LABEL, literal(v.trim() + ' [' + m.mult + ']', lang)); });
       });
     });
 

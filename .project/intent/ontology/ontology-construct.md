@@ -62,15 +62,15 @@ query: one use per member class.
 |---|---|---|---|---|
 | `P rdfs:domain D ; rdfs:range R` | D | R | — (`owl:FunctionalProperty` → max 1) | core — done |
 | `P schema:domainIncludes D ; schema:rangeIncludes R` | each D | each R | — | core — new |
-| `C rdfs:subClassOf [owl:onProperty P ; owl:allValuesFrom R]` | C | R | — | owl — new |
-| `… owl:someValuesFrom R` | C | R | min 1 | owl — new |
-| `… owl:(min\|max)?(Qualified)?Cardinality n [owl:onClass R]` | C | R if qualified | from n | owl — new |
+| `C rdfs:subClassOf [owl:onProperty P ; owl:allValuesFrom R]` | C | R | — | owl — done |
+| `… owl:someValuesFrom R` | C | R | min 1 | owl — done |
+| `… owl:(min\|max)?(Qualified)?Cardinality n [owl:onClass R]` | C | R if qualified, else P's global range | from n | owl — done |
 | NodeShape `S` (`sh:targetClass C`, or `S` is itself a class) `sh:property [sh:path P]` | C (or S) | `sh:class R`; `sh:datatype T`; `sh:nodeKind sh:Literal` → `rdfs:Literal`; `sh:node S2` (S1) | `sh:minCount`/`sh:maxCount` | shacl — new |
 | `sh:or` / `sh:xone` over `sh:class`/`sh:datatype`/`sh:nodeKind sh:Literal` | as above | one use per alternative | as above | shacl — new |
 
 | ID | Requirement | Status |
 |---|---|---|
-| S1 | A property is a candidate when it is typed as a property (§3 kinds) or has any use. `rdf:type` and `rdfs:label` are skipped even when an ontology re-declares them (PROV does). | done |
+| S1 | A property is a candidate when it is typed as a property (§3 kinds) or has any use. A restricted property may come from another vocabulary (QUDT restricts `qudt:ansiSQLName` from the QUDT datatype schema); the owl query fetches its types, global range and labels. `rdf:type` and `rdfs:label` are skipped even when an ontology re-declares them (PROV does). | done |
 | S2 | Only simple IRI `sh:path`s are used; complex paths are skipped. Property shapes may be blank nodes or skolem IRIs (`…/.well-known/genid/…`, MDS production); both are accepted. | new |
 | S4 | Only property shapes with `sh:severity sh:Violation` or no severity are used. `sh:Warning`/`sh:Info` shapes (DCAT-AP CH: "recommended" `minCount 1`, "deprecated" `maxCount 0`, language-tag checks) are ignored. | new |
 | S5 | `sh:node S2`: if `S2` has a `sh:targetClass`, the range is that class; otherwise `S2`'s own `sh:class`/`sh:datatype`/`sh:or` are read one level deep (e.g. DCAT-AP's `DateOrDateTimeDataType_Shape` = `xsd:date` or `xsd:dateTime` or …). An anonymous `sh:node [ … ]` that only constrains the value's own properties (MDS: `skos:inScheme` `sh:hasValue`) adds nothing. | new |
@@ -88,7 +88,7 @@ query: one use per member class.
 | J5 | Missing `C` or `R` → a dashed placeholder box: one per property for edges (no self-loops on one hub), one shared per label for attributes. Labelled "Thing" for OWL properties and "Resource" otherwise. A domain or range of `owl:Thing` or `rdfs:Resource` counts as missing (the MDS model uses both) rather than as an external box. | done (Thing/Resource new) |
 | J6 | A referenced class that is not a member and not a datatype is an external box (shaded). | done |
 | J7 | Several domains or ranges — intersection (`rdfs:domain` ×2) or union (`domainIncludes`, `unionOf`, `sh:or`) — are drawn the same: several arrows. | done |
-| J8 | *(a–c done; SHACL precedence verified in Phase 4)* Merge by `(C, P)`: (a) uses with the same `(C, P, R)` are one edge or row; (b) a use without `R` takes the ranges of the other uses of `(C, P)` and is drawn on its own only if there are none — DCAT-AP CH splits cardinality (`*-shapes.ttl`) and class range (`*-range-shapes.ttl`) into two shapes for the same class; (c) a use without `C` (a global `rdfs:range`/`schema:rangeIncludes`) is drawn only if `P` has no use with a class — otherwise every profile property would also appear on a placeholder box. Multiplicity: SHACL wins over OWL, OWL over RDFS; several SHACL shapes on one `(C, P)` combine to the tightest bounds (largest min, smallest max). | new |
+| J8 | *(a–c done; SHACL precedence verified in Phase 4)* Merge by `(C, P)`: (a) uses with the same `(C, P, R)` are one edge or row; (b) a use without `R` takes the ranges of the other uses of `(C, P)` and is drawn on its own only if there are none — DCAT-AP CH splits cardinality (`*-shapes.ttl`) and class range (`*-range-shapes.ttl`) into two shapes for the same class; (c) a use without `C` (a global `rdfs:range`/`schema:rangeIncludes`) is drawn only if `P` has no use with a class; (d) a class's use still without range takes `P`'s global ranges (`rdfs:range`, `schema:rangeIncludes`) — an OWL cardinality or SHACL `minCount` says how many, not what; an `owl:DatatypeProperty` with no range anywhere is `rdfs:Literal` — otherwise every profile property would also appear on a placeholder box. Multiplicity: SHACL wins over OWL, OWL over RDFS; several SHACL shapes on one `(C, P)` combine to the tightest bounds (largest min, smallest max). | new |
 | J9 | Multiplicity is shown in UML notation (`1`, `0..1`, `1..*`; the default `0..*` is not shown): on the edge label (`P [1..*]`) or appended to the attribute row (`P: xsd:string [1]`). GE's link-type labels are global, so an edge with a multiplicity gets a link type per (property, multiplicity): `urn:visoto:mult:<m>:<P>`, labelled `P [m]`. Its hover tooltip shows that IRI. | done (owl:FunctionalProperty) |
 | J10 | A use's own label (`sh:name`) replaces `P`'s label on that edge or row only. | new |
 | J11 | Each inverse pair (`owl:inverseOf`) stays two arrows. | done |

@@ -207,3 +207,42 @@ test('S3: the best-ranked label predicate wins per language', () => {
   const vals = s.elements[EX + 'A'].label.values.map((v) => v.language + ':' + v.value).sort();
   assert.deepEqual(vals, ['de:Titel', 'en:Label']);
 });
+
+// Uses with bounds and a source, the way the OWL restrictions query returns them.
+function bounded(id, p, c, r, min, max, source) {
+  return [
+    use(id, p, c, r),
+    min != null ? `_:${id} <${U}min> "${min}"^^<${XSD}integer> .` : '',
+    max != null ? `_:${id} <${U}max> "${max}"^^<${XSD}nonNegativeInteger> .` : '',
+    `_:${id} <${U}source> "${source}" .`,
+  ].join('\n');
+}
+
+test('owl: a bounds-only restriction takes the property\'s global range', () => {
+  // QUDT: Unit ⊑ [onProperty conversionMultiplier; maxCardinality 1], range xsd:decimal declared globally.
+  const s = draw(nt([member(EX + 'Unit', OWL + 'Class'), member(EX + 'v', OWL + 'DatatypeProperty'),
+    bounded('u1', EX + 'v', EX + 'Unit', null, null, 1, 'owl'),
+    bounded('u2', EX + 'v', null, XSD + 'decimal', null, null, 'rdfs')]));
+  assert.deepEqual(attr(s, EX + 'Unit', EX + 'v'), ['xsd:decimal [0..1]']);
+  assert.equal(s.elements[U + 'any-domain:Thing'], undefined);
+});
+
+test('owl: a restriction is a local domain next to the global one', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'), member(EX + 'B', OWL + 'Class'), member(EX + 'C', OWL + 'Class'),
+    bounded('u1', EX + 'p', EX + 'A', EX + 'C', null, null, 'rdfs'),
+    bounded('u2', EX + 'p', EX + 'B', EX + 'C', 1, null, 'owl')]));
+  assert.deepEqual(links(s), [`${EX}A ${EX}p ${EX}C`, `${EX}B ${U}mult:1..*:${EX}p ${EX}C`]);
+});
+
+test('owl: separate allValuesFrom and cardinality restrictions on one (C, P) make one edge', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'), member(EX + 'B', OWL + 'Class'),
+    bounded('u1', EX + 'p', EX + 'A', EX + 'B', null, null, 'owl'),
+    bounded('u2', EX + 'p', EX + 'A', null, 1, 1, 'owl')]));
+  assert.deepEqual(links(s), [`${EX}A ${U}mult:1:${EX}p ${EX}B`]);
+});
+
+test('owl: an owl:DatatypeProperty with a restriction but no range anywhere is rdfs:Literal, once', () => {
+  const s = draw(nt([member(EX + 'A', OWL + 'Class'), member(EX + 'v', OWL + 'DatatypeProperty'),
+    use('u0', EX + 'v'), bounded('u1', EX + 'v', EX + 'A', null, null, 1, 'owl')]));
+  assert.deepEqual(attr(s, EX + 'A', EX + 'v'), ['rdfs:Literal [0..1]']);
+});
