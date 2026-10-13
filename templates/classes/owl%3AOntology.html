@@ -55,6 +55,8 @@
 
              Version: owl:versionInfo, else owl:versionIRI — except where the
              versionIRI is the ontology IRI itself (all of QUDT), which says nothing.
+             Chosen per row, then SAMPLEd: COALESCE over two SAMPLE aggregates
+             trips an assertion in QLever's GROUP BY (HTTP 500, empty table).
 
              Creators are concatenated, not SAMPLEd: OWL-Time has 3, the plant-
              protection vocabulary 5. An IRI creator shows its label if it has one. -->
@@ -63,7 +65,7 @@
                  (SUBSTR(MIN(?ranked_),3) AS ?description)
                  (SAMPLE(?terms_) AS ?terms)
                  (SAMPLE(?imports_) AS ?imports)
-                 (COALESCE(SAMPLE(?versionInfo_), SAMPLE(?versionIRI_)) AS ?version)
+                 (SAMPLE(?version_) AS ?version)
                  (GROUP_CONCAT(DISTINCT ?creatorName_; separator=", ") AS ?creator)
                  (SAMPLE(?graph_) AS ?graph)
           WHERE {
@@ -94,6 +96,7 @@
             }
             OPTIONAL { ?instance owl:versionInfo ?versionInfo_ . }
             OPTIONAL { ?instance owl:versionIRI ?versionIRI_ . FILTER (?versionIRI_ != ?instance) }
+            BIND (COALESCE(?versionInfo_, ?versionIRI_) AS ?version_)
             OPTIONAL { ?instance dct:creator ?creator_ .
                        OPTIONAL { ?creator_ visoto:label ?creatorLabel_ . }
                        BIND(COALESCE(?creatorLabel_, STR(?creator_)) AS ?creatorName_) }
