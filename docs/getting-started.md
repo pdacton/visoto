@@ -4,7 +4,7 @@ This guide walks you through running Visoto locally for the first time.
 
 ## Prerequisites
 
-- **Go 1.25 or later** — [download from go.dev](https://go.dev/dl/)
+- **Go 1.27 or later** — [download from go.dev](https://go.dev/dl/)
 - **A SPARQL endpoint** — the public [LINDAS endpoint](https://ld.admin.ch/query/) works out of the box with no account
 - **Optional: Google Gemini API key** — only required for the AI chat feature; get one at [aistudio.google.com](https://aistudio.google.com/app/apikey)
 

@@ -1,6 +1,6 @@
 module hutzli.org/visoto
 
-go 1.25.14
+go 1.27.2
 
 require (
 	github.com/BurntSushi/toml v1.6.0
@@ -9,8 +9,8 @@ require (
 	github.com/mark3labs/mcp-go v0.58.0
 	github.com/nicksnyder/go-i18n/v2 v2.6.1
 	github.com/prometheus/client_golang v1.24.1
-	golang.org/x/net v0.58.0
-	golang.org/x/text v0.41.0
+	golang.org/x/net v0.61.0
+	golang.org/x/text v0.43.0
 	modernc.org/sqlite v1.57.0
 )
 
@@ -54,8 +54,8 @@ require (
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	go.mongodb.org/mongo-driver/v2 v2.5.0 // indirect
 	golang.org/x/arch v0.22.0 // indirect
-	golang.org/x/crypto v0.55.0 // indirect
-	golang.org/x/sys v0.47.0 // indirect
+	golang.org/x/crypto v0.58.0 // indirect
+	golang.org/x/sys v0.49.0 // indirect
 	google.golang.org/protobuf v1.36.11 // indirect
 	modernc.org/libc v1.75.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect

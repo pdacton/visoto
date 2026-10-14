@@ -29,7 +29,7 @@ Visoto is still in development and not all features work properly.
 
 ### Prerequisites
 
-- Go 1.25+
+- Go 1.27+
 - A SPARQL endpoint (default: [LINDAS](https://ld.admin.ch/query/))
 - Optional: Google Gemini API key (for the chat feature)
 

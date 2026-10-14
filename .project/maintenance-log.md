@@ -16,7 +16,7 @@ say what changed.
 | `xlsx@0.18.5` | Keep, do not bump or re-flag | Two CVEs, both in the spreadsheet *parser*. Nothing in Visoto parses a spreadsheet — the library only serves Tabulator's `download("xlsx")`, and the one file input accepts RDF only. Unreachable. Migration path documented above the tag in `base.html`. |
 | SRI on the 3 JS-loader files | Not a maintenance task | `mermaid-init.js` cannot express `integrity` on a bare ES module import. `sparql-graph.js` / `schema-graph.js` build their script tag dynamically — adding it is a code change; propose via `audit`. |
 | Major version bumps | Always deferred by default | The boot smoke test only proves the server starts. A Tabler/Tabulator major could break layout or tables silently. Needs a human with a browser. |
-| `govulncheck` pinned to v1.7.0 in CI | Keep pinned; bump only with the toolchain | `setup-go` sets `GOTOOLCHAIN=local`, so the scanner must build under the Go in `go.mod`. v1.8.0 needs Go >= 1.26 and fails the step. v1.7.0 is the newest that builds against 1.25. **Local runs can hide this** — an unpinned toolchain silently downloads 1.26.x, so `@latest` passes locally and fails in CI. Verify with `GOTOOLCHAIN=go<go.mod version>`. |
+| `govulncheck` pinned in CI (v1.9.0 since 2026-10-14) | Keep pinned; bump only with the toolchain | `setup-go` sets `GOTOOLCHAIN=local`, so the scanner must build under the Go in `go.mod` (v1.8.0 needed Go >= 1.26, which is what held it at v1.7.0 while `go.mod` said 1.25). **Local runs can hide this** — an unpinned toolchain silently downloads a newer Go, so `@latest` passes locally and fails in CI. Verify with `GOTOOLCHAIN=go<go.mod version>`. |
 
 ## Outstanding — found 2026-09-14, not yet actioned
 
@@ -26,9 +26,13 @@ Surfaced while auditing CLAUDE.md; none of these have been applied.
   the MCP tool surface.
 - **`github.com/golang/protobuf`** — deprecated, pulled in transitively.
   Check whether anything still requires it or if it drops with another bump.
-- **Go toolchain** — `go.mod` says `1.25.14`. Bumping the directive would also
-  let CI move `govulncheck` off the v1.7.0 pin (see standing deferrals); do both
-  in the same change, and re-verify with `GOTOOLCHAIN=go<new version>`.
+- ~~**Go toolchain**~~ **RESOLVED 2026-10-14** (`maintenance/go-1.27-2026-10-14`):
+  `go 1.25.14 → 1.27.2` (matches the Dockerfile's `golang:1.27-alpine`),
+  `govulncheck v1.7.0 → v1.9.0`, `golang.org/x/net v0.58.0 → v0.61.0`. CI had
+  gone red on main: 12 reachable stdlib advisories (incl. two in
+  `html/template`, fixed in 1.26.9) plus 5 reachable `x/net` ones (fixed in
+  v0.60.0). Verified with `GOTOOLCHAIN=go1.27.2`: vet, tidy, build, tests, and
+  govulncheck at 0 reachable.
 - **`klauspost/compress v1.17.6 → v1.20.0`** — several majors behind,
   transitive.
 - **graph-explorer 2.1.0 duplicated** in `sparql-graph.js:51` and
