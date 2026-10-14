@@ -41,6 +41,49 @@ Surfaced while auditing CLAUDE.md; none of these have been applied.
 
 ## History
 
+### 2026-10-14 — cdn (`/maintenance cdn`, branch `maintenance/cdn-2026-10-14`)
+
+Redo of the unmerged `maintenance/cdn-mermaid-12-2026-09-14` (PR #11, mermaid
+12.0.0) against current `main`, plus every other library that moved since.
+SRI recomputed for all seven `base.html` assets; every hash changed.
+
+| Library | Old → New | Files |
+|---|---|---|
+| `@tabler/core` | 1.5.1 → 1.6.1 | `base.html` ×3 |
+| `tabulator-tables` | 6.5.2 → 6.6.1 | `base.html` ×2, comment in `tabulator_overrides.css` |
+| `htmx.org` | 2.0.10 → 2.0.11 | `base.html` |
+| `lucide` | 1.46.0 → 1.57.0 | `base.html` |
+| `mermaid` | 11.17.2 → 12.2.0 | `mermaid-init.js` |
+| `@mermaid-js/layout-elk` | 0.2.3 → 1.0.1 | `mermaid-init.js` |
+
+**mermaid 12** — the PR #11 config change carried over unchanged
+(`flowchart.defaultRenderer` → top-level `layout: 'elk'`, `look: 'classic'` pinned
+against the new `neo` default). 12.1 turns on `elk.orientFeedbackEdges` by default,
+which reroutes edges that feed back into a subgraph; accepted as the new default.
+Verified against a `main` baseline on the Bern municipality page: same 5 nodes /
+6 edges, same layout, nodes marginally wider.
+
+**Tabler 1.6** — checked against the upgrade notes. The dual-navbar selector that
+`tabler_overrides.css` undoes is byte-identical in 1.6.1, so the override still
+applies; sidebar/topbar/wrapper asserted visible with a 240px offset. The new
+`neutral` default gray does not reach us — `<html>` pins `data-bs-theme-base="zinc"`.
+`--tblr-*-rgb` and the `tabler.tabler` namespace are deprecated but unused here.
+
+Already current: wunderbaum, highlight.js, svg-pan-zoom, chart.js,
+chartjs-adapter-date-fns, graph-explorer 2.1.0, elkjs 0.12.0. The skill's file
+table is stale: graph-explorer is now pinned once in `ge-adapter.js`, and
+`graph-kit.js` pins elkjs — the grep found both.
+
+Also fixed: `internal/classstats/trend.go` was not gofmt-clean on `main` (e22a2aa),
+so CI's gofmt step was red regardless of this branch. Whitespace-only, own commit.
+
+**Deferred**
+
+- **`htmx.org 2.0.11 → 4.0.0`** — major, released 2026-08-28. htmx 4 changes
+  attribute inheritance and the event model; every `hx-*` fragment, the
+  `htmx:configRequest` set-scope hook and the async tables would need a browser
+  pass. https://github.com/bigskysoftware/htmx/releases/tag/v4.0.0
+
 ### 2026-09-15 — audit (`/maintenance audit`)
 
 Report-only. No code changed; three findings written to `.project/issues/`.
