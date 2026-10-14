@@ -18,7 +18,7 @@ Testing rules for every phase:
 
 ---
 
-## Phase 0 — Survey and baseline (no code changes)
+## Phase 0 — Survey and baseline (no code changes) — done
 
 1. Find one test ontology per source on LINDAS and QLever:
    - isDefinedBy (RiC-O, QUDT), rdfs:member (DCAT-AP CH), namespace fallback
@@ -44,7 +44,7 @@ Output: a "Test ontologies" table appended to this file.
 justifies it, and whether a source with no data gets a small Turtle fixture on
 the local test endpoint or is dropped.
 
-## Phase 1 — Normalize/project split, same diagram
+## Phase 1 — Normalize/project split, same diagram — done
 
 Goal: rebuild today's diagram on the new architecture with no visible change.
 
@@ -73,7 +73,7 @@ current ones (element/link counts, screenshots). The expected difference is Q5
 
 🚦 **Gate 1** — approve the architecture change before new sources are added.
 
-## Phase 2 — Core additions
+## Phase 2 — Core additions — done
 
 1. schema.org `domainIncludes`/`rangeIncludes` uses (§4) and schema.org
    datatypes (J3).
@@ -86,7 +86,7 @@ current ones (element/link counts, screenshots). The expected difference is Q5
 
 🚦 **Gate 2** — review schema.org diagrams and how multiplicity looks.
 
-## Phase 3 — OWL restrictions query
+## Phase 3 — OWL restrictions query — done
 
 1. "owl" query: `allValuesFrom`, `someValuesFrom`, (qualified) cardinality →
    uses (§4).
@@ -94,7 +94,7 @@ current ones (element/link counts, screenshots). The expected difference is Q5
 
 🚦 **Gate 3** — review on the restriction test ontology.
 
-## Phase 4 — SHACL query
+## Phase 4 — SHACL query — done
 
 1. "shacl" query: NodeShape target → class; `sh:property` with simple
    `sh:path` (S2); `sh:class`, `sh:node`, `sh:datatype`, `sh:or`/`sh:xone`,
@@ -109,7 +109,7 @@ current ones (element/link counts, screenshots). The expected difference is Q5
 🚦 **Gate 4** — final review: all test ontologies on both endpoints, full
 timing table.
 
-## Phase 5 — Wrap-up (no gate)
+## Phase 5 — Wrap-up (no gate) — done 2026-10-14
 
 1. Rewrite the template's header comment for the new architecture.
 2. `docs/templating.md`: the list form of `sparqlGraph`'s `construct` and the

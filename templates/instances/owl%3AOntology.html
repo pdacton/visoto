@@ -7,11 +7,18 @@
      authority tables that are ALSO skos:ConceptScheme keep the concept-scheme
      template: skos:ConceptScheme is listed in type_priority, owl:Ontology is not.
 
-     The class diagram: the queries below ($members, $core) extract facts —
-     members, their types, generalizations, one record per property use —
-     and static/js/ontology-projection.js draws them: class boxes, edges,
-     attribute rows, placeholder and external boxes. Requirements and the
-     reasons behind each rule: .project/intent/ontology/ontology-construct.md.
+     The class diagram: three CONSTRUCTs, posted in parallel, extract facts —
+     members, their types, generalizations, one record ("use") per way a
+     property is described — and static/js/ontology-projection.js draws them:
+     class boxes, edges, attribute rows, multiplicities, enumerations,
+     placeholder and external boxes.
+       $core   RDFS/OWL domain and range, schema.org domainIncludes/
+               rangeIncludes, generalizations, labels
+       $owl    OWL restrictions on member classes, owl:oneOf
+       $shacl  SHACL shapes of the ontology and of shapes documents that
+               owl:imports it
+     $members (membership) and $shapes are spliced into each. Requirements and
+     the reasons behind each rule: .project/intent/ontology/ontology-construct.md.
 
      The queries run in the browser through the /api/sparql proxy, which does
      no prefix expansion and no visoto:dispLang — hence the PREFIX headers and

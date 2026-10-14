@@ -690,7 +690,8 @@ out a set of IRIs at initialization.
 | `endpointUrl` | `string` | fallback | URL the browser posts SPARQL to — pass `.GraphQueryURL`, the same-origin `/api/sparql` proxy. Never an endpoint URL: the upstream host and its credentials stay server-side (`internal/sparqlproxy`). |
 | `height` | `string` | `"calc(100vh - 200px)"` | CSS height of the container. |
 | `lazy` | `bool` | `false` | Defer initialization until a `graph:init` event fires on the `-root` element. |
-| `construct` | `string` | — | A SPARQL CONSTRUCT whose result *is* the diagram (see below). `iris` is then ignored. |
+| `construct` | `string` or `(list …)` | — | A SPARQL CONSTRUCT whose result *is* the diagram, or several, posted in parallel and combined (see below). `iris` is then ignored. |
+| `projection` | `string` | — | With `construct`: a named JS projection that turns the CONSTRUCT results into the diagram's triples first. `"ontology"` = `static/js/ontology-projection.js`. |
 | `omitPageIri` | `bool` | `false` | Do not add the page's `?iri=` as a starting IRI, so the graph shows exactly `iris` (used by the `dcmitype:Collection` page to draw members without the collection). |
 | `hideTypeEdges` | `bool` | `false` | Start with `rdf:type` / `rdfs:subClassOf` edges hidden (the user can show them again). |
 | `title` / `icon` | `string` | `"Graph"` / `"share-2"` | Card header title and Lucide icon. |
@@ -738,8 +739,18 @@ CONSTRUCT { ?d ?p ?r . ?p rdfs:label ?l } WHERE { ?p rdfs:isDefinedBy ?? ; rdfs:
 {{ template "sparqlGraph" (dict "id" "model" "iri" .ResourceIRI "construct" $q "endpointUrl" .GraphQueryURL) }}
 ```
 
+**Several queries, and projections.** `construct` also takes a list —
+`"construct" (list $q1 $q2)` — posted in parallel; any one failing fails the diagram
+(with Retry). Their triples are concatenated, blank nodes scoped per response (QLever
+names them per response, so `_:u0_u` would otherwise merge across queries). Blank
+nodes never reach the diagram: a query that returns them needs a `projection`, a JS
+module that turns the combined facts into the triples above before they are drawn.
+
 `templates/instances/owl%3AOntology.html` is the reference use: an ontology as a UML
-class diagram.
+class diagram. Its three queries (`$core`, `$owl`, `$shacl`) only extract facts —
+members, generalizations, one record per way a property is described — and the
+`ontology` projection makes every drawing decision. Requirements and the reasons behind
+each rule: `.project/intent/ontology/ontology-construct.md`.
 
 ### `schemaGraph`
 

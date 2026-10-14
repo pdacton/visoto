@@ -12,7 +12,9 @@ diagram. SPARQL only extracts facts; every drawing decision (datatype vs class,
 placeholders, merging, multiplicity labels, external boxes) is made in JS, where
 it is unit-testable and engine-independent.
 
-Status tags: **[done]** = what the current query does, **[new]** = to build,
+Status (2026-10-14): implemented on branch `claude/ontology-diagram`; J10 and §8 deferred.
+
+Status tags: **[done]** = implemented, **[new]** = to build,
 **[later]** = deferred until real data shows up (see §9), **[out]** = not
 drawn. `O` below is the ontology IRI (`??` in the query).
 
@@ -24,7 +26,7 @@ drawn. `O` below is the ontology IRI (`??` in the query).
 |---|---|---|
 | C1 | Queries run in the browser, POSTed to `/api/sparql?endpoint=<slug>`. The proxy does no prefix expansion and no `visoto:dispLang`, so queries declare their own `PREFIX`es and language is chosen in JS. `??` is substituted client-side. | done |
 | C2 | Same result on GraphDB (LINDAS) and QLever. A `{ … }` group must not rely on an outer variable being bound (QLever evaluates bottom-up), so every query carries the membership subselect itself. | done |
-| C3 | Budget: the whole RiC-O diagram (~106 classes, ~535 associations, ~82 attributes, ~111 generalizations) renders in **≤ 5 s** on LINDAS prod and QLever. A query whose source is absent (no shapes, no restrictions) returns fast and empty. | new |
+| C3 | Budget: the whole RiC-O diagram (~106 classes, ~535 associations, ~82 attributes, ~111 generalizations) renders in **≤ 5 s** on LINDAS prod and QLever. A query whose source is absent (no shapes, no restrictions) returns fast and empty. | done — RiC-O ≤ 1 s per query on LINDAS; slowest seen 2.2 s (QUDT units core query); DCAT-AP CH v3 ≤ 1.5 s on QLever |
 | C4 | Queries stay POST (long CONSTRUCTs exceed the GET URL limit). | done |
 
 ## 2. Membership — which terms belong to `O`
@@ -35,8 +37,8 @@ drawn. `O` below is the ontology IRI (`??` in the query).
 | M2 | `t` is a member when `O rdfs:member t` — for application profiles (DCAT-AP, DCAT-AP CH) that reuse terms whose `rdfs:isDefinedBy` points to another vocabulary. | done |
 | M3 | M1 and M2 are alternatives combined by union: either, both, or mixed per term. | done |
 | M4 | Fallback, **only if `O` asserts neither M1 nor M2 for any term**: a member is an IRI ≠ `O`, starting with `O`, typed `owl:Class`, `rdfs:Class`, `owl:ObjectProperty`, `owl:DatatypeProperty`, `owl:AnnotationProperty`, `rdf:Property`, `sh:NodeShape` or `sh:PropertyShape`. Only typed terms are scanned, never the whole store. | done |
-| M5 | The membership subselect is written once (a Go template variable) and spliced into every query, so all queries and the "Defined Terms" table agree. | new |
-| M6 | `owl:imports` is followed transitively, but imported terms are only *known*: they are not drawn as external and their axioms (domain, range, subClassOf, restrictions) apply, yet only `O`'s own members and the uses of its shapes (M7) put boxes on the diagram. (QUDT vocabularies import the QUDT schema; DCAT-AP CH v3 imports DCAT-AP 3.0.0; every shapes document imports its vocabulary.) | new (Gate 0) |
+| M5 | The membership subselect is written once (a Go template variable) and spliced into every query, so all queries and the "Defined Terms" table agree. | done |
+| M6 | `owl:imports` is followed transitively, but imported terms are only *known*: they are not drawn as external and their axioms (domain, range, subClassOf, restrictions) apply, yet only `O`'s own members and the uses of its shapes (M7) put boxes on the diagram. (QUDT vocabularies import the QUDT schema; DCAT-AP CH v3 imports DCAT-AP 3.0.0; every shapes document imports its vocabulary.) | done |
 | M7 | Shapes documents that import `O` (an `owl:Ontology` whose members are `sh:NodeShape`s and which `owl:imports O`) contribute their shapes to `O`'s diagram. Needed because profile vocabularies (DCAT-AP, DCAT-AP CH) deliberately carry no `rdfs:domain`/`rdfs:range`: all structure lives in the shapes. | done |
 
 ## 3. Query output — the normalized form
@@ -85,7 +87,7 @@ query: one use per member class.
 | J2 | `rdfs:subClassOf` → generalization edge (hollow triangle) for every member class. A generalization declared by an imported term (DCAT-AP CH: `dct:Location rdfs:subClassOf dct:LocationPeriodOrJurisdiction`) is drawn only when that term is already on the diagram, so imports add no boxes (M6). Not every subclass of a member: on LINDAS that pulls data classes (politics activities) into PROV. Restrictions and `sh:node` are never generalizations. | done |
 | J3 | A use's range is a **datatype** when it is `xsd:*`, `rdfs:Literal`, `rdf:langString`, `rdf:PlainLiteral`, `rdf:HTML`, `rdf:XMLLiteral`, `rdf:JSON`, a schema.org datatype (`schema:Text`, `Number`, `Integer`, `Float`, `Boolean`, `Date`, `DateTime`, `Time`, `URL`), a GeoSPARQL literal (`geo:wktLiteral`, …; DCAT-AP uses them) or anything typed `rdfs:Datatype`. An `owl:DatatypeProperty` without range is `rdfs:Literal`. | done |
 | J4 | A datatype use is an attribute row `P: xsd:type` in `C`'s box; any other use is an association edge `C —P→ R`. Every property is owned by a class, never a free node. | done |
-| J5 | Missing `C` or `R` → a dashed placeholder box: one per property for edges (no self-loops on one hub), one shared per label for attributes. Labelled "Thing" for OWL properties and "Resource" otherwise. A domain or range of `owl:Thing` or `rdfs:Resource` counts as missing (the MDS model uses both) rather than as an external box. | done (Thing/Resource new) |
+| J5 | Missing `C` or `R` → a dashed placeholder box: one per property for edges (no self-loops on one hub), one shared per label for attributes. Labelled "Thing" for OWL properties and "Resource" otherwise. A domain or range of `owl:Thing` or `rdfs:Resource` counts as missing (the MDS model uses both) rather than as an external box. | done |
 | J6 | A referenced class that is not a member and not a datatype is an external box (shaded). | done |
 | J7 | Several domains or ranges — intersection (`rdfs:domain` ×2) or union (`domainIncludes`, `unionOf`, `sh:or`) — are drawn the same: several arrows. | done |
 | J8 | *(a–c done; SHACL precedence verified in Phase 4)* Merge by `(C, P)`: (a) uses with the same `(C, P, R)` are one edge or row; (b) a use without `R` takes the ranges of the other uses of `(C, P)` and is drawn on its own only if there are none — DCAT-AP CH splits cardinality (`*-shapes.ttl`) and class range (`*-range-shapes.ttl`) into two shapes for the same class; (c) a use without `C` (a global `rdfs:range`/`schema:rangeIncludes`) is drawn only if `P` has no use with a class; (d) a class's use still without range takes `P`'s global ranges (`rdfs:range`, `schema:rangeIncludes`) — an OWL cardinality or SHACL `minCount` says how many, not what; an `owl:DatatypeProperty` with no range anywhere is `rdfs:Literal` — otherwise every profile property would also appear on a placeholder box. Multiplicity: SHACL wins over OWL, OWL over RDFS; several SHACL shapes on one `(C, P)` combine to the tightest bounds (largest min, smallest max). | done |
