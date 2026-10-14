@@ -34,7 +34,7 @@ updates:
           - "*"
 
   # Tracks both stages of the Dockerfile: the golang builder and the alpine
-  # runtime. golang:1.25-alpine already floats across patch releases, so in
+  # runtime. golang:1.27-alpine already floats across patch releases, so in
   # practice this is what keeps the alpine runtime base current.
   - package-ecosystem: docker
     directory: /
