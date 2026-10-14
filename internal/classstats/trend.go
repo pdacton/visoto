@@ -11,8 +11,8 @@ import (
 // over a window, laid out in a TrendWidth × TrendHeight viewBox. The SVG markup
 // lives in the sparqlMetricValue template; only the numbers are computed here.
 type Trend struct {
-	Path  string   // SVG path data; a failed day (nil count) starts a new segment
-	EndX  float64  // the latest counted point, drawn as a dot
+	Path  string  // SVG path data; a failed day (nil count) starts a new segment
+	EndX  float64 // the latest counted point, drawn as a dot
 	EndY  float64
 	Days  int      // window length
 	From  string   // oldest counted day in the window
