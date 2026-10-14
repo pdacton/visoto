@@ -19,6 +19,9 @@
       the same-origin /api/sparql proxy — not the endpoint itself (the upstream host and its
       credentials stay server-side; see internal/sparqlproxy). Falls back to /api/sparql.
     - height: (optional) CSS height for the container. Default "calc(100vh - 200px)".
+    - omitPageIri: (optional) do not add the page's ?iri= URL parameter as a starting IRI,
+      so the graph shows exactly `iris` (the collection page draws its members without
+      the collection node and its spoke to every member).
     - hideTypeEdges: (optional) hide rdf:type / rdfs:subClassOf edges. Use on architecture
       diagrams, where one type edge per node buries the relations that matter.
     - construct: (optional) a SPARQL CONSTRUCT whose result IS the diagram, or a
@@ -36,7 +39,8 @@
       static/js/ge-adapter.js, once per page however many graphs it holds.
     - Toolbar (graph-toolbar.html), undo, fullscreen and error messages come from
       static/js/graph-kit.js, shared with the schemaGraph partial.
-    - The ?iri= URL query parameter is also honored as an additional starting IRI.
+    - The ?iri= URL query parameter is also honored as an additional starting IRI,
+      unless omitPageIri is set.
 -->
 
 {{ define "sparqlGraph" }}
@@ -48,6 +52,7 @@
   {{ $height := or .height "calc(100vh - 200px)" }}
   {{ $lazy := .lazy }}
   {{ $hideTypeEdges := .hideTypeEdges }}
+  {{ $omitPageIri := .omitPageIri }}
   {{ $construct := .construct }}
   {{ $projection := .projection }}
   {{ $title := or .title (t "graph.defaultTitle" "Graph") }}
@@ -96,7 +101,8 @@
            data-sparql-graph
            data-sparql-graph-id="{{ $id }}"
            {{ if $lazy }}data-sparql-graph-lazy="true"{{ end }}
-           {{ if $hideTypeEdges }}data-sparql-graph-hide-type-edges="true"{{ end }}></div>
+           {{ if $hideTypeEdges }}data-sparql-graph-hide-type-edges="true"{{ end }}
+           {{ if $omitPageIri }}data-sparql-graph-omit-page-iri="true"{{ end }}></div>
       <!-- Messages (errors with Retry) and the busy spinner, over the canvas. -->
       <div id="{{ $id }}-overlay" class="graph-overlay" aria-live="polite"></div>
       </div>

@@ -691,11 +691,12 @@ out a set of IRIs at initialization.
 | `height` | `string` | `"calc(100vh - 200px)"` | CSS height of the container. |
 | `lazy` | `bool` | `false` | Defer initialization until a `graph:init` event fires on the `-root` element. |
 | `construct` | `string` | — | A SPARQL CONSTRUCT whose result *is* the diagram (see below). `iris` is then ignored. |
+| `omitPageIri` | `bool` | `false` | Do not add the page's `?iri=` as a starting IRI, so the graph shows exactly `iris` (used by the `dcmitype:Collection` page to draw members without the collection). |
 | `hideTypeEdges` | `bool` | `false` | Start with `rdf:type` / `rdfs:subClassOf` edges hidden (the user can show them again). |
 | `title` / `icon` | `string` | `"Graph"` / `"share-2"` | Card header title and Lucide icon. |
 
 The partial self-loads the Graph Explorer CDN bundle (with SRI), once per page. The
-`?iri=` URL parameter is honored as an additional starting IRI.
+`?iri=` URL parameter is honored as an additional starting IRI unless `omitPageIri` is set.
 
 **What every graph gets** (both partials, no parameters needed): Visoto's own floating
 toolbar instead of GE's — Add resource, Find on canvas, Layout ▾ (Network, Tree ↓,

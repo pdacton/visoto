@@ -197,6 +197,8 @@
 "card.cantons" = "Cantons"
 "card.catalogRecords" = "Enregistrements de catalogue"
 "card.catalogs" = "Catalogues"
+"card.collectionElements" = "Éléments"
+"card.collections" = "Collections"
 "card.citedByTreatments" = "Cité par des traitements"
 "card.cites" = "Cite"
 "card.classHierarchy" = "Hiérarchie des classes"
@@ -971,6 +973,7 @@
 "type.taxonConcept.subtitle" = "Concepts taxonomiques — un nom scientifique sous une autorité et un rang donnés — dans la classification Plazi."
 "type.taxonName.subtitle" = "Noms scientifiques dans la classification taxonomique Plazi."
 "type.treatment.subtitle" = "Traitements taxonomiques — les sections d'une publication décrivant un taxon — dans le corpus Plazi."
+"type.collection" = "<a href=\"/resource?iri=http%3A%2F%2Fpurl.org%2Fdc%2Fdcmitype%2FCollection\">Collection</a>"
 
 # ── Stragglers ────────────────────────────────────────────────────
 "js.chat.intro" = "L'assistant de chat vous aide à comprendre les ressources RDF."

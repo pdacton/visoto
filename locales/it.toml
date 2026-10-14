@@ -197,6 +197,8 @@
 "card.cantons" = "Cantoni"
 "card.catalogRecords" = "Record del catalogo"
 "card.catalogs" = "Cataloghi"
+"card.collectionElements" = "Elementi"
+"card.collections" = "Collezioni"
 "card.citedByTreatments" = "Citato da trattamenti"
 "card.cites" = "Cita"
 "card.classHierarchy" = "Gerarchia delle classi"
@@ -971,6 +973,7 @@
 "type.taxonConcept.subtitle" = "Concetti tassonomici — un nome scientifico sotto una data autorità e un dato rango — nella classificazione Plazi."
 "type.taxonName.subtitle" = "Nomi scientifici nella classificazione tassonomica Plazi."
 "type.treatment.subtitle" = "Trattamenti tassonomici — le sezioni di una pubblicazione che descrivono un taxon — nel corpus Plazi."
+"type.collection" = "<a href=\"/resource?iri=http%3A%2F%2Fpurl.org%2Fdc%2Fdcmitype%2FCollection\">Collezione</a>"
 
 # ── Stragglers ────────────────────────────────────────────────────
 "js.chat.intro" = "L'assistente di chat ti aiuta a comprendere le risorse RDF."

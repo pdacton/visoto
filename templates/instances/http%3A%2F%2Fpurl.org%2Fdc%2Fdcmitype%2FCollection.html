@@ -1,0 +1,52 @@
+<!-- dcmitype:Collection Instance Template
+
+     A collection page draws its elements as a graph. "Element" is the generic
+     hasPart family, the same as on the class page:
+       sm:containsNodes | dct:hasPart | rdfs:member | schema:hasPart (both spellings)
+     On LINDAS the 7 collections are agriculture system maps (FOAG) with 27–139
+     members each, all via sm:containsNodes. -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item">{{ tHTML "type.collection" "<a href=\"/resource?iri=http%3A%2F%2Fpurl.org%2Fdc%2Fdcmitype%2FCollection\">Collection</a>" }}</li>
+{{ end }}
+
+<!-- The graph's seed set. SYNCHRONOUS because sparqlGraph's `iris` must exist at
+     render time. No LIMIT: the largest LINDAS collection has 139 members, and the
+     graph data provider POSTs, so a long seed list does not hit the URL limit. -->
+<sparql-query id="collectionElements">
+  PREFIX sm: &lt;https://agriculture.ld.admin.ch/system-map/&gt;
+  SELECT DISTINCT ?element WHERE {
+    ?? sm:containsNodes|dct:hasPart|rdfs:member|schema:hasPart|schema2:hasPart ?element .
+    FILTER (isIRI(?element))
+  }
+</sparql-query>
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- The elements and the links between them. The collection itself is left
+       off the canvas (omitPageIri, and no "iri"): it would add one spoke to
+       every element and bury the relations between them. -->
+  {{ $elements := columnValues .QueryResults.collectionElements "element" }}
+  {{ if $elements }}
+  <div class="mb-3">
+    {{ template "sparqlGraph" (dict
+        "id" "collectionGraph"
+        "iris" $elements
+        "omitPageIri" true
+        "hideTypeEdges" true
+        "endpointUrl" .GraphQueryURL
+        "title" (t "card.collectionElements" "Elements")
+        "icon" "boxes"
+        "height" "700px") }}
+  </div>
+  {{ end }}
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

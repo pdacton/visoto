@@ -58,7 +58,10 @@
       }
       var singleIri = readIsland('-iri');
       if (singleIri) startIris.push(singleIri);
-      var urlIri = new URLSearchParams(window.location.search).get('iri');
+      // data-sparql-graph-omit-page-iri: the page's own resource stays off the
+      // canvas (e.g. a collection drawn as its members only).
+      var urlIri = root.getAttribute('data-sparql-graph-omit-page-iri') === 'true'
+        ? null : new URLSearchParams(window.location.search).get('iri');
       if (urlIri) startIris.push(urlIri);
       // De-duplicate while preserving order.
       startIris = startIris.filter(function(v, i) { return startIris.indexOf(v) === i; });
