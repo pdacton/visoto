@@ -50,14 +50,14 @@
 
   <div class="row row-deck row-cards mb-3">
 
-    <!-- Interoperability card: shared code lists and classifications.
-         Photo: Rosetta Stone, Hans Hillewaert, CC BY-SA 4.0 (Wikimedia Commons). -->
+    <!-- Interoperability card: shared code lists and classifications, with the
+         NOGA nomenclature as the example. -->
     <div class="col-sm-6 col-lg-4">
       <div class="card h-100">
-        <img src="/static/img/cards/interoperability.jpg" class="card-img-top" alt="{{ t "page.home.rosettaStone" "The Rosetta Stone" }}" title="Rosetta Stone · Hans Hillewaert, CC BY-SA 4.0" style="height: 200px; object-fit: cover;">
+        <img src="https://www.bkw.ch/fileadmin/user_upload/02_Gebaeude/02_04_Gebaeudetechnik/Elektro/Elektro__c__BKW_Building_Solutions_AG_51.jpg" class="card-img-top" alt="{{ t "page.home.industrialBuilding" "Industrial building" }}" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">
           <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.interoperability" "Interoperability" }}</h3>
-          <p class="text-secondary mt-auto">{{ tHTML "page.home.interoperabilityText" "Data fits together when everyone uses the same codes. Browse the <a href=\"/resource?iri=http%3A%2F%2Fwww.w3.org%2F2004%2F02%2Fskos%2Fcore%23ConceptScheme\">concept schemes</a> – shared code lists and classifications, many of them from I14Y, the Swiss interoperability platform." }}</p>
+          <p class="text-secondary mt-auto">{{ tHTML "page.home.interoperabilityNogaText" "Data fits together when everyone uses the same codes. Browse the <a href=\"/resource?iri=http%3A%2F%2Fwww.w3.org%2F2004%2F02%2Fskos%2Fcore%23ConceptScheme\">concept schemes</a> – shared code lists and classifications, many of them from I14Y, the Swiss interoperability platform – such as the <a href=\"/resource?iri=https%3A%2F%2Fregister.ld.admin.ch%2Fi14y%2Fconcept%2FnogaCode%2Fversion%2F2.0.0\">NOGA nomenclature</a> of economic activities." }}</p>
         </div>
       </div>
     </div>
@@ -74,13 +74,14 @@
       </div>
     </div>
 
-    <!-- NOGA card -->
+    <!-- System map card: the DigiAgriFoodCH system map of Swiss agricultural IT.
+         Image: Visoto's own graph of the MARS III system architecture. -->
     <div class="col-sm-6 col-lg-4">
       <div class="card h-100">
-        <img src="https://www.bkw.ch/fileadmin/user_upload/02_Gebaeude/02_04_Gebaeudetechnik/Elektro/Elektro__c__BKW_Building_Solutions_AG_51.jpg" class="card-img-top" alt="{{ t "page.home.industrialBuilding" "Industrial building" }}" style="height: 200px; object-fit: cover;">
+        <img src="/static/img/cards/system-map.jpg" class="card-img-top" alt="{{ t "page.home.marsGraph" "Graph of the MARS III system architecture" }}" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">
-          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.nogaCodes" "NOGA Codes" }}</h3>
-          <p class="text-secondary mt-auto">{{ tHTML "page.home.everWonderedWhatKindOf" "Ever wondered what kind of categories exist for companies? Browse the <a href=\"/resource?iri=https%3A%2F%2Fregister.ld.admin.ch%2Fi14y%2Fconcept%2FnogaCode%2Fversion%2F2.0.0\">NOGA nomenclature</a> here." }}</p>
+          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.systemMap" "Agricultural System Map" }}</h3>
+          <p class="text-secondary mt-auto">{{ tHTML "page.home.systemMapText" "Which IT systems keep Swiss agriculture running, and how do they depend on each other? Explore the <a href=\"/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2F&endpoint=lindas-cached\">DigiAgriFoodCH system map</a>, or follow the data through the <a href=\"/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FSaAA0IQkj02jgbLEb&endpoint=lindas-cached\">MARS III system architecture</a>." }}</p>
         </div>
       </div>
     </div>
