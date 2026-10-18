@@ -24,7 +24,7 @@ Templates live in `templates/`:
 | Dir | Purpose |
 |---|---|
 | `layout/` | base, topbar, sidebar, header, footer |
-| `partials/` | `sparqlTable`, `sparqlAsyncTable`, `sparqlGraph`, tree, metric, … |
+| `partials/` | `sparqlTable`, `sparqlAsyncTable`, `sparqlGraph`, `bnodeTree`, tree, metric, … |
 | `components/` | `pageHeader`, `literals`, `relationships` |
 | `pages/` | standalone pages (`/about.html`, `/politics.html`, …) |
 | `classes/` | per-RDF-class pages |

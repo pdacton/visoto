@@ -1,6 +1,6 @@
 # Plan: Blank-node tree
 
-Status: draft, not implemented. Mockup:
+Status: implemented (see "Implementation notes" at the end). Mockup:
 `/tmp/claude-0/-home-user-visoto/63e81188-b902-5567-b904-d77567da85bf/scratchpad/bnode-tree-mockup.html`
 
 ## Goal
@@ -186,3 +186,31 @@ catalogs (de, en, fr, it, rm).
 - `via` takes a single predicate only.
 - The "All Triples" table shows outgoing blank nodes as rows, linking to the tree.
 - Row cap 5000 and 8 enumeration chips before "+ n more" are fixed values.
+
+## Implementation notes
+
+Where the implementation differs from the plan above:
+
+- **Labels** come from the existing label resolution (`ExecuteQuery` with
+  `resolveLabels`, cached and batched), not from the tree query itself. The tree
+  query stays a pure structure query.
+- **Named graphs**: the tree query uses plain triple patterns, like the other
+  resource queries, rather than the `GRAPH ?g` doubling of `resourceTriples`.
+  Store-level blank nodes are distinct per graph, so nothing merges.
+- **List hops**: a hop is either a triple to a blank node or a jump through an
+  RDF list to a blank-node member, so list cells never use up a level; the list
+  spines are fetched as separate rows per level.
+- **Table badge** links to the tree card as a whole (`#blank-nodes`), not to a
+  per-predicate block. Incoming rows whose value is a blank node get the same
+  linked badge (the cell renderer only sees the value, not the row's kind).
+- **Anchor id** is `blank-nodes`, not `bnode-tree`: a rule in
+  `wunderbaum_overrides.css` caps every `div[id$="-tree"]` at 600px.
+- **English counts** are written count-neutral ("Blank nodes: 9"): `en.toml`
+  holds only `js.*` keys, so English has no plural table. The other four
+  catalogs have proper one/other forms.
+- **Small display rules added**: an untitled node with a single simple property
+  (`[ sh:datatype xsd:integer ]`) is rendered flat, without a header; an
+  unnamed property shape takes its `sh:path` label as title; an IRI with a
+  query string is labelled with the full IRI.
+- `sparql.Binding` gained `Datatype` and `Lang` (omitted from JSON when empty),
+  which the tree needs for literal badges.

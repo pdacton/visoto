@@ -13,6 +13,11 @@ type Binding struct {
 	Type        string
 	Value       string
 	DisplayText string // human-readable display string (resolved label for URIs, literal value otherwise)
+	// Datatype and Lang carry a literal's datatype IRI and language tag. Empty
+	// for IRIs, blank nodes and plain literals, and omitted from the JSON then,
+	// since a Binding is serialized for every cell of every table row.
+	Datatype string `json:",omitempty"`
+	Lang     string `json:",omitempty"`
 }
 
 // ResourceHref returns the canonical Visoto page URL for an IRI,
@@ -91,8 +96,10 @@ type sparqlResponse struct {
 	} `json:"head"`
 	Results struct {
 		Bindings []map[string]struct {
-			Type  string `json:"type"`
-			Value string `json:"value"`
+			Type     string `json:"type"`
+			Value    string `json:"value"`
+			Datatype string `json:"datatype"`
+			Lang     string `json:"xml:lang"`
 		} `json:"bindings"`
 	} `json:"results"`
 }

@@ -284,3 +284,47 @@
 "js.map.layerAerial" = "Fotografia aviatica swisstopo"
 "js.map.unsupportedCrs" = "Questa geometria utilisescha in sistem da coordinatas che la charta na po betg mussar."
 "js.map.libraryFailed" = "La biblioteca da chartas na pudeva betg vegnir chargiada."
+
+# Blank-node tree (templates/partials/bnode-tree.html, static/js/bnode-tree.js).
+"card.nestedStructure" = "Structura nidada"
+"bnode.collapseAll" = "Serrar tut ils nuvs"
+"bnode.expandAll" = "Avrir tut ils nuvs"
+"bnode.copyTurtle" = "Copiar sco Turtle"
+"format.turtle" = "Turtle"
+"format.jsonld" = "JSON-LD"
+"format.ntriples" = "N-Triples"
+"bnode.caption.anyOf" = "in da quels"
+"bnode.caption.allOf" = "tuts"
+"bnode.caption.exactlyOneOf" = "exact in da quels"
+"bnode.caption.not" = "betg"
+"bnode.caption.oneOf" = "ina da las valurs"
+"bnode.caption.unionOf" = "uniun da"
+"bnode.caption.intersectionOf" = "intersecziun da"
+"bnode.undefined" = "betg definì"
+"bnode.emptyList" = "glista vida"
+"bnode.order" = "urden"
+"bnode.malformedList" = "glista defectusa"
+"bnode.sameNodeAs" = "il medem nuv sco"
+"js.table.blankNode" = "nuv vid"
+"js.bnode.copied" = "Copià"
+"js.bnode.copyFailed" = "Copiar n'è betg reussì"
+
+# Plural forms (tn). TOML tables must follow every plain key, so they stay last.
+["bnode.count"]
+one = "{{.Count}} nuv vid"
+other = "{{.Count}} nuvs vids"
+["bnode.more"]
+one = "+ {{.Count}} ulteriur"
+other = "+ {{.Count}} ulteriurs"
+["bnode.properties"]
+one = "{{.Count}} caracteristica"
+other = "{{.Count}} caracteristicas"
+["bnode.moreNodes"]
+one = "{{.Count}} nuv vid nidà sur la profunditad 5"
+other = "{{.Count}} nuvs vids nidads sur la profunditad 5"
+["bnode.moreTriples"]
+one = "{{.Count}} triplet betg mussà"
+other = "{{.Count}} triplets betg mussads"
+["bnode.truncated"]
+one = "La structura cumpiglia dapli che {{.Count}} triplet ed è mussada incumplettamain."
+other = "La structura cumpiglia dapli che {{.Count}} triplets ed è mussada incumplettamain."

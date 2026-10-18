@@ -246,6 +246,15 @@
     }
     function renderBinding(binding) {
       if (!binding) return '';
+      // A blank node's label means nothing outside its result set, so it is not
+      // shown and not linked as a resource. The badge jumps to the blank-node
+      // tree in the Data view (#blank-nodes), where the content is readable.
+      if (binding.Type === 'bnode') {
+        var text = escapeHtml(vsT('js.table.blankNode', 'blank node'));
+        return document.getElementById('blank-nodes') || document.querySelector('[hx-get*="anchor=blank-nodes"]')
+          ? '<a href="#blank-nodes" class="badge bg-secondary-lt text-decoration-none">' + text + '</a>'
+          : '<span class="badge bg-secondary-lt">' + text + '</span>';
+      }
       if (binding.Type === 'uri') {
         var display = escapeHtml(binding.DisplayText || binding.Value);
         return '<a href="/resource?iri=' + encodeURIComponent(binding.Value) + '">' + display + '</a>';

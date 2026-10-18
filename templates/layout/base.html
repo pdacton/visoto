@@ -122,6 +122,7 @@
     <link rel="stylesheet" href="/static/css/wunderbaum_overrides.css">
     <link rel="stylesheet" href="/static/css/mermaid_overrides.css">
     <link rel="stylesheet" href="/static/css/chat.css">
+    <link rel="stylesheet" href="/static/css/bnode_overrides.css">
 
   </head>
 
@@ -178,7 +179,11 @@
                  the union of all named graphs (LINDAS/Fuseki) the bare pattern re-matches
                  every named-graph triple — without the MINUS every row would appear
                  twice, once with a graph and once without. ?graph stays unbound there,
-                 so the column renders empty for genuine default-graph triples. -->
+                 so the column renders empty for genuine default-graph triples.
+
+                 Outgoing blank nodes get their own kind, "blank node": the value
+                 cell shows a badge linking down to the blank-node tree below, which
+                 is where their content is readable. -->
             <div id="resource-data-view" class="d-none">
               <sparql-async id="resourceTriples">
                 SELECT ?kind ?property ?value ?type ?datatype ?language ?graph WHERE {
@@ -196,6 +201,13 @@
                   UNION
                   { ?? ?property ?value . MINUS { GRAPH ?g { ?? ?property ?value . } }
                     FILTER(isIRI(?value)) BIND("outgoing" AS ?kind)
+                    OPTIONAL { ?value a ?type . } }
+                  UNION
+                  { GRAPH ?graph { ?? ?property ?value . } FILTER(isBlank(?value)) BIND("blank node" AS ?kind)
+                    OPTIONAL { ?value a ?type . } }
+                  UNION
+                  { ?? ?property ?value . MINUS { GRAPH ?g { ?? ?property ?value . } }
+                    FILTER(isBlank(?value)) BIND("blank node" AS ?kind)
                     OPTIONAL { ?value a ?type . } }
                   UNION
                   { GRAPH ?graph { ?value ?property ?? . } BIND("incoming" AS ?kind)
@@ -224,6 +236,13 @@
                     "title" (t "card.allTriples" "All Triples")
                     "icon" "database"
                     "trigger" "showData") }}
+              <!-- The outgoing blank nodes as a tree, below the table. Loaded on the
+                   same reveal (resource-view-toggle.js fires showData on every
+                   placeholder in this view); removes itself when there are none.
+                   anchor is the jump target of the table's "blank node" badges. -->
+              <div class="mt-3">
+                {{ template "bnodeTree" (dict "iri" .ResourceIRI "trigger" "showData" "anchor" "blank-nodes") }}
+              </div>
             </div>
             <!-- Schema view: the informal schema DERIVED from the data around the
                  resource, drawn as a UML-style class diagram, followed by the schema

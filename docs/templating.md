@@ -162,8 +162,10 @@ Accessed as `.QueryResults.<id>`:
 | Field | Type | Description |
 |---|---|---|
 | `.Value` | `string` | Raw value (IRI or literal string). |
-| `.Type` | `string` | `"uri"`, `"literal"`, or `"html"`. |
+| `.Type` | `string` | `"uri"`, `"literal"`, `"bnode"`, or `"html"`. |
 | `.DisplayText` | `string` | Human-readable label. For URIs, this may be a resolved label; otherwise same as `.Value`. |
+| `.Datatype` | `string` | A literal's datatype IRI; empty for IRIs, blank nodes and plain literals. |
+| `.Lang` | `string` | A literal's language tag; empty otherwise. |
 
 Use the `render` function to output a `Binding` as HTML — it renders URIs as clickable links and literals as plain text.
 
@@ -804,6 +806,42 @@ Async metric card, loaded via HTMX after the page renders. Pairs with `<sparql-a
 | `title` | Card label. |
 | `href` | Optional link URL for the metric. |
 | `icon` | Lucide icon name. |
+
+### `bnodeTree` {#bnodetree}
+
+The outgoing blank nodes of a resource as a tree ("Nested structure"): nested
+key/value blocks, RDF lists as numbered lists, `sh:in` / `owl:oneOf` as chips,
+`sh:or` / `sh:and` / `sh:xone` with a caption, a blank node reached twice shown
+once with a numbered marker, and a dashed line where the depth limit (5 levels)
+cuts the tree off. The card header has the usual ⋮ menu: download as Turtle,
+JSON-LD or N-Triples, copy as Turtle, execute the query on the endpoint.
+
+The Data view of every resource appends one automatically, below "All Triples".
+Add one to a page template where the structure belongs in the page itself:
+
+```html
+{{ template "bnodeTree" (dict "iri" .ResourceIRI) }}
+
+<!-- On a cube page: the dimensions of its observation constraint, which is an
+     IRI resource whose property shapes are blank nodes. -->
+{{ template "bnodeTree" (dict "iri" .ResourceIRI "via" "cube:observationConstraint") }}
+```
+
+| Parameter | Description |
+|---|---|
+| `iri` | Required. The root resource. |
+| `property` | Only expand blank nodes under this predicate (CURIE or full IRI). |
+| `via` | One predicate (CURIE or full IRI, no property paths) followed to IRI roots first. |
+| `collapsed` | Start with every node closed; each header then shows a one-line summary. |
+| `trigger` | HTMX trigger, default `load`. The Data view passes `showData`. |
+| `title` / `icon` | Card header, default "Nested structure" / `brackets`. |
+| `anchor` | Id for the card. Avoid ids ending in `-tree`: `wunderbaum_overrides.css` caps those at 600px. |
+
+The whole structure comes from **one** query (`internal/bnodetree`), because
+blank-node labels are only stable within a single result set. When the
+resource has no outgoing blank nodes the placeholder removes itself and
+nothing is rendered. The query is capped at 5,000 rows; a larger structure is
+shown with a "shown incomplete" note.
 
 ---
 

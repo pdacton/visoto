@@ -1775,3 +1775,47 @@
 "facet.containedIn" = "Contenu dans"
 "facet.meansOfTransport" = "Moyens de transport"
 "card.stations" = "Arrêts"
+
+# Blank-node tree (templates/partials/bnode-tree.html, static/js/bnode-tree.js).
+"card.nestedStructure" = "Structure imbriquée"
+"bnode.collapseAll" = "Replier tous les nœuds"
+"bnode.expandAll" = "Déplier tous les nœuds"
+"bnode.copyTurtle" = "Copier en Turtle"
+"format.turtle" = "Turtle"
+"format.jsonld" = "JSON-LD"
+"format.ntriples" = "N-Triples"
+"bnode.caption.anyOf" = "l'un de"
+"bnode.caption.allOf" = "tous"
+"bnode.caption.exactlyOneOf" = "exactement un de"
+"bnode.caption.not" = "pas"
+"bnode.caption.oneOf" = "une des valeurs"
+"bnode.caption.unionOf" = "union de"
+"bnode.caption.intersectionOf" = "intersection de"
+"bnode.undefined" = "non défini"
+"bnode.emptyList" = "liste vide"
+"bnode.order" = "ordre"
+"bnode.malformedList" = "liste mal formée"
+"bnode.sameNodeAs" = "même nœud que"
+"js.table.blankNode" = "nœud anonyme"
+"js.bnode.copied" = "Copié"
+"js.bnode.copyFailed" = "Échec de la copie"
+
+# Plural forms (tn). TOML tables must follow every plain key, so they stay last.
+["bnode.count"]
+one = "{{.Count}} nœud anonyme"
+other = "{{.Count}} nœuds anonymes"
+["bnode.more"]
+one = "+ {{.Count}} autre"
+other = "+ {{.Count}} autres"
+["bnode.properties"]
+one = "{{.Count}} propriété"
+other = "{{.Count}} propriétés"
+["bnode.moreNodes"]
+one = "{{.Count}} nœud anonyme imbriqué au-delà de la profondeur 5"
+other = "{{.Count}} nœuds anonymes imbriqués au-delà de la profondeur 5"
+["bnode.moreTriples"]
+one = "{{.Count}} triplet non affiché"
+other = "{{.Count}} triplets non affichés"
+["bnode.truncated"]
+one = "La structure dépasse {{.Count}} triplet et est affichée incomplète."
+other = "La structure dépasse {{.Count}} triplets et est affichée incomplète."

@@ -1,0 +1,152 @@
+/* Blank-node tree card (templates/partials/bnode-tree.html).
+   Only the layout Tabler has no class for: the key/value grid, the nested
+   node blocks with a border per depth, list numbering and the depth-limit line. */
+
+.vs-bn-row {
+  display: grid;
+  grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+  gap: .25rem 1rem;
+  padding: .2rem 0;
+  align-items: start;
+}
+
+/* Inside nested nodes the key column shrinks to its content, so deep trees
+   don't drift to the right one 13rem column per level. */
+.vs-bn-node .vs-bn-row {
+  grid-template-columns: minmax(5rem, max-content) minmax(0, 1fr);
+}
+.vs-bn-node .vs-bn-key { max-width: 11rem; }
+
+.vs-bn-key {
+  font-family: var(--tblr-font-monospace);
+  font-size: .78rem;
+  color: var(--tblr-secondary);
+  padding-top: .15rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vs-bn-prefix { opacity: .6; }
+
+.vs-bn-vals { min-width: 0; overflow-wrap: anywhere; }
+
+.vs-bn-curie,
+.vs-bn-meta {
+  font-family: var(--tblr-font-monospace);
+  font-size: .7rem;
+  color: var(--tblr-secondary);
+  margin-left: .35rem;
+}
+.vs-bn-ext { width: .9em; height: .9em; color: var(--tblr-secondary); }
+
+.vs-bn-caption {
+  font-size: .72rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--tblr-secondary);
+  font-weight: 600;
+  margin-bottom: .15rem;
+}
+
+.vs-bn-chips { display: flex; flex-wrap: wrap; gap: .3rem; }
+.vs-bn-chips .badge { font-weight: 500; }
+.vs-bn-enum > summary { list-style: none; cursor: pointer; margin-top: .3rem; }
+.vs-bn-enum > summary::-webkit-details-marker { display: none; }
+
+/* Nested node: a left border that darkens with depth. */
+.vs-bn-node {
+  border-left: 3px solid #dbe7f6;
+  background: var(--tblr-bg-surface);
+  border-radius: 0 .375rem .375rem 0;
+  padding: .35rem .75rem;
+  margin: .1rem 0 .35rem;
+}
+.vs-bn-flat { padding-top: .15rem; padding-bottom: .15rem; }
+.vs-bn-depth-2 { border-left-color: #c3d9f0; }
+.vs-bn-depth-3 { border-left-color: #a9c7e8; }
+.vs-bn-depth-4 { border-left-color: #8fb5df; }
+.vs-bn-depth-5 { border-left-color: #7aa6d8; }
+
+.vs-bn-node > summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  gap: .4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  padding: .1rem 0 .25rem;
+}
+.vs-bn-node > summary::-webkit-details-marker { display: none; }
+.vs-bn-chev { width: 1rem; height: 1rem; color: var(--tblr-secondary); transition: transform .15s; }
+.vs-bn-node[open] > summary .vs-bn-chev { transform: rotate(90deg); }
+.vs-bn-title { font-weight: 600; }
+
+/* The one-line summary is for closed nodes only. */
+.vs-bn-summary { font-size: .8rem; color: var(--tblr-secondary); }
+.vs-bn-node[open] > summary .vs-bn-summary { display: none; }
+
+.vs-bn-anchor {
+  font-size: .65rem;
+  font-weight: 600;
+  border-radius: 50%;
+  width: 1.2rem;
+  height: 1.2rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--tblr-bg-surface-tertiary, #e6e7e9);
+  color: var(--tblr-secondary);
+}
+
+/* RDF lists: numbered with a counter, items keep their own layout. */
+.vs-bn-list { list-style: none; padding: 0; margin: 0; counter-reset: vs-bn-item; }
+.vs-bn-list > li {
+  counter-increment: vs-bn-item;
+  display: grid;
+  grid-template-columns: 1.4rem minmax(0, 1fr);
+  align-items: start;
+}
+.vs-bn-list > li::before {
+  content: counter(vs-bn-item);
+  font-family: var(--tblr-font-monospace);
+  font-size: .7rem;
+  color: var(--tblr-secondary);
+  padding-top: .3rem;
+}
+.vs-bn-list .vs-bn-node { margin-bottom: .2rem; }
+
+.vs-bn-ref {
+  font-size: .82rem;
+  color: var(--tblr-secondary);
+  display: inline-flex;
+  gap: .35rem;
+  align-items: center;
+}
+.vs-bn-ref svg { width: 1rem; height: 1rem; }
+
+.vs-bn-more {
+  border: 1px dashed var(--tblr-border-color);
+  border-radius: .375rem;
+  padding: .3rem .6rem;
+  font-size: .8rem;
+  color: var(--tblr-secondary);
+  display: inline-flex;
+  gap: .4rem;
+  align-items: center;
+}
+.vs-bn-more svg { width: 1rem; height: 1rem; }
+
+.vs-bn-root { font-weight: 600; margin: .5rem 0 .25rem; }
+.vs-bn-root:first-child { margin-top: 0; }
+
+@media (max-width: 575.98px) {
+  .vs-bn-row,
+  .vs-bn-node .vs-bn-row { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
+
+/* Dark mode: the depth borders come from the light palette; tone them down. */
+[data-bs-theme="dark"] .vs-bn-node { border-left-color: #2f4b6e; }
+[data-bs-theme="dark"] .vs-bn-depth-2 { border-left-color: #35587f; }
+[data-bs-theme="dark"] .vs-bn-depth-3 { border-left-color: #3b6590; }
+[data-bs-theme="dark"] .vs-bn-depth-4 { border-left-color: #4272a1; }
+[data-bs-theme="dark"] .vs-bn-depth-5 { border-left-color: #4a7fb2; }

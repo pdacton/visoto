@@ -273,6 +273,8 @@ func simplifyBindings(resp sparqlResponse) QueryResult {
 				Type:        varData.Type,
 				Value:       varData.Value,
 				DisplayText: varData.Value,
+				Datatype:    varData.Datatype,
+				Lang:        varData.Lang,
 			}
 		}
 		result.Bindings = append(result.Bindings, simplified)

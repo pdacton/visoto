@@ -1775,3 +1775,47 @@
 "facet.containedIn" = "Contenuto in"
 "facet.meansOfTransport" = "Mezzi di trasporto"
 "card.stations" = "Fermate"
+
+# Blank-node tree (templates/partials/bnode-tree.html, static/js/bnode-tree.js).
+"card.nestedStructure" = "Struttura annidata"
+"bnode.collapseAll" = "Comprimi tutti i nodi"
+"bnode.expandAll" = "Espandi tutti i nodi"
+"bnode.copyTurtle" = "Copia come Turtle"
+"format.turtle" = "Turtle"
+"format.jsonld" = "JSON-LD"
+"format.ntriples" = "N-Triples"
+"bnode.caption.anyOf" = "uno qualsiasi di"
+"bnode.caption.allOf" = "tutti"
+"bnode.caption.exactlyOneOf" = "esattamente uno di"
+"bnode.caption.not" = "non"
+"bnode.caption.oneOf" = "uno dei valori"
+"bnode.caption.unionOf" = "unione di"
+"bnode.caption.intersectionOf" = "intersezione di"
+"bnode.undefined" = "non definito"
+"bnode.emptyList" = "lista vuota"
+"bnode.order" = "ordine"
+"bnode.malformedList" = "lista malformata"
+"bnode.sameNodeAs" = "stesso nodo di"
+"js.table.blankNode" = "nodo anonimo"
+"js.bnode.copied" = "Copiato"
+"js.bnode.copyFailed" = "Copia non riuscita"
+
+# Plural forms (tn). TOML tables must follow every plain key, so they stay last.
+["bnode.count"]
+one = "{{.Count}} nodo anonimo"
+other = "{{.Count}} nodi anonimi"
+["bnode.more"]
+one = "+ {{.Count}} altro"
+other = "+ {{.Count}} altri"
+["bnode.properties"]
+one = "{{.Count}} proprietà"
+other = "{{.Count}} proprietà"
+["bnode.moreNodes"]
+one = "{{.Count}} nodo anonimo annidato oltre la profondità 5"
+other = "{{.Count}} nodi anonimi annidati oltre la profondità 5"
+["bnode.moreTriples"]
+one = "{{.Count}} tripla non mostrata"
+other = "{{.Count}} triple non mostrate"
+["bnode.truncated"]
+one = "La struttura supera {{.Count}} tripla ed è mostrata incompleta."
+other = "La struttura supera {{.Count}} triple ed è mostrata incompleta."

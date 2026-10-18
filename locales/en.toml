@@ -166,3 +166,8 @@
 "js.map.layerAerial" = "swisstopo aerial"
 "js.map.unsupportedCrs" = "This geometry uses a coordinate reference system the map cannot display."
 "js.map.libraryFailed" = "Failed to load the map library."
+
+# Blank-node tree (templates/partials/bnode-tree.html, static/js/bnode-tree.js).
+"js.table.blankNode" = "blank node"
+"js.bnode.copied" = "Copied"
+"js.bnode.copyFailed" = "Copy failed"

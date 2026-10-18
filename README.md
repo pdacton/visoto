@@ -177,6 +177,7 @@ static/            — CSS, JS, images
 | `GET` | `/api/facet-values/:id/:var` | Distinct values and counts for one facet (JSON) |
 | `GET` | `/api/cube-table/:id` | Cube observation table; query built from the cube's SHACL constraint |
 | `GET` | `/api/lazy-tree/:id/:role` | One level of a lazily expanded tree |
+| `GET` | `/api/bnode-tree?iri=<IRI>` | Outgoing blank nodes as a tree (HTMX fragment), or `&format=ttl\|nt\|jsonld` as a download |
 | `POST` | `/api/upload` | Upload RDF from a file or URL into a named graph |
 | `GET` | `/api/named-graphs` | List named graphs (JSON) |
 | `DELETE` | `/api/named-graphs` | Delete a named graph |
@@ -195,7 +196,8 @@ lazy-tree), and those are scoped to the template set that declares them, not glo
 The frontend attaches it automatically — see
 [Async query scope](docs/templating.md#async-query-scope). `/api/cube-table/:id` is
 the exception: its query is generated from the cube's own SHACL constraint, so `?iri=`
-alone determines the response.
+alone determines the response, and so does `/api/bnode-tree`, which builds its
+query from `?iri=` (plus the optional `?property=` / `?via=`).
 
 ### Screenshots
 

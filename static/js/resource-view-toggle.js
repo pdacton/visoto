@@ -10,9 +10,10 @@
  *     start .d-none).
  *   - The graph partial (templates/partials/sparql-graph.html) is rendered with
  *     lazy=true and initialized on a 'graph:init' event at its -root element.
- *   - The data view (templates/partials/sparql-async-table.html) is an HTMX
- *     element with hx-trigger="showData"; the query runs only when we fire that
- *     event on first reveal.
+ *   - The data view holds two HTMX elements with hx-trigger="showData" — the
+ *     triples table (templates/partials/sparql-async-table.html) and the
+ *     blank-node tree (templates/partials/bnode-tree.html); their queries run
+ *     only when we fire that event on first reveal.
  *   - The schema view holds both kinds: the diagram partial
  *     (templates/partials/schema-graph.html) is rendered with lazy=true and
  *     initialized on a 'schema:init' event at its -root element, and FOUR async
@@ -76,9 +77,13 @@
       dataView.classList.remove('d-none');
       if (!dataInitialized) {
         dataInitialized = true;
-        // Fire the HTMX trigger on the placeholder to run the query once.
-        var hxEl = dataView.querySelector('[hx-get]');
-        if (hxEl && window.htmx) window.htmx.trigger(hxEl, 'showData');
+        // Fire the HTMX trigger on every placeholder (the triples table and the
+        // blank-node tree) to run their queries once.
+        if (window.htmx) {
+          dataView.querySelectorAll('[hx-get]').forEach(function (el) {
+            window.htmx.trigger(el, 'showData');
+          });
+        }
       }
     }
 

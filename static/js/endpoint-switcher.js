@@ -81,7 +81,7 @@ function visotoResourceHref(iri) {
 // hx-get on the page.
 document.addEventListener('htmx:configRequest', function (evt) {
     const path = evt.detail.path || '';
-    if (!/^\/api\/(metric|async-table)\//.test(path)) return;
+    if (!/^\/api\/((metric|async-table)\/|bnode-tree\?)/.test(path)) return;
     const slug = activeEndpointSlug();
     if (slug && evt.detail.parameters.endpoint === undefined) {
         evt.detail.parameters.endpoint = slug;

@@ -1776,3 +1776,47 @@
 "facet.containedIn" = "Enthalten in"
 "facet.meansOfTransport" = "Verkehrsmittel"
 "card.stations" = "Haltestellen"
+
+# Blank-node tree (templates/partials/bnode-tree.html, static/js/bnode-tree.js).
+"card.nestedStructure" = "Verschachtelte Struktur"
+"bnode.collapseAll" = "Alle Knoten zuklappen"
+"bnode.expandAll" = "Alle Knoten aufklappen"
+"bnode.copyTurtle" = "Als Turtle kopieren"
+"format.turtle" = "Turtle"
+"format.jsonld" = "JSON-LD"
+"format.ntriples" = "N-Triples"
+"bnode.caption.anyOf" = "eines davon"
+"bnode.caption.allOf" = "alle davon"
+"bnode.caption.exactlyOneOf" = "genau eines davon"
+"bnode.caption.not" = "nicht"
+"bnode.caption.oneOf" = "einer der Werte"
+"bnode.caption.unionOf" = "Vereinigung von"
+"bnode.caption.intersectionOf" = "Schnittmenge von"
+"bnode.undefined" = "undefiniert"
+"bnode.emptyList" = "leere Liste"
+"bnode.order" = "Reihenfolge"
+"bnode.malformedList" = "fehlerhafte Liste"
+"bnode.sameNodeAs" = "derselbe Knoten wie"
+"js.table.blankNode" = "leerer Knoten"
+"js.bnode.copied" = "Kopiert"
+"js.bnode.copyFailed" = "Kopieren fehlgeschlagen"
+
+# Plural forms (tn). TOML tables must follow every plain key, so they stay last.
+["bnode.count"]
+one = "{{.Count}} leerer Knoten"
+other = "{{.Count}} leere Knoten"
+["bnode.more"]
+one = "+ {{.Count}} weiterer"
+other = "+ {{.Count}} weitere"
+["bnode.properties"]
+one = "{{.Count}} Eigenschaft"
+other = "{{.Count}} Eigenschaften"
+["bnode.moreNodes"]
+one = "{{.Count}} verschachtelter leerer Knoten jenseits von Tiefe 5"
+other = "{{.Count}} verschachtelte leere Knoten jenseits von Tiefe 5"
+["bnode.moreTriples"]
+one = "{{.Count}} Tripel nicht angezeigt"
+other = "{{.Count}} Tripel nicht angezeigt"
+["bnode.truncated"]
+one = "Die Struktur umfasst mehr als {{.Count}} Tripel und wird unvollständig angezeigt."
+other = "Die Struktur umfasst mehr als {{.Count}} Tripel und wird unvollständig angezeigt."

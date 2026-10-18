@@ -31,11 +31,18 @@ const sparqlTablePartial = "templates/partials/sparql-table.html"
 // and "sparqlMetricValue" (the HTMX response body rendered here).
 const sparqlMetricPartial = "templates/partials/sparql-metric.html"
 
+// bnodeTreePartial holds the blank-node tree: "bnodeTree" (the placeholder,
+// rendered inline on pages) and "bnodeTreeCard" (the HTMX response body rendered
+// here) with its recursive "bnodeProps"/"bnodeValue". Like the others it stands
+// alone — only funcMap and i18n functions, no includes from other files.
+const bnodeTreePartial = "templates/partials/bnode-tree.html"
+
 // Per-language clones of each standalone partial, keyed by lang.Key(code).
 // Populated once by InitPartials.
 var (
 	sparqlTableSets  map[string]*template.Template
 	sparqlMetricSets map[string]*template.Template
+	bnodeTreeSets    map[string]*template.Template
 )
 
 // InitPartials parses the standalone partials and clones them per language.
@@ -51,6 +58,9 @@ func InitPartials(cats *i18n.Catalogs, langs *lang.Set) error {
 		return err
 	}
 	if sparqlMetricSets, err = parsePartialPerLang(sparqlMetricPartial, cats, langs, codes); err != nil {
+		return err
+	}
+	if bnodeTreeSets, err = parsePartialPerLang(bnodeTreePartial, cats, langs, codes); err != nil {
 		return err
 	}
 	return nil
@@ -121,6 +131,22 @@ func RenderSparqlMetricValue(code string, params map[string]any) (template.HTML,
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, "sparqlMetricValue", params); err != nil {
 		return "", fmt.Errorf("render sparqlMetricValue: %w", err)
+	}
+	return template.HTML(buf.String()), nil
+}
+
+// RenderBnodeTree renders the bnodeTreeCard partial in the given UI language: the
+// body of the /api/bnode-tree HTMX response. params carries "id", "title",
+// "icon", "anchor", "tree" (*bnodetree.Tree, nil on error), "error", "rowCap",
+// "downloads" (format → URL), and "query"/"endpoint" for "Execute on endpoint".
+func RenderBnodeTree(code string, params map[string]any) (template.HTML, error) {
+	tmpl, err := pick(bnodeTreeSets, code)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&buf, "bnodeTreeCard", params); err != nil {
+		return "", fmt.Errorf("render bnodeTreeCard: %w", err)
 	}
 	return template.HTML(buf.String()), nil
 }

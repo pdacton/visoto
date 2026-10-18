@@ -1,0 +1,240 @@
+<!--
+  Partial: blank-node tree ("Nested structure").
+
+  Shows the outgoing blank nodes of a resource as nested key/value blocks:
+  RDF lists as numbered lists, sh:in / owl:oneOf as chips, sh:or & co. with a
+  caption, shared nodes once with a numbered marker, and a dashed line where the
+  depth limit (5) cuts the tree off. The whole structure comes from one query in
+  internal/bnodetree, run by GET /api/bnode-tree when the placeholder triggers.
+
+  When the resource has no outgoing blank nodes the placeholder removes itself
+  and nothing is rendered.
+
+  Usage:
+    {{ template "bnodeTree" (dict "iri" .ResourceIRI) }}
+
+    {{ template "bnodeTree" (dict
+          "iri"       .ResourceIRI
+          "via"       "cube:observationConstraint"
+          "collapsed" true) }}
+
+  Parameters (via dict):
+    - iri:       (required) the root resource
+    - property:  (optional) only expand blank nodes under this predicate
+                 (CURIE or full IRI)
+    - via:       (optional) a single predicate (CURIE or full IRI, no property
+                 paths) followed to IRI roots first: on a cube page,
+                 "cube:observationConstraint" shows the shape's structure
+    - collapsed: (optional) start with every node closed; each header then shows
+                 a one-line summary
+    - trigger:   (optional) HTMX trigger, default "load". The Data view passes
+                 "showData" so the query runs only when the tab is opened.
+    - title:     (optional) card title, default "Nested structure"
+    - icon:      (optional) Lucide icon, default "brackets"
+    - anchor:    (optional) id for the card, the jump target of the "blank node"
+                 badges in the All Triples table (the Data view uses
+                 "blank-nodes"). Avoid ids ending in "-tree": a rule in
+                 wunderbaum_overrides.css caps those at 600px.
+
+  Defines:
+    bnodeTree      the placeholder (rendered on the page)
+    bnodeTreeCard  the card (the /api/bnode-tree response body)
+    bnodeProps / bnodeValue  the recursive parts of the card
+-->
+
+{{ define "bnodeTree" }}
+  {{ $title := or .title (t "card.nestedStructure" "Nested structure") }}
+  {{ $icon := or .icon "brackets" }}
+  {{/* Only parameters that are set go into the URL, so absent dict keys don't
+       emit Go's "<no value>" sentinel. Endpoint and language are added by the
+       htmx:configRequest hooks, as for every cacheable fragment. */}}
+  {{ $url := "/api/bnode-tree?_=1" }}
+  {{ with .iri }}{{ $url = printf "%s&iri=%s" $url (urlquery .) }}{{ end }}
+  {{ with .property }}{{ $url = printf "%s&property=%s" $url (urlquery .) }}{{ end }}
+  {{ with .via }}{{ $url = printf "%s&via=%s" $url (urlquery .) }}{{ end }}
+  {{ $url = printf "%s&title=%s&icon=%s" $url (urlquery $title) (urlquery $icon) }}
+  {{ with .anchor }}{{ $url = printf "%s&anchor=%s" $url (urlquery .) }}{{ end }}
+  {{ if .collapsed }}{{ $url = printf "%s&collapsed=1" $url }}{{ end }}
+
+  <div hx-get="{{ $url }}" hx-trigger="{{ or .trigger "load" }}" hx-swap="outerHTML">
+    <div class="card mb-3 placeholder-glow" aria-busy="true">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <h3 class="card-title mb-0">{{ $title }}</h3>
+      </div>
+      {{ if not .collapsed }}
+      <div class="card-body">
+        <div class="mb-2"><span class="placeholder col-2 me-3"></span><span class="placeholder col-5"></span></div>
+        <div class="mb-2"><span class="placeholder col-2 me-3"></span><span class="placeholder col-4"></span></div>
+        <div><span class="placeholder col-2 me-3"></span><span class="placeholder col-3"></span></div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+{{ end }}
+
+{{ define "bnodeTreeCard" }}
+  {{ $id := .id }}
+  <div class="card mb-3 vs-bn-card" {{ with .anchor }}id="{{ . }}"{{ end }}
+       data-bnode-tree data-bnode-tree-config="{{ $id }}-config">
+    <div class="card-header">
+      <h3 class="card-title d-flex align-items-center gap-2 mb-0">
+        <i data-lucide="{{ .icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        {{ .title }}
+        {{ with .tree }}<span class="badge bg-blue-lt">{{ tn "bnode.count" .BlankNodes "Blank nodes: {{.Count}}" }}</span>{{ end }}
+      </h3>
+      <div class="btn-actions ms-auto">
+        {{ if .tree }}
+        <a class="btn-action" href="#" data-bnode-toggle-all
+           title="{{ t "bnode.collapseAll" "Collapse all nodes" }}"
+           data-label-collapse="{{ t "bnode.collapseAll" "Collapse all nodes" }}"
+           data-label-expand="{{ t "bnode.expandAll" "Expand all nodes" }}">
+          <i data-lucide="chevrons-down-up"></i>
+        </a>
+        {{ end }}
+        <div class="dropdown" style="display: contents;">
+          <a class="btn-action" href="#" data-bs-toggle="dropdown" aria-expanded="false"><i data-lucide="ellipsis-vertical"></i></a>
+          <ul class="dropdown-menu dropdown-menu-end">
+            {{ if .tree }}
+            <li><h6 class="dropdown-header">{{ t "table.download" "Download" }}</h6></li>
+            <li><a class="dropdown-item" href="{{ .downloads.ttl }}" download><i data-lucide="file-code" style="width:1em;height:1em;"></i> {{ t "format.turtle" "Turtle" }}</a></li>
+            <li><a class="dropdown-item" href="{{ .downloads.jsonld }}" download><i data-lucide="braces" style="width:1em;height:1em;"></i> {{ t "format.jsonld" "JSON-LD" }}</a></li>
+            <li><a class="dropdown-item" href="{{ .downloads.nt }}" download><i data-lucide="file-text" style="width:1em;height:1em;"></i> {{ t "format.ntriples" "N-Triples" }}</a></li>
+            <li><a class="dropdown-item" href="#" data-bnode-copy><i data-lucide="copy" style="width:1em;height:1em;"></i> <span>{{ t "bnode.copyTurtle" "Copy as Turtle" }}</span></a></li>
+            <li><hr class="dropdown-divider"></li>
+            {{ end }}
+            <li><h6 class="dropdown-header">{{ t "query.sparqlQuery" "SPARQL query" }}</h6></li>
+            <li><a class="dropdown-item" href="#" data-bnode-endpoint><i data-lucide="play" style="width:1em;height:1em;"></i> {{ t "query.executeOnEndpoint" "Execute on endpoint" }}</a></li>
+          </ul>
+        </div>
+        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="true"><i data-lucide="chevron-up"></i></a>
+      </div>
+    </div>
+
+    <div class="collapse show" id="{{ $id }}-body">
+      {{ with .error }}
+        <div class="card-body"><div class="alert alert-danger mb-0">{{ . }}</div></div>
+      {{ end }}
+      {{ with .tree }}
+        {{ if .Truncated }}
+          <div class="alert alert-warning m-3 mb-0">
+            {{ tn "bnode.truncated" $.rowCap "The structure exceeds {{.Count}} triples and is shown incomplete." }}
+          </div>
+        {{ end }}
+        <div class="card-body vs-bn">
+          {{ $multi := gt (len .Roots) 1 }}
+          {{ range .Roots }}
+            {{ if $multi }}
+              <div class="vs-bn-root"><a href="{{ .Term.Href }}">{{ .Term.Label }}</a> <span class="vs-bn-curie">{{ .Term.IRI }}</span></div>
+            {{ end }}
+            {{ template "bnodeProps" .Props }}
+          {{ end }}
+        </div>
+      {{ end }}
+    </div>
+
+    <template id="{{ $id }}-config">{{ toJSON (dict "query" .query "endpoint" .endpoint "turtle" .downloads.ttl) }}</template>
+    <script src="/static/js/bnode-tree.js"></script>
+  </div>
+{{ end }}
+
+{{ define "bnodeProps" }}
+  {{ range . }}
+    <div class="vs-bn-row">
+      <div class="vs-bn-key" title="{{ .Pred.IRI }}">{{ if .Pred.Prefix }}<span class="vs-bn-prefix">{{ .Pred.Prefix }}:</span>{{ end }}{{ .Pred.Local }}</div>
+      <div class="vs-bn-vals">
+        {{ if .Caption }}
+          <div class="vs-bn-caption">{{ template "bnodeCaption" .Caption }}
+            {{- with index .Values 0 }}{{ if eq .Kind "enum" }} · {{ .Count }}{{ end }}{{ end -}}
+          </div>
+        {{ end }}
+        {{ range .Values }}{{ template "bnodeValue" . }}{{ end }}
+      </div>
+    </div>
+  {{ end }}
+{{ end }}
+
+{{ define "bnodeValue" }}
+  {{ if eq .Kind "iri" }}
+    {{/* The CURIE only when there is one and it says more than the label; the full
+         IRI is always in the tooltip. */}}
+    <div class="vs-bn-val"><a class="vs-bn-iri" href="{{ .Term.Href }}" title="{{ .Term.IRI }}">{{ .Term.Label }}</a>{{ if and .Term.Prefix (ne .Term.Label .Term.Local) }}<span class="vs-bn-curie">{{ .Term.CURIE }}</span>{{ end }}</div>
+
+  {{ else if eq .Kind "literal" }}
+    <div class="vs-bn-val">
+      {{- if .Undefined }}<span class="badge bg-yellow-lt" title="cube:Undefined">{{ t "bnode.undefined" "undefined" }}</span>
+      {{- else if .External }}<a href="{{ .Text }}" target="_blank" rel="noopener">{{ .Text }}</a> <i data-lucide="external-link" class="vs-bn-ext"></i>
+      {{- else }}{{ .Text }}{{ end -}}
+      {{ with .Lang }}<span class="vs-bn-meta">@{{ . }}</span>{{ end }}
+      {{- with .Datatype }}<span class="vs-bn-meta">{{ . }}</span>{{ end -}}
+    </div>
+
+  {{ else if eq .Kind "nil" }}
+    <div class="vs-bn-val text-secondary">( ) <span class="small">{{ t "bnode.emptyList" "empty list" }}</span></div>
+
+  {{ else if eq .Kind "list" }}
+    <ol class="vs-bn-list">
+      {{ range .Items }}<li>{{ template "bnodeValue" . }}</li>{{ end }}
+    </ol>
+
+  {{ else if eq .Kind "enum" }}
+    <div class="vs-bn-chips">
+      {{ range .Items }}{{ template "bnodeChip" . }}{{ end }}
+    </div>
+    {{ if .Rest }}
+      <details class="vs-bn-enum">
+        <summary><span class="badge bg-secondary text-white">{{ tn "bnode.more" (len .Rest) "+ {{.Count}} more" }}</span></summary>
+        <div class="vs-bn-chips mt-1">{{ range .Rest }}{{ template "bnodeChip" . }}{{ end }}</div>
+      </details>
+    {{ end }}
+
+  {{ else if eq .Kind "node" }}
+    {{ with .Node }}
+    {{ if .Flat }}
+    <div class="vs-bn-node vs-bn-flat vs-bn-depth-{{ .Level }}">{{ template "bnodeProps" .Props }}</div>
+    {{ else }}
+    <details class="vs-bn-node vs-bn-depth-{{ .Level }}"{{ if .Open }} open{{ end }}>
+      <summary>
+        <i data-lucide="chevron-right" class="vs-bn-chev"></i>
+        {{ with .Anchor }}<span class="vs-bn-anchor">{{ . }}</span>{{ end }}
+        {{ with .Title }}<span class="vs-bn-title">{{ . }}</span>{{ end }}
+        {{ range .Types }}<a class="badge bg-azure-lt" href="{{ .Href }}" title="{{ .CURIE }}">{{ .Label }}</a>{{ end }}
+        {{ with .Order }}<span class="badge bg-secondary-lt">{{ t "bnode.order" "order" }} {{ . }}</span>{{ end }}
+        {{ if .Malformed }}<span class="badge bg-warning-lt">{{ t "bnode.malformedList" "malformed list" }}</span>{{ end }}
+        <span class="vs-bn-summary">
+          {{- with .Summary }}{{ .Pred.Local }} {{ with index .Values 0 }}{{ if eq .Kind "iri" }}{{ .Term.Label }}{{ else }}{{ .Text }}{{ end }}{{ end }}
+          {{- else }}{{ tn "bnode.properties" (len .Props) "Properties: {{.Count}}" }}{{ end -}}
+        </span>
+      </summary>
+      {{ template "bnodeProps" .Props }}
+    </details>
+    {{ end }}
+    {{ end }}
+
+  {{ else if eq .Kind "ref" }}
+    <div class="vs-bn-ref"><i data-lucide="corner-left-up"></i> {{ t "bnode.sameNodeAs" "same node as" }} <span class="vs-bn-anchor">{{ .Ref }}</span> {{ .RefTitle }}</div>
+
+  {{ else if eq .Kind "more" }}
+    <div class="vs-bn-more"><i data-lucide="ellipsis"></i>
+      {{ tn "bnode.moreNodes" .MoreNodes "Not shown, deeper than level 5 — blank nodes: {{.Count}}" }} ·
+      {{ tn "bnode.moreTriples" .MoreTriples "triples: {{.Count}}" }}
+    </div>
+  {{ end }}
+{{ end }}
+
+{{/* Literal keys, one per caption, so the catalog check can see them. */}}
+{{ define "bnodeCaption" }}
+  {{- if eq . "anyOf" }}{{ t "bnode.caption.anyOf" "any of" }}
+  {{- else if eq . "allOf" }}{{ t "bnode.caption.allOf" "all of" }}
+  {{- else if eq . "exactlyOneOf" }}{{ t "bnode.caption.exactlyOneOf" "exactly one of" }}
+  {{- else if eq . "not" }}{{ t "bnode.caption.not" "not" }}
+  {{- else if eq . "oneOf" }}{{ t "bnode.caption.oneOf" "one of" }}
+  {{- else if eq . "unionOf" }}{{ t "bnode.caption.unionOf" "union of" }}
+  {{- else if eq . "intersectionOf" }}{{ t "bnode.caption.intersectionOf" "intersection of" }}
+  {{- end -}}
+{{ end }}
+
+{{ define "bnodeChip" }}
+  {{ if eq .Kind "iri" }}<a class="badge bg-blue-lt" href="{{ .Term.Href }}" title="{{ .Term.CURIE }}">{{ .Term.Label }}</a>
+  {{ else }}<span class="badge bg-secondary-lt">{{ .Text }}{{ with .Lang }} @{{ . }}{{ end }}</span>{{ end }}
+{{ end }}
