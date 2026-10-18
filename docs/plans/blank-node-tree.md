@@ -31,7 +31,7 @@ integration, a warning badge for U+FFFD encoding damage (possible follow-up).
 |---|---|---|
 | `iri` | required | Root resource |
 | `property` | all | Only expand blank nodes under this predicate (CURIE or IRI) |
-| `via` | none | IRI property path to follow before expanding, e.g. `cube:observationConstraint` on a cube page |
+| `via` | none | Single IRI predicate (CURIE or IRI, no property paths) to follow before expanding, e.g. `cube:observationConstraint` on a cube page |
 | `collapsed` | false | Start with every node closed, each showing a one-line summary |
 | `trigger` | `load` | HTMX trigger; the Data view passes `showData` |
 | `title` / `icon` | "Nested structure" / `brackets` | Card header |
@@ -81,7 +81,7 @@ Card header like `sparqlTable`: collapse-all-nodes toggle; ⋮ menu with
   default-graph form with `MINUS`, so blank nodes from different graphs don't
   merge and default-graph stores (Stadt Zürich, RINF) still work.
 - `property` and `via` restrict the first hop.
-- Row cap (e.g. 5000); when hit, the card shows a "truncated" note.
+- Row cap 5000; when hit, the card shows a "truncated" note.
 - The term type (iri / bnode / literal + datatype + lang) must survive from the
   SPARQL JSON binding; check that the `internal/sparql` client keeps it (unlike
   `QueryTypes`, which drops it).
@@ -118,6 +118,22 @@ Card header like `sparqlTable`: collapse-all-nodes toggle; ⋮ menu with
   `{{ template "bnodeTree" (dict "iri" .ResourceIRI "trigger" "showData") }}`
   after the "All Triples" card in `#resource-data-view`.
 - Collapsing uses native `<details>`; markup only, no inline JS.
+
+### 4b. "All Triples" table: blank-node rows
+
+- Extend `resourceTriples` with outgoing blank-node branches (`FILTER(isBlank(?value))`,
+  `BIND("blank node" AS ?kind)`, `OPTIONAL { ?value a ?type }`), in both the
+  named-graph and default-graph forms like the existing branches.
+- The value cell shows a "blank node" badge and its type instead of a
+  `genid-…` link. It links to the tree card further down, to the block for the
+  same predicate (`#bnode-<predicate>`). A link to the exact node is not
+  possible: the table and the tree come from two queries, and blank-node labels
+  don't carry over between result sets.
+- Incoming rows whose subject is a blank node get the same badge (no dead link),
+  but no jump target, since the tree only shows outgoing structure.
+- Check how `sparqlTable` renders cell values: the badge probably needs a
+  small change in the value formatter in `static/js/sparql-table.js`, keyed off
+  the term type rather than the `genid-` prefix.
 
 ### 5. Frontend
 
@@ -160,13 +176,13 @@ catalogs (de, en, fr, it, rm).
 2. Serializers + tests
 3. Route
 4. Partials + Data view integration
-5. JS + CSS
-6. i18n
-7. Docs, `graphify update .`
+5. "All Triples" blank-node rows
+6. JS + CSS
+7. i18n
+8. Docs, `graphify update .`
 
-## Open questions
+## Decisions
 
-1. Should `via` accept a full property path or only a single predicate?
-2. Should the Data view's "All Triples" table also get a row per outgoing blank
-   node pointing down to the tree, or is the card below enough?
-3. Row cap and enumeration threshold (5000 / 8): OK as fixed values?
+- `via` takes a single predicate only.
+- The "All Triples" table shows outgoing blank nodes as rows, linking to the tree.
+- Row cap 5000 and 8 enumeration chips before "+ n more" are fixed values.
