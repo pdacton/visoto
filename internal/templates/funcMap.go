@@ -22,6 +22,7 @@ var funcMap = template.FuncMap{
 	"list":            makeList,
 	"resourceIcon":    resource.GetIconForResource,
 	"iconNames":       icon.Names,
+	"classIcon":       classIcon, // {{ classIcon "schema:Person" }} — sidebar submenu icons
 	"toJSON":          toJSON,
 	"toJSONRaw":       toJSONRaw,
 	"toJSONPretty":    toJSONPretty,
@@ -121,6 +122,15 @@ func toJSONPretty(v interface{}) (template.HTML, error) {
 		return "", err
 	}
 	return template.HTML(jsonBytes), nil
+}
+
+// classIcon returns the icon path for a class IRI or CURIE, falling back to
+// defaultClass.svg so a menu row never renders a broken <img>.
+func classIcon(iri string) string {
+	if path := icon.Resolve(iri, nil); path != "" {
+		return path
+	}
+	return icon.BasePath + "defaultClass.svg"
 }
 
 // lastPathSegment returns the last path segment of an IRI:

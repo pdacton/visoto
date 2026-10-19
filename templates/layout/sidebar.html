@@ -21,6 +21,8 @@
 
             {{ if eq .EndpointTag "lindas" }}
 
+            <li class="nav-item nav-section-title" role="presentation">{{ t "nav.sectionContent" "Content" }}</li>
+
             <!-- Organisation -->
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
@@ -30,49 +32,30 @@
                 <span class="nav-link-title">{{ t "nav.organisation" "Organisation" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=schch:ZefixOrganisation">{{ t "nav.zefixOrganisation" "Zefix Organisation" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:Organization">{{ t "nav.organizationSchemaOrg" "Organization (schema.org)" }}</a>
-                <a class="dropdown-item" href="/resource?iri=vcard:Organization">{{ t "nav.organizationVCard" "Organization (vCard)" }}</a>
-                <a class="dropdown-item" href="/resource?iri=foaf:Organization">{{ t "nav.organizationFoaf" "Organization (foaf)" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:GovernmentOrganization">{{ t "nav.governmentOrganization" "Government Organization" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:LobbyOrganization">{{ t "nav.lobbyOrganization" "Lobby Organization" }}</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="/resource?iri=foaf:Agent">{{ t "nav.agentFoaf" "Agent (foaf)" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:Person">{{ t "nav.personSchemaOrg" "Person (schema.org)" }}</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="/resource?iri=schema:Role">{{ t "nav.role" "Role" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:OrganizationRole">{{ t "nav.organizationRole" "Organization Role" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schch:ZefixOrganisation"><img class="nav-sub-icon" src="{{ classIcon "schch:ZefixOrganisation" }}" alt="">{{ t "nav.zefixOrganisation" "Zefix Organisation" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:Organization"><img class="nav-sub-icon" src="{{ classIcon "schema:Organization" }}" alt="">{{ t "nav.organizationSchemaOrg" "Organization (schema.org)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=vcard:Organization"><img class="nav-sub-icon" src="{{ classIcon "vcard:Organization" }}" alt="">{{ t "nav.organizationVCard" "Organization (vCard)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=foaf:Organization"><img class="nav-sub-icon" src="{{ classIcon "foaf:Organization" }}" alt="">{{ t "nav.organizationFoaf" "Organization (foaf)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:GovernmentOrganization"><img class="nav-sub-icon" src="{{ classIcon "schema:GovernmentOrganization" }}" alt="">{{ t "nav.governmentOrganization" "Government Organization" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:LobbyOrganization"><img class="nav-sub-icon" src="{{ classIcon "schema:LobbyOrganization" }}" alt="">{{ t "nav.lobbyOrganization" "Lobby Organization" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https://schema.ld.admin.ch/Isil"><img class="nav-sub-icon" src="{{ classIcon "https://schema.ld.admin.ch/Isil" }}" alt="">{{ t "nav.libraries" "Libraries" }}</a>
               </div>
             </li>
 
-            <!-- Municipalities -->
-            <li class="nav-item">
-              <a class="nav-link" href="/resource?iri=https://schema.ld.admin.ch/Municipality">
+            <!-- People & Roles -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Municipality.svg" alt="{{ t "nav.municipality" "Municipality" }}">
+                  <img src="/static/img/resource/Person.svg" alt="{{ t "nav.peopleRoles" "People & Roles" }}">
                 </span>
-                <span class="nav-link-title">{{ t "nav.municipalities" "Municipalities" }}</span>
+                <span class="nav-link-title">{{ t "nav.peopleRoles" "People & Roles" }}</span>
               </a>
-            </li>
-
-            <!-- Cantons -->
-            <li class="nav-item">
-              <a class="nav-link" href="/resource?iri=https://schema.ld.admin.ch/Canton">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Canton.svg" alt="{{ t "nav.canton" "Canton" }}">
-                </span>
-                <span class="nav-link-title">{{ t "nav.cantons" "Cantons" }}</span>
-              </a>
-            </li>
-
-            <!-- Countries -->
-            <li class="nav-item">
-              <a class="nav-link" href="/resource?iri=http://schema.org/Country">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Country.svg" alt="{{ t "nav.country" "Country" }}">
-                </span>
-                <span class="nav-link-title">{{ t "nav.countries" "Countries" }}</span>
-              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=schema:Person"><img class="nav-sub-icon" src="{{ classIcon "schema:Person" }}" alt="">{{ t "nav.personSchemaOrg" "Person (schema.org)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=foaf:Agent"><img class="nav-sub-icon" src="{{ classIcon "foaf:Agent" }}" alt="">{{ t "nav.agentFoaf" "Agent (foaf)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:Role"><img class="nav-sub-icon" src="{{ classIcon "schema:Role" }}" alt="">{{ t "nav.role" "Role" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:OrganizationRole"><img class="nav-sub-icon" src="{{ classIcon "schema:OrganizationRole" }}" alt="">{{ t "nav.organizationRole" "Organization Role" }}</a>
+              </div>
             </li>
 
             <!-- Government -->
@@ -84,14 +67,13 @@
                 <span class="nav-link-title">{{ t "nav.government" "Government" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FPoliticalParty">{{ t "nav.politicalParties" "Political Parties" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FGovernmentOrganization">{{ t "nav.governmentOrganizations" "Government Organizations" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FParliamentaryCommittee">{{ t "nav.parliamentaryCommittee" "Parliamentary Committee" }}</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestEntity">{{ t "nav.proceduralRequest" "Procedural Request" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationEntity">{{ t "nav.requestInformation" "Request Information" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationActivity">{{ t "nav.requestActivity" "Request Activity" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FParliamentaryAffairIdentifierEntity">{{ t "nav.affairIdentifier" "Affair Identifier" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FPoliticalParty"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fschema.org%2FPoliticalParty" }}" alt="">{{ t "nav.politicalParties" "Political Parties" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FGovernmentOrganization"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fschema.org%2FGovernmentOrganization" }}" alt="">{{ t "nav.governmentOrganizations" "Government Organizations" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FParliamentaryCommittee"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fschema.org%2FParliamentaryCommittee" }}" alt="">{{ t "nav.parliamentaryCommittee" "Parliamentary Committee" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestEntity"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fch.paf.link%2FProceduralRequestEntity" }}" alt="">{{ t "nav.proceduralRequest" "Procedural Request" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationEntity"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationEntity" }}" alt="">{{ t "nav.requestInformation" "Request Information" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationActivity"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fch.paf.link%2FProceduralRequestInformationActivity" }}" alt="">{{ t "nav.requestActivity" "Request Activity" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fch.paf.link%2FParliamentaryAffairIdentifierEntity"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fch.paf.link%2FParliamentaryAffairIdentifierEntity" }}" alt="">{{ t "nav.affairIdentifier" "Affair Identifier" }}</a>
               </div>
             </li>
 
@@ -104,13 +86,18 @@
                 <span class="nav-link-title">{{ t "nav.geoData" "Geo Data" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FPostalAddress">{{ t "nav.postalAddresses" "Postal Addresses" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FAdministrativeArea">{{ t "nav.administrativeAreas" "Administrative Areas" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FDistrict">{{ t "nav.districts" "Districts" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fld.admin.ch%2Fech%2F71%2FMunicipalityVersion">{{ t "nav.municipalityVersions" "Municipality Versions" }}</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.opengis.net%2Font%2Fgeosparql%23Geometry">{{ t "nav.geometries" "Geometries" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FGeoShape">{{ t "nav.geoShapes" "Geo Shapes" }}</a>
+                <span class="dropdown-header">{{ t "nav.administrativeUnits" "Administrative Units" }}</span>
+                <a class="dropdown-item" href="/resource?iri=https://schema.ld.admin.ch/Municipality"><img class="nav-sub-icon" src="{{ classIcon "https://schema.ld.admin.ch/Municipality" }}" alt="">{{ t "nav.municipalities" "Municipalities" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fschema.ld.admin.ch%2FDistrict"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fschema.ld.admin.ch%2FDistrict" }}" alt="">{{ t "nav.districts" "Districts" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https://schema.ld.admin.ch/Canton"><img class="nav-sub-icon" src="{{ classIcon "https://schema.ld.admin.ch/Canton" }}" alt="">{{ t "nav.cantons" "Cantons" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http://schema.org/Country"><img class="nav-sub-icon" src="{{ classIcon "http://schema.org/Country" }}" alt="">{{ t "nav.countries" "Countries" }}</a>
+                <span class="dropdown-header">{{ t "nav.addressesAreas" "Addresses & Areas" }}</span>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FPostalAddress"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fschema.org%2FPostalAddress" }}" alt="">{{ t "nav.postalAddresses" "Postal Addresses" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FAdministrativeArea"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fschema.org%2FAdministrativeArea" }}" alt="">{{ t "nav.administrativeAreas" "Administrative Areas" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fld.admin.ch%2Fech%2F71%2FMunicipalityVersion"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fld.admin.ch%2Fech%2F71%2FMunicipalityVersion" }}" alt="">{{ t "nav.municipalityVersions" "Municipality Versions" }}</a>
+                <span class="dropdown-header">{{ t "nav.geometry" "Geometry" }}</span>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.opengis.net%2Font%2Fgeosparql%23Geometry"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fwww.opengis.net%2Font%2Fgeosparql%23Geometry" }}" alt="">{{ t "nav.geometries" "Geometries" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fschema.org%2FGeoShape"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fschema.org%2FGeoShape" }}" alt="">{{ t "nav.geoShapes" "Geo Shapes" }}</a>
               </div>
             </li>
 
@@ -123,25 +110,9 @@
                 <span class="nav-link-title">{{ t "nav.publicTransport" "Public Transport" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Station">{{ t "nav.stations" "Stations" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FZone">{{ t "nav.zones" "Zones" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FTarif">{{ t "nav.tariffs" "Tariffs" }}</a>
-              </div>
-            </li>
-
-            <!-- Civic Structures -->
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/CivicStructure.fallback.svg" alt="{{ t "nav.civicStructure" "Civic Structure" }}">
-                </span>
-                <span class="nav-link-title">{{ t "nav.civicStructures" "Civic Structures" }}</span>
-              </a>
-              <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=schema:CivicStructure">{{ t "nav.all" "All" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:TrainStation">{{ t "nav.trainStation" "Train Station" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:BusStop">{{ t "nav.busStop" "Bus Stop" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:Airport">{{ t "nav.airport" "Airport" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Station"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Station" }}" alt="">{{ t "nav.stations" "Stations" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FZone"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FZone" }}" alt="">{{ t "nav.zones" "Zones" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FTarif"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Flod.opentransportdata.swiss%2Fvocab%2FTarif" }}" alt="">{{ t "nav.tariffs" "Tariffs" }}</a>
               </div>
             </li>
 
@@ -155,18 +126,16 @@
               </a>
               <div class="dropdown-menu">
                 <span class="dropdown-header">{{ t "nav.plantProtection" "Plant Protection" }}</span>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FProduct">{{ t "nav.product" "Product" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FRegularProduct">{{ t "nav.regularProduct" "Regular Product" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FIngredient">{{ t "nav.ingredient" "Ingredient" }}</a>
-                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FProduct"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FProduct" }}" alt="">{{ t "nav.product" "Product" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FRegularProduct"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FRegularProduct" }}" alt="">{{ t "nav.regularProduct" "Regular Product" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FIngredient"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Fplant-protection%2FIngredient" }}" alt="">{{ t "nav.ingredient" "Ingredient" }}</a>
                 <span class="dropdown-header">{{ t "nav.inspection" "Inspection" }}</span>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FInspectionPoint">{{ t "nav.inspectionPoint" "Inspection Point" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FDefect">{{ t "nav.defect" "Defect" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FPossibleOutcome">{{ t "nav.possibleOutcome" "Possible Outcome" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FSanction">{{ t "nav.sanction" "Sanction" }}</a>
-                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FInspectionPoint"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FInspectionPoint" }}" alt="">{{ t "nav.inspectionPoint" "Inspection Point" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FDefect"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FDefect" }}" alt="">{{ t "nav.defect" "Defect" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FPossibleOutcome"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FPossibleOutcome" }}" alt="">{{ t "nav.possibleOutcome" "Possible Outcome" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FSanction"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Finspection%2FSanction" }}" alt="">{{ t "nav.sanction" "Sanction" }}</a>
                 <span class="dropdown-header">{{ t "nav.foag" "FOAG" }}</span>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Ffoag%2FProduct">{{ t "nav.productFoag" "Product (FOAG)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Ffoag%2FProduct"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Ffoag%2FProduct" }}" alt="">{{ t "nav.productFoag" "Product (FOAG)" }}</a>
               </div>
             </li>
 
@@ -179,20 +148,22 @@
                 <span class="nav-link-title">{{ t "nav.archivesRiC" "Archives (RiC)" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23RecordSet">{{ t "nav.recordset" "RecordSet" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Record">{{ t "nav.record" "Record" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Instantiation">{{ t "nav.instantiation" "Instantiation" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Activity">{{ t "nav.activity" "Activity" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23RecordSet"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23RecordSet" }}" alt="">{{ t "nav.recordset" "RecordSet" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Record"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Record" }}" alt="">{{ t "nav.record" "Record" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Instantiation"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Instantiation" }}" alt="">{{ t "nav.instantiation" "Instantiation" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Activity"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fwww.ica.org%2Fstandards%2FRiC%2Fontology%23Activity" }}" alt="">{{ t "nav.activity" "Activity" }}</a>
               </div>
             </li>
 
-            <!-- Libraries -->
+            <li class="nav-item nav-section-title" role="presentation">{{ t "nav.sectionData" "Data" }}</li>
+
+            <!-- Defined Term Sets -->
             <li class="nav-item">
-              <a class="nav-link" href="/resource?iri=https://schema.ld.admin.ch/Isil">
+              <a class="nav-link" href="/resource?iri=schema:DefinedTermSet">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/Isil.svg" alt="{{ t "nav.library" "Library" }}">
+                  <img src="/static/img/resource/DefinedTermSet.fallback.svg" alt="{{ t "nav.definedTermSet" "Defined Term Set" }}">
                 </span>
-                <span class="nav-link-title">{{ t "nav.libraries" "Libraries" }}</span>
+                <span class="nav-link-title">{{ t "nav.definedTermSets" "Defined Term Sets" }}</span>
               </a>
             </li>
 
@@ -215,11 +186,11 @@
                 <span class="nav-link-title">{{ t "nav.dataCatalog" "Data Catalog" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=dcat:Catalog">{{ t "nav.catalog" "Catalog" }}</a>
-                <a class="dropdown-item" href="/resource?iri=dcat:Dataset">{{ t "nav.dataset" "Dataset" }}</a>
-                <a class="dropdown-item" href="/resource?iri=dcat:Distribution">{{ t "nav.distribution" "Distribution" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:Dataset">{{ t "nav.datasetSchemaOrg" "Dataset (schema.org)" }}</a>
-                <a class="dropdown-item" href="/resource?iri=void:Dataset">{{ t "nav.datasetVoID" "Dataset (VoID)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Catalog"><img class="nav-sub-icon" src="{{ classIcon "dcat:Catalog" }}" alt="">{{ t "nav.catalog" "Catalog" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Dataset"><img class="nav-sub-icon" src="{{ classIcon "dcat:Dataset" }}" alt="">{{ t "nav.dataset" "Dataset" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Distribution"><img class="nav-sub-icon" src="{{ classIcon "dcat:Distribution" }}" alt="">{{ t "nav.distribution" "Distribution" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:Dataset"><img class="nav-sub-icon" src="{{ classIcon "schema:Dataset" }}" alt="">{{ t "nav.datasetSchemaOrg" "Dataset (schema.org)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=void:Dataset"><img class="nav-sub-icon" src="{{ classIcon "void:Dataset" }}" alt="">{{ t "nav.datasetVoID" "Dataset (VoID)" }}</a>
               </div>
             </li>
 
@@ -232,23 +203,13 @@
                 <span class="nav-link-title">{{ t "nav.cubes" "Cubes" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=cube:Cube">{{ t "nav.cubeCube" "cube:Cube" }}</a>
-                <a class="dropdown-item" href="/resource?iri=cube:ObservationSet">{{ t "nav.cubeObservationSet" "cube:ObservationSet" }}</a>
-                <a class="dropdown-item" href="/resource?iri=cube:Observation">{{ t "nav.cubeObservation" "cube:Observation" }}</a>
-                <a class="dropdown-item" href="/resource?iri=meta:SharedDimension">{{ t "nav.cubeSharedDimension" "cube:meta/SharedDimension" }}</a>
-                <a class="dropdown-item" href="/resource?iri=cube:KeyDimension">{{ t "nav.cubeKeyDimension" "cube:KeyDimension" }}</a>
-                <a class="dropdown-item" href="/resource?iri=cube:MeasureDimension">{{ t "nav.cubeMeasureDimension" "cube:MeasureDimension" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:Cube"><img class="nav-sub-icon" src="{{ classIcon "cube:Cube" }}" alt="">{{ t "nav.cubeCube" "cube:Cube" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:ObservationSet"><img class="nav-sub-icon" src="{{ classIcon "cube:ObservationSet" }}" alt="">{{ t "nav.cubeObservationSet" "cube:ObservationSet" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:Observation"><img class="nav-sub-icon" src="{{ classIcon "cube:Observation" }}" alt="">{{ t "nav.cubeObservation" "cube:Observation" }}</a>
+                <a class="dropdown-item" href="/resource?iri=meta:SharedDimension"><img class="nav-sub-icon" src="{{ classIcon "meta:SharedDimension" }}" alt="">{{ t "nav.cubeSharedDimension" "cube:meta/SharedDimension" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:KeyDimension"><img class="nav-sub-icon" src="{{ classIcon "cube:KeyDimension" }}" alt="">{{ t "nav.cubeKeyDimension" "cube:KeyDimension" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:MeasureDimension"><img class="nav-sub-icon" src="{{ classIcon "cube:MeasureDimension" }}" alt="">{{ t "nav.cubeMeasureDimension" "cube:MeasureDimension" }}</a>
               </div>
-            </li>
-
-            <!-- Defined Term Sets -->
-            <li class="nav-item">
-              <a class="nav-link" href="/resource?iri=schema:DefinedTermSet">
-                <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/DefinedTermSet.fallback.svg" alt="{{ t "nav.definedTermSet" "Defined Term Set" }}">
-                </span>
-                <span class="nav-link-title">{{ t "nav.definedTermSets" "Defined Term Sets" }}</span>
-              </a>
             </li>
 
             <!-- Information Systems -->
@@ -260,10 +221,10 @@
                 <span class="nav-link-title">{{ t "nav.informationSystems" "Information Systems" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=schema:SoftwareApplication">{{ t "nav.softwareApplications" "Software Applications" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FFMIS">{{ t "nav.fmis" "Farm Management (FMIS)" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fpurl.org%2Fontology%2Fservice%23Service">{{ t "nav.itService" "Services" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FMasterData">{{ t "nav.masterData" "Master Data" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:SoftwareApplication"><img class="nav-sub-icon" src="{{ classIcon "schema:SoftwareApplication" }}" alt="">{{ t "nav.softwareApplications" "Software Applications" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FFMIS"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FFMIS" }}" alt="">{{ t "nav.fmis" "Farm Management (FMIS)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fpurl.org%2Fontology%2Fservice%23Service"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fpurl.org%2Fontology%2Fservice%23Service" }}" alt="">{{ t "nav.itService" "Services" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FMasterData"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fagriculture.ld.admin.ch%2Fsystem-map%2FMasterData" }}" alt="">{{ t "nav.masterData" "Master Data" }}</a>
               </div>
             </li>
 
@@ -289,12 +250,12 @@
                 <span class="nav-link-title">{{ t "nav.cubes" "Cubes" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=cube:Cube">{{ t "nav.cubeCube" "cube:Cube" }}</a>
-                <a class="dropdown-item" href="/resource?iri=cube:ObservationSet">{{ t "nav.cubeObservationSet" "cube:ObservationSet" }}</a>
-                <a class="dropdown-item" href="/resource?iri=cube:Observation">{{ t "nav.cubeObservation" "cube:Observation" }}</a>
-                <a class="dropdown-item" href="/resource?iri=meta:SharedDimension">{{ t "nav.cubeSharedDimension" "cube:meta/SharedDimension" }}</a>
-                <a class="dropdown-item" href="/resource?iri=cube:KeyDimension">{{ t "nav.cubeKeyDimension" "cube:KeyDimension" }}</a>
-                <a class="dropdown-item" href="/resource?iri=cube:MeasureDimension">{{ t "nav.cubeMeasureDimension" "cube:MeasureDimension" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:Cube"><img class="nav-sub-icon" src="{{ classIcon "cube:Cube" }}" alt="">{{ t "nav.cubeCube" "cube:Cube" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:ObservationSet"><img class="nav-sub-icon" src="{{ classIcon "cube:ObservationSet" }}" alt="">{{ t "nav.cubeObservationSet" "cube:ObservationSet" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:Observation"><img class="nav-sub-icon" src="{{ classIcon "cube:Observation" }}" alt="">{{ t "nav.cubeObservation" "cube:Observation" }}</a>
+                <a class="dropdown-item" href="/resource?iri=meta:SharedDimension"><img class="nav-sub-icon" src="{{ classIcon "meta:SharedDimension" }}" alt="">{{ t "nav.cubeSharedDimension" "cube:meta/SharedDimension" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:KeyDimension"><img class="nav-sub-icon" src="{{ classIcon "cube:KeyDimension" }}" alt="">{{ t "nav.cubeKeyDimension" "cube:KeyDimension" }}</a>
+                <a class="dropdown-item" href="/resource?iri=cube:MeasureDimension"><img class="nav-sub-icon" src="{{ classIcon "cube:MeasureDimension" }}" alt="">{{ t "nav.cubeMeasureDimension" "cube:MeasureDimension" }}</a>
               </div>
             </li>
 
@@ -307,9 +268,9 @@
                 <span class="nav-link-title">{{ t "nav.dataCatalog" "Data Catalog" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=dcat:Catalog">{{ t "nav.catalog" "Catalog" }}</a>
-                <a class="dropdown-item" href="/resource?iri=dcat:Dataset">{{ t "nav.dataset" "Dataset" }}</a>
-                <a class="dropdown-item" href="/resource?iri=dcat:Distribution">{{ t "nav.distribution" "Distribution" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Catalog"><img class="nav-sub-icon" src="{{ classIcon "dcat:Catalog" }}" alt="">{{ t "nav.catalog" "Catalog" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Dataset"><img class="nav-sub-icon" src="{{ classIcon "dcat:Dataset" }}" alt="">{{ t "nav.dataset" "Dataset" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Distribution"><img class="nav-sub-icon" src="{{ classIcon "dcat:Distribution" }}" alt="">{{ t "nav.distribution" "Distribution" }}</a>
               </div>
             </li>
 
@@ -354,14 +315,13 @@
                 <span class="nav-link-title">{{ t "nav.transportation" "Transportation" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FTransportLink">{{ t "nav.transportLinks" "Transport Links" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FTransportNode">{{ t "nav.transportNodes" "Transport Nodes" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FOperatingPoint">{{ t "nav.operatingPoints" "Operating Points" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Stop">{{ t "nav.transportStops" "Transport Stops" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ62447">{{ t "nav.aerodromes" "Aerodromes" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1497053">{{ t "nav.mountainLandingSites" "Mountain Landing Sites" }}</a>
-                <div class="dropdown-divider"></div>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ9687">{{ t "nav.roadTrafficAccidents" "Road Traffic Accidents" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FTransportLink"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FTransportLink" }}" alt="">{{ t "nav.transportLinks" "Transport Links" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FTransportNode"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FTransportNode" }}" alt="">{{ t "nav.transportNodes" "Transport Nodes" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FOperatingPoint"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2Ftransportation%2FOperatingPoint" }}" alt="">{{ t "nav.operatingPoints" "Operating Points" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Stop"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Stop" }}" alt="">{{ t "nav.transportStops" "Transport Stops" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ62447"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ62447" }}" alt="">{{ t "nav.aerodromes" "Aerodromes" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1497053"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1497053" }}" alt="">{{ t "nav.mountainLandingSites" "Mountain Landing Sites" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ9687"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ9687" }}" alt="">{{ t "nav.roadTrafficAccidents" "Road Traffic Accidents" }}</a>
               </div>
             </li>
 
@@ -374,11 +334,11 @@
                 <span class="nav-link-title">{{ t "nav.administrativeUnits" "Administrative Units" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fld.admin.ch%2Fech%2F71%2FMunicipalityVersion">{{ t "nav.municipalityVersions" "Municipality Versions" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ14872996">{{ t "nav.municipalBoundaries" "Municipal Boundaries" }}</a>
-                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2FCantonalTerritory">{{ t "nav.cantonalTerritories" "Cantonal Territories" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:AdministrativeArea">{{ t "nav.administrativeAreas" "Administrative Areas" }}</a>
-                <a class="dropdown-item" href="/resource?iri=schema:Place">{{ t "nav.places" "Places" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fld.admin.ch%2Fech%2F71%2FMunicipalityVersion"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fld.admin.ch%2Fech%2F71%2FMunicipalityVersion" }}" alt="">{{ t "nav.municipalityVersions" "Municipality Versions" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ14872996"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ14872996" }}" alt="">{{ t "nav.municipalBoundaries" "Municipal Boundaries" }}</a>
+                <a class="dropdown-item" href="/resource?iri=https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2FCantonalTerritory"><img class="nav-sub-icon" src="{{ classIcon "https%3A%2F%2Fgeo.ld.admin.ch%2Fdef%2FCantonalTerritory" }}" alt="">{{ t "nav.cantonalTerritories" "Cantonal Territories" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:AdministrativeArea"><img class="nav-sub-icon" src="{{ classIcon "schema:AdministrativeArea" }}" alt="">{{ t "nav.administrativeAreas" "Administrative Areas" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:Place"><img class="nav-sub-icon" src="{{ classIcon "schema:Place" }}" alt="">{{ t "nav.places" "Places" }}</a>
               </div>
             </li>
 
@@ -391,9 +351,9 @@
                 <span class="nav-link-title">{{ t "nav.environmentEnergy" "Environment & Energy" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ15911738">{{ t "nav.hydropowerPlants" "Hydropower Plants" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ567998">{{ t "nav.bathingWaters" "Bathing Waters" }}</a>
-                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1924376">{{ t "nav.airQualityStations" "Air Quality Stations" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ15911738"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ15911738" }}" alt="">{{ t "nav.hydropowerPlants" "Hydropower Plants" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ567998"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ567998" }}" alt="">{{ t "nav.bathingWaters" "Bathing Waters" }}</a>
+                <a class="dropdown-item" href="/resource?iri=http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1924376"><img class="nav-sub-icon" src="{{ classIcon "http%3A%2F%2Fwww.wikidata.org%2Fentity%2FQ1924376" }}" alt="">{{ t "nav.airQualityStations" "Air Quality Stations" }}</a>
               </div>
             </li>
 
@@ -406,8 +366,8 @@
                 <span class="nav-link-title">{{ t "nav.dataCatalog" "Data Catalog" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=schema:Dataset">{{ t "nav.datasetSchemaOrg" "Dataset (schema.org)" }}</a>
-                <a class="dropdown-item" href="/resource?iri=void:Dataset">{{ t "nav.datasetVoID" "Dataset (VoID)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=schema:Dataset"><img class="nav-sub-icon" src="{{ classIcon "schema:Dataset" }}" alt="">{{ t "nav.datasetSchemaOrg" "Dataset (schema.org)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=void:Dataset"><img class="nav-sub-icon" src="{{ classIcon "void:Dataset" }}" alt="">{{ t "nav.datasetVoID" "Dataset (VoID)" }}</a>
               </div>
             </li>
 
@@ -485,13 +445,15 @@
                 <span class="nav-link-title">{{ t "nav.dataCatalog" "Data Catalog" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=dcat:Catalog">{{ t "nav.catalog" "Catalog" }}</a>
-                <a class="dropdown-item" href="/resource?iri=dcat:Dataset">{{ t "nav.dataset" "Dataset" }}</a>
-                <a class="dropdown-item" href="/resource?iri=dcat:Distribution">{{ t "nav.distribution" "Distribution" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Catalog"><img class="nav-sub-icon" src="{{ classIcon "dcat:Catalog" }}" alt="">{{ t "nav.catalog" "Catalog" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Dataset"><img class="nav-sub-icon" src="{{ classIcon "dcat:Dataset" }}" alt="">{{ t "nav.dataset" "Dataset" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dcat:Distribution"><img class="nav-sub-icon" src="{{ classIcon "dcat:Distribution" }}" alt="">{{ t "nav.distribution" "Distribution" }}</a>
               </div>
             </li>
 
           {{ end }}
+
+            <li class="nav-item nav-section-title" role="presentation">{{ t "nav.sectionGraph" "Graph" }}</li>
 
             <!-- Schema/Ontology Objects — always visible -->
             <li class="nav-item dropdown">
@@ -502,10 +464,10 @@
                 <span class="nav-link-title">{{ t "nav.schema" "Schema" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/resource?iri=rdfs:Class">{{ t "nav.rdfsClass" "rdfs:Class" }}</a>
-                <a class="dropdown-item" href="/resource?iri=owl:Class">{{ t "nav.owlClass" "owl:Class" }}</a>
-                <a class="dropdown-item" href="/resource?iri=rdf:Property">{{ t "nav.rdfProperty" "rdf:Property" }}</a>
-                <a class="dropdown-item" href="/resource?iri=owl:Ontology">{{ t "nav.owlOntology" "owl:Ontology" }}</a>
+                <a class="dropdown-item" href="/resource?iri=rdfs:Class"><img class="nav-sub-icon" src="{{ classIcon "rdfs:Class" }}" alt="">{{ t "nav.rdfsClass" "rdfs:Class" }}</a>
+                <a class="dropdown-item" href="/resource?iri=owl:Class"><img class="nav-sub-icon" src="{{ classIcon "owl:Class" }}" alt="">{{ t "nav.owlClass" "owl:Class" }}</a>
+                <a class="dropdown-item" href="/resource?iri=rdf:Property"><img class="nav-sub-icon" src="{{ classIcon "rdf:Property" }}" alt="">{{ t "nav.rdfProperty" "rdf:Property" }}</a>
+                <a class="dropdown-item" href="/resource?iri=owl:Ontology"><img class="nav-sub-icon" src="{{ classIcon "owl:Ontology" }}" alt="">{{ t "nav.owlOntology" "owl:Ontology" }}</a>
               </div>
             </li>
 
@@ -518,11 +480,11 @@
                 <span class="nav-link-title">{{ t "nav.graphInfo" "Graph Info" }}</span>
               </a>
               <div class="dropdown-menu">
-                <a class="dropdown-item" href="/classes.html">{{ t "nav.classes" "Classes" }}</a>
-                <a class="dropdown-item" href="/properties.html">{{ t "nav.properties" "Properties" }}</a>
-                <a class="dropdown-item" href="/namedGraphs.html">{{ t "nav.namedGraphs" "Named Graphs" }}</a>
-                <a class="dropdown-item" href="/dataIssues.html">{{ t "nav.dataIssues" "Data Issues" }}</a>
-                <a class="dropdown-item" href="/multiAttribution.html">{{ t "nav.multiAttribution" "Multi-Attribution" }}</a>
+                <a class="dropdown-item" href="/classes.html"><img class="nav-sub-icon" src="{{ classIcon "Class" }}" alt="">{{ t "nav.classes" "Classes" }}</a>
+                <a class="dropdown-item" href="/properties.html"><img class="nav-sub-icon" src="{{ classIcon "Property" }}" alt="">{{ t "nav.properties" "Properties" }}</a>
+                <a class="dropdown-item" href="/namedGraphs.html"><img class="nav-sub-icon" src="{{ classIcon "NamedGraph" }}" alt="">{{ t "nav.namedGraphs" "Named Graphs" }}</a>
+                <a class="dropdown-item" href="/dataIssues.html"><img class="nav-sub-icon" src="{{ classIcon "DataIssue" }}" alt="">{{ t "nav.dataIssues" "Data Issues" }}</a>
+                <a class="dropdown-item" href="/multiAttribution.html"><img class="nav-sub-icon" src="{{ classIcon "Attribution" }}" alt="">{{ t "nav.multiAttribution" "Multi-Attribution" }}</a>
               </div>
             </li>
 

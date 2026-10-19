@@ -1,0 +1,83 @@
+/* Sidebar submenus as a tree rail.
+
+   Each open submenu hangs off a thin vertical line drawn down from the parent's
+   icon, in the same colour as the tab strip's border above it; every item gets a
+   20px class icon (a step below the parent's 24px), so the nesting stays
+   legible even with a colourful icon on every row. Markup: templates/layout/sidebar.html,
+   icons via the classIcon template func.
+
+   Tabler pins the menu to position: static with
+   `.navbar-vertical[class*="navbar-expand"] .navbar-collapse .dropdown-menu`
+   (0,4,0), so the selectors carry `aside` + `.navbar-collapse` to out-rank it.
+   Losing that fight is silent: the rail then anchors to the <li> and starts at
+   the top of the parent row, running behind its icon. */
+
+:root {
+  --vs-rail-color: var(--tblr-border-color);
+  /* Centre of the parent's 24px .nav-link-icon, from the menu's left edge
+     (link padding 12px + half the icon). */
+  --vs-rail-x: 24px;
+  /* Gap between the rail and a row's icon. */
+  --vs-rail-gap: 16px;
+}
+
+aside.navbar-vertical .navbar-collapse .navbar-nav .dropdown-menu {
+  position: relative;
+}
+
+/* The rail. Stops short of the last row rather than running past it. */
+aside.navbar-vertical .navbar-collapse .navbar-nav .dropdown-menu::before {
+  content: "";
+  position: absolute;
+  left: var(--vs-rail-x);
+  top: 0;
+  bottom: 1rem;
+  border-left: var(--tblr-border-width) solid var(--vs-rail-color);
+}
+
+aside.navbar-vertical .navbar-collapse .navbar-nav .dropdown-menu .dropdown-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: calc(var(--vs-rail-x) + var(--vs-rail-gap));
+  padding-right: 0.5rem;
+  /* Tabler's .dropdown-item is nowrap; long class names ("Organisation
+     (schema.org)") would clip at the sidebar edge. */
+  white-space: normal;
+  line-height: 1.3;
+}
+
+aside.navbar-vertical .navbar-collapse .navbar-nav .dropdown-menu .nav-sub-icon {
+  flex: none;
+  width: 20px;
+  height: 20px;
+}
+
+/* Headers start right of the rail, so they read as part of the subtree
+   instead of cutting across it. */
+aside.navbar-vertical .navbar-collapse .navbar-nav .dropdown-menu .dropdown-header {
+  margin-left: calc(var(--vs-rail-x) + var(--vs-rail-gap));
+  padding-left: 0;
+}
+
+/* With the dividers gone, a later header needs room above it to start a new
+   group; the first sits right under the parent and keeps Tabler's spacing. */
+aside.navbar-vertical .navbar-collapse .navbar-nav .dropdown-menu .dropdown-item + .dropdown-header {
+  margin-top: 0.75rem;
+}
+
+/* Section titles in the main menu (Content / Data / Graph). Same voice as
+   Tabler's .dropdown-header, one step up so it out-ranks the submenu headers. */
+aside.navbar-vertical .navbar-collapse .navbar-nav .nav-section-title {
+  padding: 1rem 0.75rem 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: var(--tblr-font-weight-bold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tblr-secondary);
+}
+
+aside.navbar-vertical .navbar-collapse .navbar-nav .nav-section-title:first-child {
+  padding-top: 0;
+}
