@@ -1,0 +1,7 @@
+CLOSED except 
+- "Danger level" (https://environment.ld.admin.ch/foen/hydro/dimension/dangerLevel) | dimension.measure | card.exactlyOne | datatype #integer | scale.ordinal | hasValue "1"
+- "Measurement station" (https://environment.ld.admin.ch/foen/hydro/dimension/station) | dimension.key | card.exactlyOne | nodeKind #iri | scale.nominal | in(34,0) 2043[https://environment.ld.admin.ch/foen/hydro/station/2043], 2074[https://environment.ld.admin.ch/foen/hydro/station/2074], 2025[https://environment.ld.admin.ch/foen/hydro/station/2025], 2026[https://environment.ld.admin.ch/foen/hydro/station/2026], 2137[https://environment.ld.admin.ch/foen/hydro/station/2137], 2028[https://environment.ld.admin.ch/foen/hydro/station/2028], 2154[https://environment.ld.admin.ch/foen/hydro/station/2154], 2082[https://environment.ld.admin.ch/foen/hydro/station/2082] +26
+- "Measurement Time" (https://environment.ld.admin.ch/foen/hydro/dimension/measurementTime) | dimension.key | card.exactlyOne | datatype #dateTime | scale.interval | range "2026-10-19T19:40:00+01:00" to "2026-10-19T20:30:00+01:00"
+- "Observed by" (cube:observedBy) | card.exactlyOne | nodeKind #iri | in(1,0) 10008758[https://register.ld.admin.ch/staatskalender/organization/10008758]
+- "Type" (rdf:type) | card.exactlyOne | nodeKind #iri | in(1,0) Observation[cube:Observation]
+- "Water level" (https://environment.ld.admin.ch/foen/hydro/dimension/waterLevel) | dimension.measure | card.exactlyOne | datatype #number | unit M[http://qudt.org/vocab/unit/M] | scale.ratio | range "192.380" to "1796.642"

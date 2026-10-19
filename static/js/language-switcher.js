@@ -134,7 +134,7 @@ function boot() {
 // hand-written hx-get attributes in the theme pages without touching them.
 document.addEventListener('htmx:configRequest', function (evt) {
     const path = evt.detail.path || '';
-    if (!/^\/api\/((metric|async-table)\/|bnode-tree\?)/.test(path)) return;
+    if (!/^\/api\/((metric|async-table)\/|bnode-tree\?|shape-summary\?)/.test(path)) return;
     const code = activeSiteLang();
     // `!== null`, not truthiness: '' is the real "no language" code and must be
     // sent as `lang=`, since an absent param means "use the server default".

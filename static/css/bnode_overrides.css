@@ -150,3 +150,27 @@
 [data-bs-theme="dark"] .vs-bn-depth-3 { border-left-color: #3b6590; }
 [data-bs-theme="dark"] .vs-bn-depth-4 { border-left-color: #4272a1; }
 [data-bs-theme="dark"] .vs-bn-depth-5 { border-left-color: #4a7fb2; }
+
+/* Shape summary card (templates/partials/shape-summary.html): one line per
+   property, child groups indented under a rule like the tree's nested nodes. */
+.vs-ss-lines {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.vs-ss-line { padding: .25rem 0; line-height: 1.5; }
+.vs-ss-lines > .vs-ss-line + .vs-ss-line { border-top: 1px solid var(--tblr-border-color-translucent); }
+.vs-ss-label { font-weight: 600; }
+.vs-ss-val {
+  background: var(--tblr-bg-surface-secondary);
+  border-radius: var(--tblr-border-radius-sm);
+  padding: 0 .3rem;
+}
+.vs-ss-desc { font-size: .8rem; color: var(--tblr-secondary); }
+.vs-ss-group {
+  margin: .25rem 0 0 .25rem;
+  padding-left: .75rem;
+  border-left: 2px solid var(--tblr-border-color);
+}
+.vs-ss-caption { font-size: .8rem; font-weight: 600; color: var(--tblr-secondary); }
+.vs-ss-group .vs-ss-line { padding: .1rem 0; border-top: 0; }

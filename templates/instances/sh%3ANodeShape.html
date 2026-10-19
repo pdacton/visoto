@@ -17,6 +17,9 @@
 
     {{ template "literals" . }}
 
+    <!-- The shape in plain language, one line per property (internal/shapeprose). -->
+    {{ template "shapeSummary" (dict "iri" .ResourceIRI) }}
+
     <!-- One row per sh:property shape.
 
          GROUP BY ?ps with SAMPLE: sh:name and sh:message are multilingual and a

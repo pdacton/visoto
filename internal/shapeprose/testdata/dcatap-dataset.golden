@@ -1,0 +1,75 @@
+TARGET targetClass Dataset[dcat:Dataset]
+- "Access rights" (dct:accessRights) | card.atMostOne | class Rights statement[dct:RightsStatement]
+    desc: Information that indicates whether the Dataset is publicly accessible, has access restrictions or is not public.
+- "Applicable legislation" (http://data.europa.eu/r5r/applicableLegislation) | card.any | class Legal resource[http://data.europa.eu/eli/ontology#LegalResource]
+    desc: The legislation that mandates the creation or management of the Dataset.
+- "Conforms to" (dct:conformsTo) | card.any | class Standard[dct:Standard]
+    desc: An implementing rule or other specification.
+- "Contact point" (dcat:contactPoint) | card.oneOrMore | class Kind[vcard:Kind]
+    desc: Contact information that can be used for sending comments about the Dataset.
+- "Creator" (dct:creator) | card.any | class Agent[foaf:Agent]
+    desc: An entity responsible for producing the dataset.
+- "Dataset distribution" (dcat:distribution) | card.oneOrMore | class Distribution[dcat:Distribution]
+    desc: An available Distribution for the Dataset.
+- "Description" (dct:description) | card.oneOrMore | nodeKind #literal
+    desc: A free-text account of the Dataset. This property can be repeated for parallel language versions of the description.
+- "Documentation" (foaf:page) | card.any | class Document[foaf:Document]
+    desc: A page or document about this Dataset.
+- "Frequency" (dct:accrualPeriodicity) | card.atMostOne | class Frequency[dct:Frequency]
+    desc: The frequency at which the Dataset is updated.
+- "Geographical coverage" (dct:spatial) | card.oneOrMore | class Location[dct:Location]
+    desc: A geographic region that is covered by the Dataset.
+- "Has version" (dcat:hasVersion) | card.any | class Dataset[dcat:Dataset]
+    desc: A related Dataset that is a version, edition, or adaptation of the described Dataset.
+- "Identifier" (dct:identifier) | card.any | nodeKind #literal
+    desc: The main identifier for the Dataset, e.g. the URI or other unique identifier in the context of the Catalogue.
+- "In series" (dcat:inSeries) | card.any | class Dataset series[dcat:DatasetSeries]
+    desc: A dataset series of which the dataset is part.
+- "Is referenced by" (dct:isReferencedBy) | card.any | nodeKind #blankOrIri
+    desc: A related resource, such as a publication, that references, cites, or otherwise points to the dataset.
+- "Keyword" (dcat:keyword) | card.oneOrMore | nodeKind #literal
+    desc: A keyword or tag describing the Dataset.
+- "Landing page" (dcat:landingPage) | card.any | class Document[foaf:Document]
+    desc: A web page that provides access to the Dataset, its Distributions and/or additional information. It is intended to point to a landing page at the original data provider, not to a page on a site of a third party, such as an aggregator.
+- "Language" (dct:language) | card.any | class Linguistic system[dct:LinguisticSystem]
+    desc: A language of the Dataset. This property can be repeated if there are multiple languages in the Dataset.
+- "Modification date" (dct:modified) | card.atMostOne | datatype #date or #dateTime
+    desc: The most recent date on which the Dataset was changed or modified.
+    also: sh:or #structure
+- "Other identifier" (adms:identifier) | card.any | class Identifier[adms:Identifier]
+    desc: A secondary identifier of the Dataset Examples are MAST/ADS [[MASTADS]], DOI [[DOI]], EZID [[EZID]] or W3ID [[W3ID]].
+- "Provenance" (dct:provenance) | card.any | class Provenance statement[dct:ProvenanceStatement]
+    desc: A statement about the lineage of a Dataset.
+- "Publisher" (dct:publisher) | card.exactlyOne | class Agent[foaf:Agent]
+    desc: An entity (organisation) responsible for making the Dataset available.
+- "Qualified attribution" (prov:qualifiedAttribution) | card.any | class Attribution[prov:Attribution]
+    desc: An Agent having some form of responsibility for the resource.
+- "Qualified relation" (dcat:qualifiedRelation) | card.any | class Relationship[dcat:Relationship]
+    desc: A description of a relationship with another resource.
+- "Related resource" (dct:relation) | card.any | nodeKind #blankOrIri
+    desc: A related resource.
+- "Release date" (dct:issued) | card.atMostOne | datatype #date or #dateTime
+    desc: The date of formal issuance (e.g., publication) of the Dataset.
+    also: sh:or #structure
+- "Sample" (adms:sample) | card.any | class Distribution[dcat:Distribution]
+    desc: A sample distribution of the dataset.
+- "Source" (dct:source) | card.any | class Dataset[dcat:Dataset]
+    desc: A related Dataset from which the described Dataset is derived.
+- "Spatial resolution" (dcat:spatialResolutionInMeters) | card.atMostOne | datatype #number
+    desc: The minimum spatial separation resolvable in a dataset, measured in meters.
+- "Temporal coverage" (dct:temporal) | card.oneOrMore | class Period of time[dct:PeriodOfTime]
+    desc: A temporal period that the Dataset covers.
+- "Temporal resolution" (dcat:temporalResolution) | card.atMostOne | datatype #duration
+    desc: The minimum time period resolvable in the dataset.
+- "Theme" (dcat:theme) | card.oneOrMore | class Concept[skos:Concept]
+    desc: A category of the Dataset. A Dataset may be associated with multiple themes.
+- "Title" (dct:title) | card.oneOrMore | nodeKind #literal
+    desc: A name given to the Dataset. This property can be repeated for parallel language versions of the name.
+- "Type" (dct:type) | card.any | class Concept[skos:Concept]
+    desc: A type of the Dataset. A recommended controlled vocabulary data-type is foreseen.
+- "Version" (dcat:version) | card.atMostOne | nodeKind #literal
+    desc: The version indicator (name or identifier) of a resource.
+- "Version notes" (adms:versionNotes) | card.any | nodeKind #literal
+    desc: A description of the differences between this version and a previous version of the Dataset. This property can be repeated for parallel language versions of the version notes.
+- "Was generated by" (prov:wasGeneratedBy) | card.any | class Activity[prov:Activity]
+    desc: An activity that generated, or provides the business context for, the creation of the dataset.

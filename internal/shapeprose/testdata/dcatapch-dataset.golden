@@ -1,0 +1,97 @@
+TARGET targetClass Dataset[dcat:Dataset]
+- "Access rights" (dct:accessRights) | card.atMostOne | class Rights statement[dct:RightsStatement]
+    desc: Information regarding access or restrictions based on privacy, security, or other policies. Use this property exclusively for statements about access restrictions (e.g., privacy, security, or policy-related restrictions). The [[VOCAB-EU-ACCESS-RIGHT]] SHOULD be used. Adapt categories definitions as needed for specific use cases. Inherited from dcat:Resource.
+- "Applicable legislation" (http://data.europa.eu/r5r/applicableLegislation) | card.any | class Legal resource[http://data.europa.eu/eli/ontology#LegalResource]
+    desc: The legislation that mandates the creation or management of the dataset. An ELI identifier SHOULD be used. The FedLex identifier SHOULD be used for the federal level. If there is no ELI or FedLex identifier, then the dct:relation property (see ) MUST be used to indicate the legal basis. For more information see DCAT-AP - LegalResource
+- "Availability" (http://data.europa.eu/r5r/availability) | card.exactlyOne | class Concept[skos:Concept]
+    desc: This property indicates how long it is planned to keep the Dataset available. CV to be used [[VOCAB-EU-AVAILABLITY]]. Vocabulary in human-readable form: Planned availability .
+- "Conforms to" (dct:conformsTo) | card.any | class Standard[dct:Standard]
+    desc: This property refers to an implementing rule or other specification. This property SHOULD be used to indicate the model, schema, ontology, view or profile that this representation of a resource conforms to. This is (generally) a complementary concern to the media-type or format. Inherited from dcat:Resource.
+- "Contact point" (dcat:contactPoint) | card.oneOrMore | class Kind[vcard:Kind]
+    desc: This property contains contact information that can be used for sending comments about the resource. This property MUST contain an email address that is continuously monitored by the data publisher. If there are several contributors involved in the publication of the resource, the property can be used multiple times. Inherited from dcat:Resource.
+- "Creator" (dct:creator) | card.any | class Agent[foaf:Agent]
+    desc: An entity responsible for producing the resource (provider of the technical components), organisation or company. Resources of type foaf:Agent are recommended as values for this property. If from the public sector, use the same CV as . For swiss companies, use the corresponding Zefix entry https://register.ld.admin.ch/zefix/company/122015 , you can find the EHRA-ID of organisations on http://zefix.ch . Fallback: We recommend using the correspondend entry in Wikidata as CV, it is straight forward to add a missing entity to Wikidata. Inherited from dcat:Resource.
+- "Dataset distribution" (dcat:distribution) | card.oneOrMore | class Distribution[dcat:Distribution]
+    desc: This property links the Dataset to an available Distribution. In exceptional cases, a Dataset for which no distribution form exists (yet) can be described in the Catalogue. In this case, the element dcat:distribution may be omitted.
+- "Description" (dct:description) | card.oneOrMore | nodeKind #blankOrIri | nodeKind #literal | qualified.atLeastOne(1,-1) {languageIn "Deutsch", "Französisch", "Italienisch" or "Englisch"}
+    desc: This property contains a free-text account of the resource. This property can be repeated for parallel language versions of the description (see ). On the user interface of data portals, the content of the element whose language corresponds to the display language selected by the user is displayed. Inherited from dcat:Resource.
+    also: sh:or #structure
+- "Documentation" (foaf:page) | card.any | class Document[foaf:Document]
+    desc: This property refers to a page or document about this Dataset.
+- "Frequency" (dct:accrualPeriodicity) | card.atMostOne | class Frequency[dct:Frequency]
+    desc: This property refers to the frequency at which the Dataset is updated. CV to be used: [[VOCAB-EU-FREQUENCY]].
+- "Has part" (dct:hasPart) | card.any | class Catalog[dcat:Catalog], Dataset[dcat:Dataset] or Data service[dcat:DataService] | nodeKind #blankOrIri
+    desc: A related resource that is included either physically or logically in the described resource. For more information about the relationship between datasets and other resources see DCAT- 13.2 Relationships between datasets and other resources . Inherited from dcat:Resource.
+    also: sh:or #structure
+- "Has policy" (http://www.w3.org/ns/odrl/2/hasPolicy) | card.atMostOne | class Policy[http://www.w3.org/ns/odrl/2/Policy]
+    desc: The policy expressing the rights associated with the resource if using the [ODRL] vocabulary. Information about rights expressed as an ODRL policy [ ODRL MODEL ] using the ODRL vocabulary [ VOCAB ODRL ] MAY be provided for the distribution. See also guidance at DCAT 3 - 9. License and rights statements . Inherited from dcat:Resource.
+- "Has version" (dcat:hasVersion) | card.any | class Dataset[dcat:Dataset]
+    desc: A related Dataset that is a version, edition, or adaptation of the described Dataset.
+- "Identifier" (dct:identifier) | card.oneOrMore | nodeKind #literal
+    desc: This property contains the unique identifier for the resource, e.g. the URI or other unique identifier in the context of the Catalog. The identifier may be used as part of the URI of the resource. Inherited from dcat:Resource.
+- "Image" (schema:image) | card.atMost(0,3) | nodeKind #iri | nodeKind #blankOrIri
+    desc: A thumbnail picture illustrating the content of the dataset. A thumbnail picture illustrating the content of the Dataset. For distributions that consist of visual content (photographs, videos, maps, etc.) it makes sense to add a limited number of thumbnails to the metadata. It’s a DCAT-AP CH Custom Class (not present in DCAT-AP)
+    also: sh:or #structure
+- "In series" (dcat:inSeries) | card.any | class Dataset series[dcat:DatasetSeries]
+    desc: A dataset series of which the dataset is part.
+- "Is referenced by" (dct:isReferencedBy) | card.any | nodeKind #blankOrIri
+    desc: This property is about a related resource, such as a publication, that references, cites, or otherwise points to the resource. Inherited from dcat:Resource.
+- "Keyword/ tag" (dcat:keyword) | card.oneOrMore | nodeKind #blankOrIri
+    desc: This property contains a keyword or tag describing the resource. Keywords primarily serve to support search functionality on Data Catalogs. Using more keywords is preferable to using fewer. Keywords should be chosen from the perspective of the searcher. Consider, that keywords which are obvious for you as a publisher might be useful for the search. E.g. add environmental monitoring ( http://www.wikidata.org/entity/Q1749732 ) if you as a data publisher are an Environmental Monitoring Agency. Both controlled vocabularies and literals are allowed, but controlled vocabularies SHOULD be used. Use the following priority cascade for adding Keywords: TERMDAT: Search for a term on termdat.ch. E.g. Grünabfälle, take the entry ID (51810), and build the Concept URI by adding the ID to https://register.ld.admin.ch/termdat/ (e.g. https://register.ld.admin.ch/termdat/51810 ) GEMET (especially in a geo-related context): Search for a term on http://www.eionet.europa.eu/gemet/ . Use the Concept URL, as statet on the bottom of the page of a concept (e.g. http://www.eionet.europa.eu/gemet/concept/428 ) WIKIDATA: If there are no matching Concepts neither in TERMDAT, nor GEMET, search in Wikidata (top right search). Use the Concept URI (entry in the left side). (e.g. http://www.wikidata.org/entity/Q1749732 , do not copy the URL https://www.wikidata.org/**wiki**/Q1749732 ) If you can't find a fitting concept, you can always add your own concept to Wikidata. Finally as a last resort, you can add a Keyword as a Literal. Note: rdfs:Literal might be deprecated in the future. TERMDAT: Search for a term on termdat.ch. E.g. Grünabfälle, take the entry ID (51810), and build the Concept URI by adding the ID to https://register.ld.admin.ch/termdat/ (e.g. https://register.ld.admin.ch/termdat/51810 ) GEMET (especially in a geo-related context): Search for a term on http://www.eionet.europa.eu/gemet/ . Use the Concept URL, as statet on the bottom of the page of a concept (e.g. http://www.eionet.europa.eu/gemet/concept/428 ) WIKIDATA: If there are no matching Concepts neither in TERMDAT, nor GEMET, search in Wikidata (top right search). Use the Concept URI (entry in the left side). (e.g. http://www.wikidata.org/entity/Q1749732 , do not copy the URL https://www.wikidata.org/**wiki**/Q1749732 ) If you can't find a fitting concept, you can always add your own concept to Wikidata. Finally as a last resort, you can add a Keyword as a Literal. Note: rdfs:Literal might be deprecated in the future. Inherited from dcat:Resource.
+    also: sh:or #structure
+    anyOf:
+      - "" () | nodeKind #literal
+      - "" () | class Concept[skos:Concept]
+- "Landing page" (dcat:landingPage) | card.oneOrMore | class Document[foaf:Document]
+    desc: This property refers to a web page that provides access to the Dataset, its Distributions and/or additional information. It is intended to point to a landing page at the original data provider, not to a page on a site of a third party, such as an aggregator.
+- "Language" (dct:language) | card.any | class Linguistic system[dct:LinguisticSystem]
+    desc: This property refers to a language of the resource. This property can be repeated if there are multiple languages in the resource. CV to be used: [[VOCAB-EU-LANGUAGE]] Inherited from dcat:Resource.
+- "License" (dct:license) | card.exactlyOne | class License document[dct:LicenseDocument]
+    desc: A legal document under which the resource is made available. Information about licenses and rights MAY be provided for the Resource. See also guidance at DCAT- 9 License and rights statements Inherited from dcat:Resource.
+- "Other identifier" (adms:identifier) | card.any | class Identifier[adms:Identifier]
+    desc: A secondary identifier of the Dataset. This property allows for more detailed information about the identifer, including the identifier scheme, version, and the agency managing the scheme. This is useful when datasets are referenced across different systems or organizations, ensuring clarity and consistency. Examples are MASTADS [[MASTADS]], DOI [[DOI]], EZID [[EZID]], W3ID [[W3ID]], DataCite [[DataCite]] or other subject-specific identifiers.
+- "Provenance" (dct:provenance) | card.any | class Provenance statement[dct:ProvenanceStatement]
+    desc: A statement about the lineage of a Dataset.
+- "Publisher" (dct:publisher) | card.exactlyOne | class Agent[foaf:Agent]
+    desc: This property refers to an entity (organisation) responsible for making the resource available. This property refers to an entity (organisation) responsible for making the resource available. Inherited from dcat:Resource.
+- "Qualified attribution" (prov:qualifiedAttribution) | card.any | class Attribution[prov:Attribution]
+    desc: This property refers to a link to an Agent having some form of responsibility for the resource Used to link to an Agent where the nature of the relationship is known but does not match one of the standard [ DCTERMS ] properties ( dcterms:creator , dcterms:publisher ). Use dcat:hadRole on the prov:Attribution to capture the responsibility of the Agent with respect to the Resource. See DCAT 3 - 15.1 Relationships between datasets and agents for usage examples. Inherited from dcat:Resource.
+- "Qualified relation" (dcat:qualifiedRelation) | card.any | class Relationship[dcat:Relationship]
+    desc: This property provides a link to a description of a relationship with another resource and it’s especially meant for relationships between resources. It replaces the property rdfs:seeAlso of DCAT-AP CH v1. See here for examples on how to use it: dcat:qualifiedRelation . Inherited from dcat:Resource.
+- "Related resource" (dct:relation) | card.any | nodeKind #blankOrIri
+    desc: A related resource. This property refers to a related resource where the relationship cannot be further specified as a dcat:qualifiedRelation . This may be additional material such as an article, example or documentation helpful in the context of the resource. The element can also be used to link to legal foundations that apply to the publication or usage of the resource. Inherited from dcat:Resource.
+- "Release date" (dct:issued) | card.exactlyOne | datatype #date or #dateTime
+    desc: This property contains the date of formal issuance (e.g., first publication of the resource). If this date is not known, the date of the first referencing of the data collection in the Catalogue can be entered. Inherited from dcat:Resource.
+    also: sh:or #structure
+- "Rights" (dct:rights) | card.exactlyOne | class Rights statement[dct:RightsStatement]
+    desc: This property refers to a statement that specifies rights associated with the resource. In general this property is not needed, as long as you already provide dct:licence , dct:accessRights . Prioritize using dct:licence , dct:accessRights and for a link to a legal text dcat:applicableLegislation. Use dct:rights only for additional, specific rights information. When using dct:rights, we advise you to use the Open Data Rights Statement Vocabulary (ODRS) . To refer to a dct:RightStatement it is recommended to use an URI. Inherited from dcat:Resource.
+- "Sample" (adms:sample) | card.any | class Distribution[dcat:Distribution]
+    desc: A sample distribution of the dataset.
+- "Source" (dct:source) | card.any | class Dataset[dcat:Dataset]
+    desc: A related Dataset from which the described Dataset is derived.
+- "Spatial resolution" (dcat:spatialResolutionInMeters) | card.atMostOne | datatype #number
+    desc: The minimum spatial separation resolvable in a dataset, measured in meters.
+- "Spatial/ geographical coverage" (dct:spatial) | card.oneOrMore | class Location[dct:Location]
+    desc: This property refers to a geographic region that is covered by the Dataset. This property may be indicated using an IRI reference or may be encoded as an instance of dct:Location . CV to be used for IRI reference: LINDAS resources SHOULD be used. Whenever a particular location is not available as LINDAS resource, then the EU Vocabularies Named Authority Lists MAY be used: [[VOCAB-EU-CONTINENT]], [[VOCAB-EU-COUNTRY]], [[VOCAB-EU-PLACE]], if the location is not in one of the mentioned EU Vocabularies, then Geonames URIs MAY be used: [[GEONAMES]]. For the encoding as instance of dct:Location see the class Location ( DCAT-AP - 7.12 Location ).
+- "Status" (adms:status) | card.atMostOne | class Concept[skos:Concept]
+    desc: The status of the resource in the context of maturity lifecycle. CV to be used [[VOCAB-EU-STATUS]]. Vocabulary in human-readable form: Status . Inherited from dcat:Resource.
+- "Temporal coverage" (dct:temporal) | card.oneOrMore | class Period of time[dct:PeriodOfTime]
+    desc: For temporal references this property MUST be used in order to conform to DCAT-AP.
+- "Temporal resolution" (dcat:temporalResolution) | card.atMostOne | datatype #duration
+    desc: The minimum time period resolvable in the dataset.
+- "Theme/category" (dcat:theme) | card.oneOrMore | class Concept[skos:Concept]
+    desc: This property refers to a knowledge organization system used to classify the catalog's resources. A resource may be associated with multiple themes. There MUST be at least one entry using the EU Themes Vocabulary to be DCAT-AP conform: [[VOCAB-EU-THEME]] It is possible (CAN) to add additional topics by using other commonly used controlled vocabularies. Inherited from dcat:Resource.
+- "Title" (dct:title) | card.oneOrMore | nodeKind #blankOrIri | nodeKind #literal | qualified.atLeastOne(1,-1) {languageIn "Deutsch", "Französisch", "Italienisch" or "Englisch"}
+    desc: This property contains a short statement about the content. Title should be understandable for external data users Give a self-explanatory title Title statement should contain 2 to 7 words Avoid abbreviations, as these are usually only known internally This property can be repeated for parallel language versions of the title (see ). Inherited from dcat:Resource.
+    also: sh:or #structure
+- "Type" (dct:type) | card.any | class Concept[skos:Concept]
+    desc: A type of the Dataset. A recommended controlled vocabulary data-type is foreseen.
+- "Update/ modification date" (dct:modified) | card.exactlyOne | datatype #date or #dateTime
+    desc: This property contains the most recent date on which the resource was changed or modified. No value may indicate that the resource has never changed after its initial publication, or that the date of the last modification is not known, or that the resource is continuously updated This property MUST only be set if the distributions (the actual data) that the dataset describes have been updated after it has been issued. In this case the property MUST contain the date of the last update. That way a person or institution using the data for an analysis or application will know when to update the report or application on their side. Inherited from dcat:Resource.
+    also: sh:or #structure
+- "Version" (dcat:version) | card.atMostOne | nodeKind #literal
+    desc: The version indicator (name or identifier) of a resource. DCAT does not prescribe how a version name / identifier should be specified, and refers for guidance to DWBP - Best Practice 7: Provide a version indicator . Inherited from dcat:Resource.
+- "Version notes" (adms:versionNotes) | card.any | nodeKind #literal
+    desc: A description of the differences between this version and a previous version of the Dataset. This property can be repeated for parallel language versions of the version notes. Inherited from dcat:Resource.
+- "Was generated by" (prov:wasGeneratedBy) | card.any | class Activity[prov:Activity]
+    desc: An activity that generated, or provides the business context for, the creation of the dataset. The activity associated with generation of a dataset will typically be an initiative, project, mission, survey, on-going activity ("business as usual") etc. Multiple prov:wasGeneratedBy properties can be used to indicate the dataset production context at various levels of granularity.

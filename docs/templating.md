@@ -847,6 +847,44 @@ resource has no outgoing blank nodes the placeholder removes itself and
 nothing is rendered. The query is capped at 5,000 rows; a larger structure is
 shown with a "shown incomplete" note.
 
+Skolem IRIs (`…/.well-known/genid/…`, which i14y uses for its `sh:in` lists)
+are walked like blank nodes, so their lists show as chips too. Downloads keep
+them as IRIs.
+
+### `shapeSummary` {#shapesummary}
+
+A SHACL shape in plain language, one short line per property. First whom the
+shape applies to, then per property path its cardinality, value type and further
+conditions, e.g. **Publisher** `dct:publisher` — required, exactly one · of type
+Agent. Lines are built from fixed, translated phrases (keys `shape.*`), so the
+same summary reads correctly in every UI language.
+
+```html
+{{ template "shapeSummary" (dict "iri" .ResourceIRI) }}
+```
+
+| Parameter | Description |
+|---|---|
+| `iri` | Required. The shape (a node shape, or a single property shape). |
+| `collapsed` | Start with the card body closed. |
+| `trigger` | HTMX trigger, default `load`. |
+| `title` / `icon` | Card header, default "Summary" / `book-open-text`. |
+
+What it explains:
+- all of SHACL Core
+- the cube.link terms of cube constraints: dimension type, `qudt:scaleType` /
+  `qudt:unit`, `meta:dataKind`, `meta:dimensionRelation`, `meta:inHierarchy`
+
+Anything else appears as an "Also:" line, so nothing is dropped silently.
+Property shapes with the same path are merged into one line. DCAT-AP splits a
+shape across a range file and a cardinality file that share shape IRIs.
+
+The rules are in `internal/shapeprose`. `GET /api/shape-summary` runs one query
+(`bnodetree` with `RootTriples` and `WithProperties`, down to level 3) and
+renders the card. When the resource is no shape, the placeholder removes itself.
+It is used on the `sh:NodeShape`, `sh:PropertyShape` and `cube:Constraint`
+instance templates.
+
 ---
 
 ## Available Component Templates

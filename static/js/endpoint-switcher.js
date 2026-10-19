@@ -75,13 +75,15 @@ function visotoResourceHref(iri) {
 }
 
 // Fold the active endpoint slug into every cacheable HTMX fragment request
-// (/api/metric/*, /api/async-table/*) so the shared Caddy/Souin cache keys each
-// endpoint's response separately — the server ignores the cookie on these
-// routes. Registered on document so it covers even the first load-triggered
+// (/api/metric/*, /api/async-table/*, /api/bnode-tree, /api/shape-summary) so
+// the shared Caddy/Souin cache keys each endpoint's response separately — the
+// server ignores the cookie on these routes. A new fragment route must be added
+// to this pattern AND language-switcher.js's, or it silently queries the default
+// endpoint. Registered on document so it covers even the first load-triggered
 // hx-get on the page.
 document.addEventListener('htmx:configRequest', function (evt) {
     const path = evt.detail.path || '';
-    if (!/^\/api\/((metric|async-table)\/|bnode-tree\?)/.test(path)) return;
+    if (!/^\/api\/((metric|async-table)\/|bnode-tree\?|shape-summary\?)/.test(path)) return;
     const slug = activeEndpointSlug();
     if (slug && evt.detail.parameters.endpoint === undefined) {
         evt.detail.parameters.endpoint = slug;

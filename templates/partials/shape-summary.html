@@ -1,0 +1,271 @@
+<!--
+  Partial: SHACL shape summary ("Summary").
+
+  Explains a shape in plain language, one short line per property: whom the
+  shape applies to, then per property path its cardinality, value type and
+  further conditions, built from fixed phrases. The reduction to phrases is
+  internal/shapeprose; GET /api/shape-summary runs the query and renders the card.
+
+  When the resource is no shape the placeholder removes itself.
+
+  Usage:
+    {{ template "shapeSummary" (dict "iri" .ResourceIRI) }}
+    {{ template "shapeSummary" (dict "iri" .ResourceIRI "collapsed" true) }}
+
+  Parameters (via dict):
+    - iri:       (required) the shape
+    - collapsed: (optional) start with the card body closed
+    - trigger:   (optional) HTMX trigger, default "load"
+    - title:     (optional) card title, default "Summary"
+    - icon:      (optional) Lucide icon, default "book-open-text"
+
+  Defines:
+    shapeSummary      the placeholder (rendered on the page)
+    shapeSummaryCard  the card (the /api/shape-summary response body)
+    shapeLine / shapePart / shapeItems / shapeItem / shapeCode  its parts
+
+  Every phrase is a literal key in shapePart / shapeCode, one case per kind,
+  so the catalog check sees each one (like bnodeCaption in bnode-tree.html).
+-->
+
+{{ define "shapeSummary" }}
+  {{ $title := or .title (t "card.summary" "Summary") }}
+  {{ $icon := or .icon "book-open-text" }}
+  {{ $url := "/api/shape-summary?_=1" }}
+  {{ with .iri }}{{ $url = printf "%s&iri=%s" $url (urlquery .) }}{{ end }}
+  {{ $url = printf "%s&title=%s&icon=%s" $url (urlquery $title) (urlquery $icon) }}
+  {{ if .collapsed }}{{ $url = printf "%s&collapsed=1" $url }}{{ end }}
+
+  <div hx-get="{{ $url }}" hx-trigger="{{ or .trigger "load" }}" hx-swap="outerHTML">
+    <div class="card mb-3 placeholder-glow" aria-busy="true">
+      <div class="card-header d-flex align-items-center gap-2">
+        <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <h3 class="card-title mb-0">{{ $title }}</h3>
+      </div>
+      {{ if not .collapsed }}
+      <div class="card-body">
+        <div class="mb-2"><span class="placeholder col-4"></span></div>
+        <div class="mb-2"><span class="placeholder col-7"></span></div>
+        <div><span class="placeholder col-6"></span></div>
+      </div>
+      {{ end }}
+    </div>
+  </div>
+{{ end }}
+
+{{ define "shapeSummaryCard" }}
+  {{ $id := .id }}
+  <div class="card mb-3 vs-ss-card" data-shape-summary>
+    <div class="card-header">
+      <h3 class="card-title d-flex align-items-center gap-2 mb-0">
+        <i data-lucide="{{ .icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        {{ .title }}
+      </h3>
+      <div class="btn-actions ms-auto">
+        {{ if .summary }}
+        <a class="btn-action" href="#" data-shape-copy title="{{ t "shape.copyText" "Copy as text" }}"
+           data-label-done="{{ t "shape.copied" "Copied" }}" data-label-failed="{{ t "shape.copyFailed" "Copy failed" }}">
+          <i data-lucide="copy"></i>
+        </a>
+        {{ end }}
+        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="{{ not .collapsed }}"><i data-lucide="chevron-up"></i></a>
+      </div>
+    </div>
+
+    <div class="collapse{{ if not .collapsed }} show{{ end }}" id="{{ $id }}-body">
+      <div class="card-body vs-ss" data-shape-text>
+        {{ with .error }}<div class="alert alert-danger mb-0">{{ . }}</div>{{ end }}
+        {{ with .summary }}
+          {{ if .Cut }}
+            <div class="alert alert-info py-2">{{ t "shape.cut" "Some nested conditions go deeper than this summary; the nested structure shows them in full." }}</div>
+          {{ end }}
+          {{ if .Targets }}
+            <p class="mb-2"><strong>{{ t "shape.appliesTo" "Applies to" }}</strong>
+              {{ range $i, $p := .Targets }}{{ if $i }}; {{ end }}{{ template "shapePart" $p }}{{ end -}}.
+            </p>
+          {{ end }}
+          {{ with .Self }}
+            <div class="mb-2"><strong>{{ t "shape.self" "The resource itself" }}</strong> — {{ template "shapeParts" .Parts }}{{ template "shapeLineTail" . }}</div>
+          {{ end }}
+          {{ if .Lines }}
+            <ul class="vs-ss-lines">
+              {{ range .Lines }}{{ template "shapeLine" . }}{{ end }}
+            </ul>
+          {{ end }}
+          {{ if .Closed }}
+            <p class="mb-0 mt-2">{{ t "shape.closed" "No other properties are allowed" }}{{ with .Ignored }} ({{ t "shape.closedExcept" "except" }} {{ template "shapeItems" . }}){{ end }}.</p>
+          {{ end }}
+        {{ end }}
+      </div>
+    </div>
+    <script src="/static/js/shape-summary.js"></script>
+  </div>
+{{ end }}
+
+{{ define "shapeLine" }}
+  <li class="vs-ss-line{{ if .Deactivated }} text-secondary{{ end }}"{{ with .Message }} title="{{ . }}"{{ end }}>
+    {{ if .Label }}<span class="vs-ss-label">{{ .Label }}</span>{{ end }}
+    {{ with .Path }}<span class="vs-bn-curie">{{ if $.PathTerm }}<a href="{{ $.PathTerm.Href }}" title="{{ $.PathTerm.IRI }}">{{ . }}</a>{{ else }}{{ . }}{{ end }}</span>{{ end }}
+    {{ if or .Label .Path }}{{ if .Parts }}—{{ end }}{{ end }}
+    {{ template "shapeParts" .Parts }}
+    {{ template "shapeLineTail" . }}
+  </li>
+{{ end }}
+
+{{/* Badges, descriptions, fallbacks and child groups, shared by lines and the
+     focus-node line. */}}
+{{ define "shapeLineTail" }}
+  {{- if eq .Severity "warning" }} <span class="badge bg-yellow-lt">{{ t "shape.severity.warning" "warning" }}</span>{{ end }}
+  {{- if eq .Severity "info" }} <span class="badge bg-azure-lt">{{ t "shape.severity.info" "info" }}</span>{{ end }}
+  {{- if .Deactivated }} <span class="badge bg-secondary-lt">{{ t "shape.deactivated" "not checked" }}</span>{{ end }}
+  {{ range .Descriptions }}<div class="vs-ss-desc">{{ . }}</div>{{ end }}
+  {{ range .Fallbacks }}
+    <div class="vs-ss-desc">{{ t "shape.also" "Also:" }} <span class="vs-bn-curie ms-0" title="{{ .Pred.IRI }}">{{ .Pred.CURIE }}</span> {{ template "shapeItems" .Items }}</div>
+  {{ end }}
+  {{ range .Groups }}
+    <div class="vs-ss-group">
+      <div class="vs-ss-caption">
+        {{- if eq .Kind "anyOf" }}{{ t "shape.group.anyOf" "any of:" }}
+        {{- else if eq .Kind "exactlyOneOf" }}{{ t "shape.group.exactlyOneOf" "exactly one of:" }}
+        {{- else if eq .Kind "allOf" }}{{ t "shape.group.allOf" "all of:" }}
+        {{- else if eq .Kind "not" }}{{ t "shape.group.not" "not:" }}
+        {{- else if eq .Kind "nested" }}{{ t "shape.group.nested" "with:" }}
+        {{- else if eq .Kind "deeper" }}{{ t "shape.group.deeper" "further nested conditions, shown in the nested structure" }}
+        {{- end -}}
+      </div>
+      {{ if .Lines }}<ul class="vs-ss-lines">{{ range .Lines }}{{ template "shapeLine" . }}{{ end }}</ul>{{ end }}
+    </div>
+  {{ end }}
+{{ end }}
+
+{{ define "shapeParts" }}{{ range $i, $p := . }}{{ if $i }} · {{ end }}{{ template "shapePart" $p }}{{ end }}{{ end }}
+
+{{ define "shapePart" }}
+  {{- if eq .Kind "targetClass" }}{{ t "shape.target.class" "every" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "targetNode" }}{{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "targetSubjectsOf" }}{{ t "shape.target.subjectsOf" "everything that has" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "targetObjectsOf" }}{{ t "shape.target.objectsOf" "everything referenced by" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "implicitClass" }}{{ t "shape.target.implicitClass" "every instance of this class" }}
+
+  {{- else if eq .Kind "card" }}
+    {{- if eq .Code "any" }}{{ t "shape.card.any" "optional, any number" }}
+    {{- else if eq .Code "atMostOne" }}{{ t "shape.card.atMostOne" "optional, at most one" }}
+    {{- else if eq .Code "atMost" }}{{ t "shape.card.atMost" "optional, at most {{.M}}" (dict "M" .M) }}
+    {{- else if eq .Code "oneOrMore" }}{{ t "shape.card.oneOrMore" "required, one or more" }}
+    {{- else if eq .Code "atLeast" }}{{ t "shape.card.atLeast" "required, at least {{.N}}" (dict "N" .N) }}
+    {{- else if eq .Code "exactlyOne" }}{{ t "shape.card.exactlyOne" "required, exactly one" }}
+    {{- else if eq .Code "exactly" }}{{ t "shape.card.exactly" "required, exactly {{.N}}" (dict "N" .N) }}
+    {{- else if eq .Code "range" }}{{ t "shape.card.range" "required, {{.N}} to {{.M}}" (dict "N" .N "M" .M) }}
+    {{- else if eq .Code "none" }}{{ t "shape.card.none" "not allowed" }}
+    {{- end }}
+  {{- else if eq .Kind "inverse" }}{{ t "shape.inverse" "referenced from elsewhere" }}
+
+  {{- else if eq .Kind "class" }}{{ t "shape.class" "of type" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "datatype" }}{{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "nodeKind" }}{{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "node" }}{{ t "shape.node" "matching" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "nodeInline" }}{{ template "shapeParts" .Inner }}
+  {{- else if eq .Kind "not" }}{{ t "shape.not" "not:" }} {{ if .Inner }}{{ template "shapeParts" .Inner }}{{ else }}{{ template "shapeItems" .Items }}{{ end }}
+
+  {{- else if eq .Kind "in" }}
+    {{- if .More }}{{ t "shape.inMany" "one of {{.N}} values:" (dict "N" .N) }} {{ template "shapeItems" .Items }} {{ t "shape.inMore" "and {{.N}} more" (dict "N" .More) }}
+    {{- else }}{{ t "shape.in" "one of" }} {{ template "shapeItems" .Items }}{{ end }}
+  {{- else if eq .Kind "hasValue" }}{{ t "shape.hasValue" "always" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "default" }}{{ t "shape.default" "default" }} {{ template "shapeItems" .Items }}
+
+  {{- else if eq .Kind "range" }}{{ t "shape.range.from" "from" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "min" }}{{ t "shape.range.min" "at least" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "minEx" }}{{ t "shape.range.minEx" "greater than" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "max" }}{{ t "shape.range.max" "at most" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "maxEx" }}{{ t "shape.range.maxEx" "less than" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "length" }}
+    {{- if eq .N .M }}{{ t "shape.length.exactly" "exactly {{.N}} characters" (dict "N" .N) }}
+    {{- else }}{{ t "shape.length.range" "{{.N}} to {{.M}} characters" (dict "N" .N "M" .M) }}{{ end }}
+  {{- else if eq .Kind "minLength" }}{{ t "shape.length.min" "at least {{.N}} characters" (dict "N" .N) }}
+  {{- else if eq .Kind "maxLength" }}{{ t "shape.length.max" "at most {{.N}} characters" (dict "N" .M) }}
+  {{- else if eq .Kind "pattern" }}{{ t "shape.pattern" "matching the pattern" }}{{ range .Items }} <code>{{ .Text }}</code>{{ with .Code }} ({{ t "shape.patternFlags" "flags" }} <code>{{ . }}</code>){{ end }}{{ end }}
+  {{- else if eq .Kind "languageIn" }}{{ t "shape.languageIn" "in" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "uniqueLang" }}{{ t "shape.uniqueLang" "one per language" }}
+
+  {{- else if eq .Kind "qualified" "qualifiedShape" }}
+    {{- if eq .Code "atLeastOne" }}{{ t "shape.qualified.atLeastOne" "at least one of them" }}
+    {{- else if eq .Code "atLeast" }}{{ t "shape.qualified.atLeast" "at least {{.N}} of them" (dict "N" .N) }}
+    {{- else if eq .Code "atMost" }}{{ t "shape.qualified.atMost" "at most {{.N}} of them" (dict "N" .M) }}
+    {{- else if eq .Code "exactly" }}{{ t "shape.qualified.exactly" "exactly {{.N}} of them" (dict "N" .N) }}
+    {{- else if eq .Code "range" }}{{ t "shape.qualified.range" "{{.N}} to {{.M}} of them" (dict "N" .N "M" .M) }}
+    {{- end }}:
+    {{- if .Inner }} {{ template "shapeParts" .Inner }}{{ else }} {{ t "shape.node" "matching" }} {{ template "shapeItems" .Items }}{{ end }}
+
+  {{- else if eq .Kind "equals" }}{{ t "shape.pair.equals" "same as" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "disjoint" }}{{ t "shape.pair.disjoint" "never the same as" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "lessThan" }}{{ t "shape.pair.lessThan" "less than" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "lessThanOrEquals" }}{{ t "shape.pair.lessThanOrEquals" "at most" }} {{ template "shapeItems" .Items }}
+
+  {{- else if eq .Kind "dimension" }}
+    {{- if eq .Code "key" }}{{ t "shape.dimension.key" "key dimension" }}
+    {{- else if eq .Code "measure" }}{{ t "shape.dimension.measure" "measure" }}
+    {{- else if eq .Code "attribute" }}{{ t "shape.dimension.attribute" "attribute" }}{{ end }}
+  {{- else if eq .Kind "scale" }}
+    {{- if eq .Code "nominal" }}{{ t "shape.scale.nominal" "categories" }}
+    {{- else if eq .Code "ordinal" }}{{ t "shape.scale.ordinal" "ranked categories" }}
+    {{- else if eq .Code "interval" }}{{ t "shape.scale.interval" "interval scale" }}
+    {{- else if eq .Code "ratio" }}{{ t "shape.scale.ratio" "ratio scale" }}
+    {{- else }}{{ t "shape.scale.other" "scale" }} {{ template "shapeItems" .Items }}{{ end }}
+  {{- else if eq .Kind "unit" }}{{ t "shape.unit" "in" }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "dataKind" }}
+    {{- if eq .Code "time" }}{{ t "shape.dataKind.time" "a point in time" }}{{ with .Items }} ({{ template "shapeItems" . }}){{ end }}
+    {{- else if eq .Code "geoShape" }}{{ t "shape.dataKind.geoShape" "a geographic shape" }}
+    {{- else if eq .Code "geoCoordinates" }}{{ t "shape.dataKind.geoCoordinates" "geographic coordinates" }}
+    {{- else }}{{ t "shape.dataKind.other" "data kind" }} {{ template "shapeItems" .Items }}{{ end }}
+  {{- else if eq .Kind "relation" }}
+    {{- if eq .Code "standardError" }}{{ t "shape.relation.standardError" "standard error of" }}
+    {{- else }}{{ t "shape.relation.other" "related to" }}{{ end }} {{ template "shapeItems" .Items }}
+  {{- else if eq .Kind "hierarchy" }}{{ t "shape.hierarchy" "organised in a hierarchy" }}{{ with .Items }} {{ template "shapeItems" . }}{{ end }}
+  {{- end -}}
+{{ end }}
+
+{{ define "shapeItems" }}
+  {{- range . }}
+    {{- if eq .Sep "comma" }}, {{ else if eq .Sep "or" }} {{ t "shape.or" "or" }} {{ else if eq .Sep "and" }} {{ t "shape.and" "and" }} {{ else if eq .Sep "to" }} {{ t "shape.to" "to" }} {{ end -}}
+    {{ template "shapeItem" . }}
+  {{- end -}}
+{{ end }}
+
+{{ define "shapeItem" }}
+  {{- if .Term }}<a href="{{ .Term.Href }}" title="{{ .Term.IRI }}">{{ .Term.Label }}</a>{{ if and .Term.Prefix (ne .Term.Label .Term.Local) }}<span class="vs-bn-curie">{{ .Term.CURIE }}</span>{{ end }}
+  {{- else if .Text }}<span class="vs-ss-val">{{ .Text }}</span>
+  {{- else }}{{ template "shapeCode" .Code }}{{ end -}}
+{{ end }}
+
+{{/* Codes in plain words: datatypes, node kinds and time units. */}}
+{{ define "shapeCode" }}
+  {{- if eq . "text" }}{{ t "shape.code.text" "text" }}
+  {{- else if eq . "langText" }}{{ t "shape.code.langText" "text with a language tag" }}
+  {{- else if eq . "html" }}{{ t "shape.code.html" "HTML text" }}
+  {{- else if eq . "integer" }}{{ t "shape.code.integer" "a whole number" }}
+  {{- else if eq . "number" }}{{ t "shape.code.number" "a number" }}
+  {{- else if eq . "boolean" }}{{ t "shape.code.boolean" "yes or no" }}
+  {{- else if eq . "date" }}{{ t "shape.code.date" "a date" }}
+  {{- else if eq . "dateTime" }}{{ t "shape.code.dateTime" "a date and time" }}
+  {{- else if eq . "time" }}{{ t "shape.code.time" "a time of day" }}
+  {{- else if eq . "year" }}{{ t "shape.code.year" "a year" }}
+  {{- else if eq . "yearMonth" }}{{ t "shape.code.yearMonth" "a month (year and month)" }}
+  {{- else if eq . "duration" }}{{ t "shape.code.duration" "a duration" }}
+  {{- else if eq . "uri" }}{{ t "shape.code.uri" "a web address" }}
+  {{- else if eq . "geometry" }}{{ t "shape.code.geometry" "a geometry (WKT)" }}
+  {{- else if eq . "undefined" }}{{ t "shape.code.undefined" "undefined" }}
+  {{- else if eq . "iri" }}{{ t "shape.code.iri" "a link to a resource" }}
+  {{- else if eq . "blank" }}{{ t "shape.code.blank" "a nested structure" }}
+  {{- else if eq . "literal" }}{{ t "shape.code.literal" "a value" }}
+  {{- else if eq . "blankOrIri" }}{{ t "shape.code.blankOrIri" "a resource or a nested structure" }}
+  {{- else if eq . "blankOrLiteral" }}{{ t "shape.code.blankOrLiteral" "a value or a nested structure" }}
+  {{- else if eq . "iriOrLiteral" }}{{ t "shape.code.iriOrLiteral" "a link or a value" }}
+  {{- else if eq . "unitYear" }}{{ t "shape.code.unitYear" "year" }}
+  {{- else if eq . "unitMonth" }}{{ t "shape.code.unitMonth" "month" }}
+  {{- else if eq . "unitWeek" }}{{ t "shape.code.unitWeek" "week" }}
+  {{- else if eq . "unitDay" }}{{ t "shape.code.unitDay" "day" }}
+  {{- else if eq . "unitHour" }}{{ t "shape.code.unitHour" "hour" }}
+  {{- else if eq . "unitMinute" }}{{ t "shape.code.unitMinute" "minute" }}
+  {{- else if eq . "unitSecond" }}{{ t "shape.code.unitSecond" "second" }}
+  {{- else }}{{ t "shape.code.structure" "a nested structure" }}{{ end -}}
+{{ end }}

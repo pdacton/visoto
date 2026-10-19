@@ -37,12 +37,17 @@ const sparqlMetricPartial = "templates/partials/sparql-metric.html"
 // alone — only funcMap and i18n functions, no includes from other files.
 const bnodeTreePartial = "templates/partials/bnode-tree.html"
 
+// shapeSummaryPartial holds the SHACL shape summary: "shapeSummary" (the
+// placeholder) and "shapeSummaryCard" (the HTMX response body) with its parts.
+const shapeSummaryPartial = "templates/partials/shape-summary.html"
+
 // Per-language clones of each standalone partial, keyed by lang.Key(code).
 // Populated once by InitPartials.
 var (
 	sparqlTableSets  map[string]*template.Template
 	sparqlMetricSets map[string]*template.Template
 	bnodeTreeSets    map[string]*template.Template
+	shapeSummarySets map[string]*template.Template
 )
 
 // InitPartials parses the standalone partials and clones them per language.
@@ -61,6 +66,9 @@ func InitPartials(cats *i18n.Catalogs, langs *lang.Set) error {
 		return err
 	}
 	if bnodeTreeSets, err = parsePartialPerLang(bnodeTreePartial, cats, langs, codes); err != nil {
+		return err
+	}
+	if shapeSummarySets, err = parsePartialPerLang(shapeSummaryPartial, cats, langs, codes); err != nil {
 		return err
 	}
 	return nil
@@ -147,6 +155,19 @@ func RenderBnodeTree(code string, params map[string]any) (template.HTML, error) 
 	var buf bytes.Buffer
 	if err := tmpl.ExecuteTemplate(&buf, "bnodeTreeCard", params); err != nil {
 		return "", fmt.Errorf("render bnodeTreeCard: %w", err)
+	}
+	return template.HTML(buf.String()), nil
+}
+
+// RenderShapeSummary renders the shapeSummaryCard fragment in language code.
+func RenderShapeSummary(code string, params map[string]any) (template.HTML, error) {
+	tmpl, err := pick(shapeSummarySets, code)
+	if err != nil {
+		return "", err
+	}
+	var buf bytes.Buffer
+	if err := tmpl.ExecuteTemplate(&buf, "shapeSummaryCard", params); err != nil {
+		return "", fmt.Errorf("render shapeSummaryCard: %w", err)
 	}
 	return template.HTML(buf.String()), nil
 }

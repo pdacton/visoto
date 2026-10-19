@@ -16,6 +16,10 @@
 
     {{ template "literals" . }}
 
+    <!-- The dimensions in plain language. Collapsed: the Dimensions table below
+         is the main view, and a constraint can declare up to 288 dimensions. -->
+    {{ template "shapeSummary" (dict "iri" .ResourceIRI "collapsed" true) }}
+
     <!-- The cube's dimensions, one row per sh:property shape.
 
          GROUP BY ?shape is required, not cosmetic: the term-set lookup walks

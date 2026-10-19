@@ -14,6 +14,8 @@
 
 {{ define "pageContent" }}
 
+    {{ template "shapeSummary" (dict "iri" .ResourceIRI) }}
+
     {{ template "literals" . }}
 
     <!-- Open, not collapsed: a property shape has few blank nodes, and they are

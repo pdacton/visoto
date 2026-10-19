@@ -1,0 +1,22 @@
+TARGET targetClass Catalog record[dcat:CatalogRecord]
+- "Application profile" (dct:conformsTo) | card.oneOrMore | class Standard[dct:Standard]
+    desc: An Application Profile that the Catalogued Resource's metadata conforms to.
+- "Change type" (adms:status) | card.exactlyOne | class Concept[skos:Concept]
+    desc: The status of the catalogue record in the context of editorial flow of the dataset and data service descriptions.
+- "Description" (dct:description) | card.any | nodeKind #literal
+    desc: A free-text account of the record. This property can be repeated for parallel language versions of the description.
+- "Language" (dct:language) | card.any | class Linguistic system[dct:LinguisticSystem]
+    desc: A language used in the textual metadata describing titles, descriptions, etc. of the Catalogued Resource. This property can be repeated if the metadata is provided in multiple languages.
+- "Listing date" (dct:issued) | card.exactlyOne | datatype #date or #dateTime
+    desc: The date on which the description of the Resource was included in the Catalogue.
+    also: sh:or #structure
+- "Modification date" (dct:modified) | card.exactlyOne | datatype #date or #dateTime
+    desc: The most recent date on which the Catalogue entry was changed or modified.
+    also: sh:or #structure
+- "Primary topic" (foaf:primaryTopic) | card.exactlyOne | class Catalog[dcat:Catalog], Dataset[dcat:Dataset] or Data service[dcat:DataService] | nodeKind #blankOrIri
+    desc: A link to the Dataset, Data service or Catalog described in the record. A catalogue record will refer to one entity in a catalogue. This can be either a Dataset or a Data Service. To ensure an unambigous reading of the cardinality the range is set to Catalogued Resource. However it is not the intend with this range to require the explicit use of the class Catalogued Record. As abstract class, an subclass should be used.
+    also: sh:or #structure
+- "Source metadata" (dct:source) | card.atMostOne | class Catalog record[dcat:CatalogRecord]
+    desc: The original metadata that was used in creating metadata for the Dataset, Data Service or Dataset Series.
+- "Title" (dct:title) | card.any | nodeKind #literal
+    desc: A name given to the Catalogue Record. This property can be repeated for parallel language versions of the name.
