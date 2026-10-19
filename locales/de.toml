@@ -1799,6 +1799,26 @@
 "js.bnode.copyFailed" = "Kopieren fehlgeschlagen"
 
 # Plural forms (tn). TOML tables must follow every plain key, so they stay last.
+# ── Types: SHACL shapes (classes|instances/sh%3A*Shape.html) ──────────────
+"type.shacl.nodeShapes" = "Node Shapes"
+"type.shacl.nodeShape" = "Node Shape"
+"type.shacl.propertyShapes" = "Property Shapes"
+"type.shacl.propertyShape" = "Property Shape"
+"type.shacl.classOrNode" = "Klasse / Node"
+"type.shacl.tip.classOrNode" = "sh:class oder sh:node — was ein IRI-Wert sein muss."
+"type.shacl.min" = "Min"
+"type.shacl.max" = "Max"
+"type.shacl.order" = "Reihenfolge"
+"type.shacl.targetClass" = "Zielklasse"
+"type.shacl.tip.targetClass" = "sh:targetClass — die Klasse, deren Instanzen die Shape validiert."
+"type.shacl.tip.properties" = "Wie viele sh:property-Shapes die Node Shape deklariert."
+"type.shacl.cubeConstraint" = "Cube-Constraint"
+"type.shacl.tip.cubeConstraint" = "Ob die Shape auch ein cube:Constraint ist, das Datenmodell eines Cubes."
+"type.shacl.message" = "Meldung"
+"type.shacl.tip.message" = "sh:message — der Text, den ein Validator meldet, wenn ein Wert die Shape verletzt."
+"type.shacl.usedBy" = "Verwendet von"
+"type.shacl.tip.usedBy" = "Eine Node Shape, die diese Property Shape mit sh:property deklariert."
+
 ["bnode.count"]
 one = "{{.Count}} leerer Knoten"
 other = "{{.Count}} leere Knoten"

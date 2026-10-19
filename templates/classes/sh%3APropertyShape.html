@@ -1,0 +1,97 @@
+<!-- sh:PropertyShape Class Template — catalog of SHACL property shapes
+
+     Needed alongside instances/sh%3APropertyShape.html: without it that instance
+     template would also take over this class page (resolution step 5). -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Counted live (LINDAS counts drift). -->
+  <sparql-async id="propertyShapeTotal">
+    SELECT (COUNT(?s) AS ?count) WHERE { ?s a sh:PropertyShape . }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "propertyShapeTotal"
+        "title" (t "type.shacl.propertyShapes" "Property Shapes")
+        "icon" "/static/img/resource/PropertyShape.svg") }}
+  </div>
+
+  <!-- Catalog: one row per property shape, grouped because sh:name and
+       sh:message are multilingual and a shape may be used by several node shapes.
+
+       Blank shapes (157 on LINDAS) are left out: they have no page to link to,
+       and they show in full on their node shape's page. Most cube dimension
+       shapes are not typed sh:PropertyShape at all and are listed on their
+       constraint's page.
+
+       No LIMIT: the server picks inline vs working set by instance count. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+
+        <sparql-async id="propertyShapeCatalog">
+          SELECT ?shape ?path ?name ?datatype ?minCount ?maxCount ?message ?nodeShape WHERE {
+            { SELECT ?shape
+                     (SAMPLE(?path_) AS ?path)
+                     (SAMPLE(?name_) AS ?name)
+                     (SAMPLE(?dt_)   AS ?datatype)
+                     (SAMPLE(?min_)  AS ?minCount)
+                     (SAMPLE(?max_)  AS ?maxCount)
+                     (SAMPLE(?msg_)   AS ?msgLocal)
+                     (SAMPLE(?msgEn_) AS ?msgEn)
+                     (SAMPLE(?ns_)   AS ?nodeShape)
+              WHERE {
+                ?shape a ?? .
+                FILTER(isIRI(?shape))
+                OPTIONAL { ?shape sh:path ?path_ }
+                OPTIONAL { ?shape sh:name ?name_ .
+                           FILTER(langMatches(lang(?name_), visoto:dispLang) || !langMatches(lang(?name_), "*")) }
+                OPTIONAL { ?shape sh:datatype ?dt_ }
+                OPTIONAL { ?shape sh:minCount ?min_ }
+                OPTIONAL { ?shape sh:maxCount ?max_ }
+                OPTIONAL { ?shape sh:message ?msg_ .
+                           FILTER(langMatches(lang(?msg_), visoto:dispLang) || !langMatches(lang(?msg_), "*")) }
+                OPTIONAL { ?shape sh:message ?msgEn_ . FILTER(langMatches(lang(?msgEn_), "en")) }
+                OPTIONAL { ?ns_ sh:property ?shape }
+              } GROUP BY ?shape }
+            # English fallback: the DCAT-AP shapes carry sh:message in English only.
+            # Outside the GROUP BY: COALESCE over two aggregates 500s on QLever.
+            BIND(COALESCE(?msgLocal, ?msgEn) AS ?message)
+          }
+          ORDER BY ?nodeShape ?path
+        </sparql-async>
+
+        <sparql-columns for="propertyShapeCatalog" order>
+          <sparql-column var="shape" label="{{ t "type.shacl.propertyShape" "Property Shape" }}" icon filter="text"></sparql-column>
+          <sparql-column var="path" label="{{ t "facet.path" "Path" }}" filter="text"></sparql-column>
+          <sparql-column var="name" label="{{ t "facet.name" "Name" }}" filter="text"></sparql-column>
+          <sparql-column var="datatype" label="{{ t "facet.datatype" "Datatype" }}" badge filter width="130"></sparql-column>
+          <sparql-column var="minCount" label="{{ t "type.shacl.min" "Min" }}" type="number" width="80"></sparql-column>
+          <sparql-column var="maxCount" label="{{ t "type.shacl.max" "Max" }}" type="number" width="80"></sparql-column>
+          <sparql-column var="message" label="{{ t "type.shacl.message" "Message" }}"
+                         tip="{{ t "type.shacl.tip.message" "sh:message — the text a validator reports when a value violates the shape." }}" filter="text"></sparql-column>
+          <sparql-column var="nodeShape" label="{{ t "type.shacl.usedBy" "Used by" }}"
+                         tip="{{ t "type.shacl.tip.usedBy" "A node shape that declares this property shape with sh:property." }}"
+                         filter="text"></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "propertyShapeCatalog"
+            "iri" .ResourceIRI
+            "title" (t "type.shacl.propertyShapes" "Property Shapes")
+            "icon" "list-checks")
+        }}
+      </div>
+    </div>
+  </div>
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

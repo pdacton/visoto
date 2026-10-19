@@ -1,0 +1,45 @@
+<!-- sh:PropertyShape Instance Template — one SHACL property shape
+
+     The constraint itself (path, datatype, cardinality, ranges, sh:pattern) is
+     all literal or single IRI values, so "literals" and "relationships" already
+     show it. What they cannot show is the blank structure — sh:in lists, sh:or
+     alternatives, complex paths — which is the bnodeTree card, and which node
+     shapes use this shape. -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource?iri=sh%3APropertyShape">{{ t "type.shacl.propertyShapes" "Property Shapes" }}</a></li>
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+    {{ template "literals" . }}
+
+    <!-- Open, not collapsed: a property shape has few blank nodes, and they are
+         the part of it worth reading. -->
+    {{ template "bnodeTree" (dict "iri" .ResourceIRI) }}
+
+    <sparql-query id="usedBy">
+        SELECT ?nodeShape ?targetClass WHERE {
+            ?nodeShape sh:property ?? .
+            OPTIONAL { ?nodeShape sh:targetClass ?targetClass }
+        }
+    </sparql-query>
+    <sparql-columns for="usedBy">
+        <sparql-column var="nodeShape" label="{{ t "type.shacl.nodeShape" "Node Shape" }}" icon></sparql-column>
+        <sparql-column var="targetClass" label="{{ t "type.shacl.targetClass" "Target Class" }}"></sparql-column>
+    </sparql-columns>
+
+    <div class="mb-3">
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.usedBy
+            "id" "usedBy"
+            "title" (t "type.shacl.usedBy" "Used by")
+            "icon" "shapes")
+        }}
+    </div>
+
+    {{ template "relationships" . }}
+
+{{ end }}

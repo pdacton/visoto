@@ -225,6 +225,10 @@ type_priority = [
   # table that is the whole point of the Person template.
   "http://schema.org/Person",                                                     #  12,292
 
+  # Every cube:Constraint is also a sh:NodeShape (2,069 on LINDAS), and both have
+  # an instance template. sh:NodeShape stays unlisted, so the cube template wins.
+  "https://cube.link/Constraint",
+
   # The Staatskalender hierarchy. MORE SPECIFIC than schema:Organization below it:
   # 168 of the 12,292 government organizations carry both types, and schema:
   # Organization is listed, so without this line those 168 would fall to the

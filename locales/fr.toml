@@ -1798,6 +1798,26 @@
 "js.bnode.copyFailed" = "Échec de la copie"
 
 # Plural forms (tn). TOML tables must follow every plain key, so they stay last.
+# ── Types: SHACL shapes (classes|instances/sh%3A*Shape.html) ──────────────
+"type.shacl.nodeShapes" = "Node shapes"
+"type.shacl.nodeShape" = "Node shape"
+"type.shacl.propertyShapes" = "Property shapes"
+"type.shacl.propertyShape" = "Property shape"
+"type.shacl.classOrNode" = "Classe / Node"
+"type.shacl.tip.classOrNode" = "sh:class ou sh:node — ce qu'une valeur IRI doit être."
+"type.shacl.min" = "Min"
+"type.shacl.max" = "Max"
+"type.shacl.order" = "Ordre"
+"type.shacl.targetClass" = "Classe cible"
+"type.shacl.tip.targetClass" = "sh:targetClass — la classe dont la shape valide les instances."
+"type.shacl.tip.properties" = "Nombre de shapes sh:property déclarées par la node shape."
+"type.shacl.cubeConstraint" = "Contrainte de cube"
+"type.shacl.tip.cubeConstraint" = "Indique si la shape est aussi une cube:Constraint, le modèle de données d'un cube."
+"type.shacl.message" = "Message"
+"type.shacl.tip.message" = "sh:message — le texte qu'un validateur signale lorsqu'une valeur viole la shape."
+"type.shacl.usedBy" = "Utilisée par"
+"type.shacl.tip.usedBy" = "Une node shape qui déclare cette property shape avec sh:property."
+
 ["bnode.count"]
 one = "{{.Count}} nœud anonyme"
 other = "{{.Count}} nœuds anonymes"

@@ -1,0 +1,84 @@
+<!-- sh:NodeShape Class Template — catalog of SHACL node shapes
+
+     Needed alongside instances/sh%3ANodeShape.html: without it that instance
+     template would also take over this class page (resolution step 5). -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Counts are queried live (LINDAS counts drift). -->
+  <sparql-async id="nodeShapeTotal">
+    SELECT (COUNT(?s) AS ?count) WHERE { ?s a sh:NodeShape . }
+  </sparql-async>
+  <sparql-async id="nodeShapeConstraints">
+    SELECT (COUNT(?s) AS ?count) WHERE { ?s a sh:NodeShape, cube:Constraint . }
+  </sparql-async>
+
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "nodeShapeTotal"
+        "title" (t "type.shacl.nodeShapes" "Node Shapes")
+        "icon" "/static/img/resource/NodeShape.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "nodeShapeConstraints"
+        "title" (t "card.constraints" "Constraints")
+        "href" "/resource?iri=cube%3AConstraint"
+        "icon" "/static/img/resource/Constraint.svg") }}
+  </div>
+
+  <!-- Catalog: one row per node shape.
+
+       The property count is computed in a subquery grouped by ?shape so the
+       sh:property join cannot multiply rows; the target class is sampled there
+       too (a shape may name several). ?cubeConstraint tells the cube shapes —
+       more than half of all node shapes on LINDAS — from the rest. Blank node
+       shapes have no page of their own and are left out.
+
+       No LIMIT: the server picks inline vs working set by instance count. -->
+  <div class="row">
+    <div class="col-lg">
+      <div class="mb-3">
+
+        <sparql-async id="nodeShapeCatalog">
+          SELECT ?shape ?targetClass ?properties ?cubeConstraint WHERE {
+            { SELECT ?shape (COUNT(?ps) AS ?properties) (SAMPLE(?tc) AS ?targetClass)
+              WHERE {
+                ?shape a ?? .
+                FILTER(isIRI(?shape))
+                OPTIONAL { ?shape sh:property ?ps }
+                OPTIONAL { ?shape sh:targetClass ?tc }
+              } GROUP BY ?shape }
+            BIND(EXISTS { ?shape a cube:Constraint } AS ?cubeConstraint)
+          }
+          ORDER BY DESC(?properties)
+        </sparql-async>
+
+        <sparql-columns for="nodeShapeCatalog" order>
+          <sparql-column var="shape" label="{{ t "type.shacl.nodeShape" "Node Shape" }}" icon filter="text"></sparql-column>
+          <sparql-column var="targetClass" label="{{ t "type.shacl.targetClass" "Target Class" }}"
+                         tip="{{ t "type.shacl.tip.targetClass" "sh:targetClass — the class whose instances the shape validates." }}"></sparql-column>
+          <sparql-column var="properties" label="{{ t "type.shacl.propertyShapes" "Property Shapes" }}" type="number"
+                         tip="{{ t "type.shacl.tip.properties" "How many sh:property shapes the node shape declares." }}" width="150"></sparql-column>
+          <sparql-column var="cubeConstraint" label="{{ t "type.shacl.cubeConstraint" "Cube Constraint" }}" badge
+                         tip="{{ t "type.shacl.tip.cubeConstraint" "Whether the shape is also a cube:Constraint, the data model of a cube." }}"
+                         filter width="150"></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "nodeShapeCatalog"
+            "iri" .ResourceIRI
+            "title" (t "type.shacl.nodeShapes" "Node Shapes")
+            "icon" "shapes")
+        }}
+      </div>
+    </div>
+  </div>
+
+  {{ template "relationships" . }}
+
+</div>
+{{ end }}

@@ -93,6 +93,17 @@
         </div>
     </div>
 
+    <!-- The same dimension shapes in full: sh:in lists, sh:or alternatives and
+         nested shapes the flat table above cannot show. Collapsed, because the
+         largest constraint declares 288 of them. -->
+    {{ template "bnodeTree" (dict
+        "iri" .ResourceIRI
+        "property" "sh:property"
+        "collapsed" true
+        "title" (t "card.dimensionShapes" "Dimension Shapes")
+        "icon" "ruler")
+    }}
+
     {{ template "relationships" . }}
 
 {{ end }}

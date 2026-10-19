@@ -1,0 +1,97 @@
+<!-- sh:NodeShape Instance Template — a SHACL node shape and its property shapes
+
+     Cube observation constraints are node shapes too, but they keep their own
+     template (instances/cube%3AConstraint.html): cube:Constraint is listed in
+     type_priority, sh:NodeShape is not. The ~100 i14y dataset structures that are
+     also rdfs:Class land here, not on the class templates — rdfs:Class and
+     owl:Class always sort last (uninformativeCrumbTypes), and for them the shape
+     is the useful view. -->
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource?iri=sh%3ANodeShape">{{ t "type.shacl.nodeShapes" "Node Shapes" }}</a></li>
+{{ end }}
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+
+    {{ template "literals" . }}
+
+    <!-- One row per sh:property shape.
+
+         GROUP BY ?ps with SAMPLE: sh:name and sh:message are multilingual and a
+         shape may carry both sh:class and sh:node, so ungrouped each shape
+         would repeat.
+
+         Property shapes are IRIs on LINDAS almost everywhere (8,225 of 8,382),
+         but not always; ?shape is bound only for an IRI, so a blank one shows no
+         genid label. Same for ?path: a complex path (sh:inversePath, a sequence)
+         is a blank node. Both are shown in full in the nested-structure card
+         below.
+
+         Sync sparql-query: the shapes of ONE node shape are bounded (the largest
+         non-cube shape on LINDAS declares 276). -->
+    <sparql-query id="propertyShapes">
+        SELECT ?path ?shape ?name ?datatype ?class ?minCount ?maxCount ?order ?message WHERE {
+            { SELECT ?ps
+                     (SAMPLE(?path_)  AS ?anyPath)
+                     (SAMPLE(?name_)  AS ?name)
+                     (SAMPLE(?dt_)    AS ?datatype)
+                     (SAMPLE(?class_) AS ?class)
+                     (SAMPLE(?min_)   AS ?minCount)
+                     (SAMPLE(?max_)   AS ?maxCount)
+                     (SAMPLE(?order_) AS ?order)
+                     (SAMPLE(?msg_)   AS ?msgLocal)
+                     (SAMPLE(?msgEn_) AS ?msgEn)
+              WHERE {
+                ?? sh:property ?ps .
+                OPTIONAL { ?ps sh:path ?path_ }
+                OPTIONAL { ?ps sh:name ?name_ .
+                           FILTER(langMatches(lang(?name_), visoto:dispLang) || !langMatches(lang(?name_), "*")) }
+                OPTIONAL { ?ps sh:datatype ?dt_ }
+                OPTIONAL { ?ps sh:class|sh:node ?class_ }
+                OPTIONAL { ?ps sh:minCount ?min_ }
+                OPTIONAL { ?ps sh:maxCount ?max_ }
+                OPTIONAL { ?ps sh:order ?order_ }
+                OPTIONAL { ?ps sh:message ?msg_ .
+                           FILTER(langMatches(lang(?msg_), visoto:dispLang) || !langMatches(lang(?msg_), "*")) }
+                OPTIONAL { ?ps sh:message ?msgEn_ . FILTER(langMatches(lang(?msgEn_), "en")) }
+              } GROUP BY ?ps }
+            # English fallback: the DCAT-AP shapes carry sh:message in English only.
+            # Outside the GROUP BY: COALESCE over two aggregates 500s on QLever.
+            BIND(COALESCE(?msgLocal, ?msgEn) AS ?message)
+            BIND(IF(isIRI(?ps), ?ps, ?unbound) AS ?shape)
+            BIND(IF(isIRI(?anyPath), ?anyPath, ?unbound) AS ?path)
+        }
+        ORDER BY ?order ?anyPath
+    </sparql-query>
+    <sparql-columns for="propertyShapes" order>
+        <sparql-column var="path" label="{{ t "facet.path" "Path" }}" icon filter="text"></sparql-column>
+        <sparql-column var="shape" label="{{ t "type.shacl.propertyShape" "Property Shape" }}"></sparql-column>
+        <sparql-column var="name" label="{{ t "facet.name" "Name" }}" filter="text"></sparql-column>
+        <sparql-column var="datatype" label="{{ t "facet.datatype" "Datatype" }}" badge filter width="130"></sparql-column>
+        <sparql-column var="class" label="{{ t "type.shacl.classOrNode" "Class / Node" }}"
+                       tip="{{ t "type.shacl.tip.classOrNode" "sh:class or sh:node — what an IRI value must be." }}" filter></sparql-column>
+        <sparql-column var="minCount" label="{{ t "type.shacl.min" "Min" }}" type="number" width="80"></sparql-column>
+        <sparql-column var="maxCount" label="{{ t "type.shacl.max" "Max" }}" type="number" width="80"></sparql-column>
+        <sparql-column var="order" label="{{ t "type.shacl.order" "Order" }}" type="number" width="90"></sparql-column>
+        <sparql-column var="message" label="{{ t "type.shacl.message" "Message" }}"
+                       tip="{{ t "type.shacl.tip.message" "sh:message — the text a validator reports when a value violates the shape." }}" filter="text"></sparql-column>
+    </sparql-columns>
+
+    <div class="mb-3">
+        {{ template "sparqlTable" (dict
+            "result" .QueryResults.propertyShapes
+            "id" "propertyShapes"
+            "title" (t "type.shacl.propertyShapes" "Property Shapes")
+            "icon" "list-checks")
+        }}
+    </div>
+
+    <!-- Everything blank under the shape: blank property shapes, sh:in lists,
+         sh:or alternatives, complex paths. Removes itself when there is none. -->
+    {{ template "bnodeTree" (dict "iri" .ResourceIRI "collapsed" true) }}
+
+    {{ template "relationships" . }}
+
+{{ end }}
