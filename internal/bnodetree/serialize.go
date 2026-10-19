@@ -47,7 +47,7 @@ func (g *Graph) subjects() []sparql.Binding {
 		seen[k] = true
 		out = append(out, b)
 		for _, e := range g.out[k] {
-			if e.O.Type == "bnode" {
+			if IsNode(e.O) {
 				walk(e.O)
 			}
 		}
@@ -58,7 +58,7 @@ func (g *Graph) subjects() []sparql.Binding {
 	return out
 }
 
-func (g *Graph) edges(s sparql.Binding) []edge { return g.out[key(s)] }
+func (g *Graph) edges(s sparql.Binding) []Edge { return g.out[key(s)] }
 
 // --- N-Triples --------------------------------------------------------------
 
@@ -154,7 +154,7 @@ func (w *turtleWriter) block(out *strings.Builder, s sparql.Binding) {
 	out.WriteString(" .\n\n")
 }
 
-func (w *turtleWriter) predicates(out *strings.Builder, edges []edge, indent int) {
+func (w *turtleWriter) predicates(out *strings.Builder, edges []Edge, indent int) {
 	pad := strings.Repeat("    ", indent)
 	byPred := map[string][]sparql.Binding{}
 	var order []string

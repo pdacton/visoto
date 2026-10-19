@@ -37,6 +37,13 @@ const (
 	rdfFirst = rdfNS + "first"
 	rdfRest  = rdfNS + "rest"
 	rdfNil   = rdfNS + "nil"
+
+	shProperty = shNS + "property"
+
+	// skolemMarker identifies a skolemized blank node: an IRI minted in place of
+	// one (RDF 1.1 §3.5). i14y publishes its sh:in lists this way, so a list or
+	// nested shape built from such IRIs is walked like a blank-node one.
+	skolemMarker = "/.well-known/genid/"
 )
 
 // Request selects the roots and the first hop of a tree. All IRIs must already
@@ -45,6 +52,26 @@ type Request struct {
 	IRI      string // the resource the tree hangs off
 	Property string // optional: only expand blank nodes under this predicate
 	Via      string // optional: follow this predicate to IRI roots first
+
+	// RootTriples also returns the roots' own non-blank triples (a shape's
+	// sh:targetClass, sh:closed, a property shape's sh:path, …). The tree card
+	// leaves it off: it shows only the blank-node structure.
+	RootTriples bool
+	// WithProperties adds the IRI-named property shapes of the root
+	// (<iri> sh:property ?ps, ?ps an IRI) as further roots, so a shape whose
+	// property shapes are IRIs (i14y) comes back whole. Ignored with Via.
+	WithProperties bool
+}
+
+// IsNode reports a term the tree walks into: a blank node, or a skolem IRI
+// standing in for one.
+func IsNode(b sparql.Binding) bool {
+	return b.Type == "bnode" || (b.Type == "uri" && strings.Contains(b.Value, skolemMarker))
+}
+
+// nodeTest is the SPARQL counterpart of IsNode for variable v.
+func nodeTest(v string) string {
+	return fmt.Sprintf(`(isBlank(%s) || CONTAINS(STR(%s), "%s"))`, v, v, skolemMarker)
 }
 
 // Validate checks every IRI of the request before it is spliced into a query.
@@ -119,9 +146,9 @@ func (r Request) branch(level int, spine bool) string {
 		pred := "?p"
 		if level == 0 && r.Property != "" {
 			pred = "<" + r.Property + ">"
-			fmt.Fprintf(&b, "    %s %s ?o . FILTER(isBlank(?o)) BIND(%s AS ?p)\n", node, pred, pred)
-		} else if level == 0 {
-			fmt.Fprintf(&b, "    %s ?p ?o . FILTER(isBlank(?o))\n", node)
+			fmt.Fprintf(&b, "    %s %s ?o . FILTER%s BIND(%s AS ?p)\n", node, pred, nodeTest("?o"), pred)
+		} else if level == 0 && !r.RootTriples {
+			fmt.Fprintf(&b, "    %s ?p ?o . FILTER%s\n", node, nodeTest("?o"))
 		} else {
 			fmt.Fprintf(&b, "    %s ?p ?o .\n", node)
 		}
@@ -132,7 +159,7 @@ func (r Request) branch(level int, spine bool) string {
 	if level == 0 && r.Property != "" {
 		lp = "<" + r.Property + ">"
 	}
-	fmt.Fprintf(&b, "    %s %s ?lh . FILTER(isBlank(?lh))\n", node, lp)
+	fmt.Fprintf(&b, "    %s %s ?lh . FILTER%s\n", node, lp, nodeTest("?lh"))
 	b.WriteString("    ?lh rdf:rest* ?s . ?s ?p ?o . FILTER(?p = rdf:first || ?p = rdf:rest)\n")
 	fmt.Fprintf(&b, "    BIND(%d AS ?d)\n", level)
 	return b.String()
@@ -142,6 +169,9 @@ func (r Request) branch(level int, spine bool) string {
 func (r Request) rootPattern() string {
 	if r.Via != "" {
 		return fmt.Sprintf("<%s> <%s> ?n0 . FILTER(isIRI(?n0))", r.IRI, r.Via)
+	}
+	if r.WithProperties {
+		return fmt.Sprintf("{ VALUES ?n0 { <%s> } } UNION { <%s> <%s> ?n0 . FILTER(isIRI(?n0)) }", r.IRI, r.IRI, shProperty)
 	}
 	return fmt.Sprintf("VALUES ?n0 { <%s> }", r.IRI)
 }
@@ -161,9 +191,9 @@ func (r Request) hop(k int) string {
 	if strings.HasPrefix(pred, "?") {
 		notSpine = fmt.Sprintf(" FILTER(%s != rdf:first && %s != rdf:rest)", pred, pred)
 	}
-	direct := fmt.Sprintf("%s %s %s . FILTER(isBlank(%s))%s", from, pred, to, to, notSpine)
-	viaList := fmt.Sprintf("%s %s ?l%d . FILTER(isBlank(?l%d))%s ?l%d rdf:rest*/rdf:first %s . FILTER(isBlank(%s))",
-		from, pred, k, k, notSpine, k, to, to)
+	direct := fmt.Sprintf("%s %s %s . FILTER%s%s", from, pred, to, nodeTest(to), notSpine)
+	viaList := fmt.Sprintf("%s %s ?l%d . FILTER%s%s ?l%d rdf:rest*/rdf:first %s . FILTER%s",
+		from, pred, k, nodeTest(fmt.Sprintf("?l%d", k)), notSpine, k, to, nodeTest(to))
 	return fmt.Sprintf("    { %s }\n    UNION\n    { %s }\n", direct, viaList)
 }
 
@@ -173,7 +203,7 @@ func (r Request) hop(k int) string {
 // last level, so every row there is a node's own triple.
 func NeedsDeeper(rows []Row, depth int) bool {
 	for _, r := range rows {
-		if r.Depth == depth && r.O.Type == "bnode" {
+		if r.Depth == depth && IsNode(r.O) {
 			return true
 		}
 	}

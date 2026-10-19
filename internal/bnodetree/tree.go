@@ -84,13 +84,17 @@ type Graph struct {
 	Roots     []sparql.Binding // IRI subjects at depth 0, in first-seen order
 	Truncated bool             // the row cap was hit; the structure is incomplete
 	Cut       int              // last level fetched when a shallower result stands in; 0 = complete
-	out       map[string][]edge
+	out       map[string][]Edge
 	refs      map[string]int // blank node → number of triples pointing at it
 }
 
-type edge struct {
+// Edge is one outgoing triple of a subject.
+type Edge struct {
 	P, O sparql.Binding
 }
+
+// Out returns the triples of t, in query order.
+func (g *Graph) Out(t sparql.Binding) []Edge { return g.out[key(t)] }
 
 // key identifies a term across rows: blank nodes by label, others by value.
 func key(b sparql.Binding) string {
@@ -105,7 +109,7 @@ func isLiteral(b sparql.Binding) bool { return b.Type == "literal" || b.Type == 
 // NewGraph deduplicates rows into a graph. More than RowCap rows means the
 // query hit its LIMIT.
 func NewGraph(rows []Row) *Graph {
-	g := &Graph{out: map[string][]edge{}, refs: map[string]int{}}
+	g := &Graph{out: map[string][]Edge{}, refs: map[string]int{}}
 	if len(rows) > RowCap {
 		g.Truncated = true
 		rows = rows[:RowCap]
@@ -118,12 +122,13 @@ func NewGraph(rows []Row) *Graph {
 			continue
 		}
 		seen[t] = true
-		if r.Depth == 0 && r.S.Type == "uri" && !rootSeen[r.S.Value] {
+		// A skolem IRI at depth 0 is a list cell of a root, not a root.
+		if r.Depth == 0 && r.S.Type == "uri" && !IsNode(r.S) && !rootSeen[r.S.Value] {
 			rootSeen[r.S.Value] = true
 			g.Roots = append(g.Roots, r.S)
 		}
-		g.out[key(r.S)] = append(g.out[key(r.S)], edge{P: r.P, O: r.O})
-		if r.O.Type == "bnode" {
+		g.out[key(r.S)] = append(g.out[key(r.S)], Edge{P: r.P, O: r.O})
+		if IsNode(r.O) {
 			g.refs[key(r.O)]++
 		}
 	}
@@ -264,11 +269,11 @@ type builder struct {
 
 // props groups edges by predicate. level is the level of the subject; at the
 // root (rootOnly) only blank-node-valued predicates are kept.
-func (b *builder) props(edges []edge, level int, rootOnly bool) []*Prop {
+func (b *builder) props(edges []Edge, level int, rootOnly bool) []*Prop {
 	byPred := map[string]*Prop{}
 	var order []string
 	for _, e := range edges {
-		if rootOnly && e.O.Type != "bnode" {
+		if rootOnly && !IsNode(e.O) {
 			continue
 		}
 		p, ok := byPred[e.P.Value]
@@ -315,11 +320,13 @@ func (b *builder) value(pred string, o sparql.Binding, level int) *Value {
 	switch {
 	case o.Type == "uri" && o.Value == rdfNil:
 		return &Value{Kind: KindNil}
-	case o.Type == "uri":
+	case o.Type == "uri" && !(IsNode(o) && len(b.g.out[key(o)]) > 0):
+		// A skolem IRI is walked like a blank node only when its triples were
+		// fetched; otherwise it is an ordinary link.
 		return &Value{Kind: KindIRI, Term: b.term(o)}
 	case isLiteral(o):
 		return b.literal(o)
-	case o.Type != "bnode":
+	case !IsNode(o):
 		return &Value{Kind: KindLiteral, Text: o.Value}
 	}
 	if items, ok := b.list(o); ok {
@@ -368,7 +375,7 @@ func (b *builder) node(o sparql.Binding, level int) *Value {
 	}
 	b.onStack[k] = n
 	edges := b.g.out[k]
-	var rest []edge
+	var rest []Edge
 	for _, e := range edges {
 		switch {
 		case e.P.Value == rdfType && e.O.Type == "uri":
@@ -409,8 +416,10 @@ func (b *builder) ref(n *Node) *Value {
 	return &Value{Kind: KindRef, Ref: n.Anchor, RefTitle: n.Title}
 }
 
-// list returns the members of a well-formed RDF list starting at o.
-func (b *builder) list(o sparql.Binding) ([]sparql.Binding, bool) {
+func (b *builder) list(o sparql.Binding) ([]sparql.Binding, bool) { return b.g.List(o) }
+
+// List returns the members of a well-formed RDF list starting at o.
+func (g *Graph) List(o sparql.Binding) ([]sparql.Binding, bool) {
 	var items []sparql.Binding
 	seen := map[string]bool{}
 	cur := o
@@ -419,12 +428,12 @@ func (b *builder) list(o sparql.Binding) ([]sparql.Binding, bool) {
 			return items, len(items) > 0
 		}
 		k := key(cur)
-		if cur.Type != "bnode" || seen[k] {
+		if !IsNode(cur) || seen[k] {
 			return nil, false
 		}
 		seen[k] = true
 		var first, rest []sparql.Binding
-		for _, e := range b.g.out[k] {
+		for _, e := range g.out[k] {
 			switch e.P.Value {
 			case rdfFirst:
 				first = append(first, e.O)
@@ -457,7 +466,7 @@ func (b *builder) looksLikeList(k string) bool { return b.isListCell(k) }
 
 // title picks a blank node's header label: the first title predicate with a
 // value, in the preferred language, else untagged, else any.
-func (b *builder) title(edges []edge) string {
+func (b *builder) title(edges []Edge) string {
 	for _, tp := range titlePreds {
 		var untagged, other string
 		for _, e := range edges {
@@ -503,9 +512,13 @@ func (b *builder) literal(o sparql.Binding) *Value {
 	return v
 }
 
-func (b *builder) term(t sparql.Binding) Term {
+func (b *builder) term(t sparql.Binding) Term { return NewTerm(t, b.opts.Prefixes) }
+
+// NewTerm prepares an IRI for display: its resolved label (the binding's
+// DisplayText) or last segment, its CURIE parts and its Visoto link.
+func NewTerm(t sparql.Binding, prefixes []config.Prefix) Term {
 	out := Term{IRI: t.Value, Href: sparql.ResourceHref(t.Value)}
-	out.Prefix, out.Local = Compact(t.Value, b.opts.Prefixes)
+	out.Prefix, out.Local = Compact(t.Value, prefixes)
 	out.Label = t.DisplayText
 	if out.Label == "" || out.Label == t.Value || strings.Contains(out.Label, "?") {
 		out.Label = lastSegment(t.Value)

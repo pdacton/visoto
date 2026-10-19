@@ -509,3 +509,62 @@ func TestJSONLD(t *testing.T) {
 		t.Errorf("JSON-LD lacks language or @type:\n%s", out)
 	}
 }
+
+func TestSkolemList(t *testing.T) {
+	// i14y writes sh:in as a list of skolem IRIs instead of blank nodes.
+	const genid = "https://register.ld.admin.ch/i14y/x/.well-known/genid/"
+	f := &fixture{}
+	root := iri(shape)
+	c0, c1 := iri(genid+"c0"), iri(genid+"c1")
+	f.add(0, root, shNS+"in", c0)
+	f.add(0, c0, rdfFirst, lit("1"))
+	f.add(0, c0, rdfRest, c1)
+	f.add(0, c1, rdfFirst, lit("2"))
+	f.add(0, c1, rdfRest, iri(rdfNil))
+
+	g, tree := build(f, "")
+	if len(g.Roots) != 1 {
+		t.Fatalf("roots = %v, skolem list cells must not become roots", g.Roots)
+	}
+	v := tree.Roots[0].Props[0].Values[0]
+	if v.Kind != KindEnum || v.Count != 2 {
+		t.Errorf("skolem sh:in = %+v, want an enumeration of 2", v)
+	}
+	if items, ok := g.List(c0); !ok || len(items) != 2 {
+		t.Errorf("Graph.List = %v %v", items, ok)
+	}
+	if !NeedsDeeper([]Row{{Depth: 2, S: bn("x"), P: iri(shNS + "in"), O: c0}}, 2) {
+		t.Error("a skolem IRI at the last level needs a deeper query")
+	}
+	// A skolem IRI whose triples were not fetched stays an ordinary link.
+	f2 := &fixture{}
+	f2.add(0, root, shNS+"property", bn("ps"))
+	f2.add(1, bn("ps"), shNS+"node", iri(genid+"unfetched"))
+	_, tree2 := build(f2, "")
+	if v := propByCURIE(tree2.Roots[0].Props[0].Values[0].Node.Props, "sh:node").Values[0]; v.Kind != KindIRI {
+		t.Errorf("unfetched skolem IRI = %+v, want a link", v)
+	}
+}
+
+func TestQueryOptions(t *testing.T) {
+	plain := Request{IRI: shape}.QueryTo(1)
+	full := Request{IRI: shape, RootTriples: true, WithProperties: true}.QueryTo(1)
+
+	if !strings.Contains(plain, "?n0 ?p ?o . FILTER(isBlank(?o) ||") {
+		t.Error("without RootTriples level 0 keeps only node-valued triples")
+	}
+	if !strings.Contains(full, "    ?n0 ?p ?o .\n") {
+		t.Error("RootTriples must return all of the root's triples")
+	}
+	want := "UNION { <" + shape + "> <" + shNS + "property> ?n0 . FILTER(isIRI(?n0)) }"
+	if !strings.Contains(full, want) || strings.Contains(plain, want) {
+		t.Error("WithProperties must add the IRI property shapes as roots")
+	}
+	if !strings.Contains(plain, `CONTAINS(STR(?n1), "/.well-known/genid/")`) {
+		t.Error("hops must follow skolem IRIs")
+	}
+	via := Request{IRI: cubeIRI, Via: "https://cube.link/observationConstraint", WithProperties: true}.QueryTo(1)
+	if strings.Contains(via, shNS+"property> ?n0") {
+		t.Error("WithProperties is ignored with Via")
+	}
+}

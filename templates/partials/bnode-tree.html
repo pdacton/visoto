@@ -81,7 +81,7 @@
       <h3 class="card-title d-flex align-items-center gap-2 mb-0">
         <i data-lucide="{{ .icon }}" style="width: 1.5em; height: 1.5em;"></i>
         {{ .title }}
-        {{ with .tree }}<span class="badge bg-blue-lt">{{ tn "bnode.count" .BlankNodes "Blank nodes: {{.Count}}" }}</span>{{ end }}
+        {{ with .tree }}{{ if .BlankNodes }}<span class="badge bg-blue-lt">{{ tn "bnode.count" .BlankNodes "Blank nodes: {{.Count}}" }}</span>{{ end }}{{ end }}
       </h3>
       <div class="btn-actions ms-auto">
         {{ if .tree }}
