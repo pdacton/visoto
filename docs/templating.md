@@ -837,8 +837,12 @@ Add one to a page template where the structure belongs in the page itself:
 | `title` / `icon` | Card header, default "Nested structure" / `brackets`. |
 | `anchor` | Id for the card. Avoid ids ending in `-tree`: `wunderbaum_overrides.css` caps those at 600px. |
 
-The whole structure comes from **one** query (`internal/bnodetree`), because
-blank-node labels are only stable within a single result set. When the
+The whole structure comes from **one** result set (`internal/bnodetree`),
+because blank-node labels are only stable within it. A cheap query down to
+level 2 runs first; only when the structure goes deeper is the full-depth query
+sent, whose result replaces it. The full query is expensive on QLever (it
+evaluates every level bottom-up), so if it fails the level-2 result is shown
+with a "could not be loaded" marker instead of an error, and is not cached. When the
 resource has no outgoing blank nodes the placeholder removes itself and
 nothing is rendered. The query is capped at 5,000 rows; a larger structure is
 shown with a "shown incomplete" note.

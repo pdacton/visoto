@@ -1811,6 +1811,9 @@ other = "{{.Count}} Eigenschaften"
 ["bnode.moreNodes"]
 one = "{{.Count}} verschachtelter leerer Knoten jenseits von Tiefe 5"
 other = "{{.Count}} verschachtelte leere Knoten jenseits von Tiefe 5"
+["bnode.notLoaded"]
+one = "{{.Count}} tieferer leerer Knoten konnte nicht geladen werden"
+other = "{{.Count}} tiefere leere Knoten konnten nicht geladen werden"
 ["bnode.moreTriples"]
 one = "{{.Count}} Tripel nicht angezeigt"
 other = "{{.Count}} Tripel nicht angezeigt"

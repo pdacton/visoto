@@ -1,9 +1,10 @@
 // Package bnodetree turns the outgoing blank nodes of a resource into a tree for
 // display: nested key/value blocks, RDF lists, enumerations and shared nodes.
 //
-// Everything comes from ONE SELECT per request. Blank-node labels are only
+// Everything shown comes from ONE result set. Blank-node labels are only
 // stable within a single result set, so the structure under a root cannot be
 // fetched piecemeal — a label returned by one query means nothing to the next.
+// A deeper query may replace a shallower one (ProbeDepth), never extend it.
 // A SELECT over SPARQL JSON results also spares the project an RDF parser.
 package bnodetree
 
@@ -20,6 +21,10 @@ const (
 	// queryDepth fetches one level more than is rendered: those rows are only
 	// counted, which is what the "beyond depth 5" indicator reports.
 	queryDepth = MaxDepth + 1
+	// ProbeDepth is the level the first, cheap query stops at. Most structures
+	// (a contact point, a property shape with an sh:in) end above it, and only
+	// those that do not pay for the full query — see NeedsDeeper.
+	ProbeDepth = 2
 	// RowCap bounds the result. One more row is requested so a hit is detectable.
 	RowCap = 5000
 	// EnumShown is how many enumeration members are shown before "+ n more".
@@ -59,6 +64,9 @@ func (r Request) Validate() error {
 }
 
 // Query returns the SELECT that fetches every triple needed for the tree.
+func (r Request) Query() string { return r.QueryTo(queryDepth) }
+
+// QueryTo returns the SELECT for levels 0 to depth.
 //
 // Rows are (?d ?s ?p ?o): ?d is the level of ?s, 0 for a root. Level k holds the
 // nodes k blank-node hops below a root. A hop is either a plain triple to a
@@ -67,7 +75,13 @@ func (r Request) Validate() error {
 // 23. For each level two kinds of rows are emitted: the node's own triples, and
 // the rdf:first/rdf:rest spine of the lists hanging off it (which the hop
 // pattern skips over).
-func (r Request) Query() string {
+//
+// Each level is its own UNION branch repeating every hop above it. GraphDB
+// evaluates that top-down and does not mind; QLever evaluates bottom-up, so
+// each hop with an unbound subject scans every blank-object triple of the
+// index, and all branches run at once. A depth-6 query against a shape that is
+// two levels deep exhausted 1.5 GB of QLever query memory — hence ProbeDepth.
+func (r Request) QueryTo(depth int) string {
 	var b strings.Builder
 	b.WriteString("SELECT DISTINCT ?d ?s ?p ?o WHERE {\n")
 	first := true
@@ -80,9 +94,9 @@ func (r Request) Query() string {
 		b.WriteString(branch)
 		b.WriteString("  }\n")
 	}
-	for level := 0; level <= queryDepth; level++ {
+	for level := 0; level <= depth; level++ {
 		union(r.branch(level, false))
-		if level < queryDepth {
+		if level < depth {
 			union(r.branch(level, true))
 		}
 	}
@@ -151,4 +165,17 @@ func (r Request) hop(k int) string {
 	viaList := fmt.Sprintf("%s %s ?l%d . FILTER(isBlank(?l%d))%s ?l%d rdf:rest*/rdf:first %s . FILTER(isBlank(%s))",
 		from, pred, k, k, notSpine, k, to, to)
 	return fmt.Sprintf("    { %s }\n    UNION\n    { %s }\n", direct, viaList)
+}
+
+// NeedsDeeper reports whether rows fetched with QueryTo(depth) stop short of the
+// structure: a node at the last level points at a blank node (a child or a
+// list), whose triples that query did not fetch. Spine rows never sit at the
+// last level, so every row there is a node's own triple.
+func NeedsDeeper(rows []Row, depth int) bool {
+	for _, r := range rows {
+		if r.Depth == depth && r.O.Type == "bnode" {
+			return true
+		}
+	}
+	return false
 }

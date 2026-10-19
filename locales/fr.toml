@@ -1810,6 +1810,9 @@ other = "{{.Count}} propriétés"
 ["bnode.moreNodes"]
 one = "{{.Count}} nœud anonyme imbriqué au-delà de la profondeur 5"
 other = "{{.Count}} nœuds anonymes imbriqués au-delà de la profondeur 5"
+["bnode.notLoaded"]
+one = "{{.Count}} nœud anonyme plus profond n'a pas pu être chargé"
+other = "{{.Count}} nœuds anonymes plus profonds n'ont pas pu être chargés"
 ["bnode.moreTriples"]
 one = "{{.Count}} triplet non affiché"
 other = "{{.Count}} triplets non affichés"

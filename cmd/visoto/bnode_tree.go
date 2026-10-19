@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"hash/crc32"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -56,10 +57,26 @@ func bnodeTreeHandler(c *gin.Context) {
 
 	dataLang := queryLang(c)
 	preprocessor := prepareQueryInputs(c)
-	query := req.Query()
 	ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 	defer cancel()
+
+	// Two stages: a cheap query down to ProbeDepth, and the full one only when
+	// the structure goes deeper (see Request.QueryTo for why depth is costly).
+	// Should the full one fail — out of memory on a small QLever — the probe
+	// result is shown with its unloaded levels marked, not an error.
+	query := req.QueryTo(bnodetree.ProbeDepth)
 	result, err := preprocessor.ExecuteQueryWithContext(ctx, query, true, dataLang, "")
+	cut := 0
+	if err == nil && len(result.Bindings) <= bnodetree.RowCap &&
+		bnodetree.NeedsDeeper(bnodetree.RowsFrom(result), bnodetree.ProbeDepth) {
+		deep := req.Query()
+		if full, deepErr := preprocessor.ExecuteQueryWithContext(ctx, deep, true, dataLang, ""); deepErr == nil {
+			query, result = deep, full
+		} else {
+			slog.Warn("blank-node tree: full query failed, showing probe depth", "iri", req.IRI, "error", deepErr)
+			cut = bnodetree.ProbeDepth
+		}
+	}
 
 	params := map[string]any{
 		"id":        bnodeTreeID(c.Request.URL.RawQuery),
@@ -86,6 +103,7 @@ func bnodeTreeHandler(c *gin.Context) {
 	}
 
 	graph := bnodetree.NewGraph(bnodetree.RowsFrom(result))
+	graph.Cut = cut
 	if format != "" {
 		writeBnodeTreeDownload(c, graph, format, prefixes)
 		return
@@ -101,7 +119,8 @@ func bnodeTreeHandler(c *gin.Context) {
 		Prefixes:  prefixes,
 		Collapsed: c.Query("collapsed") != "",
 	})
-	renderBnodeTree(c, params, true)
+	// A cut tree is a fallback for a transient failure: never cache it.
+	renderBnodeTree(c, params, cut == 0)
 }
 
 // expandParam turns a CURIE into a full IRI with the endpoint's prefixes;

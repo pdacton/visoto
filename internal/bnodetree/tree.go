@@ -83,6 +83,7 @@ func RowsFrom(result sparql.QueryResult) []Row {
 type Graph struct {
 	Roots     []sparql.Binding // IRI subjects at depth 0, in first-seen order
 	Truncated bool             // the row cap was hit; the structure is incomplete
+	Cut       int              // last level fetched when a shallower result stands in; 0 = complete
 	out       map[string][]edge
 	refs      map[string]int // blank node → number of triples pointing at it
 }
@@ -191,8 +192,9 @@ type Value struct {
 	Rest  []*Value // KindEnum beyond EnumShown
 	Count int      // KindEnum total
 
-	MoreNodes   int // KindMore: blank nodes past MaxDepth
-	MoreTriples int // and their triples
+	MoreNodes   int  // KindMore: blank nodes past MaxDepth
+	MoreTriples int  // and their triples
+	Cut         bool // KindMore: not loaded (Graph.Cut), so no triple count
 }
 
 // Node is a rendered blank node.
@@ -353,6 +355,9 @@ func (b *builder) node(o sparql.Binding, level int) *Value {
 	}
 	if n, ok := b.anchors[k]; ok {
 		return b.ref(n)
+	}
+	if b.g.Cut > 0 && level > b.g.Cut {
+		return &Value{Kind: KindMore, MoreNodes: 1, Cut: true}
 	}
 	if level > MaxDepth {
 		return &Value{Kind: KindMore, MoreNodes: 1, MoreTriples: len(b.g.out[k])}
@@ -558,6 +563,7 @@ func mergeMore(vals []*Value) []*Value {
 		}
 		more.MoreNodes += v.MoreNodes
 		more.MoreTriples += v.MoreTriples
+		more.Cut = more.Cut || v.Cut
 	}
 	if more != nil {
 		out = append(out, more)

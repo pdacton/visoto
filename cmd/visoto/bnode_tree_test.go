@@ -10,6 +10,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
+	"hutzli.org/visoto/internal/bnodetree"
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/i18n"
 	"hutzli.org/visoto/internal/lang"
@@ -136,6 +137,82 @@ func TestBnodeTreeHandlerDownloads(t *testing.T) {
 	}
 	if w := get(r, base+"xml"); w.Code != http.StatusBadRequest {
 		t.Errorf("unknown format: %d", w.Code)
+	}
+}
+
+// chainStore answers the tree queries with a chain root → n1 → … of `hops`
+// blank nodes, cut to the depth each query asks for, and counts them. With
+// failDeep the full-depth query gets a 500, as an out-of-memory QLever answers.
+func chainStore(hops int, failDeep bool, treeQueries *int) *httptest.Server {
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		q := string(body)
+		if !strings.Contains(q, "SELECT+DISTINCT+%3Fd+%3Fs+%3Fp+%3Fo") {
+			fmt.Fprint(w, `{"head":{"vars":[]},"results":{"bindings":[]}}`)
+			return
+		}
+		*treeQueries++
+		deep := strings.Contains(q, "BIND%286+AS+%3Fd%29")
+		if deep && failDeep {
+			http.Error(w, `{"exception":"Tried to allocate 8 MB, but only 4 MB were available"}`, http.StatusInternalServerError)
+			return
+		}
+		node := func(i int) string {
+			if i == 0 {
+				return `{"type":"uri","value":"https://example.org/shape"}`
+			}
+			return fmt.Sprintf(`{"type":"bnode","value":"n%d"}`, i)
+		}
+		var rows []string
+		for d := 0; d < hops && (deep || d <= bnodetree.ProbeDepth); d++ {
+			rows = append(rows, fmt.Sprintf(`{"d":{"type":"literal","value":"%d"},"s":%s,"p":{"type":"uri","value":"https://example.org/next"},"o":%s}`, d, node(d), node(d+1)))
+		}
+		fmt.Fprintf(w, `{"head":{"vars":["d","s","p","o"]},"results":{"bindings":[%s]}}`, strings.Join(rows, ","))
+	}))
+}
+
+func TestBnodeTreeHandlerShallow(t *testing.T) {
+	var n int
+	srv := chainStore(bnodetree.ProbeDepth, false, &n)
+	defer srv.Close()
+	r := setupBnodeTree(t, srv.URL)
+	if w := get(r, "/api/bnode-tree?iri=https%3A%2F%2Fexample.org%2Fshape"); w.Code != http.StatusOK {
+		t.Fatalf("status %d", w.Code)
+	}
+	if n != 1 {
+		t.Errorf("shallow structure: %d tree queries, want 1 (the probe only)", n)
+	}
+}
+
+func TestBnodeTreeHandlerDeep(t *testing.T) {
+	var n int
+	srv := chainStore(4, false, &n)
+	defer srv.Close()
+	r := setupBnodeTree(t, srv.URL)
+	w := get(r, "/api/bnode-tree?iri=https%3A%2F%2Fexample.org%2Fshape")
+	if n != 2 {
+		t.Errorf("deep structure: %d tree queries, want 2 (probe, then full)", n)
+	}
+	if strings.Contains(w.Body.String(), "could not be loaded") {
+		t.Error("full query succeeded, nothing may be marked as not loaded")
+	}
+}
+
+func TestBnodeTreeHandlerDeepFails(t *testing.T) {
+	var n int
+	srv := chainStore(4, true, &n)
+	defer srv.Close()
+	r := setupBnodeTree(t, srv.URL)
+	w := get(r, "/api/bnode-tree?iri=https%3A%2F%2Fexample.org%2Fshape")
+	if w.Code != http.StatusOK {
+		t.Fatalf("status %d", w.Code)
+	}
+	body := w.Body.String()
+	if strings.Contains(body, "alert-danger mb-0") || !strings.Contains(body, "Deeper levels could not be loaded") {
+		t.Errorf("want the probe result with a not-loaded marker, got:\n%s", body)
+	}
+	if cc := w.Header().Get("Cache-Control"); cc != "no-store" {
+		t.Errorf("Cache-Control = %q, a fallback must not be cached", cc)
 	}
 }
 

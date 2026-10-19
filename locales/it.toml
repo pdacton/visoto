@@ -1810,6 +1810,9 @@ other = "{{.Count}} proprietà"
 ["bnode.moreNodes"]
 one = "{{.Count}} nodo anonimo annidato oltre la profondità 5"
 other = "{{.Count}} nodi anonimi annidati oltre la profondità 5"
+["bnode.notLoaded"]
+one = "{{.Count}} nodo anonimo più profondo non è stato caricato"
+other = "{{.Count}} nodi anonimi più profondi non sono stati caricati"
 ["bnode.moreTriples"]
 one = "{{.Count}} tripla non mostrata"
 other = "{{.Count}} triple non mostrate"

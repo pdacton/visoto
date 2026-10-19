@@ -214,6 +214,11 @@
   {{ else if eq .Kind "ref" }}
     <div class="vs-bn-ref"><i data-lucide="corner-left-up"></i> {{ t "bnode.sameNodeAs" "same node as" }} <span class="vs-bn-anchor">{{ .Ref }}</span> {{ .RefTitle }}</div>
 
+  {{ else if and (eq .Kind "more") .Cut }}
+    <div class="vs-bn-more"><i data-lucide="ellipsis"></i>
+      {{ tn "bnode.notLoaded" .MoreNodes "Deeper levels could not be loaded — blank nodes: {{.Count}}" }}
+    </div>
+
   {{ else if eq .Kind "more" }}
     <div class="vs-bn-more"><i data-lucide="ellipsis"></i>
       {{ tn "bnode.moreNodes" .MoreNodes "Not shown, deeper than level 5 — blank nodes: {{.Count}}" }} ·

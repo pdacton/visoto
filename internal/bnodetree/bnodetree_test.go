@@ -278,6 +278,51 @@ func TestDepthLimit(t *testing.T) {
 	}
 }
 
+// chain builds root → n1 → n2 → … with one blank node per level, levels 0..last.
+func chain(last int) *fixture {
+	f := &fixture{}
+	prev := iri(cubeIRI)
+	for level := 0; level <= last; level++ {
+		next := bn(fmt.Sprintf("n%d", level+1))
+		f.add(level, prev, "http://ex.org/next", next)
+		prev = next
+	}
+	return f
+}
+
+func TestNeedsDeeper(t *testing.T) {
+	// Levels 0..ProbeDepth fetched, and the node at ProbeDepth points further.
+	if !NeedsDeeper(chain(ProbeDepth).rows, ProbeDepth) {
+		t.Error("a blank object at the probe depth needs the full query")
+	}
+	// The structure ends above the probe depth.
+	if NeedsDeeper(chain(ProbeDepth-1).rows, ProbeDepth) {
+		t.Error("a structure ending above the probe depth needs no second query")
+	}
+	// A literal at the last level is no reason to go deeper.
+	f := chain(ProbeDepth - 1)
+	f.add(ProbeDepth, bn(fmt.Sprintf("n%d", ProbeDepth)), "http://ex.org/level", lit("2"))
+	if NeedsDeeper(f.rows, ProbeDepth) {
+		t.Error("only blank objects at the last level count")
+	}
+}
+
+func TestCut(t *testing.T) {
+	g := NewGraph(chain(ProbeDepth).rows)
+	g.Cut = ProbeDepth
+	tree := Build(g, Options{Prefixes: testPrefixes})
+	v := tree.Roots[0].Props[0].Values[0]
+	for level := 1; level <= ProbeDepth; level++ {
+		if v.Kind != KindNode {
+			t.Fatalf("level %d: %+v", level, v)
+		}
+		v = propByCURIE(v.Node.Props, "http://ex.org/next").Values[0]
+	}
+	if v.Kind != KindMore || !v.Cut || v.MoreNodes != 1 {
+		t.Errorf("below the cut = %+v, want a not-loaded marker", v)
+	}
+}
+
 func TestEmptyAndMalformedLists(t *testing.T) {
 	f := &fixture{}
 	root := iri(shape)
@@ -357,6 +402,15 @@ func TestQuery(t *testing.T) {
 	}
 	if n := strings.Count(q, "UNION\n  {"); n != 2*queryDepth {
 		t.Errorf("top-level branches = %d, want %d", n+1, 2*queryDepth+1)
+	}
+
+	probe := Request{IRI: shape}.QueryTo(ProbeDepth)
+	if !strings.Contains(probe, fmt.Sprintf("BIND(%d AS ?d)", ProbeDepth)) ||
+		strings.Contains(probe, fmt.Sprintf("BIND(%d AS ?d)", ProbeDepth+1)) {
+		t.Error("probe query must stop at ProbeDepth")
+	}
+	if n := strings.Count(probe, "UNION\n  {"); n != 2*ProbeDepth {
+		t.Errorf("probe branches = %d, want %d", n+1, 2*ProbeDepth+1)
 	}
 
 	q = Request{IRI: cubeIRI, Property: schema + "contactPoint", Via: "https://cube.link/observationConstraint"}.Query()

@@ -322,6 +322,9 @@ other = "{{.Count}} caracteristicas"
 ["bnode.moreNodes"]
 one = "{{.Count}} nuv vid nidà sur la profunditad 5"
 other = "{{.Count}} nuvs vids nidads sur la profunditad 5"
+["bnode.notLoaded"]
+one = "{{.Count}} nuv vid pli profund n'ha betg pudì vegnir chargià"
+other = "{{.Count}} nuvs vids pli profunds n'han betg pudì vegnir chargiads"
 ["bnode.moreTriples"]
 one = "{{.Count}} triplet betg mussà"
 other = "{{.Count}} triplets betg mussads"
