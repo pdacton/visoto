@@ -1405,6 +1405,7 @@
 "facet.deliveryNumber" = "Numero di versamento"
 "facet.description" = "Descrizione"
 "facet.definedBy" = "Definito da"
+"facet.iri" = "IRI"
 "facet.end" = "A"
 "facet.hasInstances" = "Ha istanze"
 "facet.level" = "Livello"

@@ -1406,6 +1406,7 @@
 "facet.deliveryNumber" = "Ablieferungsnummer"
 "facet.description" = "Beschreibung"
 "facet.definedBy" = "Definiert durch"
+"facet.iri" = "IRI"
 "facet.end" = "Bis"
 "facet.hasInstances" = "Hat Instanzen"
 "facet.level" = "Stufe"

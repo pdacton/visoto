@@ -47,6 +47,18 @@
 
 {{ define "pageSubtitle" }}{{ .Subtitle }}{{ end }}
 
+<!-- Web pages about the ontology (DCAT-AP: rdfs:seeAlso to the specification).
+     Linked to the site itself, not to its /resource page: these IRIs are
+     documents to read, not resources described in the store. -->
+<sparql-query id="ontologyLinks">
+  SELECT ?property ?page WHERE {
+    VALUES ?property { rdfs:seeAlso foaf:homepage foaf:page dcat:landingPage schema:url }
+    ?? ?property ?page .
+    FILTER (isIRI(?page) && REGEX(STR(?page), "^https?://"))
+  } ORDER BY ?property ?page
+  LIMIT 50
+</sparql-query>
+
 
 {{ define "pageContent" }}
 <div>
@@ -381,6 +393,28 @@ CONSTRUCT {
 
   {{ template "literals" . }}
 
+  {{ if .QueryResults.ontologyLinks.Bindings }}
+  <div class="card mb-3">
+    <div class="card-header d-flex align-items-center gap-2">
+      <i data-lucide="link" style="width: 1.5em; height: 1.5em;"></i>
+      <h3 class="card-title mb-0">{{ t "card.seeAlso" "See also" }}</h3>
+    </div>
+    <div class="card-body">
+      <div class="datagrid">
+        {{ range .QueryResults.ontologyLinks.Bindings }}
+          <div class="datagrid-item">
+            <div class="datagrid-title text-uppercase">{{ render .property }}</div>
+            <div class="datagrid-content">
+              <a href="{{ .page.Value }}" target="_blank" rel="noopener">{{ .page.Value }}
+                <i data-lucide="external-link" style="width: 1em; height: 1em;"></i></a>
+            </div>
+          </div>
+        {{ end }}
+      </div>
+    </div>
+  </div>
+  {{ end }}
+
   <!-- terms defined by this ontology
 
        Three ways a term belongs to an ontology:
@@ -392,12 +426,19 @@ CONSTRUCT {
          schemas and most others carry no isDefinedBy at all. This branch is
          restricted to class and property types, so the STRSTARTS only runs over
          the (small) set of schema terms, never the whole store.
-       A term found both ways is merged by DISTINCT; one row per (term, kind). -->
+       A term found both ways is merged by the GROUP BY; one row per (term, kind).
+
+       Description: the term's own, else the sh:description of a property shape
+       of this ontology whose sh:path is the term — a SHACL profile (DCAT-AP)
+       describes the terms it reuses only there, once per shape. Candidates are
+       ranked by a two-digit prefix (own before shape, display language before
+       English before untagged) and MIN picks the best. Defined by: the term's
+       rdfs:isDefinedBy other than this ontology. -->
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
         <sparql-async id="ontologyTerms">
-          SELECT DISTINCT ?term ?kind ?description WHERE {
+          SELECT ?term (STR(?term) AS ?iri) ?kind (SUBSTR(MIN(?rankedDescription), 3) AS ?description) (SAMPLE(?vocabulary) AS ?definedBy) WHERE {
             {
               ?term rdfs:isDefinedBy ?? .
               OPTIONAL { ?term a ?kind . }
@@ -409,15 +450,28 @@ CONSTRUCT {
               ?term a ?kind .
               FILTER (STRSTARTS(STR(?term), STR(??)))
             }
-            OPTIONAL { ?term visoto:description ?description .
-              FILTER (langMatches(lang(?description), visoto:dispLang) || !langMatches(lang(?description), "*")) }
-          } ORDER BY ?kind ?term
+            OPTIONAL { ?term visoto:description ?ownDescription .
+              FILTER (langMatches(lang(?ownDescription), visoto:dispLang) || langMatches(lang(?ownDescription), "en") || !langMatches(lang(?ownDescription), "*")) }
+            OPTIONAL {
+              { ?shape rdfs:isDefinedBy ?? . } UNION { ?? rdfs:member ?shape . }
+              ?shape sh:property ?propertyShape .
+              ?propertyShape sh:path ?term ; sh:description ?shapeDescription .
+              FILTER (langMatches(lang(?shapeDescription), visoto:dispLang) || langMatches(lang(?shapeDescription), "en") || !langMatches(lang(?shapeDescription), "*")) }
+            OPTIONAL { ?term rdfs:isDefinedBy ?vocabulary . FILTER (?vocabulary != ??) }
+            BIND (COALESCE(?ownDescription, ?shapeDescription) AS ?description1)
+            BIND (CONCAT(IF(BOUND(?ownDescription), "0", "1"),
+                         IF(langMatches(lang(?description1), visoto:dispLang), "0", IF(langMatches(lang(?description1), "en"), "1", "2")),
+                         STR(?description1)) AS ?rankedDescription)
+          } GROUP BY ?term ?kind
+          ORDER BY ?kind ?term
           LIMIT 10000
         </sparql-async>
-        <sparql-columns for="ontologyTerms">
+        <sparql-columns for="ontologyTerms" order>
           <sparql-column var="term" icon></sparql-column>
+          <sparql-column var="iri" label="{{ t "facet.iri" "IRI" }}" type="string"></sparql-column>
           <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}" badge group filter></sparql-column>
           <sparql-column var="description" label="{{ t "facet.description" "Description" }}"></sparql-column>
+          <sparql-column var="definedBy" label="{{ t "facet.definedBy" "Defined by" }}"></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict
@@ -429,8 +483,6 @@ CONSTRUCT {
       </div>
     </div>
   </div>
-
-  {{ template "relationships" . }}
 
   <!-- A distinct `id` is required: the base layout's page-level graph already
        claims the default "sparql-graph" DOM id. Eager (not lazy): the card sits
@@ -446,6 +498,8 @@ CONSTRUCT {
         "icon" "shapes"
         "height" "700px") }}
   </div>
+
+  {{ template "relationships" . }}
 
 </div>
 {{ end }}
