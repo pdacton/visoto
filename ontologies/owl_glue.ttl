@@ -1,0 +1,10 @@
+# Glue for owl.ttl: terms point rdfs:isDefinedBy at <http://www.w3.org/2002/07/owl#>
+# while the ontology is <http://www.w3.org/2002/07/owl>, so Visoto falls back to
+# IRI-prefix membership, which only counts class and property types.
+# owl:imports and owl:versionIRI are typed owl:OntologyProperty alone; that class
+# is a subclass of rdf:Property, so the extra type is already entailed.
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+owl:imports a rdf:Property .
+owl:versionIRI a rdf:Property .

@@ -1,0 +1,6 @@
+# Glue for dublin_core_elements.ttl: the DCMI file describes the namespace
+# document but never types it, so Visoto's owl:Ontology template cannot find
+# it. Every term already carries rdfs:isDefinedBy <http://purl.org/dc/elements/1.1/>.
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+<http://purl.org/dc/elements/1.1/> a owl:Ontology .

@@ -1,0 +1,8 @@
+# Glue for foaf.ttl: FOAF ties its terms to the ontology with rdfs:isDefinedBy,
+# which turns off Visoto's IRI-prefix fallback, but these three classes lack it.
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+foaf:Agent rdfs:isDefinedBy foaf: .
+foaf:Group rdfs:isDefinedBy foaf: .
+foaf:PersonalProfileDocument rdfs:isDefinedBy foaf: .

@@ -1,0 +1,15 @@
+# Glue for dcat3.ttl: DCAT points rdfs:isDefinedBy at the spec document
+# (https://www.w3.org/TR/vocab-dcat-3/), not the ontology <http://www.w3.org/ns/dcat>,
+# so Visoto falls back to IRI-prefix membership, which only counts typed terms.
+# The DCAT 3 inverse properties are declared with owl:inverseOf alone; their
+# forward properties are all owl:ObjectProperty, so the inverses are too.
+@prefix dcat: <http://www.w3.org/ns/dcat#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+dcat:inCatalog a rdf:Property, owl:ObjectProperty .
+dcat:isDistributionOf a rdf:Property, owl:ObjectProperty .
+dcat:isVersionOf a rdf:Property, owl:ObjectProperty .
+dcat:next a rdf:Property, owl:ObjectProperty .
+dcat:nextVersion a rdf:Property, owl:ObjectProperty .
+dcat:seriesMember a rdf:Property, owl:ObjectProperty .
