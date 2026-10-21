@@ -171,9 +171,9 @@
 
     function renderSchema(store, mode, cls) {
       var container = kit.container;
-      // GL-2: the schema is a class model, read as a tree; Radial centres on
-      // the anchor class (GL-19).
-      kit.defaultLayout = 'tree-right';
+      // GL-2: the schema is laid out as a network; Radial centres on the
+      // anchor class (GL-19).
+      kit.defaultLayout = 'network';
       kit.pageIri = cls;
       var summary = Object.keys(store.elements).length + ' classes, ' + store.links.length + ' relations';
       if (mode === 'class') {

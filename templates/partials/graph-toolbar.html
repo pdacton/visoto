@@ -73,14 +73,15 @@
       </div>
     </div>
 
-    <!-- GL-5: what a plain drag on empty canvas does. Shift+drag draws a box in
-         either mode; graph-selection.js keeps aria-pressed in step. -->
+    <!-- GL-5: what a plain drag on empty canvas does; Select is the default.
+         Shift+drag draws a box and a right-drag pans in either mode;
+         graph-selection.js keeps aria-pressed in step. -->
     <div class="btn-group" role="group" aria-label="{{ t "graph.pointerMode" "Pointer mode" }}">
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon active" data-graph-mode="pan" aria-pressed="true"
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-mode="pan" aria-pressed="false"
               aria-label="{{ t "graph.modePan" "Pan: drag moves the canvas" }}" title="{{ t "graph.modePan" "Pan: drag moves the canvas" }}">
         <i data-lucide="hand" class="icon"></i>
       </button>
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-mode="select" aria-pressed="false"
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon active" data-graph-mode="select" aria-pressed="true"
               aria-label="{{ t "graph.modeSelect" "Select: drag draws a selection box" }}" title="{{ t "graph.modeSelect" "Select: drag draws a selection box" }}">
         <i data-lucide="square-dashed-mouse-pointer" class="icon"></i>
       </button>
@@ -111,6 +112,9 @@
             aria-label="{{ t "graph.fit" "Fit to view" }}" title="{{ t "graph.fit" "Fit to view" }}">
       <i data-lucide="scan" class="icon"></i>
     </button>
+
+    <div class="vr mx-1"></div>
+
     <!-- GL-48: property cards of the selection, else of every node. -->
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="details"
             aria-label="{{ t "graph.details" "Details: show or hide property cards" }}" title="{{ t "graph.details" "Details: show or hide property cards" }}">
@@ -122,7 +126,7 @@
       <i data-lucide="table" class="icon"></i>
     </button>
     <!-- GL-10, 49, 52: classes and namespaces on the canvas, with hide/show. -->
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="filter"
+    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="filter" aria-pressed="false"
             aria-label="{{ t "graph.filter" "Classes and namespaces" }}" title="{{ t "graph.filter" "Classes and namespaces" }}">
       <i data-lucide="layers" class="icon"></i>
     </button>
@@ -200,8 +204,9 @@
             <dt class="col-5"><kbd>Ctrl/⌘</kbd>+<kbd>A</kbd></dt><dd class="col-7">{{ t "graph.helpSelectAll" "Select all nodes" }}</dd>
             <dt class="col-5"><kbd>Esc</kbd></dt><dd class="col-7">{{ t "graph.helpClear" "Clear the selection" }}</dd>
             <dt class="col-5"><kbd>Del</kbd></dt><dd class="col-7">{{ t "graph.helpDelete" "Remove the selection" }}</dd>
-            <dt class="col-5"><kbd>Ctrl/⌘</kbd>+{{ t "graph.helpClickKey" "click" }}</dt><dd class="col-7">{{ t "graph.helpToggle" "Add to or remove from the selection" }}</dd>
+            <dt class="col-5"><kbd>⇧</kbd>+{{ t "graph.helpClickKey" "click" }}</dt><dd class="col-7">{{ t "graph.helpToggle" "Add to or remove from the selection" }}</dd>
             <dt class="col-5"><kbd>⇧</kbd>+{{ t "graph.helpDragKey" "drag" }}</dt><dd class="col-7">{{ t "graph.helpBox" "Draw a selection box" }}</dd>
+            <dt class="col-5">{{ t "graph.helpRightDragKey" "right-drag" }}</dt><dd class="col-7">{{ t "graph.helpPan" "Move the canvas" }}</dd>
           </dl>
           <a class="small" href="/graph-help.html" target="_blank" rel="noopener">{{ t "graph.helpGuide" "Guide: working with graphs" }}</a>
         </div>
@@ -380,7 +385,8 @@
 
 <!--
   Classes and namespaces panel (GL-10, GL-49, GL-52): rows filled by
-  graph-filter.js — eye toggle, label, node count, and a ⋮ menu per class.
+  graph-filter.js — eye toggle, label, node count, and a ⋮ menu per row; each
+  section heading carries a Hide all / Show all toggle.
 
   Usage (inside the graph stage):
     template "graphFilterPanel" (dict "id" $id)
@@ -394,10 +400,16 @@
       <button type="button" class="btn-close" data-graph-action="close-filter" aria-label="{{ t "graph.close" "Close" }}"></button>
     </div>
     <div class="graph-options-list">
-      <div class="px-3 pt-2 small fw-medium text-secondary">{{ t "graph.classes" "Classes" }}</div>
+      <div class="px-3 pt-2 small fw-medium text-secondary d-flex align-items-center">
+        <span class="flex-fill" data-graph-filter-heading>{{ t "graph.classes" "Classes" }}</span>
+        <button type="button" class="btn btn-link btn-sm p-0 small" data-graph-filter-all="classes" hidden></button>
+      </div>
       <div class="list-group list-group-flush" data-graph-filter-classes></div>
       <p class="small text-secondary px-3 my-1" data-graph-filter-noclasses hidden>{{ t "graph.noClasses" "No typed nodes on the diagram." }}</p>
-      <div class="px-3 pt-2 small fw-medium text-secondary">{{ t "graph.namespaces" "Namespaces" }}</div>
+      <div class="px-3 pt-2 small fw-medium text-secondary d-flex align-items-center">
+        <span class="flex-fill" data-graph-filter-heading>{{ t "graph.namespaces" "Namespaces" }}</span>
+        <button type="button" class="btn btn-link btn-sm p-0 small" data-graph-filter-all="namespaces" hidden></button>
+      </div>
       <div class="list-group list-group-flush" data-graph-filter-namespaces></div>
     </div>
     <div class="card-footer py-2 px-3 small text-secondary">

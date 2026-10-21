@@ -1219,10 +1219,15 @@
   border: 1px dashed var(--tblr-primary, #066fd1);
   background: color-mix(in srgb, var(--tblr-primary, #066fd1) 8%, transparent);
 }
-/* Select mode: crosshair on empty canvas, and no browser panning by touch, so a
-   finger draws boxes and drags nodes instead (GL-40). */
-.graph-select-mode .graph-explorer-paper-area__area {
-  cursor: crosshair;
+/* The plain arrow stays on the canvas in either mode, as in Miro; a closed hand
+   while a right-drag pans (graph-selection.js).
+   Select mode: no browser panning by touch, so a finger draws boxes and drags
+   nodes instead (GL-40). */
+.graph-explorer-paper-area__area {
+  cursor: default;
+}
+.graph-explorer-paper-area__area.graph-panning {
+  cursor: grabbing;
 }
 .graph-select-mode .graph-explorer-paper-area {
   touch-action: none;

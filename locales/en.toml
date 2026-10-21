@@ -140,6 +140,8 @@
 "js.graph.selectAllOfClass" = "Select all"
 "js.graph.removeAllOfClass" = "Remove all"
 "js.graph.cmd.removeClass" = "Remove all {name}"
+"js.graph.showAll" = "Show all"
+"js.graph.hideAll" = "Hide all"
 "js.graph.findCount" = "{n} of {total}"
 "js.graph.selectNode" = "Select {name}"
 "js.graph.closeLeftPanel" = "Close the classes and instances panel"

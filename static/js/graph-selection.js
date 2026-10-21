@@ -11,7 +11,10 @@
   - Box selection and touch dragging use a CAPTURE-phase pointerdown listener
     on the canvas container. preventDefault() on pointerdown suppresses the
     compatibility mouse events GE listens to, so GE neither pans nor drags.
-  - Ctrl/Cmd+click, Select-mode taps and group drag ride on GE's own paper
+  - A drag on empty canvas draws a box in Select mode (the default) and is
+    left to GE's own panning in Pan mode; Shift+drag draws a box in either.
+    A right-button drag pans in either mode, by scrolling GE's paper area.
+  - Shift+click and group drag ride on GE's own paper
     pointer events (workspace props onPointerDown/Move/Up, wired by
     kit.workspaceProps). GE's handler runs first and selects the clicked node
     alone; the handlers here then set the selection they mean.
@@ -81,7 +84,7 @@
     var toolbar = document.getElementById(id + '-toolbar');
     var pinned = {};
     var colors = {}; // element id -> COLORS name (GL-55)
-    var mode = 'pan';
+    var mode = 'select';
 
     kit.isPinned = function (elementId) { return !!pinned[elementId]; };
     // Saved canvases carry the pins (A3); loading them is not an undo step.
@@ -239,7 +242,7 @@
     }
     kit.setMode = setMode;
 
-    // --- GE pointer events: Ctrl/Cmd+click, Select-mode taps, group drag -----
+    // --- GE pointer events: Shift+click, group drag ---------------------------
     var press = null; // { ids: selection at press, target, last: {x,y}, moved }
     kit.onPointerDown = function (e) {
       if (!e.elementId) { press = null; return; }
@@ -278,10 +281,10 @@
         return;
       }
       var ev = e.sourceEvent || {};
-      if (ev.ctrlKey || ev.metaKey || mode === 'select') select(toggle(p.ids, p.target));
+      if (ev.shiftKey) select(toggle(p.ids, p.target));
     };
 
-    // --- Capture listener: pin badge, box selection, touch drag --------------
+    // --- Capture listener: pin badge, box selection, right-drag pan, touch drag
     function stagePoint(ev) {
       var r = stage.getBoundingClientRect();
       return { x: ev.clientX - r.left, y: ev.clientY - r.top };
@@ -296,8 +299,14 @@
     }
 
     container.addEventListener('pointerdown', function (ev) {
-      if (ev.button !== 0 || !(ev.target instanceof Element)) return;
+      if (!(ev.target instanceof Element)) return;
       var t = ev.target;
+      if (ev.button === 2) {
+        var area = t.closest('.graph-explorer-paper-area__area');
+        if (area && !t.closest('.graph-explorer-paper-area__widgets')) rightPan(ev, area);
+        return;
+      }
+      if (ev.button !== 0) return;
       var host = t.closest('[data-element-id]');
 
       if (host && onPinBadge(host, ev)) {
@@ -315,6 +324,33 @@
         !t.closest('[data-element-id], .graph-explorer-link, .graph-explorer-paper-area__widgets');
       if (emptyPaper && (mode === 'select' || ev.shiftKey)) boxSelect(ev);
     }, true);
+
+    // The browser menu would open on the press (Linux) or end every pan.
+    container.addEventListener('contextmenu', function (ev) {
+      if (ev.target instanceof Element && ev.target.closest('.graph-explorer-paper-area__area')) ev.preventDefault();
+    });
+
+    function rightPan(ev, area) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      var last = { x: ev.clientX, y: ev.clientY };
+      area.classList.add('graph-panning');
+      function move(e) {
+        if (!(e.buttons & 2)) { up(); return; } // released while another button is held
+        area.scrollLeft -= e.clientX - last.x;
+        area.scrollTop -= e.clientY - last.y;
+        last = { x: e.clientX, y: e.clientY };
+      }
+      function up() {
+        window.removeEventListener('pointermove', move);
+        window.removeEventListener('pointerup', up);
+        window.removeEventListener('pointercancel', up);
+        area.classList.remove('graph-panning');
+      }
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up);
+      window.addEventListener('pointercancel', up);
+    }
 
     // GL-5: a drag on empty canvas draws a box that replaces the selection.
     function boxSelect(ev) {
@@ -582,7 +618,7 @@
     }
 
     c.onSelectionChange(function () { decorate(); updateBar(); });
-    setMode('pan');
+    setMode('select');
     decorate();
     updateBar();
   }

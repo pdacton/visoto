@@ -7,7 +7,10 @@
       all). A class includes its subclasses (rdfs:subClassOf*), resolved by
       kit.superclasses when the embed provides it.
     - Namespaces (GL-52): the namespaces of the node IRIs, each with an eye
-      toggle — e.g. hide external vocabularies on an ontology diagram.
+      toggle and the same ⋮ menu — e.g. hide external vocabularies on an
+      ontology diagram.
+    - Each section heading has a Hide all / Show all toggle: Show all while
+      any row of the section is hidden, else Hide all.
     - Find on canvas (GL-32): highlight and zoom to nodes whose label or IRI
       contains the text; Enter selects them.
 
@@ -123,8 +126,21 @@
       if (next.namespaces[ns]) delete next.namespaces[ns]; else next.namespaces[ns] = true;
       apply(next, hideShowTitle(!!next.namespaces[ns], nsLabel(ns)));
     }
+    // Hides every listed row of a section ('classes' or 'namespaces'), or
+    // shows them all again when any is hidden.
+    function toggleAll(kind, keys, name) {
+      var next = clone(rules);
+      var hiding = !Object.keys(next[kind]).length;
+      next[kind] = {};
+      if (hiding) keys.forEach(function (k) { next[kind][k] = true; });
+      apply(next, hideShowTitle(hiding, name));
+    }
     function membersOf(cls) {
       return c.elementIds().map(c.describe).filter(function (d) { return d && coversType(cls, d.types); })
+        .map(function (d) { return d.id; });
+    }
+    function membersOfNamespace(ns) {
+      return c.elementIds().map(c.describe).filter(function (d) { return d && namespaceOf(d.iri) === ns; })
         .map(function (d) { return d.id; });
     }
 
@@ -181,7 +197,7 @@
       if (opts.menu) item.appendChild(opts.menu);
       return item;
     }
-    function classMenu(cls, label) {
+    function rowMenu(label, members) {
       var wrap = document.createElement('div');
       wrap.className = 'dropdown';
       var btn = document.createElement('button');
@@ -203,7 +219,7 @@
         item.className = 'dropdown-item' + (m[0] === 'remove' ? ' text-danger' : '');
         item.textContent = m[1];
         item.addEventListener('click', function () {
-          var ids = membersOf(cls);
+          var ids = members();
           if (m[0] === 'select') c.setSelection(ids);
           else kit.batch(vsTf('js.graph.cmd.removeClass', 'Remove all {name}', { name: label }), function () { c.removeElements(ids); });
         });
@@ -212,6 +228,15 @@
       wrap.appendChild(btn);
       wrap.appendChild(menu);
       return wrap;
+    }
+
+    function allToggle(kind, keys) {
+      var btn = panel.querySelector('[data-graph-filter-all="' + kind + '"]');
+      var anyHidden = Object.keys(rules[kind]).length > 0;
+      btn.hidden = !keys.length;
+      btn.textContent = anyHidden ? vsT('js.graph.showAll', 'Show all') : vsT('js.graph.hideAll', 'Hide all');
+      var name = btn.parentElement.querySelector('[data-graph-filter-heading]').textContent;
+      btn.onclick = function () { toggleAll(kind, keys, name); };
     }
 
     function render() {
@@ -243,7 +268,7 @@
         classList.appendChild(row({
           iri: cl.iri, label: cl.label, count: cl.count, hidden: !!rules.classes[cl.iri],
           onToggle: function () { toggleClass(cl.iri); },
-          menu: classMenu(cl.iri, cl.label),
+          menu: rowMenu(cl.label, function () { return membersOf(cl.iri); }),
         }));
       });
       panel.querySelector('[data-graph-filter-noclasses]').hidden = classes.length > 0;
@@ -254,14 +279,25 @@
         nsList.appendChild(row({
           iri: ns, label: nsLabel(ns), count: nsCount[ns], hidden: !!rules.namespaces[ns],
           onToggle: function () { toggleNamespace(ns); },
+          menu: rowMenu(nsLabel(ns), function () { return membersOfNamespace(ns); }),
         }));
       });
+
+      allToggle('classes', classes.map(function (cl) { return cl.iri; }));
+      allToggle('namespaces', namespaces);
       if (window.lucide) window.lucide.createIcons();
     }
 
     function togglePanel(show) {
       if (!panel) return;
       panel.hidden = show === undefined ? !panel.hidden : !show;
+      // The toolbar button stays pressed while the panel is open.
+      if (toolbar) {
+        toolbar.querySelectorAll('[data-graph-action="filter"]').forEach(function (btn) {
+          btn.classList.toggle('active', !panel.hidden);
+          btn.setAttribute('aria-pressed', String(!panel.hidden));
+        });
+      }
       if (!panel.hidden) {
         var other = document.getElementById(id + '-layoutoptions');
         if (other) other.hidden = true;
