@@ -256,7 +256,7 @@
   <!-- Incoming / outgoing connections, for the raw-triples view. Collapsed by
        default here: the cards above already say everything an observation has,
        so this is the escape hatch rather than the main event. -->
-  {{ template "relationships" . }}
+  {{ template "relationships" (dict "page" .) }}
 
 </div>
 {{ end }}

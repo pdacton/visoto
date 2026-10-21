@@ -516,7 +516,7 @@ CONSTRUCT {
         "height" "700px") }}
   </div>
 
-  {{ template "relationships" . }}
+  {{ template "relationships" (dict "page" .) }}
 
 </div>
 {{ end }}

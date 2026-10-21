@@ -104,7 +104,7 @@
       <!-- The shared component, unchanged: a container query on .vs-split-main
            (see tabler_overrides.css) reflows its col-lg-6 pair to full width
            inside this narrower column. -->
-      {{ template "relationships" . }}
+      {{ template "relationships" (dict "page" .) }}
     </div>
 
   </div>

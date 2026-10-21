@@ -96,7 +96,7 @@
        generic Attributes grid shows both without pretending otherwise. -->
   {{ template "literals" . }}
 
-  {{ template "relationships" . }}
+  {{ template "relationships" (dict "page" .) }}
 
 </div>
 {{ end }}

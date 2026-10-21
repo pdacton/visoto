@@ -60,6 +60,6 @@
   </div>
 
   <!-- Outgoing / incoming relationships (collapsed) -->
-  {{ template "relationships" . }}
+  {{ template "relationships" (dict "page" .) }}
 
 {{ end }}

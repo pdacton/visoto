@@ -246,6 +246,6 @@
        above cover the dependency vocabulary; this catches the rest (sm:contains
        datasets, sm:hasLegalBasis articles, containedIn collection nodes) without
        a card per predicate. -->
-  {{ template "relationships" . }}
+  {{ template "relationships" (dict "page" .) }}
 
 {{ end }}

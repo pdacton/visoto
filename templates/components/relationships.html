@@ -1,7 +1,8 @@
 <!-- Component: relationships
-     Renders outgoing and incoming relationship tables (collapsed by default).
-     Usage: {{ template "relationships" . }}
-     Note: use inline sparql-query elements instead if you need different FILTERs or collapsed=false.
+     Renders outgoing and incoming relationship tables (expanded by default).
+     Usage: {{ template "relationships" (dict "page" .) }}
+            {{ template "relationships" (dict "page" . "collapsed" true) }}  — start collapsed
+     Note: use inline sparql-query elements instead if you need different FILTERs.
 
      In a narrow container (a page with a sidebar column) the two tables reflow to
      full width on their own — see the container query on .vs-split-main in
@@ -53,22 +54,22 @@
   <div class="col-lg-6">
     <div class="mb-3">
       {{ template "sparqlTable" (dict
-            "result" .QueryResults.outgoing
+            "result" .page.QueryResults.outgoing
             "id" "outgoing"
             "title" (t "card.outgoingRelationships" "Outgoing Relationships")
             "icon" "expand"
-            "collapsed" true)
+            "collapsed" .collapsed)
       }}
     </div>
   </div>
   <div class="col-lg-6">
     <div class="mb-3">
       {{ template "sparqlTable" (dict
-            "result" .QueryResults.incoming
+            "result" .page.QueryResults.incoming
             "id" "incoming"
             "title" (t "card.incomingRelationships" "Incoming Relationships")
             "icon" "shrink"
-            "collapsed" true)
+            "collapsed" .collapsed)
       }}
     </div>
   </div>

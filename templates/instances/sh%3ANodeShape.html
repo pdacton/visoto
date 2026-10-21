@@ -95,6 +95,6 @@
          sh:or alternatives, complex paths. Removes itself when there is none. -->
     {{ template "bnodeTree" (dict "iri" .ResourceIRI "collapsed" true) }}
 
-    {{ template "relationships" . }}
+    {{ template "relationships" (dict "page" .) }}
 
 {{ end }}

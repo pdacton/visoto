@@ -69,7 +69,7 @@
     </div>
   </div>
 
-  {{ template "relationships" . }}
+  {{ template "relationships" (dict "page" .) }}
 
 </div>
 {{ end }}

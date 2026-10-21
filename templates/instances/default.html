@@ -18,7 +18,7 @@
        templates, so the two tables are defined once. Note this makes them
        synchronous (LIMIT 1000) rather than the async LIMIT 10000 pair this
        template previously hand-rolled. -->
-  {{ template "relationships" . }}
+  {{ template "relationships" (dict "page" .) }}
 
 </div>
 {{ end }}

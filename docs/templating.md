@@ -56,11 +56,11 @@ Inside `pageContent`, you compose the page from components (which carry their ow
 │       "result" .QueryResults.hierarchy
 │       "id"     "hierarchy") }}
 │
-└── {{ template "relationships" . }}         ← component: outgoing + incoming links
+└── {{ template "relationships" (dict "page" .) }}         ← component: outgoing + incoming links
 {{ end }}
 ```
 
-**Components** (`literals`, `relationships`, `pageHeader`) — pass `.` (full context), they issue their own SPARQL queries internally.
+**Components** (`literals`, `pageHeader`) — pass `.` (full context), `relationships` takes `(dict "page" .)`; all three issue their own SPARQL queries internally.
 
 **Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlCube`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
 
@@ -895,7 +895,7 @@ Components are called with `{{ template "<name>" . }}` — pass the full `.` con
 |---|---|
 | `pageHeader` | Standard page header: title and subtitle from `.Title` / `.Subtitle`, and a query for the `rdf:type` list. Defines the `pageTitle`, `metaTitle`, `metaIcon`, `pageSubtitle`, and `pageClasses` blocks. **Include this in almost every template.** |
 | `literals` | Renders all literal (non-IRI) properties of the resource in a `sparqlGrid`. |
-| `relationships` | Renders outgoing and incoming IRI-valued relationship tables (collapsed by default). |
+| `relationships` | Renders outgoing and incoming IRI-valued relationship tables (expanded by default). Call as `(dict "page" .)`; add `"collapsed" true` to start collapsed. |
 
 > Subclass/superclass, ontology and SHACL tables are **not** components any more.
 > They are part of the resource page's **Schema** view, declared as `<sparql-async>`
@@ -981,7 +981,7 @@ Filename: `schema%3APerson.html`. This is an instance template (for resources th
     "icon" "users")
   }}
 
-  {{ template "relationships" . }}
+  {{ template "relationships" (dict "page" .) }}
 {{ end }}
 ```
 
