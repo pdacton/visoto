@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"hutzli.org/visoto/internal/config"
@@ -161,6 +162,89 @@ func sendToEndpoint(ep *config.SparqlEndpoint, graphURI, contentType string, rdf
 	return nil
 }
 
+const (
+	rdfsLabel       = "http://www.w3.org/2000/01/rdf-schema#label"
+	dctermsModified = "http://purl.org/dc/terms/modified"
+	xsdDateTime     = "http://www.w3.org/2001/XMLSchema#dateTime"
+)
+
+// validIRI reports whether s can be written as <s> in a SPARQL query without
+// breaking out of the IRI (the characters excluded by the IRIREF production).
+func validIRI(s string) bool {
+	if s == "" {
+		return false
+	}
+	for _, r := range s {
+		if r <= 0x20 || strings.ContainsRune(`<>"{}|^`+"`\\", r) {
+			return false
+		}
+	}
+	return true
+}
+
+// sparqlLiteral quotes s as a SPARQL string literal.
+func sparqlLiteral(s string) string {
+	r := strings.NewReplacer(`\`, `\\`, `"`, `\"`, "\n", `\n`, "\r", `\r`, "\t", `\t`)
+	return `"` + r.Replace(s) + `"`
+}
+
+// sparqlUpdate POSTs one SPARQL Update request to the endpoint.
+func sparqlUpdate(ep *config.SparqlEndpoint, update string) error {
+	params := url.Values{}
+	params.Set("update", update)
+
+	req, err := http.NewRequest(http.MethodPost, ep.URL, strings.NewReader(params.Encode()))
+	if err != nil {
+		return fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	ep.ApplyAuth(req)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return fmt.Errorf("endpoint returned %s: %s", resp.Status, strings.TrimSpace(string(body)))
+	}
+	_, _ = io.Copy(io.Discard, resp.Body)
+	return nil
+}
+
+// graphMetadataUpdates builds the updates that describe a named graph inside
+// itself: rdfs:label (when label is non-empty) and dcterms:modified. Earlier
+// values are deleted first so a re-upload replaces them. Each update is sent
+// as its own request, since not every engine accepts ";"-chained operations.
+func graphMetadataUpdates(graphURI, label string, at time.Time) []string {
+	g := "<" + graphURI + ">"
+	updates := []string{
+		fmt.Sprintf("DELETE WHERE { GRAPH %s { %s <%s> ?m } }", g, g, dctermsModified),
+	}
+	insert := fmt.Sprintf("%s <%s> %s^^<%s> .", g, dctermsModified,
+		sparqlLiteral(at.UTC().Format(time.RFC3339)), xsdDateTime)
+	if label != "" {
+		updates = append(updates, fmt.Sprintf("DELETE WHERE { GRAPH %s { %s <%s> ?l } }", g, g, rdfsLabel))
+		insert += fmt.Sprintf(" %s <%s> %s .", g, rdfsLabel, sparqlLiteral(label))
+	}
+	return append(updates, fmt.Sprintf("INSERT DATA { GRAPH %s { %s } }", g, insert))
+}
+
+// writeGraphMetadata records label and upload time on the named graph.
+func writeGraphMetadata(ep *config.SparqlEndpoint, graphURI, label string) error {
+	if !validIRI(graphURI) {
+		return fmt.Errorf("graph URI %q cannot be described in SPARQL", graphURI)
+	}
+	for _, u := range graphMetadataUpdates(graphURI, label, time.Now()) {
+		if err := sparqlUpdate(ep, u); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // endpointFromSlug resolves an endpoint slug request parameter, falling back to
 // the default endpoint when the slug is absent or unknown. The slug is the only
 // endpoint identifier used on the wire.
@@ -176,6 +260,7 @@ func endpointFromSlug(cfg *config.ApplicationConfig, slug string) *config.Sparql
 //   - file   (mutually exclusive with url) — the RDF file to upload
 //   - url    (mutually exclusive with file) — a remote RDF URL the server will fetch
 //   - graphURI — target named graph URI
+//   - label    — optional rdfs:label stored on the graph with its upload time
 //   - endpoint — slug of the SPARQL endpoint (matches visoto.config entry)
 func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -184,6 +269,7 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		endpointSlug := c.PostForm("endpoint")
 		graphURI := normalizeGraphURI(c.PostForm("graphURI"))
 		remoteURL := strings.TrimSpace(c.PostForm("url"))
+		label := strings.TrimSpace(c.PostForm("label"))
 
 		ep := endpointFromSlug(cfg, endpointSlug)
 		if ep == nil {
@@ -258,6 +344,15 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		log.Info("RDF upload succeeded",
 			slog.String("endpoint", ep.URL),
 			slog.String("graph", graphURI))
+
+		// The data is in; a metadata failure is reported but does not fail the upload.
+		if graphURI != "" {
+			if err := writeGraphMetadata(ep, graphURI, label); err != nil {
+				log.Warn("graph metadata write failed", slog.String("graph", graphURI), slog.String("error", err.Error()))
+				c.JSON(http.StatusOK, gin.H{"success": true, "warning": fmt.Sprintf("Label and timestamp were not stored: %v", err)})
+				return
+			}
+		}
 		c.JSON(http.StatusOK, gin.H{"success": true})
 	}
 }
@@ -317,7 +412,8 @@ func sparqlQuery(ep *config.SparqlEndpoint, query string) ([]map[string]struct {
 }
 
 // NamedGraphsHandler handles GET /api/named-graphs?endpoint=<slug>.
-// Runs a SPARQL query for all named graphs with optional rdfs:label and returns the list.
+// Runs a SPARQL query for all named graphs with the optional rdfs:label each graph
+// carries about itself (written by UploadHandler) and returns the list.
 func NamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ep := endpointFromSlug(cfg, c.Query("endpoint"))
@@ -328,7 +424,7 @@ func NamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 
 		query := `SELECT ?g (SAMPLE(?lbl) AS ?label) (COUNT(*) AS ?count) WHERE {
   GRAPH ?g { ?s ?p ?o }
-  OPTIONAL { ?g <http://www.w3.org/2000/01/rdf-schema#label> ?lbl }
+  OPTIONAL { GRAPH ?g { ?g <http://www.w3.org/2000/01/rdf-schema#label> ?lbl } }
 } GROUP BY ?g ORDER BY ?g LIMIT 1000`
 
 		bindings, err := sparqlQuery(ep, query)
@@ -384,32 +480,12 @@ func DeleteNamedGraphHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 			updateQuery = fmt.Sprintf("DROP SILENT GRAPH <%s>", graphURI)
 		}
 
-		params := url.Values{}
-		params.Set("update", updateQuery)
-
-		req, err := http.NewRequest(http.MethodPost, ep.URL, strings.NewReader(params.Encode()))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "failed to create request"})
-			return
-		}
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		ep.ApplyAuth(req)
-
 		log.Debug("deleting named graph via SPARQL Update", slog.String("query", updateQuery), slog.String("endpoint", ep.URL))
 
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
+		if err := sparqlUpdate(ep, updateQuery); err != nil {
 			c.JSON(http.StatusBadGateway, gin.H{"success": false, "error": err.Error()})
 			return
 		}
-		defer resp.Body.Close()
-
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-			c.JSON(http.StatusBadGateway, gin.H{"success": false, "error": fmt.Sprintf("endpoint returned %s: %s", resp.Status, strings.TrimSpace(string(body)))})
-			return
-		}
-		_, _ = io.Copy(io.Discard, resp.Body)
 
 		log.Info("named graph deleted", slog.String("graph", graphURI), slog.String("endpoint", ep.URL))
 		c.JSON(http.StatusOK, gin.H{"success": true})

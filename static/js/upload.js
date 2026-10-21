@@ -34,19 +34,32 @@
       .replace(/^-|-$/g, '');            // trim leading/trailing dashes
   }
 
-  function stemFromURL(rawURL) {
+  // labelFromFilename keeps the human-readable name: "dcat-ap-3.0.1.ttl" → "dcat-ap-3.0.1".
+  function labelFromFilename(filename) {
+    return filename.replace(/\.[^.]+$/, '').trim();
+  }
+
+  function lastURLSegment(rawURL) {
     try {
       const u = new URL(rawURL);
       const parts = u.pathname.replace(/\/$/, '').split('/');
-      const last = parts[parts.length - 1] || u.hostname;
-      return stemFromFilename(last || 'resource');
+      return decodeURIComponent(parts[parts.length - 1] || u.hostname);
     } catch {
-      return 'resource';
+      return '';
     }
   }
 
+  function stemFromURL(rawURL) {
+    return stemFromFilename(lastURLSegment(rawURL) || 'resource') || 'resource';
+  }
+
   function proposeGraphURI(stem) {
-    return `https://visoto.example.org/graph/${timestampPrefix()}-${stem || 'upload'}`;
+    return `urn:visoto:graph:${timestampPrefix()}-${stem || 'upload'}`;
+  }
+
+  function setLabel(value) {
+    const labelInput = document.getElementById('upload-graph-label');
+    if (labelInput) labelInput.value = value;
   }
 
   function showResult(success, message) {
@@ -76,9 +89,11 @@
 
   function setOntologyTabUI(ontologiesActive) {
     const graphSection = document.getElementById('upload-graph-uri-section');
+    const labelSection = document.getElementById('upload-graph-label-section');
     const submitBtn = document.getElementById('upload-submit-btn');
     const ontoBtn = document.getElementById('upload-ontologies-btn');
     if (graphSection) graphSection.classList.toggle('d-none', ontologiesActive);
+    if (labelSection) labelSection.classList.toggle('d-none', ontologiesActive);
     if (submitBtn) submitBtn.classList.toggle('d-none', ontologiesActive);
     if (ontoBtn) ontoBtn.classList.toggle('d-none', !ontologiesActive);
   }
@@ -137,11 +152,8 @@
         fileNameEl.textContent = `Selected: ${file.name}`;
         fileNameEl.classList.remove('d-none');
       }
-      if (graphInput && !graphInput.value) {
-        graphInput.value = proposeGraphURI(stemFromFilename(file.name));
-      } else if (graphInput) {
-        graphInput.value = proposeGraphURI(stemFromFilename(file.name));
-      }
+      if (graphInput) graphInput.value = proposeGraphURI(stemFromFilename(file.name));
+      setLabel(labelFromFilename(file.name));
       clearResult();
     }
 
@@ -175,6 +187,7 @@
       const val = urlInput.value.trim();
       if (val) {
         graphInput.value = proposeGraphURI(stemFromURL(val));
+        setLabel(labelFromFilename(lastURLSegment(val)));
       }
       clearResult();
     });
@@ -217,7 +230,7 @@
     const rows = ontologies.map((o, i) => `
       <div class="d-flex align-items-start gap-2 py-1 border-bottom">
         <input class="form-check-input mt-1 flex-shrink-0 ontology-checkbox" type="checkbox"
-               id="onto-${i}" data-url="${escapeAttr(o.url)}" data-graph="${escapeAttr(o.graph)}">
+               id="onto-${i}" data-url="${escapeAttr(o.url)}" data-graph="${escapeAttr(o.graph)}" data-label="${escapeAttr(o.name)}">
         <label class="form-check-label w-100" for="onto-${i}" style="cursor:pointer;">
           <span class="fw-semibold">${escapeHTML(o.name)}</span>
           <span class="text-muted small d-block text-truncate" title="${escapeAttr(o.url)}">${escapeHTML(o.url)}</span>
@@ -260,6 +273,7 @@
       formData.append('endpoint', endpoint);
       formData.append('url', url);
       formData.append('graphURI', graph);
+      formData.append('label', cb.dataset.label || '');
 
       try {
         const resp = await fetch('/api/upload', { method: 'POST', body: formData });
@@ -314,6 +328,7 @@
       const formData = new FormData();
       formData.append('endpoint', selectedEndpoint());
       formData.append('graphURI', graphURI);
+      formData.append('label', document.getElementById('upload-graph-label')?.value?.trim() || '');
 
       if (fileTabActive) {
         formData.append('file', selectedFile);
@@ -326,7 +341,8 @@
         const resp = await fetch('/api/upload', { method: 'POST', body: formData });
         const data = await resp.json();
         if (data.success) {
-          showResult(true, `Upload successful. Data loaded into <${graphURI}>.`);
+          const note = data.warning ? ` ${data.warning}` : '';
+          showResult(true, `Upload successful. Data loaded into <${graphURI}>.${note}`);
         } else {
           showResult(false, data.error || 'Upload failed.');
         }
@@ -351,6 +367,7 @@
     if (urlInput) urlInput.value = '';
     const graphInput = document.getElementById('upload-graph-uri');
     if (graphInput) graphInput.value = '';
+    setLabel('');
     clearResult();
     setOntologyTabUI(false);
     // Switch back to File tab

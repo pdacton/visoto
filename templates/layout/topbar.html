@@ -281,6 +281,11 @@
           <datalist id="named-graphs-list"></datalist>
           <div class="form-text">{{ t "upload.graphUriHelp" "Choose an existing graph or enter a new URI. A proposal is generated from the source name." }}</div>
         </div>
+        <div class="mb-3" id="upload-graph-label-section">
+          <label for="upload-graph-label" class="form-label">{{ t "upload.graphLabelLabel" "Label" }}</label>
+          <input type="text" class="form-control" id="upload-graph-label" autocomplete="off">
+          <div class="form-text">{{ t "upload.graphLabelHelp" "Stored on the named graph as rdfs:label, together with the upload time." }}</div>
+        </div>
 
         <!-- Result area -->
         <div id="upload-result" class="d-none"></div>

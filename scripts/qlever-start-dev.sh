@@ -95,7 +95,8 @@ docker run -d \
     -c 1G \
     -e 256M \
     -s 60s \
-    -a "${QLEVER_ACCESS_TOKEN}"
+    -a "${QLEVER_ACCESS_TOKEN}" \
+    --persist-updates
 
 echo "QLever started on port ${PORT}"
 echo "SPARQL endpoint: http://localhost:${PORT}"

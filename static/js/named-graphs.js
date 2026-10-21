@@ -67,9 +67,7 @@ function ngRenderTable(graphs) {
       <td>
         <input type="checkbox" class="form-check-input ng-row-check" value="${escapeHtml(iri)}" aria-label="Select graph">
       </td>
-      <td style="max-width: 420px;">
-        <span class="text-truncate d-block" title="${escapeHtml(iri)}" style="max-width: 420px;">${escapeHtml(iri)}</span>
-      </td>
+      <td class="text-break">${escapeHtml(iri)}</td>
       <td>${escapeHtml(label)}</td>
       <td class="text-end text-muted">${escapeHtml(count)}</td>
     `;

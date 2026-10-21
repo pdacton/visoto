@@ -367,6 +367,8 @@
 "tree.filterPlaceholder" = "Filtra l'albero..."
 "upload.dropzone" = "Trascina qui un file, oppure <label for=\"upload-file-input\" class=\"text-primary\" style=\"cursor:pointer;\">sfoglia</label>"
 "upload.formats" = "Formati supportati: .ttl, .nq, .nt, .rdf, .jsonld, .trig"
+"upload.graphLabelHelp" = "Salvato sul grafo denominato come rdfs:label, insieme all'ora del caricamento."
+"upload.graphLabelLabel" = "Etichetta"
 "upload.graphUriHelp" = "Scegli un grafo esistente o inserisci un nuovo URI. Una proposta viene generata dal nome della sorgente."
 "upload.graphUriLabel" = "URI del grafo denominato"
 "upload.graphUriPlaceholder" = "Caricamento dei grafi esistenti…"
