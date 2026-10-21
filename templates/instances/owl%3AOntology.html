@@ -185,9 +185,10 @@ CONSTRUCT {
     VALUES (?node ?labelPredicate ?label) {
       (<urn:visoto:ExternalClass> rdfs:label %[2]q) (<urn:visoto:AnyResource> rdfs:label %[3]q)
       (<urn:visoto:Enumeration> rdfs:label %[4]q) (<urn:visoto:value> rdfs:label %[5]q)
+      (<urn:visoto:ExternalClasses> rdfs:label %[6]q)
     }
   }
-}` $members (t "graph.uml.externalClass" "external class") (t "graph.uml.notDeclared" "not declared") (t "graph.uml.enumeration" "enumeration") (t "graph.uml.value" "value") }}
+}` $members (t "graph.uml.externalClass" "external class") (t "graph.uml.notDeclared" "not declared") (t "graph.uml.enumeration" "enumeration") (t "graph.uml.value" "value") (t "graph.uml.externalClasses" "External") }}
 
   <!-- OWL restrictions query (source "owl"): one use per restriction on a
        member class, `C rdfs:subClassOf [ owl:onProperty P ; … ]` — a local
@@ -293,7 +294,11 @@ CONSTRUCT {
        of sh:in. Only shapes of severity Violation (or none) count: DCAT-AP CH
        states "recommended" and "deprecated" as Warning shapes. Target classes
        are members (J1). Plus the property types, global ranges and labels of
-       shape paths, and what is known about the ends, as in the owl query. -->
+       shape paths, and what is known about the ends, as in the owl query.
+       Generalizations between two target classes, wherever they are defined:
+       DCAT-AP neither imports DCAT nor owns dcat:Catalog, so the core query
+       never sees dcat:Catalog rdfs:subClassOf dcat:Dataset. Both ends must be
+       targets, or every external superclass (dctype:Service) adds a box. -->
   {{ $shapes := printf `{
       SELECT DISTINCT ?shape WHERE {
         { %[1]s BIND (?m AS ?shape) }
@@ -316,6 +321,7 @@ CONSTRUCT {
   _:use a ?use ; <urn:visoto:property> ?p ; <urn:visoto:class> ?c ; <urn:visoto:range> ?r ;
     <urn:visoto:min> ?min ; <urn:visoto:max> ?max ; <urn:visoto:in> ?value ; <urn:visoto:source> ?source .
   ?typed a ?kind .
+  ?sub rdfs:subClassOf ?super .
   ?known a <urn:visoto:Known> .
   ?datatype a rdfs:Datatype .
   ?node ?labelPredicate ?label .
@@ -323,6 +329,17 @@ CONSTRUCT {
   {
     %[1]s
     { ?shape sh:targetClass ?target . } UNION { ?shape a rdfs:Class . BIND (?shape AS ?target) } UNION { ?shape a owl:Class . BIND (?shape AS ?target) }
+  } UNION {
+    %[1]s
+    { ?shape sh:targetClass ?sub . } UNION { ?shape a rdfs:Class . BIND (?shape AS ?sub) } UNION { ?shape a owl:Class . BIND (?shape AS ?sub) }
+    ?sub rdfs:subClassOf ?super .
+    FILTER (isIRI(?super) && ?super != ?sub)
+    {
+      SELECT DISTINCT ?super WHERE {
+        %[1]s
+        { ?shape sh:targetClass ?super . } UNION { ?shape a rdfs:Class . BIND (?shape AS ?super) } UNION { ?shape a owl:Class . BIND (?shape AS ?super) }
+      }
+    }
   } UNION {
     %[1]s
     { ?shape sh:targetClass ?c . } UNION { ?shape a rdfs:Class . BIND (?shape AS ?c) } UNION { ?shape a owl:Class . BIND (?shape AS ?c) }

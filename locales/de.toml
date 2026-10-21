@@ -391,6 +391,7 @@
 "card.shapeInformationSHACL" = "Shape-Informationen (SHACL)"
 "graph.defaultTitle" = "Graph"
 "graph.uml.externalClass" = "externe Klasse"
+"graph.uml.externalClasses" = "Extern"
 "graph.uml.notDeclared" = "nicht deklariert"
 "graph.uml.enumeration" = "Aufzählung"
 "graph.uml.value" = "Wert"

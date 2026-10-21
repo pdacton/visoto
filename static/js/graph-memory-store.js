@@ -45,6 +45,10 @@
   // ("…svg#vs-ExternalClass") and ontodia_overrides.css selects on it with :has().
   // The fragment does not change which image loads.
   var MARKER_PREFIX = 'urn:visoto:';
+  var EXTERNAL_CLASS = MARKER_PREFIX + 'ExternalClass';
+  // The class-tree group of the classes an ontology diagram only refers to
+  // (makeHybridProvider); the CONSTRUCT labels it.
+  var EXTERNAL_GROUP = MARKER_PREFIX + 'ExternalClasses';
   var MARKER_FALLBACK_IMAGE = '/static/img/resource/defaultClass.svg';
 
   // StandardTemplate titles a box with its foaf:name property value in preference
@@ -191,6 +195,12 @@
     return !!el && (el.types.indexOf(OWL_CLASS) >= 0 || el.types.indexOf(RDFS_CLASS) >= 0);
   }
 
+  // Class-tree nodes in label order.
+  function sortByLabel(nodes) {
+    function text(n) { return (n.label.values[0] || { value: n.id }).value.toLowerCase(); }
+    return nodes.sort(function (a, b) { return text(a) < text(b) ? -1 : text(a) > text(b) ? 1 : 0; });
+  }
+
   function makeProvider(store) {
     function label(iri) {
       var vals = store.labels[iri];
@@ -220,10 +230,6 @@
       return Object.keys(store.elements).filter(function (id) {
         return isDeclaredClass(store, id);
       });
-    }
-    function sortByLabel(nodes) {
-      function text(n) { return (n.label.values[0] || { value: n.id }).value.toLowerCase(); }
-      return nodes.sort(function (a, b) { return text(a) < text(b) ? -1 : text(a) > text(b) ? 1 : 0; });
     }
     // The class and everything below it via rdfs:subClassOf edges.
     function subclassClosure(id) {
@@ -408,9 +414,32 @@
       };
     }
     function hasLabel(id) { return isNode(id) || !!store.labels[id]; }
+    // The classes the diagram refers to without defining them: every box but
+    // its own classes, placeholders and enumerations (the only marker such a
+    // box may carry is urn:visoto:ExternalClass).
+    function externalIds() {
+      return Object.keys(store.elements).filter(function (id) {
+        return forEndpoint(id) && !isDeclaredClass(store, id) &&
+          store.elements[id].types.every(function (t) { return t.indexOf(MARKER_PREFIX) !== 0 || t === EXTERNAL_CLASS; });
+      });
+    }
 
     return {
-      classTree: base.classTree,
+      // The diagram's own classes, then the external ones as one flat group.
+      classTree: function () {
+        var ids = externalIds();
+        return base.classTree().then(function (tree) {
+          if (!ids.length) return tree;
+          return tree.concat([{
+            id: EXTERNAL_GROUP,
+            label: store.labels[EXTERNAL_GROUP] ? { values: store.labels[EXTERNAL_GROUP] } : { values: [{ value: 'External', language: '' }] },
+            count: 0,
+            children: sortByLabel(ids.map(function (id) {
+              return { id: id, label: store.elements[id].label, count: 0, children: [] };
+            })),
+          }]);
+        });
+      },
       linkTypes: base.linkTypes,
       classInfo: schemaLookup('classInfo', 'classIds', hasLabel),
       propertyInfo: schemaLookup('propertyInfo', 'propertyIds', hasLabel),
@@ -474,8 +503,16 @@
       // - a class picked in the tree: its instances, from the endpoint (the
       //   diagram holds classes, not instances);
       // - Connections "show elements": both sources;
+      // - the External group: its classes, from the diagram;
       // - text search over the diagram: the diagram.
       filter: function (params) {
+        if (params.elementTypeId === EXTERNAL_GROUP) {
+          return base.filter({ text: params.text }).then(function (all) {
+            var dict = {};
+            externalIds().forEach(function (id) { if (all[id]) dict[id] = all[id]; });
+            return dict;
+          });
+        }
         if (params.refElementId) {
           var own = base.filter(params);
           if (!forEndpoint(params.refElementId)) return own;

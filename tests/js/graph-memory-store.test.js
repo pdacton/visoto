@@ -150,3 +150,24 @@ test('link type labels the diagram lacks come from the endpoint', async () => {
   assert.equal(res[0].label.values[0].value, 'type');
   assert.deepEqual(calls[0].params, { linkTypeIds: [RDF_TYPE] });
 });
+
+test('the classes the diagram only refers to form an External group', async () => {
+  const LABEL = 'http://www.w3.org/2000/01/rdf-schema#label';
+  const lit = (v) => ({ type: 'literal', value: v, language: '' });
+  const { live, calls } = stubLive({});
+  const p = M.makeHybridProvider(M.buildStore([
+    t(EX + 'FMIS', RDF_TYPE, iri(OWL_CLASS)),
+    t(EX + 'FMIS', EX + 'imported', iri(EX + 'Doc')),           // an imported term: no type
+    t(EX + 'FMIS', EX + 'other', iri(EX + 'Agent')),
+    t(EX + 'Agent', RDF_TYPE, iri('urn:visoto:ExternalClass')),  // neither defined nor imported
+    t('urn:visoto:any-domain:' + EX + 'p', EX + 'p', iri(EX + 'FMIS')),
+    t('urn:visoto:ExternalClasses', LABEL, lit('External')),
+  ], {}), live);
+  const tree = await p.classTree();
+  assert.deepEqual(tree.map((n) => n.id), [EX + 'FMIS', 'urn:visoto:ExternalClasses']);
+  assert.equal(tree[1].label.values[0].value, 'External');
+  assert.deepEqual(tree[1].children.map((n) => n.id), [EX + 'Agent', EX + 'Doc']);
+  const picked = await p.filter({ elementTypeId: 'urn:visoto:ExternalClasses', offset: 0 });
+  assert.deepEqual(Object.keys(picked).sort(), [EX + 'Agent', EX + 'Doc']);
+  assert.deepEqual(calls, []);
+});
