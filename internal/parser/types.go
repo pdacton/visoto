@@ -34,6 +34,7 @@ type TemplateData struct {
 	ResourceIRI          string                        // The IRI of the resource being rendered
 	Title                string                        // The resource's single best label (language first, then property priority; IRI last segment as fallback). Feeds the page title.
 	Subtitle             string                        // The resource's single best description, "" if none. Feeds the page subtitle.
+	IconOverride         string                        // The resource's own icon value (the "icon" magic property, e.g. schema:thumbnail), "" if none. Wins over every other icon, see internal/icon.
 	ShortIRI             string                        // Prefixed IRI (e.g. schema:Person), empty if no prefix match
 	NamedGraphs          []NamedGraph                  // Named graphs containing the resource as subject
 	TemplateName         string                        // Name of the template used to render this page (for debugging)

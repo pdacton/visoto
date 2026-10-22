@@ -322,6 +322,24 @@ written here, so each must be a single predicate. `label` is also Graph
 Explorer's label property. Without a `label` entry a built-in default with the
 same value applies.
 
+`icon` names a resource's **own icon** and is off unless configured:
+
+```toml
+[rdf.magic_properties]
+icon = "schema:thumbnail|foaf:thumbnail"
+```
+
+Its best value (the earlier property wins; single predicates only, as above) takes
+precedence over every other icon source — the type-based rule, a template's own
+`pageIcon` / `metaIcon` block, and the row icons of tables and lazy trees. A value
+may be an absolute `https` URL (plain `http` is refused: the site CSP would block
+it), a site-relative path (`/static/img/…`), or the
+name of an icon in `static/img/resource/` (`Canton` or `Canton.svg`); IRI and
+literal objects both work. Anything else (another scheme, an unknown name) is
+ignored and resolution carries on as if there were none. Values are cached per
+endpoint for an hour, like labels. Graph Explorer and the sidebar menus do not
+use it yet.
+
 Template queries can then write `visoto:description`, which is expanded to the
 configured path wrapped in parentheses before the query is sent. Any prefixes used in
 the path are declared automatically.

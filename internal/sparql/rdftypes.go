@@ -150,17 +150,43 @@ func fetchTypes(p *Preprocessor, endpointURL string, iris []string) map[string][
 	return typeMap
 }
 
+// IconProperty is the magic property naming a resource's own icon
+// ([rdf.magic_properties] icon = "schema:thumbnail"). Unset, nothing is queried.
+const IconProperty = "icon"
+
+// fetchIconOverrides returns IRI → the resource's own icon value, through the
+// same best-value machinery as labels (fetchBest): one batched query, cached per
+// endpoint and IRI, the earlier property alternative winning. No requested
+// languages — an icon does not depend on the visitor's, so every visitor shares
+// one cache entry. Without an "icon" magic property nothing is sent or cached.
+func (p *Preprocessor) fetchIconOverrides(endpointURL string, iris []string) map[string]string {
+	// Checked here rather than left to fetchBest, which would still cache an
+	// empty answer for every IRI of every table.
+	if p.config.MagicProperties[IconProperty] == "" {
+		return nil
+	}
+	return p.fetchBest(IconProperty, endpointURL, iris, nil, false)
+}
+
+// ResolveIconOverride is fetchIconOverrides for one resource on the
+// preprocessor's endpoint, for the page header. "" when it has none.
+func (p *Preprocessor) ResolveIconOverride(iri string) string {
+	return p.fetchIconOverrides(p.config.EndpointURL, []string{iri})[iri]
+}
+
 // enrichWithIcons resolves an icon path for every IRI the result mentions and
-// stores them on the result as a side map.
+// stores them on the result as a side map. overrides (IRI → the resource's own
+// icon value) take precedence over the type-based rule; see icon.Resolve.
 //
 // A side map rather than a field on Binding: Binding is serialized for every
 // cell of every row, and a working set runs to 20 000 rows, while the icons are
 // one entry per *distinct* IRI. Unresolved IRIs are omitted entirely, so a
 // result whose IRIs have no icons carries no map at all.
-func enrichWithIcons(result *QueryResult, typeMap map[string][]string) {
+func enrichWithIcons(result *QueryResult, typeMap map[string][]string, overrides map[string]string) {
 	icons := make(map[string]string)
 	for _, iri := range extractIRIs(*result) {
-		if path := icon.Resolve(icon.Subject{IRI: iri, Types: typeMap[iri]}, icon.Cell); path != "" {
+		s := icon.Subject{IRI: iri, Types: typeMap[iri], Override: overrides[iri]}
+		if path := icon.Resolve(s, icon.Cell); path != "" {
 			icons[iri] = path
 		}
 	}

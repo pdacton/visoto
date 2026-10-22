@@ -252,6 +252,10 @@ description = "rdfs:comment|schema:description|dct:description|dc:description"
 # predicate would leave the column blank on half the configured endpoints.
 identifier = "dct:identifier|schema:identifier|skos:notation|adms:identifier"
 modified = "dct:modified|schema:dateModified|dct:issued|schema:datePublished"
+# A resource's own icon: wins over every icon a type or template would give it
+# (page header, table rows, lazy trees). A URL, a /static/… path, or the name of
+# an icon in static/img/resource/. Remove the key to turn it off.
+icon = "schema:thumbnail"
 
 # Well-known ontologies available for one-click loading in the Upload modal.
 # Each entry requires: name (display label), url (fetch source), graph (target named graph URI).

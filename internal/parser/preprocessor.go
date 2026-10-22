@@ -118,6 +118,12 @@ func (p *Preprocessor) ResolveBest(kind, iri, acceptLanguage string) string {
 	return p.sp.ResolveBest(kind, iri, acceptLanguage)
 }
 
+// ResolveIconOverride returns the resource's own icon value (the "icon" magic
+// property), "" if it has none or none is configured. See sparql.ResolveIconOverride.
+func (p *Preprocessor) ResolveIconOverride(iri string) string {
+	return p.sp.ResolveIconOverride(iri)
+}
+
 // FinalizeQuery returns the query as it would be sent to the endpoint (PREFIXes
 // prepended, visoto:dispLang resolved) without executing it.
 func (p *Preprocessor) FinalizeQuery(query string, acceptLanguage string, endpointURL string) string {

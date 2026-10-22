@@ -315,7 +315,7 @@ func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string
 			// IRIs, so they go to the endpoint concurrently: the wall-clock cost is
 			// the slower of the two, not their sum. Each degrades on its own — a
 			// failed type query leaves labels intact and vice versa.
-			var labelMap map[string]string
+			var labelMap, overrides map[string]string
 			var typeMap map[string][]string
 			var wg sync.WaitGroup
 
@@ -326,17 +326,21 @@ func (p *Preprocessor) executeQueryWithContext(ctx context.Context, query string
 			}()
 
 			if settings.resolveTypes {
-				wg.Add(1)
+				wg.Add(2)
 				go func() {
 					defer wg.Done()
 					typeMap = fetchTypes(p, targetEndpoint, iris)
+				}()
+				go func() {
+					defer wg.Done()
+					overrides = p.fetchIconOverrides(targetEndpoint, iris)
 				}()
 			}
 			wg.Wait()
 
 			enrichWithLabels(&result, labelMap)
 			if settings.resolveTypes {
-				enrichWithIcons(&result, typeMap)
+				enrichWithIcons(&result, typeMap, overrides)
 			}
 		}
 	}

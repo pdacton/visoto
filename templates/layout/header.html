@@ -48,8 +48,14 @@
 </div>
 <div class="mt-3 d-flex flex-column flex-sm-row align-items-start gap-3">
   <div class="flex-shrink-0">
+    {{/* An icon the resource names itself (the "icon" magic property) beats a
+         template's own pageIcon block — see internal/icon. */}}
+    {{ with iconOverride . }}
+    <img src="{{ . }}" alt="{{ t "header.pageIconAlt" "Page icon" }}" width="48" height="48">
+    {{ else }}
     {{ block "pageIcon" . }}
     <img src="{{ resourceIcon . }}" alt="{{ t "header.pageIconAlt" "Page icon" }}" width="48" height="48">
+    {{ end }}
     {{ end }}
   </div>
   <div>

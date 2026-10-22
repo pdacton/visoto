@@ -454,14 +454,15 @@ func resourcePageHandler(c *gin.Context) {
 		// Continue with fallback already set by ResolveTemplate
 	}
 
-	// The page title and subtitle are the resource's single best label and
-	// description (internal/sparql/labels.go), resolved alongside the template's
-	// own queries rather than by a title query in every template.
-	var title, subtitle string
+	// The page title, subtitle and own icon are the resource's single best label,
+	// description and "icon" value (internal/sparql/labels.go), resolved alongside
+	// the template's own queries rather than by a query in every template.
+	var title, subtitle, iconOverride string
 	var heading sync.WaitGroup
-	heading.Add(2)
+	heading.Add(3)
 	go func() { defer heading.Done(); title = preprocessor.ResolveBest("label", r.IRI, language) }()
 	go func() { defer heading.Done(); subtitle = preprocessor.ResolveBest("description", r.IRI, language) }()
+	go func() { defer heading.Done(); iconOverride = preprocessor.ResolveIconOverride(r.IRI) }()
 
 	// TODO: refactor, move into Resource method
 	// extract SPARQL query from template and retrieve data (use per-request preprocessor)
@@ -479,6 +480,7 @@ func resourcePageHandler(c *gin.Context) {
 	r.Data.ShortIRI = r.ShortIRI
 	r.Data.Title = title
 	r.Data.Subtitle = subtitle
+	r.Data.IconOverride = iconOverride
 	r.Data.TemplateName = r.TemplateName
 	r.Data.TemplateType = r.TemplateType
 

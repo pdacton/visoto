@@ -108,7 +108,7 @@
 
     <!-- tab -->
     <title>{{ block "metaTitle" . }}visoto{{ end }}</title>
-    <link rel="icon" type="image/svg+xml" href="{{block "metaIcon" .}}{{ resourceIcon . }}{{ end }}">
+    <link rel="icon" type="image/svg+xml" href="{{ with iconOverride . }}{{ . }}{{ else }}{{block "metaIcon" .}}{{ resourceIcon . }}{{ end }}{{ end }}">
 
     <!-- bootstrap, tabler, tabulator includes -->
     <!-- CDN assets are version-pinned with SRI hashes; when bumping a version,

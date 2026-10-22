@@ -243,3 +243,43 @@ func TestManifestAndConfig(t *testing.T) {
 		}
 	}
 }
+
+// TestResolveOverride: a usable icon from the data beats every rule and every
+// default; an unusable one is ignored as if absent.
+func TestResolveOverride(t *testing.T) {
+	withIcons(t, "Canton.svg", "Person.svg", "DefinedTerm.fallback.svg")
+
+	canton := Subject{IRI: "https://schema.ld.admin.ch/Canton"}
+	tests := []struct {
+		name, override, want string
+	}{
+		{"absolute https URL", "https://img.example/zh.svg", "https://img.example/zh.svg"},
+		{"plain http URL ignored (CSP)", "http://img.example/zh.png", BasePath + "Canton.svg"},
+		{"site-relative path", "/static/img/custom/zh.svg", "/static/img/custom/zh.svg"},
+		{"icon name", "Person", BasePath + "Person.svg"},
+		{"icon file name", "Person.svg", BasePath + "Person.svg"},
+		{"fallback icon name", "DefinedTerm.fallback", BasePath + "DefinedTerm.fallback.svg"},
+		{"surrounding space", "  Person ", BasePath + "Person.svg"},
+		{"unknown name ignored", "Nope", BasePath + "Canton.svg"},
+		{"bare name of a fallback-only icon ignored", "DefinedTerm", BasePath + "Canton.svg"},
+		{"javascript scheme ignored", "javascript:alert(1)", BasePath + "Canton.svg"},
+		{"data URL ignored", "data:image/svg+xml,<svg/>", BasePath + "Canton.svg"},
+		{"protocol-relative ignored", "//evil.example/x.svg", BasePath + "Canton.svg"},
+		{"URL without host ignored", "https:///x.svg", BasePath + "Canton.svg"},
+		{"empty ignored", "", BasePath + "Canton.svg"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s := canton
+			s.Override = tt.override
+			if got := Resolve(s, Cell); got != tt.want {
+				t.Errorf("Resolve(Override %q) = %q, want %q", tt.override, got, tt.want)
+			}
+		})
+	}
+
+	// It also beats a default: a resource with nothing else still gets it.
+	if got := Resolve(Subject{IRI: "https://example.org/x/1", Override: "Person"}, Page); got != BasePath+"Person.svg" {
+		t.Errorf("Resolve(miss + Override, Page) = %q, want the override", got)
+	}
+}

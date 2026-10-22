@@ -80,6 +80,9 @@ func (k Kind) Default() string { return defaults[k] }
 type Subject struct {
 	IRI   string
 	Types []string // rdf:type values, in endpoint order (order is only a tie-break)
+	// Override is the resource's own icon from the data: the value of the "icon"
+	// magic property (e.g. schema:thumbnail), "" if none. See Resolver.override.
+	Override string
 }
 
 // Resolver holds the set of available icon names and applies the matching rule.
@@ -146,6 +149,7 @@ func (r *Resolver) Load(dir string, log *slog.Logger) error {
 //
 // Order:
 //
+//  0. the resource's Override, when it is usable (see override)
 //  1. the resource's own local name          (a class IRI: schch:Canton -> Canton.svg)
 //  2. the resource's own local name, fallback
 //  3. any type's local name                  (an instance: .../canton/1 typed schch:Canton)
@@ -157,6 +161,10 @@ func (r *Resolver) Load(dir string, log *slog.Logger) error {
 func (r *Resolver) Resolve(s Subject, k Kind) string {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
+	if path := r.override(s.Override); path != "" {
+		return path
+	}
 
 	if name := LocalName(s.IRI); name != "" {
 		if r.icons[name] {
@@ -178,6 +186,50 @@ func (r *Resolver) Resolve(s Subject, k Kind) string {
 		}
 	}
 	return k.Default()
+}
+
+// override turns an icon value from the data into a path, or "" when it is not
+// usable — in which case resolution carries on as if there were none.
+//
+// Accepted forms:
+//
+//	https://img.example/x.svg     an absolute https URL
+//	/static/img/resource/x.svg    a site-relative path
+//	Canton | Canton.svg           the name of an icon in the set (Canton.svg, or
+//	                              a fallback icon: DefinedTerm.fallback)
+//
+// Anything else — another scheme (javascript:, data:), a protocol-relative
+// "//host" URL, a name not in the set — is refused, so a value from an endpoint
+// can never put an arbitrary scheme into an <img src>. Plain http:// is refused
+// too: the site CSP (Caddyfile, img-src 'self' data: https:) would block it, and
+// a refused value falls back to the type's icon rather than a broken image.
+// Caller must hold r.mu.
+func (r *Resolver) override(value string) string {
+	value = strings.TrimSpace(value)
+	switch {
+	case value == "":
+		return ""
+	case strings.HasPrefix(value, "https://"):
+		if u, err := url.Parse(value); err == nil && u.Host != "" {
+			return value
+		}
+		return ""
+	case strings.HasPrefix(value, "//"):
+		return ""
+	case strings.HasPrefix(value, "/"):
+		return value
+	}
+	name := strings.TrimSuffix(value, svgSuffix)
+	if base, ok := strings.CutSuffix(name, fallbackKey); ok {
+		if r.fallbacks[base] {
+			return BasePath + base + fallbackSuffix
+		}
+		return ""
+	}
+	if r.icons[name] {
+		return BasePath + name + svgSuffix
+	}
+	return ""
 }
 
 // Names returns every available icon name. Regular icons are keyed by bare

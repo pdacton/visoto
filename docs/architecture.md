@@ -89,16 +89,17 @@ See [docs/templating.md](templating.md) for the full authoring guide.
 
 Icons are SVG files in `static/img/resource/`, named after a class's local name
 (`Canton.svg`; `DefinedTerm.fallback.svg` for a weaker, generic match).
-`internal/icon` holds the rule — the resource's own local name, then any type
-with an exact icon, then any type with a fallback icon — the default per kind
+`internal/icon` holds the rule — the resource's own icon from the data (the
+`icon` magic property, e.g. `schema:thumbnail`), then its own local name, then any
+type with an exact icon, then any type with a fallback icon — the default per kind
 (`Cell`: none, `Page`: `default.svg`, `Class`: `defaultClass.svg`, `Instance`:
 `defaultInstance.svg`) and the icon set, scanned once at startup.
 
 | Where | Types from | Resolved |
 |---|---|---|
-| Page header (`resourceIcon`) | `pageClasses` query in `components/pageHeader.html` | server, `Page` |
+| Page header (`resourceIcon`; `iconOverride` beats a template's `pageIcon`/`metaIcon`) | `pageClasses` query in `components/pageHeader.html`; own icon via `ResolveIconOverride` | server, `Page` |
 | Sidebar menus (`classIcon`) | none — class IRIs | server, `Class` |
-| Tables with a `<sparql-column icon>`, lazy trees | batched `rdf:type` lookup (`internal/sparql/rdftypes.go`), cached 6 h per endpoint + IRI | server, `Cell`, shipped as `QueryResult.Icons` |
+| Tables with a `<sparql-column icon>`, lazy trees | batched `rdf:type` lookup (`internal/sparql/rdftypes.go`), cached 6 h per endpoint + IRI; own icon via the best-value query (`labels.go`), cached 1 h | server, `Cell`, shipped as `QueryResult.Icons` |
 | Graph Explorer embeds | GE's own data provider | browser, `static/js/visoto-icons.js` |
 
 The browser side mirrors the rule and never hard-codes a path: every page carries

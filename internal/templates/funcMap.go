@@ -21,8 +21,9 @@ var funcMap = template.FuncMap{
 	"dict":            makeDict,
 	"list":            makeList,
 	"resourceIcon":    resource.GetIconForResource,
-	"iconConfig":      icon.Config, // the #vs-icons island in base.html — see static/js/visoto-icons.js
-	"classIcon":       classIcon,   // {{ classIcon "schema:Person" }} — sidebar submenu icons
+	"iconOverride":    resource.IconOverrideForResource, // the resource's own icon, beating a template's pageIcon/metaIcon
+	"iconConfig":      icon.Config,                      // the #vs-icons island in base.html — see static/js/visoto-icons.js
+	"classIcon":       classIcon,                        // {{ classIcon "schema:Person" }} — sidebar submenu icons
 	"toJSON":          toJSON,
 	"toJSONRaw":       toJSONRaw,
 	"toJSONPretty":    toJSONPretty,

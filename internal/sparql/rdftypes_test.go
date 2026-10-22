@@ -81,7 +81,7 @@ func TestEnrichWithIcons(t *testing.T) {
 		"https://ld.admin.ch/canton/2": {"https://schema.ld.admin.ch/Canton"},
 	}
 
-	enrichWithIcons(&result, typeMap)
+	enrichWithIcons(&result, typeMap, nil)
 
 	want := icon.BasePath + "Canton.svg"
 	if got := result.Icons["https://ld.admin.ch/canton/1"]; got != want {
@@ -112,7 +112,7 @@ func TestEnrichWithIconsNoMatches(t *testing.T) {
 	}
 	enrichWithIcons(&result, map[string][]string{
 		"https://example.org/thing/1": {"http://example.org/Unknown"},
-	})
+	}, nil)
 
 	if result.Icons != nil {
 		t.Errorf("Icons = %v, want nil when nothing resolves", result.Icons)
@@ -131,7 +131,7 @@ func TestEnrichWithIconsUntyped(t *testing.T) {
 			{"class": {Type: "uri", Value: "https://schema.ld.admin.ch/Canton", DisplayText: "Canton"}},
 		},
 	}
-	enrichWithIcons(&result, nil)
+	enrichWithIcons(&result, nil, nil)
 
 	if got, want := result.Icons["https://schema.ld.admin.ch/Canton"], icon.BasePath+"Canton.svg"; got != want {
 		t.Errorf("Icons[Canton] = %q, want %q", got, want)
