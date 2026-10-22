@@ -255,8 +255,9 @@ avoids it; a bare `<sparql-column>` with no attributes is recognised as prose an
 |---|---|---|
 | `render` | Renders a `Binding` as HTML: URI → clickable link, literal → text. | `{{ render (index $row "label") }}` |
 | `dict` | Builds a map for passing named parameters to partials. | `{{ template "sparqlTable" (dict "result" .QueryResults.foo "id" "foo") }}` |
-| `resourceIcon` | Returns the icon name for the current resource. | `{{ resourceIcon . }}` |
-| `iconNames` | Returns a map of all available icon names. | `{{ iconNames \| toJSON }}` |
+| `resourceIcon` | Returns the icon path for the current resource (`default.svg` on a miss). | `{{ resourceIcon . }}` |
+| `classIcon` | Returns the icon path for a class IRI or CURIE (`defaultClass.svg` on a miss). | `{{ classIcon "schema:Person" }}` |
+| `iconConfig` | The browser icon config (base path, defaults, manifest URL); rendered once in `base.html` as `#vs-icons`. | `{{ toJSON iconConfig }}` |
 | `toJSON` | Serializes a value to HTML-safe JSON (for `<script>` tags). | `{{ toJSON .QueryResults.foo }}` |
 | `toJSONRaw` | Same as `toJSON` but without HTML-escaping `<`, `>`, `&`. Use when the JSON is passed to `encodeURIComponent`. | `{{ toJSONRaw $query }}` |
 | `toJSONPretty` | Indented JSON for display. | `{{ toJSONPretty . }}` |

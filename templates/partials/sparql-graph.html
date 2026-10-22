@@ -116,9 +116,8 @@
     </div>
   </div>
 
-  <!-- Data islands: available icon names, the same-origin SPARQL proxy URL, starting IRIs, height,
+  <!-- Data islands: the same-origin SPARQL proxy URL, starting IRIs, height,
        and the optional CONSTRUCT. -->
-  <template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>
   <template id="{{ $id }}-endpoint-url">{{ $endpointUrl | toJSON }}</template>
   <template id="{{ $id }}-iris">{{ $iris | toJSON }}</template>
   <template id="{{ $id }}-height">{{ $height | toJSON }}</template>
@@ -128,8 +127,6 @@
 
   <!-- Behaviour lives in static/js/sparql-graph.js; this partial emits only
        markup, data islands and the data-sparql-graph marker it reads. -->
-  <!-- Shared icon resolution (mirrors internal/icon); must precede the graph script. -->
-  <script src="/static/js/visoto-icons.js" defer></script>
   <!-- The GE adapter and the shared controller; both must precede the graph script. -->
   <script src="/static/js/ge-adapter.js" defer></script>
   <script src="/static/js/graph-layout.js" defer></script>

@@ -1009,6 +1009,7 @@ func main() {
 	router.POST("/api/cache/purge", cachePurgeHandler)
 	router.GET("/api/metric/:id", epFromURL, langFromURL, metricHandler)
 	router.GET("/api/search", epFromURL, langFromURL, searchAPIHandler)
+	router.GET(icon.ManifestPath, iconsHandler)
 	router.GET("/api/async-table/:id", epFromURL, langFromURL, asyncTableHandler)
 	router.GET("/api/bnode-tree", epFromURL, langFromURL, bnodeTreeHandler)
 	router.GET("/api/shape-summary", epFromURL, langFromURL, shapeSummaryHandler)

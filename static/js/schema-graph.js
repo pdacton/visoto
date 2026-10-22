@@ -32,7 +32,6 @@
     var kit = window.VisotoGraph.create(ID);
     var readIsland = kit.readIsland;
 
-    var AVAILABLE_ICONS = readIsland('-available-icons') || {};
     var ENDPOINT_URL = readIsland('-endpoint-url') || '/api/sparql';
     var urlParams = new URLSearchParams(window.location.search);
     var RESOURCE_IRI = readIsland('-iri') || urlParams.get('iri');
@@ -165,8 +164,7 @@
     // Icon resolution is shared with sparql-graph.js and mirrors internal/icon
     // (see static/js/visoto-icons.js).
     function typeStyleResolver(types) {
-      var url = window.VisotoIcons.resolve('', types, AVAILABLE_ICONS);
-      return { icon: url || '/static/img/resource/defaultClass.svg' };
+      return { icon: window.VisotoIcons.resolve({ types: types }, 'class') };
     }
 
     function renderSchema(store, mode, cls) {
@@ -286,7 +284,7 @@
           var clsPromise = mode === 'class' ? Promise.resolve(RESOURCE_IRI) : detectAnchorClass();
           return clsPromise.then(function (cls) {
             return sparql(vizQuery(mode, RESOURCE_IRI, cls), 'application/n-triples').then(function (nt) {
-              var store = MEM.buildStore(MEM.parseNTriples(nt), AVAILABLE_ICONS);
+              var store = MEM.buildStore(MEM.parseNTriples(nt));
               done();
               if (Object.keys(store.elements).length === 0) {
                 kit.showMessage(vsT('js.graph.empty', 'The graph query found nothing to draw.'), { level: 'info' });
@@ -310,7 +308,8 @@
     function initOnce() {
       if (initialized) return;
       initialized = true;
-      kit.load().then(derive);
+      // The icon set loads alongside GE: buildStore stamps icons synchronously.
+      Promise.all([kit.load(), window.VisotoIcons.load()]).then(derive);
     }
 
     if (LAZY) {

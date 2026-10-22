@@ -15,12 +15,20 @@
 // classes, and a generic one (schema:DefinedTerm) must never win over a specific
 // one (schch:Canton) just by being listed first. Resolve therefore scans ALL
 // types for an exact match before it settles for any fallback.
+//
+// This package is the one definition of the rule, of the default icons and of
+// the icon set. The browser gets the defaults with every page (Config) and the
+// set on demand (Manifest, /api/icons.json); static/js/visoto-icons.js applies
+// the rule to them.
 package icon
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"log/slog"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -41,28 +49,63 @@ const (
 	fallbackKey = ".fallback"
 )
 
-// cache holds the set of available icon names (without their .svg extension).
-type cache struct {
-	icons     map[string]bool
-	fallbacks map[string]bool
-	mu        sync.RWMutex
-}
+// Kind says what a miss means for the caller: which default icon, if any, stands
+// in when nothing matches.
+type Kind int
 
-var (
-	globalCache *cache
-	once        sync.Once
+const (
+	// Cell is a table cell or tree node: a miss renders no icon at all.
+	Cell Kind = iota
+	// Page is the resource page header, which always has a slot to fill.
+	Page
+	// Class is a class shown on its own: the sidebar menus, the graph class tree
+	// and a graph box resolved from its types.
+	Class
+	// Instance is a resource whose class is unknown (a bookmark without a stored
+	// icon).
+	Instance
 )
 
-// Init scans dir and builds the icon cache. Safe to call more than once: the
-// allocation happens once, the scan re-runs and replaces the contents.
-func Init(dir string, log *slog.Logger) error {
-	once.Do(func() {
-		globalCache = &cache{
-			icons:     make(map[string]bool),
-			fallbacks: make(map[string]bool),
-		}
-	})
+// defaults is the stand-in per Kind. Cell has none on purpose.
+var defaults = map[Kind]string{
+	Page:     BasePath + "default.svg",
+	Class:    BasePath + "defaultClass.svg",
+	Instance: BasePath + "defaultInstance.svg",
+}
 
+// Default returns the icon a miss of this kind falls back to, or "" for Cell.
+func (k Kind) Default() string { return defaults[k] }
+
+// Subject is what the resolver knows about one resource.
+type Subject struct {
+	IRI   string
+	Types []string // rdf:type values, in endpoint order (order is only a tie-break)
+}
+
+// Resolver holds the set of available icon names and applies the matching rule.
+type Resolver struct {
+	mu        sync.RWMutex
+	icons     map[string]bool // bare name -> present (Canton.svg)
+	fallbacks map[string]bool // bare name -> present (DefinedTerm.fallback.svg)
+	version   string          // content hash of the name set, for cache-busting URLs
+}
+
+// std is the process-wide resolver the package-level functions use. The icon
+// directory is a startup asset (like templates/), so one shared set is right.
+var std = &Resolver{}
+
+// Init scans dir into the process-wide resolver. See Resolver.Load.
+func Init(dir string, log *slog.Logger) error { return std.Load(dir, log) }
+
+// Resolve applies the process-wide resolver. See Resolver.Resolve.
+func Resolve(s Subject, k Kind) string { return std.Resolve(s, k) }
+
+// Current returns the process-wide resolver, for the manifest route.
+func Current() *Resolver { return std }
+
+// Load scans dir and replaces the icon set. Safe to call more than once: a
+// re-scan does not keep the previous directory's names.
+func (r *Resolver) Load(dir string, log *slog.Logger) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return err
@@ -84,10 +127,11 @@ func Init(dir string, log *slog.Logger) error {
 		}
 	}
 
-	globalCache.mu.Lock()
-	globalCache.icons = icons
-	globalCache.fallbacks = fallbacks
-	globalCache.mu.Unlock()
+	r.mu.Lock()
+	r.icons = icons
+	r.fallbacks = fallbacks
+	r.version = hashNames(icons, fallbacks)
+	r.mu.Unlock()
 
 	if log != nil {
 		log.Info("icon cache initialized",
@@ -97,31 +141,8 @@ func Init(dir string, log *slog.Logger) error {
 	return nil
 }
 
-// Names returns every available icon name, for the JS islands that resolve icons
-// client-side (the Graph Explorer partials, which get their types from Graph
-// Explorer's own data provider and so cannot use Resolve).
-//
-// Regular icons are keyed by bare class name ("Canton"); fallback icons carry a
-// ".fallback" suffix ("DefinedTerm.fallback") so a caller can rebuild the file
-// name by appending ".svg".
-func Names() map[string]bool {
-	if globalCache == nil {
-		return map[string]bool{}
-	}
-	globalCache.mu.RLock()
-	defer globalCache.mu.RUnlock()
-
-	out := make(map[string]bool, len(globalCache.icons)+len(globalCache.fallbacks))
-	for k := range globalCache.icons {
-		out[k] = true
-	}
-	for k := range globalCache.fallbacks {
-		out[k+fallbackKey] = true
-	}
-	return out
-}
-
-// Resolve returns the icon path for a resource, or "" when nothing matches.
+// Resolve returns the icon path for a resource, or k's default when nothing
+// matches (which for Cell is "").
 //
 // Order:
 //
@@ -129,42 +150,123 @@ func Names() map[string]bool {
 //  2. the resource's own local name, fallback
 //  3. any type's local name                  (an instance: .../canton/1 typed schch:Canton)
 //  4. any type's local name, fallback
+//  5. k.Default()
 //
 // Steps 3 and 4 are two separate passes on purpose: with several types, an exact
 // match on the last one must still beat a fallback match on the first.
-//
-// The empty return is deliberate — callers differ on what a miss means. Table
-// cells render no icon at all, the resource page header falls back to
-// default.svg, and the graphs to defaultClass.svg.
-func Resolve(iri string, types []string) string {
-	if name := LocalName(iri); name != "" {
-		if hasIcon(name) {
+func (r *Resolver) Resolve(s Subject, k Kind) string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if name := LocalName(s.IRI); name != "" {
+		if r.icons[name] {
 			return BasePath + name + svgSuffix
 		}
-		if hasFallback(name) {
+		if r.fallbacks[name] {
 			return BasePath + name + fallbackSuffix
 		}
 	}
 
-	for _, t := range types {
-		if name := LocalName(t); name != "" && hasIcon(name) {
+	for _, t := range s.Types {
+		if name := LocalName(t); name != "" && r.icons[name] {
 			return BasePath + name + svgSuffix
 		}
 	}
-	for _, t := range types {
-		if name := LocalName(t); name != "" && hasFallback(name) {
+	for _, t := range s.Types {
+		if name := LocalName(t); name != "" && r.fallbacks[name] {
 			return BasePath + name + fallbackSuffix
 		}
 	}
-	return ""
+	return k.Default()
+}
+
+// Names returns every available icon name. Regular icons are keyed by bare
+// class name ("Canton"); fallback icons carry a ".fallback" suffix
+// ("DefinedTerm.fallback") so a caller can rebuild the file name by appending
+// ".svg".
+func (r *Resolver) Names() map[string]bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	out := make(map[string]bool, len(r.icons)+len(r.fallbacks))
+	for k := range r.icons {
+		out[k] = true
+	}
+	for k := range r.fallbacks {
+		out[k+fallbackKey] = true
+	}
+	return out
+}
+
+// Version identifies the current icon set. It changes exactly when the set does,
+// so a URL carrying it can be cached as immutable.
+func (r *Resolver) Version() string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return r.version
+}
+
+// ManifestPath is the route serving Manifest.
+const ManifestPath = "/api/icons.json"
+
+// ManifestURL is ManifestPath tagged with the icon set's Version. The response is
+// a pure function of the set, so the version in the URL lets it be cached as
+// immutable: a deploy that adds an icon changes the URL rather than waiting out
+// a stale entry.
+func ManifestURL() string { return ManifestPath + "?v=" + std.Version() }
+
+// Manifest is the icon set as browser-side resolution reads it, served once per
+// set as /api/icons.json instead of being inlined into every graph embed. Only
+// the Graph Explorer embeds need it; everything else resolves server-side.
+type Manifest struct {
+	Names map[string]bool `json:"names"` // see Names
+}
+
+// Manifest returns the browser manifest for the current icon set.
+func (r *Resolver) Manifest() Manifest { return Manifest{Names: r.Names()} }
+
+// PageConfig is the small, set-independent part of the browser contract,
+// rendered into every page as the #vs-icons island (templates/layout/base.html):
+// where icons live, the default per kind, and where to fetch the Manifest. It is
+// what lets JS that never resolves anything (bookmarks.js) still use the right
+// defaults without a fetch.
+type PageConfig struct {
+	ManifestURL string            `json:"manifestUrl"`
+	Base        string            `json:"base"`
+	Defaults    map[string]string `json:"defaults"` // "page" | "class" | "instance" -> path
+}
+
+// Config returns the PageConfig for the process-wide resolver.
+func Config() PageConfig {
+	return PageConfig{
+		ManifestURL: ManifestURL(),
+		Base:        BasePath,
+		Defaults: map[string]string{
+			"page":     Page.Default(),
+			"class":    Class.Default(),
+			"instance": Instance.Default(),
+		},
+	}
+}
+
+// hashNames is a short, order-independent content hash of the icon set.
+func hashNames(icons, fallbacks map[string]bool) string {
+	names := make([]string, 0, len(icons)+len(fallbacks))
+	for k := range icons {
+		names = append(names, k)
+	}
+	for k := range fallbacks {
+		names = append(names, k+fallbackKey)
+	}
+	sort.Strings(names)
+	sum := sha256.Sum256([]byte(strings.Join(names, "\n")))
+	return hex.EncodeToString(sum[:])[:12]
 }
 
 // LocalName reduces an IRI to the name an icon file would be called after.
 //
-// This is the single definition of that rule. It previously existed in four
-// slightly different copies (two in Go, two in JS) which disagreed about
-// percent-encoding and prefixed forms; static/js/visoto-icons.js is the JS
-// mirror of this function and must be kept in step with it.
+// This is the single definition of that rule; static/js/visoto-icons.js is the
+// JS mirror of this function and must be kept in step with it.
 //
 //	https://schema.ld.admin.ch/Canton              -> Canton
 //	http://www.w3.org/2004/02/skos/core#Concept    -> Concept
@@ -196,22 +298,4 @@ func LocalName(iri string) string {
 		iri = iri[idx+1:]
 	}
 	return iri
-}
-
-func hasIcon(name string) bool {
-	if globalCache == nil {
-		return false
-	}
-	globalCache.mu.RLock()
-	defer globalCache.mu.RUnlock()
-	return globalCache.icons[name]
-}
-
-func hasFallback(name string) bool {
-	if globalCache == nil {
-		return false
-	}
-	globalCache.mu.RLock()
-	defer globalCache.mu.RUnlock()
-	return globalCache.fallbacks[name]
 }

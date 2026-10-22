@@ -75,7 +75,7 @@ For non-resource pages (search, monitoring, home), the lifecycle is simpler: the
 | `internal/tree` | Hierarchy tree queries and their validation |
 | `internal/i18n` | UI message catalogs (go-i18n v2), loaded from `./locales` |
 | `internal/lang` | Language negotiation and the configured language set |
-| `internal/icon` | Resource icon resolution |
+| `internal/icon` | Resource icon resolution — the one rule, default icons and icon set (see [Resource Icons](#resource-icons)) |
 
 ## Template System
 
@@ -84,6 +84,27 @@ Templates live in the `templates/` directory. Each template is a Go HTML templat
 The template loader (`internal/templates`) composes each page template with the shared layout files at startup. Templates are loaded once and cached in memory; a server restart is required to pick up changes.
 
 See [docs/templating.md](templating.md) for the full authoring guide.
+
+## Resource Icons
+
+Icons are SVG files in `static/img/resource/`, named after a class's local name
+(`Canton.svg`; `DefinedTerm.fallback.svg` for a weaker, generic match).
+`internal/icon` holds the rule — the resource's own local name, then any type
+with an exact icon, then any type with a fallback icon — the default per kind
+(`Cell`: none, `Page`: `default.svg`, `Class`: `defaultClass.svg`, `Instance`:
+`defaultInstance.svg`) and the icon set, scanned once at startup.
+
+| Where | Types from | Resolved |
+|---|---|---|
+| Page header (`resourceIcon`) | `pageClasses` query in `components/pageHeader.html` | server, `Page` |
+| Sidebar menus (`classIcon`) | none — class IRIs | server, `Class` |
+| Tables with a `<sparql-column icon>`, lazy trees | batched `rdf:type` lookup (`internal/sparql/rdftypes.go`), cached 6 h per endpoint + IRI | server, `Cell`, shipped as `QueryResult.Icons` |
+| Graph Explorer embeds | GE's own data provider | browser, `static/js/visoto-icons.js` |
+
+The browser side mirrors the rule and never hard-codes a path: every page carries
+the `#vs-icons` island (`icon.Config`: base path, defaults, manifest URL), and the
+graph embeds fetch the icon set once from `/api/icons.json?v=<hash>`, whose URL
+changes with the set so it is cached as immutable.
 
 ## Data Persistence
 

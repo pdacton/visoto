@@ -51,7 +51,7 @@ func TestLocalName(t *testing.T) {
 func TestResolveDirectMatch(t *testing.T) {
 	withIcons(t, "Canton.svg", "Class.svg")
 
-	got := Resolve("https://schema.ld.admin.ch/Canton", nil)
+	got := Resolve(Subject{IRI: "https://schema.ld.admin.ch/Canton"}, Cell)
 	if want := BasePath + "Canton.svg"; got != want {
 		t.Errorf("Resolve(class IRI) = %q, want %q", got, want)
 	}
@@ -62,7 +62,7 @@ func TestResolveDirectMatch(t *testing.T) {
 func TestResolveByType(t *testing.T) {
 	withIcons(t, "Canton.svg")
 
-	got := Resolve("https://ld.admin.ch/canton/1", []string{"https://schema.ld.admin.ch/Canton"})
+	got := Resolve(Subject{IRI: "https://ld.admin.ch/canton/1", Types: []string{"https://schema.ld.admin.ch/Canton"}}, Cell)
 	if want := BasePath + "Canton.svg"; got != want {
 		t.Errorf("Resolve(instance IRI, [Canton]) = %q, want %q", got, want)
 	}
@@ -73,7 +73,7 @@ func TestResolveByType(t *testing.T) {
 func TestResolveDirectMatchBeatsType(t *testing.T) {
 	withIcons(t, "Canton.svg", "Municipality.svg")
 
-	got := Resolve("https://schema.ld.admin.ch/Municipality", []string{"https://schema.ld.admin.ch/Canton"})
+	got := Resolve(Subject{IRI: "https://schema.ld.admin.ch/Municipality", Types: []string{"https://schema.ld.admin.ch/Canton"}}, Cell)
 	if want := BasePath + "Municipality.svg"; got != want {
 		t.Errorf("Resolve() = %q, want the resource's own icon %q", got, want)
 	}
@@ -90,7 +90,7 @@ func TestResolveExactTypeBeatsFallback(t *testing.T) {
 		"http://schema.org/DefinedTerm",     // only a fallback icon, listed first
 		"https://schema.ld.admin.ch/Canton", // a real icon, listed second
 	}
-	got := Resolve("https://ld.admin.ch/canton/1", types)
+	got := Resolve(Subject{IRI: "https://ld.admin.ch/canton/1", Types: types}, Cell)
 	if want := BasePath + "Canton.svg"; got != want {
 		t.Errorf("Resolve(multi-typed) = %q, want the exact match %q", got, want)
 	}
@@ -101,7 +101,7 @@ func TestResolveExactTypeBeatsFallback(t *testing.T) {
 func TestResolveFallbackWhenNoExact(t *testing.T) {
 	withIcons(t, "Canton.svg", "DefinedTerm.fallback.svg")
 
-	got := Resolve("https://example.org/term/42", []string{"http://schema.org/DefinedTerm"})
+	got := Resolve(Subject{IRI: "https://example.org/term/42", Types: []string{"http://schema.org/DefinedTerm"}}, Cell)
 	if want := BasePath + "DefinedTerm.fallback.svg"; got != want {
 		t.Errorf("Resolve() = %q, want %q", got, want)
 	}
@@ -112,7 +112,7 @@ func TestResolveFallbackWhenNoExact(t *testing.T) {
 func TestResolveOwnFallback(t *testing.T) {
 	withIcons(t, "Canton.svg", "DefinedTerm.fallback.svg")
 
-	got := Resolve("http://schema.org/DefinedTerm", []string{"https://schema.ld.admin.ch/Canton"})
+	got := Resolve(Subject{IRI: "http://schema.org/DefinedTerm", Types: []string{"https://schema.ld.admin.ch/Canton"}}, Cell)
 	if want := BasePath + "DefinedTerm.fallback.svg"; got != want {
 		t.Errorf("Resolve() = %q, want the resource's own fallback %q", got, want)
 	}
@@ -120,7 +120,7 @@ func TestResolveOwnFallback(t *testing.T) {
 
 // TestResolveMisses is check 4: every shape of "nothing matches" returns the
 // empty string rather than a bogus path, so each caller can apply its own
-// default (none in tables, default.svg in the page header).
+// default (none in tables, default.svg in the page header) — see TestResolveDefaults.
 func TestResolveMisses(t *testing.T) {
 	withIcons(t, "Canton.svg", "DefinedTerm.fallback.svg")
 
@@ -137,7 +137,7 @@ func TestResolveMisses(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Resolve(tt.iri, tt.types); got != "" {
+			if got := Resolve(Subject{IRI: tt.iri, Types: tt.types}, Cell); got != "" {
 				t.Errorf("Resolve(%q, %v) = %q, want \"\"", tt.iri, tt.types, got)
 			}
 		})
@@ -150,7 +150,7 @@ func TestResolveMisses(t *testing.T) {
 func TestNames(t *testing.T) {
 	withIcons(t, "Canton.svg", "DefinedTerm.fallback.svg", "notanicon.txt")
 
-	names := Names()
+	names := Current().Names()
 	if !names["Canton"] {
 		t.Error("Names() missing \"Canton\"")
 	}
@@ -171,10 +171,75 @@ func TestInitReplaces(t *testing.T) {
 	withIcons(t, "Canton.svg")
 	withIcons(t, "Municipality.svg")
 
-	if got := Resolve("https://schema.ld.admin.ch/Canton", nil); got != "" {
+	if got := Resolve(Subject{IRI: "https://schema.ld.admin.ch/Canton"}, Cell); got != "" {
 		t.Errorf("Resolve(Canton) = %q after re-Init without it, want \"\"", got)
 	}
-	if got := Resolve("https://schema.ld.admin.ch/Municipality", nil); got == "" {
+	if got := Resolve(Subject{IRI: "https://schema.ld.admin.ch/Municipality"}, Cell); got == "" {
 		t.Error("Resolve(Municipality) = \"\" after Init with it")
+	}
+}
+
+// TestResolveDefaults pins what a miss means per Kind: nothing in a cell, the
+// generic stand-ins elsewhere. A hit is the same path whatever the kind.
+func TestResolveDefaults(t *testing.T) {
+	withIcons(t, "Canton.svg")
+
+	miss := Subject{IRI: "https://example.org/x/1"}
+	tests := []struct {
+		kind Kind
+		want string
+	}{
+		{Cell, ""},
+		{Page, BasePath + "default.svg"},
+		{Class, BasePath + "defaultClass.svg"},
+		{Instance, BasePath + "defaultInstance.svg"},
+	}
+	for _, tt := range tests {
+		if got := Resolve(miss, tt.kind); got != tt.want {
+			t.Errorf("Resolve(miss, %d) = %q, want %q", tt.kind, got, tt.want)
+		}
+		if got := Resolve(Subject{IRI: "https://schema.ld.admin.ch/Canton"}, tt.kind); got != BasePath+"Canton.svg" {
+			t.Errorf("Resolve(hit, %d) = %q, want the icon itself", tt.kind, got)
+		}
+	}
+}
+
+// TestVersionTracksIconSet guards the cache-busting contract of /api/icons.json:
+// the same set yields the same version, a different set a different one.
+func TestVersionTracksIconSet(t *testing.T) {
+	withIcons(t, "Canton.svg", "DefinedTerm.fallback.svg")
+	v1 := Current().Version()
+	withIcons(t, "DefinedTerm.fallback.svg", "Canton.svg")
+	if v2 := Current().Version(); v2 != v1 {
+		t.Errorf("Version changed for the same set: %q -> %q", v1, v2)
+	}
+	withIcons(t, "Canton.svg", "DefinedTerm.svg")
+	if v3 := Current().Version(); v3 == v1 {
+		t.Error("Version unchanged after a fallback became a real icon")
+	}
+	if v1 == "" {
+		t.Error("Version is empty")
+	}
+}
+
+// TestManifestAndConfig check the shapes visoto-icons.js reads.
+func TestManifestAndConfig(t *testing.T) {
+	withIcons(t, "Canton.svg")
+
+	if m := Current().Manifest(); !m.Names["Canton"] {
+		t.Error("Manifest.Names missing \"Canton\"")
+	}
+
+	c := Config()
+	if c.Base != BasePath {
+		t.Errorf("Base = %q, want %q", c.Base, BasePath)
+	}
+	if c.ManifestURL != ManifestPath+"?v="+Current().Version() {
+		t.Errorf("ManifestURL = %q, want it versioned", c.ManifestURL)
+	}
+	for key, kind := range map[string]Kind{"page": Page, "class": Class, "instance": Instance} {
+		if got := c.Defaults[key]; got != kind.Default() {
+			t.Errorf("Defaults[%q] = %q, want %q", key, got, kind.Default())
+		}
 	}
 }

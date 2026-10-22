@@ -4,8 +4,8 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-// buildStore resolves own-IRI icons through visoto-icons.js; none here.
-global.window = { VisotoIcons: { resolve: () => '' } };
+// buildStore resolves own-IRI icons through visoto-icons.js; an empty set here.
+global.window = { VisotoIcons: require('../../static/js/visoto-icons.js') };
 const M = require('../../static/js/graph-memory-store.js');
 
 const RDF_TYPE = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#type';

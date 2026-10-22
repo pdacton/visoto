@@ -34,6 +34,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"hutzli.org/visoto/internal/icon"
 	"hutzli.org/visoto/internal/lang"
 )
 
@@ -203,7 +204,8 @@ func isCacheableMethod(method string) bool {
 // health/ping probes, and the MCP endpoint, which streams.
 func skipETagPath(path string) bool {
 	switch path {
-	case "/ping", "/health", "/mcp", "/metrics", "/favicon.ico", "/robots.txt":
+	case "/ping", "/health", "/mcp", "/metrics", "/favicon.ico", "/robots.txt",
+		icon.ManifestPath: // sets its own Cache-Control, see iconsHandler
 		return true
 	}
 	return strings.HasPrefix(path, "/static/")

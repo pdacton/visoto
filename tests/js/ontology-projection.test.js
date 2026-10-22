@@ -4,7 +4,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-global.window = { VisotoIcons: { resolve: () => '' } };
+global.window = { VisotoIcons: require('../../static/js/visoto-icons.js') };
 const M = require('../../static/js/graph-memory-store.js');
 const P = require('../../static/js/ontology-projection.js');
 
@@ -26,7 +26,7 @@ function use(id, p, c, r) {
     r ? `_:${id} <${U}range> <${r}> .` : '',
   ].join('\n');
 }
-function draw(text) { return M.buildStore(P.project(M.parseNTriples(text, 'q0_')), {}); }
+function draw(text) { return M.buildStore(P.project(M.parseNTriples(text, 'q0_'))); }
 function links(store) { return store.links.map((l) => `${l.sourceId} ${l.linkTypeId} ${l.targetId}`).sort(); }
 function types(store, iri) { return store.elements[iri] ? store.elements[iri].types : null; }
 function attr(store, iri, p) {
@@ -44,7 +44,7 @@ test('parseNTriples scopes blank nodes per response', () => {
 });
 
 test('buildStore ignores blank nodes', () => {
-  const store = M.buildStore(M.parseNTriples(`_:u <${U}property> <${EX}p> .\n<${EX}a> <${EX}p> _:x .`, 'q0_'), {});
+  const store = M.buildStore(M.parseNTriples(`_:u <${U}property> <${EX}p> .\n<${EX}a> <${EX}p> _:x .`, 'q0_'));
   assert.deepEqual(Object.keys(store.elements), []);
 });
 
@@ -156,7 +156,7 @@ test('blank-node uses from two responses do not merge', () => {
   const text0 = use('u0_u', EX + 'p', EX + 'A', EX + 'B');
   const text1 = use('u0_u', EX + 'q', EX + 'C', EX + 'D');
   const triples = M.parseNTriples(text0, 'q0_').concat(M.parseNTriples(text1, 'q1_'));
-  const s = M.buildStore(P.project(triples), {});
+  const s = M.buildStore(P.project(triples));
   assert.deepEqual(links(s), [`${EX}A ${EX}p ${EX}B`, `${EX}C ${EX}q ${EX}D`]);
 });
 

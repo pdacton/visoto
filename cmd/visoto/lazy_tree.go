@@ -225,8 +225,12 @@ func serveLevel(c *gin.Context, block parser.TreeQueries, role, parent string) {
 // distinct nodes. Comparing the deduplicated count against the limit would then
 // report that level as complete, with no "showing the first N" notice. Only the
 // first limit rows are used, so the probe row never becomes a node.
+//
+// Types are resolved (sparql.WithTypes) because every node carries a resource
+// icon (treeNode.Icon); without them result.Icons is never filled. The type
+// query is batched and cached per endpoint, so an expand pays it once per IRI.
 func runLevel(c *gin.Context, q treeQueryContext, block parser.TreeQueries, query string, limit int) ([]treeNode, bool, error) {
-	result, err := q.preprocessor.ExecuteQueryWithContext(q.ctx, query, true, q.lang, "")
+	result, err := q.preprocessor.ExecuteQueryWithContext(q.ctx, query, true, q.lang, "", sparql.WithTypes())
 	if err != nil {
 		return nil, false, err
 	}

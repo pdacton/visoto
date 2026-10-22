@@ -139,15 +139,16 @@ func TestEnrichWithIconsUntyped(t *testing.T) {
 }
 
 func TestTypeCache(t *testing.T) {
+	const endpoint = "https://example.com/query"
 	iri := "http://example.com/type-cache"
 	types := []string{"http://schema.org/Person"}
 
-	if _, found := getCachedTypes(iri); found {
+	if _, found := getCachedTypes(endpoint, iri); found {
 		t.Error("getCachedTypes() should miss for an unseen IRI")
 	}
 
-	setCachedTypes(iri, types)
-	got, found := getCachedTypes(iri)
+	setCachedTypes(endpoint, iri, types)
+	got, found := getCachedTypes(endpoint, iri)
 	if !found {
 		t.Fatal("getCachedTypes() should hit after set")
 	}
@@ -158,8 +159,8 @@ func TestTypeCache(t *testing.T) {
 	// An untyped IRI caches as a hit holding nothing — that is an answer, and
 	// caching it is what stops every page view re-asking about the same IRIs.
 	untyped := "http://example.com/untyped"
-	setCachedTypes(untyped, nil)
-	got, found = getCachedTypes(untyped)
+	setCachedTypes(endpoint, untyped, nil)
+	got, found = getCachedTypes(endpoint, untyped)
 	if !found {
 		t.Error("getCachedTypes() should hit for a cached-empty IRI")
 	}
@@ -172,11 +173,23 @@ func TestTypeCache(t *testing.T) {
 // than the label cache: types do not vary by language, so one visitor's lookup
 // serves every other language.
 func TestTypeCacheIgnoresLanguage(t *testing.T) {
+	const endpoint = "https://example.com/query"
 	iri := "http://example.com/lang-independent"
-	setCachedTypes(iri, []string{"http://schema.org/Person"})
+	setCachedTypes(endpoint, iri, []string{"http://schema.org/Person"})
 
-	if _, found := getCachedTypes(iri); !found {
-		t.Error("type cache must be keyed by IRI alone, independent of language")
+	if _, found := getCachedTypes(endpoint, iri); !found {
+		t.Error("type cache must not be keyed by language")
+	}
+}
+
+// TestTypeCachePerEndpoint: one endpoint's answer for an IRI must not be served
+// for the same IRI on another endpoint.
+func TestTypeCachePerEndpoint(t *testing.T) {
+	iri := "http://example.com/per-endpoint"
+	setCachedTypes("https://a.example/query", iri, []string{"http://schema.org/Person"})
+
+	if _, found := getCachedTypes("https://b.example/query", iri); found {
+		t.Error("type cache hit across endpoints")
 	}
 }
 

@@ -5,17 +5,12 @@ import (
 	"hutzli.org/visoto/internal/parser"
 )
 
-// defaultIcon is what a resource page shows when nothing matches. Unlike a table
-// cell — which renders no icon at all on a miss — the page header always has a
-// slot to fill, so it needs a generic stand-in.
-const defaultIcon = icon.BasePath + "default.svg"
-
 // GetIconForResource returns the icon path for a resource page's header.
 //
 // The matching rule itself lives in internal/icon and is shared with the SPARQL
 // tables; this function only supplies the two things that are specific to a
 // resource page — where the RDF types come from (the pageClasses query declared
-// in templates/components/pageHeader.html) and what a miss means (default.svg).
+// in templates/components/pageHeader.html) and what a miss means (icon.Page: default.svg).
 //
 // Accepts parser.TemplateData for resource pages; anything else (search, home)
 // gets "" because those pages have no single resource to describe.
@@ -25,10 +20,7 @@ func GetIconForResource(data interface{}) string {
 		return ""
 	}
 
-	if path := icon.Resolve(td.ResourceIRI, pageClasses(td)); path != "" {
-		return path
-	}
-	return defaultIcon
+	return icon.Resolve(icon.Subject{IRI: td.ResourceIRI, Types: pageClasses(td)}, icon.Page)
 }
 
 // pageClasses collects the RDF types the page header query found, in the order

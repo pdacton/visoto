@@ -8,11 +8,12 @@
   their own CONSTRUCT, then hand the N-Triples here:
 
     var G = window.VisotoMemoryGraph;
-    var store = G.buildStore(G.parseNTriples(text), availableIcons);
+    var store = G.buildStore(G.parseNTriples(text));
     model.importLayout({ dataProvider: G.makeProvider(store), ... });
 
   Shared by static/js/schema-graph.js and the construct mode of
-  static/js/sparql-graph.js. Load it after visoto-icons.js and before either.
+  static/js/sparql-graph.js. Load it before either; icons resolve through
+  window.VisotoIcons (base.html), whose set the caller has load()ed.
 
   How triples map onto the diagram:
     - an IRI is a NODE when it has an rdf:type, is the subject of a literal
@@ -49,7 +50,6 @@
   // The class-tree group of the classes an ontology diagram only refers to
   // (makeHybridProvider); the CONSTRUCT labels it.
   var EXTERNAL_GROUP = MARKER_PREFIX + 'ExternalClasses';
-  var MARKER_FALLBACK_IMAGE = '/static/img/resource/defaultClass.svg';
 
   // StandardTemplate titles a box with its foaf:name property value in preference
   // to the model label, so an attribute row "foaf:name: rdf:langString" (the
@@ -111,7 +111,7 @@
   // Store: elements (ElementModel by IRI), links (LinkModel[]) and labels for
   // the IRIs that are only ever predicates.
   // ---------------------------------------------------------------------------
-  function buildStore(triples, availableIcons) {
+  function buildStore(triples) {
     triples = triples.filter(function (t) { return t.s.indexOf('_:') !== 0 && t.o.type !== 'bnode'; });
     // Pass 1: which IRIs are nodes. Needed up front because a label triple can
     // arrive before the triple that makes its subject a node.
@@ -171,12 +171,11 @@
       // return the generic class icon. Put the node's own-IRI icon on the model
       // instead: renderThumbnail() prefers data.image, and it survives GE 2.x's
       // props rebuild because it IS the model.
-      var icon = window.VisotoIcons.resolve(iri, [], availableIcons || {});
-      if (icon) el.image = icon;
+      window.VisotoIcons.stamp(el, iri);
 
       var marker = el.types.filter(function (t) { return t.indexOf(MARKER_PREFIX) === 0; })[0];
       if (marker) {
-        el.image = (el.image || MARKER_FALLBACK_IMAGE).split('#')[0] + '#vs-' + marker.slice(MARKER_PREFIX.length);
+        el.image = (el.image || window.VisotoIcons.defaultFor('class')).split('#')[0] + '#vs-' + marker.slice(MARKER_PREFIX.length);
       }
     });
 

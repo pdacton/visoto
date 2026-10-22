@@ -47,7 +47,6 @@
       var container = kit.container;
       if (!container) return;
 
-      var AVAILABLE_ICONS = readIsland('-available-icons') || {};
       var ENDPOINT_URL = readIsland('-endpoint-url') || '/api/sparql';
 
       // Build the starting IRI list: iris[] + optional single iri + ?iri= URL param.
@@ -169,16 +168,16 @@
         // nobody can predict from the page.
         var dataProvider = window.VisotoGE.sparqlProvider(ENDPOINT_URL, settings);
 
-        // Set data.image from an element's own IRI, preserving the rest of its
-        // data. setData replaces the model wholesale, so the existing fields are
-        // carried over; GE re-renders from the model, so this survives.
+        // Set data.image from an element's own IRI (VisotoIcons.stamp), preserving
+        // the rest of its data. setData replaces the model wholesale, so the
+        // existing fields are carried over; GE re-renders from the model, so this
+        // survives.
         function stampIcon(element, iri) {
           if (!element) return;
-          var url = ICONS.resolve(iri, [], AVAILABLE_ICONS);
-          if (!url) return;
           var data = element.data || {};
-          if (data.image) return; // a real image from the data wins
-          element.setData(Object.assign({}, data, { id: data.id || iri, iri: iri, image: url }));
+          var stamped = ICONS.stamp(Object.assign({}, data), iri);
+          if (stamped.image === data.image) return; // nothing to add, or the data's own image wins
+          element.setData(Object.assign(stamped, { id: data.id || iri, iri: iri }));
         }
 
         // Stamp each element's own-IRI icon onto the model as data.image.
@@ -194,11 +193,7 @@
         var innerElementInfo = dataProvider.elementInfo.bind(dataProvider);
         dataProvider.elementInfo = function (params) {
           return innerElementInfo(params).then(function (dict) {
-            Object.keys(dict).forEach(function (iri) {
-              if (dict[iri].image) return; // a real image from the data wins
-              var url = ICONS.resolve(iri, [], AVAILABLE_ICONS);
-              if (url) dict[iri].image = url;
-            });
+            Object.keys(dict).forEach(function (iri) { ICONS.stamp(dict[iri], iri); });
             return dict;
           });
         };
@@ -420,7 +415,7 @@
         })).then(function(parts) {
           var triples = [].concat.apply([], parts);
           if (PROJECTION) triples = PROJECTIONS[PROJECTION].project(triples);
-          return MEM.buildStore(triples, AVAILABLE_ICONS);
+          return MEM.buildStore(triples);
         });
       }
 
@@ -486,12 +481,12 @@
       // back to Class.svg, as its box on the canvas does via its owl:Class type;
       // only undeclared nodes keep the grey default.
       function typeStyleResolver(types) {
-        var url = ICONS.resolve('', types, AVAILABLE_ICONS);
+        var url = ICONS.resolve({ types: types }, 'cell');
         if (!url && constructedStore && types.length === 1 &&
             window.VisotoMemoryGraph.isDeclaredClass(constructedStore, types[0])) {
-          url = ICONS.resolve('', [OWL_CLASS], AVAILABLE_ICONS);
+          url = ICONS.resolve({ types: [OWL_CLASS] }, 'cell');
         }
-        return { icon: url || '/static/img/resource/defaultClass.svg' };
+        return { icon: url || ICONS.defaultFor('class') };
       }
 
       // No element template override: icons ride on data.image (see above), which
@@ -628,7 +623,8 @@
     function initOnce() {
       if (initialized) return;
       initialized = true;
-      kit.load().then(init);
+      // The icon set loads alongside GE: init stamps icons synchronously.
+      Promise.all([kit.load(), window.VisotoIcons.load()]).then(init);
     }
 
     if (LAZY) {

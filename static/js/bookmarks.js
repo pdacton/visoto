@@ -105,7 +105,8 @@
       // when the bookmark was created; otherwise use the generic instance icon.
       // Never derive the icon from the instance IRI's last segment — that yields
       // a bare identifier (e.g. "5359.svg") that never exists and 404s.
-      var iconSrc = item.icon || '/static/img/resource/defaultInstance.svg';
+      var fallbackIcon = window.VisotoIcons.defaultFor('instance');
+      var iconSrc = item.icon || fallbackIcon;
       var label = item.label || item.shortIri || lastSegment(item.iri);
       var href = '/resource?iri=' + encodeURIComponent(item.iri);
 
@@ -113,7 +114,7 @@
         '<a class="nav-link pe-1" href="' + href + '" title="' + escapeHtml(item.iri) + '">' +
           '<span class="nav-link-icon d-none d-lg-inline-block me-2 flex-shrink-0">' +
             '<img src="' + escapeHtml(iconSrc) + '" alt="" width="16" height="16" ' +
-              'onerror="this.onerror=null;this.src=\'/static/img/resource/defaultInstance.svg\'">' +
+              'onerror="this.onerror=null;this.src=\'' + escapeHtml(fallbackIcon) + '\'">' +
           '</span>' +
           '<span class="nav-link-title text-truncate">' + escapeHtml(label) + '</span>' +
         '</a>' +
@@ -254,8 +255,10 @@
     if (!img && row) img = row.querySelector('img[src*="/img/resource/"]');
     if (!img) return '';
     var src = img.getAttribute('src') || '';
-    // Ignore the generic fallbacks — they carry no type information.
-    if (/\/(default|defaultClass|defaultInstance|standard)\.svg$/.test(src)) return '';
+    // Ignore the generic stand-ins — they carry no type information. The defaults
+    // come from internal/icon (VisotoIcons); standard.svg is a generic glyph no
+    // class is named after.
+    if (window.VisotoIcons.isDefault(src) || /\/standard\.svg$/.test(src)) return '';
     return src;
   }
 

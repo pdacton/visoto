@@ -26,13 +26,25 @@ import (
 	"hutzli.org/visoto/internal/logger"
 )
 
-// typeCache holds IRI → rdf:type IRIs. Keyed by IRI alone (no language), and
-// held far longer than labels: a resource's class is essentially static, while
-// its label can be re-translated.
+// typeCache holds rdf:type IRIs per (endpoint, IRI), and is held far longer
+// than labels: a resource's class is essentially static, while its label can be
+// re-translated.
+//
+// Keyed by endpoint as well as IRI, like the label cache (bestCacheKey): the
+// same IRI can be described differently on two endpoints, and the answer one
+// gave must not stand in for the other's. Not keyed by language — types do not
+// vary by it, so a German visit still warms the cache for a French one.
 var typeCache = cache.New[[]string](6 * time.Hour)
 
-func getCachedTypes(iri string) ([]string, bool) { return typeCache.Get(iri) }
-func setCachedTypes(iri string, types []string)  { typeCache.Set(iri, types) }
+func typeCacheKey(endpointURL, iri string) string { return endpointURL + "\x00" + iri }
+
+func getCachedTypes(endpointURL, iri string) ([]string, bool) {
+	return typeCache.Get(typeCacheKey(endpointURL, iri))
+}
+
+func setCachedTypes(endpointURL, iri string, types []string) {
+	typeCache.Set(typeCacheKey(endpointURL, iri), types)
+}
 
 // buildTypeQuery constructs the SPARQL query fetching types for the given IRIs.
 //
@@ -100,7 +112,7 @@ func fetchTypesBatch(p *Preprocessor, endpointURL string, iris []string, typeMap
 	}
 
 	for _, iri := range iris {
-		setCachedTypes(iri, typeMap[iri]) // nil for an untyped IRI — still an answer
+		setCachedTypes(endpointURL, iri, typeMap[iri]) // nil for an untyped IRI — still an answer
 	}
 }
 
@@ -111,7 +123,7 @@ func fetchTypes(p *Preprocessor, endpointURL string, iris []string) map[string][
 	uncached := make([]string, 0, len(iris))
 
 	for _, iri := range iris {
-		if types, found := getCachedTypes(iri); found {
+		if types, found := getCachedTypes(endpointURL, iri); found {
 			if len(types) > 0 {
 				typeMap[iri] = types
 			}
@@ -148,7 +160,7 @@ func fetchTypes(p *Preprocessor, endpointURL string, iris []string) map[string][
 func enrichWithIcons(result *QueryResult, typeMap map[string][]string) {
 	icons := make(map[string]string)
 	for _, iri := range extractIRIs(*result) {
-		if path := icon.Resolve(iri, typeMap[iri]); path != "" {
+		if path := icon.Resolve(icon.Subject{IRI: iri, Types: typeMap[iri]}, icon.Cell); path != "" {
 			icons[iri] = path
 		}
 	}
