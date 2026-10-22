@@ -100,10 +100,11 @@ type with an exact icon, then any type with a fallback icon — the default per 
 | Page header (`resourceIcon`; `iconOverride` beats a template's `pageIcon`/`metaIcon`) | `pageClasses` query in `components/pageHeader.html`; own icon via `ResolveIconOverride` | server, `Page` |
 | Sidebar menus (`classIcon`) | none — class IRIs | server, `Class` |
 | Tables with a `<sparql-column icon>`, lazy trees | batched `rdf:type` lookup (`internal/sparql/rdftypes.go`), cached 6 h per endpoint + IRI; own icon via the best-value query (`labels.go`), cached 1 h | server, `Cell`, shipped as `QueryResult.Icons` |
-| Graph Explorer embeds | GE's own data provider | browser, `static/js/visoto-icons.js` |
+| Graph Explorer embeds | GE's own data provider; own icon via one `SELECT` per element batch (`VisotoIcons.fetchOverrides`), or the CONSTRUCT's icon triples | browser, `static/js/visoto-icons.js` |
 
 The browser side mirrors the rule and never hard-codes a path: every page carries
-the `#vs-icons` island (`icon.Config`: base path, defaults, manifest URL), and the
+the `#vs-icons` island (`icon.Config`: base path, defaults, `icon` properties,
+manifest URL), and the
 graph embeds fetch the icon set once from `/api/icons.json?v=<hash>`, whose URL
 changes with the set so it is cached as immutable.
 

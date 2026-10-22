@@ -286,11 +286,23 @@ type PageConfig struct {
 	ManifestURL string            `json:"manifestUrl"`
 	Base        string            `json:"base"`
 	Defaults    map[string]string `json:"defaults"` // "page" | "class" | "instance" -> path
+	// Properties are the alternatives of the "icon" magic property, in priority
+	// order and as written (CURIEs or <IRIs>), for the graph embeds that look a
+	// resource's own icon up themselves. Empty when none is configured.
+	Properties []string `json:"properties"`
 }
 
-// Config returns the PageConfig for the process-wide resolver.
-func Config() PageConfig {
+// Config returns the PageConfig for the process-wide resolver. iconPath is the
+// "icon" magic property ("schema:thumbnail|foaf:thumbnail"), "" if unset.
+func Config(iconPath string) PageConfig {
+	props := []string{}
+	for _, alt := range strings.Split(iconPath, "|") {
+		if alt = strings.TrimSpace(alt); alt != "" {
+			props = append(props, alt)
+		}
+	}
 	return PageConfig{
+		Properties:  props,
 		ManifestURL: ManifestURL(),
 		Base:        BasePath,
 		Defaults: map[string]string{

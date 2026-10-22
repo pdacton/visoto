@@ -16,13 +16,21 @@
     VisotoIcons.load()                 Promise; resolves once the set is known
                                        (to an empty set if the fetch fails)
     VisotoIcons.resolve(subject, kind) path, or kind's default ('' for 'cell')
-                                       subject = { iri, types }
+                                       subject = { iri, types, override }
     VisotoIcons.stamp(data, iri)       sets data.image to iri's own icon unless
                                        data already carries an image
+    VisotoIcons.properties()           the "icon" magic property as full IRIs,
+                                       in priority order ([] when unset)
+    VisotoIcons.pick(candidates)       [{ property, value }] -> path or ''
+    VisotoIcons.fetchOverrides(iris, select)
+                                       Promise of { iri: path } for the
+                                       resources that name their own icon
     VisotoIcons.defaultFor(kind)       'page' | 'class' | 'instance' -> path
     VisotoIcons.isDefault(src)         whether src is one of those defaults
 
-  Keep resolve() in step with Resolver.Resolve in internal/icon/icon.go:
+  Keep resolve() and override() in step with Resolver.Resolve / override in
+  internal/icon/icon.go:
+    - a usable own icon from the data (the "icon" magic property) wins outright
     - a resource's own local name wins over any of its types
     - across several types, ANY exact match beats ANY .fallback match
       (a LINDAS resource routinely carries a generic class alongside a specific
@@ -75,12 +83,33 @@
     return Object.keys(d).some(function (k) { return d[k] && d[k] === src; });
   }
 
+  // Mirror of Resolver.override: an icon value from the data, as a path, or ''
+  // when it is not usable. https URLs, site-relative paths and names in the set
+  // only — never another scheme, a protocol-relative URL or plain http (the
+  // site CSP would block it).
+  function override(value) {
+    var base = readConfig().base;
+    value = String(value == null ? '' : value).trim();
+    if (!value) return '';
+    if (value.indexOf('https://') === 0) {
+      try { return new URL(value).host ? value : ''; } catch (e) { return ''; }
+    }
+    if (value.indexOf('//') === 0) return '';
+    if (value.charAt(0) === '/') return value;
+    // names keys fallback icons as "<name>.fallback", so one lookup serves both.
+    var name = value.replace(/\.svg$/, '');
+    return names[name] ? base + name + '.svg' : '';
+  }
+
   // Mirror of Resolver.Resolve. names holds bare names for real icons and
   // "<name>.fallback" for the weaker ones.
   function resolve(subject, kind) {
     var base = readConfig().base;
     var iri = subject && subject.iri;
     var types = (subject && subject.types) || [];
+
+    var own = override(subject && subject.override);
+    if (own) return own;
 
     var name = localName(iri);
     if (name) {
@@ -112,6 +141,77 @@
     return data;
   }
 
+  // The "icon" magic property's alternatives as full IRIs, in priority order.
+  // CURIEs expand through the active endpoint's prefixes (prefixes.js). Like the
+  // server (simpleTerm in internal/sparql/labels.go), only a single predicate is
+  // usable — a path such as a/b is skipped — and so is a CURIE whose prefix is
+  // not declared.
+  var SIMPLE_TERM = /^(?:[A-Za-z][\w.-]*:[\w.-]*|<[^<>"{}|^`\\\s]+>)$/;
+  function properties() {
+    var list = readConfig().properties || [];
+    var prefixes = typeof window !== 'undefined' && window.VisotoPrefixes ? window.VisotoPrefixes.fromPage() : null;
+    var out = [];
+    list.forEach(function (p) {
+      var iri = '';
+      if (SIMPLE_TERM.test(p)) iri = p.charAt(0) === '<' ? p.slice(1, -1) : (prefixes ? prefixes.expand(p) : p);
+      if (/^[a-z][a-z0-9+.-]*:\/\//i.test(iri)) out.push(iri);
+      else if (typeof console !== 'undefined') console.warn('icon property ' + p + ' is not a single predicate with a declared prefix; ignored');
+    });
+    return out;
+  }
+
+  // Mirror of the server's best-value pick (internal/sparql/labels.go) for the
+  // icon: the earliest property wins, the smallest value breaks a tie. The pick
+  // is made BEFORE validation, as on the server, so both agree on which value a
+  // resource names — an unusable one then falls back to the usual rule.
+  // (The server ranks language before property; icon values are IRIs or plain
+  // literals, where that makes no difference.)
+  function pick(candidates) {
+    var props = properties();
+    var best = null, bestRank = Infinity;
+    (candidates || []).forEach(function (c) {
+      var rank = props.indexOf(c.property);
+      if (rank < 0 || c.value === '' || c.value == null) return;
+      if (rank < bestRank || (rank === bestRank && String(c.value) < String(best))) {
+        best = String(c.value); bestRank = rank;
+      }
+    });
+    return best === null ? '' : override(best);
+  }
+
+  // One SELECT for the own icons of iris. select(query) must resolve to the
+  // SPARQL JSON bindings array. Best effort: a failure means no overrides.
+  function fetchOverrides(iris, select) {
+    var props = properties();
+    iris = (iris || []).filter(function (iri) { return /^[a-z][a-z0-9+.-]*:\/\//i.test(iri) && !/[\s<>"]/.test(iri); });
+    if (!props.length || !iris.length) return Promise.resolve({});
+    var query =
+      'SELECT ?inst ?prop ?icon WHERE {\n' +
+      '  VALUES ?inst { ' + iris.map(function (i) { return '<' + i + '>'; }).join(' ') + ' }\n' +
+      '  VALUES ?prop { ' + props.map(function (p) { return '<' + p + '>'; }).join(' ') + ' }\n' +
+      '  ?inst ?prop ?icon .\n' +
+      '}';
+    return Promise.resolve()
+      .then(function () { return select(query); })
+      .then(function (bindings) {
+        var byInst = {};
+        (bindings || []).forEach(function (b) {
+          if (!b.inst || !b.prop || !b.icon || b.icon.type === 'bnode') return;
+          (byInst[b.inst.value] = byInst[b.inst.value] || []).push({ property: b.prop.value, value: b.icon.value });
+        });
+        var out = {};
+        Object.keys(byInst).forEach(function (iri) {
+          var path = pick(byInst[iri]);
+          if (path) out[iri] = path;
+        });
+        return out;
+      })
+      .catch(function (e) {
+        if (typeof console !== 'undefined') console.warn('icon override lookup failed', e);
+        return {};
+      });
+  }
+
   function load() {
     if (loading) return loading;
     var url = readConfig().manifestUrl;
@@ -140,7 +240,11 @@
   return {
     load: load,
     resolve: resolve,
+    override: override,
     stamp: stamp,
+    properties: properties,
+    pick: pick,
+    fetchOverrides: fetchOverrides,
     localName: localName,
     defaultFor: defaultFor,
     isDefault: isDefault,

@@ -190,11 +190,26 @@
         // on every render, so that patch is discarded (and React 19 makes props
         // read-only besides). data.image survives because it IS the model, and
         // renderThumbnail() prefers it over iconUrl.
+        //
+        // Before that, a resource that names its own icon (the "icon" magic
+        // property, e.g. schema:thumbnail) gets it, ahead of everything else —
+        // the same rule and validation as the server (VisotoIcons.fetchOverrides).
+        // Not GE's own imagePropertyUris: it keeps whichever binding comes last
+        // rather than the first property, and takes the value unchecked.
+        // One extra SELECT per batch, and only with the property configured.
         var innerElementInfo = dataProvider.elementInfo.bind(dataProvider);
+        function select(query) {
+          return dataProvider.executeSparqlQuery(query).then(function (json) { return json.results.bindings; });
+        }
         dataProvider.elementInfo = function (params) {
           return innerElementInfo(params).then(function (dict) {
-            Object.keys(dict).forEach(function (iri) { ICONS.stamp(dict[iri], iri); });
-            return dict;
+            return ICONS.fetchOverrides(Object.keys(dict), select).then(function (own) {
+              Object.keys(dict).forEach(function (iri) {
+                if (own[iri]) dict[iri].image = own[iri];
+                ICONS.stamp(dict[iri], iri);
+              });
+              return dict;
+            });
           });
         };
         // Endpoint errors surface as an inline message with Retry (GL-45).

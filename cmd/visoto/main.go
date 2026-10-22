@@ -261,6 +261,7 @@ func stampEndpointData(c *gin.Context, data *parser.TemplateData) {
 	if path, ok := cfg.RDF.MagicProperties["label"]; ok {
 		data.LabelPath = path
 	}
+	data.IconPath = cfg.RDF.MagicProperties[sparql.IconProperty]
 }
 
 // proxyEndpointURL is the URL the BROWSER uses for SPARQL — the same-origin

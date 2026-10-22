@@ -3,6 +3,7 @@ package icon
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -230,7 +231,13 @@ func TestManifestAndConfig(t *testing.T) {
 		t.Error("Manifest.Names missing \"Canton\"")
 	}
 
-	c := Config()
+	c := Config(" schema:thumbnail | <http://xmlns.com/foaf/0.1/thumbnail>|")
+	if want := []string{"schema:thumbnail", "<http://xmlns.com/foaf/0.1/thumbnail>"}; strings.Join(c.Properties, ",") != strings.Join(want, ",") {
+		t.Errorf("Properties = %q, want %q", c.Properties, want)
+	}
+	if got := Config("").Properties; got == nil || len(got) != 0 {
+		t.Errorf("Config(\"\").Properties = %#v, want an empty (non-nil) list", got)
+	}
 	if c.Base != BasePath {
 		t.Errorf("Base = %q, want %q", c.Base, BasePath)
 	}

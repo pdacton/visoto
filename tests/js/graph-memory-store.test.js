@@ -23,7 +23,7 @@ function diagram() {
     t(EX + 'Software', RDF_TYPE, iri(OWL_CLASS)),
     t(EX + 'FMIS', SUBCLASS, iri(EX + 'Software')),
     t('urn:visoto:any-domain:' + EX + 'p', EX + 'p', iri(EX + 'FMIS')),
-  ], {});
+  ]);
 }
 
 function el(id, types) {
@@ -170,4 +170,28 @@ test('the classes the diagram only refers to form an External group', async () =
   const picked = await p.filter({ elementTypeId: 'urn:visoto:ExternalClasses', offset: 0 });
   assert.deepEqual(Object.keys(picked).sort(), [EX + 'Agent', EX + 'Doc']);
   assert.deepEqual(calls, []);
+});
+
+test('an icon-property triple is the node\'s own icon, not an edge', () => {
+  const I = global.window.VisotoIcons;
+  const THUMB = 'http://schema.org/thumbnail';
+  I.use({ base: '/static/img/resource/', defaults: { class: '/static/img/resource/defaultClass.svg' }, properties: ['<' + THUMB + '>'] },
+    { Software: true });
+  try {
+    const store = M.buildStore([
+      t(EX + 'FMIS', RDF_TYPE, iri(OWL_CLASS)),
+      t(EX + 'FMIS', THUMB, iri('https://img.example/fmis.svg')),
+      t(EX + 'Software', RDF_TYPE, iri(OWL_CLASS)),
+      t(EX + 'Software', THUMB, { type: 'literal', value: 'javascript:x' }),
+      t(EX + 'FMIS', SUBCLASS, iri(EX + 'Software')),
+    ]);
+    assert.equal(store.elements[EX + 'FMIS'].image, 'https://img.example/fmis.svg');
+    // An unusable own icon falls back to the usual rule (its own name here).
+    assert.equal(store.elements[EX + 'Software'].image, '/static/img/resource/Software.svg');
+    assert.equal(store.elements['https://img.example/fmis.svg'], undefined, 'the thumbnail must not become a node');
+    assert.equal(store.links.filter((l) => l.linkTypeId === THUMB).length, 0);
+    assert.equal(store.elements[EX + 'Software'].properties[THUMB], undefined, 'nor an attribute row');
+  } finally {
+    I.use({ base: '/static/img/resource/', defaults: {} }, {});
+  }
 });

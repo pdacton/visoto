@@ -65,3 +65,93 @@ test('load() resolves even without a manifest URL', async () => {
   await I.load();
   assert.equal(I.resolve({ iri: CANTON }, 'cell'), '');
 });
+
+// ---- the resource's own icon (the "icon" magic property) ----
+
+const P = require('../../static/js/prefixes.js');
+const THUMB = 'http://schema.org/thumbnail';
+const FOAF_THUMB = 'http://xmlns.com/foaf/0.1/thumbnail';
+const WITH_PROPS = Object.assign({}, CONFIG, { properties: ['schema:thumbnail', '<' + FOAF_THUMB + '>'] });
+
+function withOwnIcons() {
+  global.window = { VisotoPrefixes: { fromPage: () => P.create([{ name: 'schema', iri: 'http://schema.org/' }]) } };
+  I.use(WITH_PROPS, { Canton: true, Person: true, 'DefinedTerm.fallback': true });
+}
+
+test('override accepts https, site paths and names; refuses the rest (mirrors icon.override)', () => {
+  withOwnIcons();
+  const cases = [
+    ['https://img.example/zh.svg', 'https://img.example/zh.svg'],
+    ['/static/img/custom/zh.svg', '/static/img/custom/zh.svg'],
+    ['Person', BASE + 'Person.svg'],
+    ['Person.svg', BASE + 'Person.svg'],
+    ['DefinedTerm.fallback', BASE + 'DefinedTerm.fallback.svg'],
+    ['  Person ', BASE + 'Person.svg'],
+    ['Nope', ''],
+    ['DefinedTerm', ''],
+    ['javascript:alert(1)', ''],
+    ['data:image/svg+xml,<svg/>', ''],
+    ['//evil.example/x.svg', ''],
+    ['http://img.example/zh.png', ''],
+    ['', ''],
+  ];
+  for (const [value, want] of cases) assert.equal(I.override(value), want, value);
+});
+
+test('a usable override beats the own name, the types and the default', () => {
+  withOwnIcons();
+  assert.equal(I.resolve({ iri: CANTON, override: 'Person' }, 'cell'), BASE + 'Person.svg');
+  assert.equal(I.resolve({ iri: 'https://example.org/x', override: 'https://img.example/a.svg' }, 'class'), 'https://img.example/a.svg');
+  assert.equal(I.resolve({ iri: CANTON, override: 'javascript:x' }, 'cell'), BASE + 'Canton.svg');
+});
+
+test('properties expands CURIEs and <IRIs>, skips the unusable', () => {
+  withOwnIcons();
+  assert.deepEqual(I.properties(), [THUMB, FOAF_THUMB]);
+  I.use(Object.assign({}, CONFIG, { properties: ['undeclared:thumb', 'schema:a/schema:b', '^schema:thumbnail'] }), {});
+  const orig = console.warn; console.warn = () => {};
+  try { assert.deepEqual(I.properties(), []); } finally { console.warn = orig; }
+  I.use(CONFIG, {});
+  assert.deepEqual(I.properties(), []);
+});
+
+test('pick: earliest property, then smallest value, validated after the pick', () => {
+  withOwnIcons();
+  assert.equal(I.pick([{ property: FOAF_THUMB, value: 'Canton' }, { property: THUMB, value: 'Person' }]), BASE + 'Person.svg');
+  assert.equal(I.pick([{ property: THUMB, value: 'https://b.example/x.svg' }, { property: THUMB, value: 'https://a.example/x.svg' }]), 'https://a.example/x.svg');
+  // Like the server: the best value is chosen first; an unusable one is no icon.
+  assert.equal(I.pick([{ property: THUMB, value: 'javascript:x' }, { property: FOAF_THUMB, value: 'Person' }]), '');
+  assert.equal(I.pick([{ property: 'http://example.org/other', value: 'Person' }]), '');
+  assert.equal(I.pick([]), '');
+});
+
+test('fetchOverrides sends one SELECT and maps each resource to its icon', async () => {
+  withOwnIcons();
+  const sent = [];
+  const select = (q) => {
+    sent.push(q);
+    return Promise.resolve([
+      { inst: { type: 'uri', value: 'https://ld.admin.ch/canton/1' }, prop: { type: 'uri', value: THUMB }, icon: { type: 'uri', value: 'https://img.example/zh.svg' } },
+      { inst: { type: 'uri', value: 'https://ld.admin.ch/canton/2' }, prop: { type: 'uri', value: THUMB }, icon: { type: 'literal', value: 'javascript:x' } },
+      { inst: { type: 'uri', value: 'https://ld.admin.ch/canton/3' }, prop: { type: 'uri', value: FOAF_THUMB }, icon: { type: 'bnode', value: 'b0' } },
+    ]);
+  };
+  const got = await I.fetchOverrides(['https://ld.admin.ch/canton/1', 'https://ld.admin.ch/canton/2', 'https://ld.admin.ch/canton/3', 'not an iri'], select);
+  assert.deepEqual(got, { 'https://ld.admin.ch/canton/1': 'https://img.example/zh.svg' });
+  assert.equal(sent.length, 1);
+  assert.match(sent[0], /VALUES \?prop \{ <http:\/\/schema\.org\/thumbnail> <http:\/\/xmlns\.com\/foaf\/0\.1\/thumbnail> \}/);
+  assert.doesNotMatch(sent[0], /not an iri/);
+});
+
+test('fetchOverrides asks nothing without properties, and swallows failures', async () => {
+  I.use(CONFIG, {});
+  let calls = 0;
+  assert.deepEqual(await I.fetchOverrides([CANTON], () => { calls++; return Promise.resolve([]); }), {});
+  assert.equal(calls, 0);
+
+  withOwnIcons();
+  const orig = console.warn; console.warn = () => {};
+  try {
+    assert.deepEqual(await I.fetchOverrides([CANTON], () => Promise.reject(new Error('down'))), {});
+  } finally { console.warn = orig; }
+});

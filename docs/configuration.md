@@ -337,8 +337,10 @@ it), a site-relative path (`/static/img/…`), or the
 name of an icon in `static/img/resource/` (`Canton` or `Canton.svg`); IRI and
 literal objects both work. Anything else (another scheme, an unknown name) is
 ignored and resolution carries on as if there were none. Values are cached per
-endpoint for an hour, like labels. Graph Explorer and the sidebar menus do not
-use it yet.
+endpoint for an hour, like labels. Graph Explorer applies the same rule in the
+browser: one extra `SELECT` per batch of nodes through `/api/sparql`, and in a
+CONSTRUCT diagram an icon-property triple becomes the node's icon instead of an
+edge. The sidebar menus do not use it.
 
 Template queries can then write `visoto:description`, which is expanded to the
 configured path wrapped in parentheses before the query is sent. Any prefixes used in

@@ -27,6 +27,9 @@
       Labels of marker types (below) work the same way and become the box's
       type line.
     - `<node> a <urn:visoto:Name>` is a presentation marker (see MARKER_PREFIX).
+    - `<node> <icon property> <value>` (the "icon" magic property, e.g.
+      schema:thumbnail) is the node's own icon, not an edge or attribute row;
+      it wins over every other icon (VisotoIcons.pick).
 */
 (function () {
   'use strict';
@@ -113,6 +116,17 @@
   // ---------------------------------------------------------------------------
   function buildStore(triples) {
     triples = triples.filter(function (t) { return t.s.indexOf('_:') !== 0 && t.o.type !== 'bnode'; });
+    // Own icons first, and out of the triple list: drawn as an edge, a
+    // thumbnail URL would become a node of its own.
+    var iconProps = window.VisotoIcons.properties();
+    var ownIcons = {}; // iri -> [{ property, value }]
+    if (iconProps.length) {
+      triples = triples.filter(function (t) {
+        if (iconProps.indexOf(t.p) < 0) return true;
+        (ownIcons[t.s] = ownIcons[t.s] || []).push({ property: t.p, value: t.o.value });
+        return false;
+      });
+    }
     // Pass 1: which IRIs are nodes. Needed up front because a label triple can
     // arrive before the triple that makes its subject a node.
     var isNode = {};
@@ -171,6 +185,8 @@
       // return the generic class icon. Put the node's own-IRI icon on the model
       // instead: renderThumbnail() prefers data.image, and it survives GE 2.x's
       // props rebuild because it IS the model.
+      var own = ownIcons[iri] && window.VisotoIcons.pick(ownIcons[iri]);
+      if (own) el.image = own;
       window.VisotoIcons.stamp(el, iri);
 
       var marker = el.types.filter(function (t) { return t.indexOf(MARKER_PREFIX) === 0; })[0];

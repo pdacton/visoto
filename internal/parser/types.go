@@ -47,6 +47,7 @@ type TemplateData struct {
 	SearchProvider       string                        // search_provider of the currently selected endpoint (e.g. "graphdb-lucene", "qlever") — doubles as the engine hint for engine-specific queries
 	GraphQueryURL        string                        // Same-origin proxy path for browser-side SPARQL (Graph Explorer, schema diagram). NOT the endpoint URL: the upstream host and its credentials deliberately never reach the browser. See internal/sparqlproxy.
 	LabelPath            string                        // The "label" magic property path (Graph Explorer's label property)
+	IconPath             string                        // The "icon" magic property path ("" if unset), for the graph embeds' own-icon lookup
 	EndpointPrefixes     []PagePrefix                  // Prefixes in effect for the active endpoint (global merged with its overrides); the only namespace source for browser JS
 	BaseURL              string                        // Public base URL of this instance derived from the request (e.g. https://visoto.example.org)
 }

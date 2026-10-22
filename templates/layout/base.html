@@ -85,10 +85,11 @@
     <!-- The "label" magic property: the label properties, in priority order. -->
     <template id="vs-label-path">{{ toJSON .LabelPath }}</template>
     <script src="/static/js/prefixes.js"></script>
-    <!-- Resource icons (internal/icon): base path, the default per kind and the
-         versioned URL of the icon set (/api/icons.json). The set itself is
-         fetched only by the graph embeds, through static/js/visoto-icons.js. -->
-    <template id="vs-icons">{{ toJSON iconConfig }}</template>
+    <!-- Resource icons (internal/icon): base path, the default per kind, the
+         "icon" magic property and the versioned URL of the icon set
+         (/api/icons.json). The set itself is fetched only by the graph embeds,
+         through static/js/visoto-icons.js. -->
+    <template id="vs-icons">{{ toJSON (iconConfig .IconPath) }}</template>
     <script src="/static/js/visoto-icons.js"></script>
 
     <meta charset="utf-8" />
