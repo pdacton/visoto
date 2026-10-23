@@ -34,7 +34,10 @@
 
        The property count is computed in a subquery grouped by ?shape so the
        sh:property join cannot multiply rows; the target class is sampled there
-       too (a shape may name several). ?cubeConstraint tells the cube shapes —
+       too (a shape may name several), as are the ontology listing the shape
+       (?ontology schema:member ?shape) and its rdfs:isDefinedBy, so a reader
+       can attribute the shape to its vocabulary. COUNT(DISTINCT) because those
+       OPTIONALs share the group. ?cubeConstraint tells the cube shapes —
        more than half of all node shapes on LINDAS — from the rest. Blank node
        shapes have no page of their own and are left out.
 
@@ -44,13 +47,16 @@
       <div class="mb-3">
 
         <sparql-async id="nodeShapeCatalog">
-          SELECT ?shape ?targetClass ?properties ?cubeConstraint WHERE {
-            { SELECT ?shape (COUNT(?ps) AS ?properties) (SAMPLE(?tc) AS ?targetClass)
+          SELECT ?shape ?targetClass ?ontology ?definedBy ?properties ?cubeConstraint WHERE {
+            { SELECT ?shape (COUNT(DISTINCT ?ps) AS ?properties) (SAMPLE(?tc) AS ?targetClass)
+                     (SAMPLE(?ont) AS ?ontology) (SAMPLE(?def) AS ?definedBy)
               WHERE {
                 ?shape a ?? .
                 FILTER(isIRI(?shape))
                 OPTIONAL { ?shape sh:property ?ps }
                 OPTIONAL { ?shape sh:targetClass ?tc }
+                OPTIONAL { ?ont schema:member ?shape }
+                OPTIONAL { ?shape rdfs:isDefinedBy ?def }
               } GROUP BY ?shape }
             BIND(EXISTS { ?shape a cube:Constraint } AS ?cubeConstraint)
           }
@@ -61,6 +67,10 @@
           <sparql-column var="shape" label="{{ t "type.shacl.nodeShape" "Node Shape" }}" icon filter="text"></sparql-column>
           <sparql-column var="targetClass" label="{{ t "type.shacl.targetClass" "Target Class" }}"
                          tip="{{ t "type.shacl.tip.targetClass" "sh:targetClass — the class whose instances the shape validates." }}"></sparql-column>
+          <sparql-column var="ontology" label="{{ t "type.shacl.memberOf" "Member of" }}"
+                         tip="{{ t "type.shacl.tip.memberOf" "The resource listing the shape with schema:member, usually its ontology." }}"></sparql-column>
+          <sparql-column var="definedBy" label="{{ t "facet.definedBy" "Defined by" }}"
+                         tip="{{ t "type.shacl.tip.definedBy" "rdfs:isDefinedBy — the vocabulary the shape declares it belongs to." }}"></sparql-column>
           <sparql-column var="properties" label="{{ t "type.shacl.propertyShapes" "Property Shapes" }}" type="number"
                          tip="{{ t "type.shacl.tip.properties" "How many sh:property shapes the node shape declares." }}" width="150"></sparql-column>
           <sparql-column var="cubeConstraint" label="{{ t "type.shacl.cubeConstraint" "Cube Constraint" }}" badge
