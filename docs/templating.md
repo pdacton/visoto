@@ -606,6 +606,13 @@ over the ones the query author put first.
 the CSV/XLSX exports — it only takes the column off screen. It cannot be combined with
 `filter` (the control hangs off a header the column no longer has); startup rejects it.
 
+A column built by `GROUP_CONCAT(…; separator="; ") AS ?x` is **grouped per value**: the
+user groups by it and each row is shown once under every value it joins ("A; B" lands
+in group A and in group B), while the cell keeps the joined text and the exports keep
+one line per row. It is detected from the query — nothing to declare — and only an
+explicit, non-empty `separator` qualifies; omit it (the default joins with a space) to
+group on the joined string instead. Choose a separator the values cannot contain.
+
 **A table is faceted exactly when one of its columns declares a filter** — there is
 nothing else to switch on. Every `var` must be SELECTed in the base query: a
 declaration hangs off that column's header, and one with no matching column is skipped

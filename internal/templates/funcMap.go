@@ -16,27 +16,28 @@ import (
 
 // funcMap defines custom template functions available in all templates
 var funcMap = template.FuncMap{
-	"render":          sparql.Binding.RenderHTML,
-	"resourceHref":    sparql.ResourceHref,
-	"dict":            makeDict,
-	"list":            makeList,
-	"resourceIcon":    resource.GetIconForResource,
-	"iconNames":       icon.Names,
-	"classIcon":       classIcon, // {{ classIcon "schema:Person" }} — sidebar submenu icons
-	"toJSON":          toJSON,
-	"toJSONRaw":       toJSONRaw,
-	"toJSONPretty":    toJSONPretty,
-	"firstValue":      firstValue,
-	"columnValues":    columnValues,
-	"lastPathSegment": lastPathSegment,
-	"groupByValue":    groupByValue,
-	"safeURL":         safeURL,
-	"currentYear":     currentYear,
-	"templateSet":     defaultTemplateSet,
-	"columnIconVars":  columnIconVars,
-	"columnBadgeVars": columnBadgeVars,
-	"columnGroupVar":  columnGroupVar,
-	"contains":        strings.Contains, // {{ if contains .SearchProvider "graphdb" }}
+	"render":           sparql.Binding.RenderHTML,
+	"resourceHref":     sparql.ResourceHref,
+	"dict":             makeDict,
+	"list":             makeList,
+	"resourceIcon":     resource.GetIconForResource,
+	"iconNames":        icon.Names,
+	"classIcon":        classIcon, // {{ classIcon "schema:Person" }} — sidebar submenu icons
+	"toJSON":           toJSON,
+	"toJSONRaw":        toJSONRaw,
+	"toJSONPretty":     toJSONPretty,
+	"firstValue":       firstValue,
+	"columnValues":     columnValues,
+	"lastPathSegment":  lastPathSegment,
+	"groupByValue":     groupByValue,
+	"safeURL":          safeURL,
+	"currentYear":      currentYear,
+	"templateSet":      defaultTemplateSet,
+	"columnIconVars":   columnIconVars,
+	"columnBadgeVars":  columnBadgeVars,
+	"columnGroupVar":   columnGroupVar,
+	"concatSeparators": sparql.ConcatSeparators, // GROUP_CONCAT columns the table may split per value
+	"contains":         strings.Contains,        // {{ if contains .SearchProvider "graphdb" }}
 }
 
 // defaultTemplateSet is the parse-time placeholder for {{ templateSet }}. Load

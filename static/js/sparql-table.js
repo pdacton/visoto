@@ -291,9 +291,49 @@
     }
     function makeGroupByFn(field) {
       return function(data) {
+        if (SPLIT[field]) return data._vsSplit || '';
         var val = data[field];
         return val ? (val.DisplayText || val.Value || '') : '';
       };
+    }
+
+    // ---- per-value grouping of GROUP_CONCAT columns ----
+    // SPLIT maps each column built by a GROUP_CONCAT with an explicit separator to
+    // that separator, read server-side from the query (sparql.ConcatSeparators) —
+    // never guessed from the values. Grouped by such a column, every row is loaded
+    // once per value, so "A; B" lands in group A and in group B; the cell still
+    // shows the joined text. baseRows keeps the rows as fetched so ungrouping, or
+    // grouping by another column, restores one row per result.
+    var SPLIT = CFG.splitVars || {};
+    var baseRows = [];
+    var splitField = "";
+
+    function expandRows(rows) {
+      var sep = splitField && SPLIT[splitField];
+      if (!sep) return rows;
+      var out = [];
+      rows.forEach(function(row) {
+        var cell = row[splitField];
+        var text = cell ? String(cell.DisplayText || cell.Value || '') : '';
+        var seen = {};
+        var parts = text.split(sep).map(function(p) { return p.trim(); }).filter(function(p) {
+          if (!p || seen[p]) return false;
+          seen[p] = true;
+          return true;
+        });
+        if (parts.length < 2) { out.push(Object.assign({}, row, { _vsSplit: parts[0] || '' })); return; }
+        parts.forEach(function(p, i) {
+          // _vsCopy marks the extra copies, so exports can drop them again.
+          out.push(Object.assign({}, row, i ? { _vsSplit: p, _vsCopy: true } : { _vsSplit: p }));
+        });
+      });
+      return out;
+    }
+
+    // The one way rows enter the table after construction.
+    function loadRows(rows) {
+      baseRows = rows;
+      return table.setData(expandRows(rows));
     }
 
     // Optional icon/badge config (emitted as <template> islands for both modes).
@@ -569,7 +609,7 @@
       var vars = JSON.parse(document.getElementById(ID + "-vars").innerHTML.trim());
       var bindings = JSON.parse(document.getElementById(ID + "-bindings").innerHTML.trim());
       var cfg = baseConfig("fitDataStretch");
-      cfg.data = toTableData(vars, bindings);
+      cfg.data = baseRows = toTableData(vars, bindings);
       cfg.columns = buildColumns(vars, bindings);
       relabelGroupBy();
       // Small tables don't need a pager.
@@ -813,7 +853,7 @@
           wsLastFacetURL = "";          // left faceted mode; a later facet must re-fetch
           wsLoaded = rows.length;
           wsBusyMsg = "";
-          table.setData(rows);          // local pagination/sort/search from here
+          loadRows(rows);               // local pagination/sort/search from here
           table.clearFilter();
           // Re-apply any active header-facet + search local filter over the new rows.
           if (typeof applyLocalFilter === "function") applyLocalFilter();
@@ -1032,7 +1072,7 @@
           wsSearchTerm = "";
           wsLoaded = rows.length;
           wsBusyMsg = "";
-          table.setData(rows).then(function () {
+          loadRows(rows).then(function () {
             // Re-apply the local search term over the backend result (facets are
             // already reflected server-side; the search box is client-only).
             applyLocalFilter();
@@ -1135,7 +1175,7 @@
     }
 
     if (groupBySelect) {
-      function applyGroupBy(field) {
+      function setGrouping(field) {
         if (field === "") {
           table.setGroupBy(false);
           if (toggleGroupsBtn) toggleGroupsBtn.classList.add("d-none");
@@ -1146,6 +1186,14 @@
             setToggleBtnState(true);
           }
         }
+      }
+      function applyGroupBy(field) {
+        // Entering or leaving a split column changes the rows themselves, so they
+        // are reloaded first; Tabulator keeps the active filters across setData.
+        var wasSplit = splitField !== "";
+        splitField = SPLIT[field] ? field : "";
+        if (!wasSplit && !splitField) { setGrouping(field); return; }
+        loadRows(baseRows).then(function() { setGrouping(field); });
       }
       table.on("tableBuilt", function() {
         // Author-provided initial grouping; an explicit user choice saved in
@@ -1171,12 +1219,20 @@
 
     // ================= downloads (loaded rows) =================
     var filename = CFG.title || ID;
+    // Exports hold each result row once, even while a split grouping has copied it.
+    function notCopy(data) { return !data._vsCopy; }
+    function download(type, name, opts) {
+      if (!splitField) { table.download(type, name, opts); return; }
+      table.addFilter(notCopy);
+      try { table.download(type, name, opts); }
+      finally { table.removeFilter(notCopy); }
+    }
     var csvBtn = document.querySelector(".download-csv-" + ID);
-    if (csvBtn) csvBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("csv", filename + ".csv", { bom: true }); });
+    if (csvBtn) csvBtn.addEventListener("click", function(e){ e.preventDefault(); download("csv", filename + ".csv", { bom: true }); });
     var jsonBtn = document.querySelector(".download-json-" + ID);
-    if (jsonBtn) jsonBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("json", filename + ".json"); });
+    if (jsonBtn) jsonBtn.addEventListener("click", function(e){ e.preventDefault(); download("json", filename + ".json"); });
     var xlsxBtn = document.querySelector(".download-xlsx-" + ID);
-    if (xlsxBtn) xlsxBtn.addEventListener("click", function(e){ e.preventDefault(); table.download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) }); });
+    if (xlsxBtn) xlsxBtn.addEventListener("click", function(e){ e.preventDefault(); download("xlsx", filename + ".xlsx", { sheetName: filename.substring(0, 31) }); });
   }
 
   function boot() {
