@@ -105,6 +105,35 @@
 
       {{ template "literals" . }}
 
+      <!-- Datasets using this scheme as a code list: an I14Y dataset structure
+           declares per column (property shape) the concept version its values
+           come from, ps dct:conformsTo <scheme>. Listed per dataset, not per
+           column (dataset dct:conformsTo structure dct:hasPart shape
+           sh:property ps); the class page's References column counts the same
+           datasets. Collapses when nothing references the scheme, which is
+           every non-I14Y scheme. -->
+      <div class="mb-3">
+        <sparql-async id="schemeDatasets">
+          SELECT DISTINCT ?dataset ?publisher WHERE {
+            ?column dct:conformsTo ?? .
+            ?shape sh:property ?column .
+            ?dataset dct:conformsTo/dct:hasPart ?shape .
+            OPTIONAL { ?dataset dct:publisher ?publisher . }
+          } ORDER BY ?publisher ?dataset
+        </sparql-async>
+        <sparql-columns for="schemeDatasets">
+          <sparql-column var="dataset" label="{{ t "facet.dataset" "Dataset" }}" icon></sparql-column>
+          <sparql-column var="publisher" label="{{ t "facet.publisher" "Publisher" }}"></sparql-column>
+        </sparql-columns>
+
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "schemeDatasets"
+            "iri" .ResourceIRI
+            "title" (t "card.referencingDatasets" "Datasets using this code list")
+            "icon" "database")
+        }}
+      </div>
+
   <!-- relationships (custom: filters skos:inScheme from incoming).
        col-lg-6 as everywhere else: the container query on .vs-split-main reflows
        them to full width while this column is narrow. -->

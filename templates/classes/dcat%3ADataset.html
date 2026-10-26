@@ -1,0 +1,111 @@
+<!-- dcat:Dataset Class Template, listing all datasets
+
+     Mainly keeps the class page from being taken over by
+     instances/dcat%3ADataset.html (resolution step 5 beats the rdf:type
+     lookup), and lists the instances with the few properties every catalogue
+     here shares:
+
+       LINDAS              ~4,700 (2,068 cubes, ~2,500 I14Y, ~130 native)
+       opendata.next ABN  ~17,400 (opendata.swiss harvest, DCAT-AP CH)
+       Visoto QLever       ~2,500 (I14Y)
+
+     All three are DCAT-AP CH at heart; LINDAS-native datasets and cubes add
+     schema:publisher, hence the alternation on that column. dct:issued is on
+     95% of LINDAS and 76% of ABN datasets. The modified date is sparser (ABN
+     70%, LINDAS 50%, I14Y 11%) and spelled two ways: dct:modified, or
+     schema:dateModified on cubes, 99 of which carry both with different values.
+     A path alternation would list those twice, so it is COALESCEd, dct: first.
+     Each column is single-valued for all but a handful of datasets, except
+     dcat:theme, which is joined into one cell. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <!-- Live count: LINDAS counts drift between requests, and above the
+       20,000-row working-set cap the table holds only a sample. -->
+  <sparql-async id="datasetCount">
+    SELECT (COUNT(DISTINCT ?dataset) AS ?count) WHERE { ?dataset a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "datasetCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <div class="mb-3">
+    <!-- ABN sits just below the working-set cap and grows, so every column
+         declares filter + path= now: past the cap the table loads a sample,
+         and only a declared path filters the whole class (the declaration
+         rule in docs/templating.md). The dataset cell resolves dct:title /
+         schema:name through the label magic property. -->
+    <sparql-async id="datasetInstances">
+      SELECT DISTINCT ?dataset ?publisher ?themes ?issued ?modified ?frequency ?distributions ?structure WHERE {
+        ?dataset a ?? .
+        OPTIONAL { ?dataset (dct:publisher|schema:publisher) ?publisher . }
+        OPTIONAL {
+          SELECT ?dataset (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes) WHERE {
+            ?dataset dcat:theme/(schema:name|skos:prefLabel) ?themeName .
+            FILTER(lang(?themeName) = visoto:dispLang)
+          } GROUP BY ?dataset
+        }
+        OPTIONAL { ?dataset dct:issued ?issued . }
+        OPTIONAL { ?dataset dct:modified ?dctModified . }
+        OPTIONAL { ?dataset schema:dateModified ?schemaModified . }
+        BIND (COALESCE(?dctModified, ?schemaModified) AS ?modified)
+        OPTIONAL { ?dataset dct:accrualPeriodicity ?frequency . }
+        OPTIONAL {
+          SELECT ?dataset (COUNT(DISTINCT ?distribution) AS ?distributions) WHERE {
+            ?dataset dcat:distribution ?distribution .
+          } GROUP BY ?dataset
+        }
+        BIND (IF(EXISTS { ?dataset dct:conformsTo/dct:hasPart/sh:property ?column },
+                 "✓", "") AS ?structure)
+      }
+    </sparql-async>
+    <sparql-columns for="datasetInstances">
+      <sparql-column var="dataset" label="{{ t "facet.dataset" "Dataset" }}" icon filter></sparql-column>
+      <sparql-column var="publisher" label="{{ t "facet.publisher" "Publisher" }}"
+                     path="dct:publisher|schema:publisher" filter></sparql-column>
+      <!-- A quarter of LINDAS datasets carry several themes, from two schemes
+           (opendata.swiss categories, I14Y DV_DCAT_DATASET_THEME) that also
+           duplicate each other (heal/health), so the names are joined and
+           DISTINCT folds the duplicates. The explicit separator makes the column
+           group per theme (see docs/templating.md). ABN uses the EU data-theme authority,
+           labelled by skos:prefLabel only; I14Y themes carry both, identical. An aggregate alias, hence root= and
+           path=; text, since a select would list whole joined strings. -->
+      <sparql-column var="themes" label="{{ t "facet.themes" "Themes" }}"
+                     tip="{{ t "facet.tip.datasetThemes" "All DCAT themes of the dataset, separated by “; ”." }}"
+                     root="?dataset" path="dcat:theme/(schema:name|skos:prefLabel)" filter="text"></sparql-column>
+      <sparql-column var="issued" label="{{ t "facet.issued" "Issued" }}"
+                     path="dct:issued" filter></sparql-column>
+      <!-- A plain BIND: no path= possible, and none needed — column mode
+           filters ?modified itself, also past the working-set cap. -->
+      <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}" filter></sparql-column>
+      <sparql-column var="frequency" label="{{ t "facet.frequency" "Update frequency" }}"
+                     path="dct:accrualPeriodicity" filter></sparql-column>
+      <!-- A COUNT alias cannot be filtered (sorting covers it), and the EXISTS
+           flag has no property path to filter by, so neither declares filter:
+           both filter locally while the set is complete, which it is on every
+           endpoint today (ABN, the largest, is just under the cap). -->
+      <sparql-column var="distributions" label="{{ t "card.distributions" "Distributions" }}" type="number"></sparql-column>
+      <sparql-column var="structure" label="{{ t "card.dataStructures" "Data Structures" }}"
+                     tip="{{ t "facet.structureTip" "Columns described by a SHACL structure (I14Y)" }}"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "datasetInstances"
+        "iri" .ResourceIRI
+        "title" (t "card.instances" "Instances")
+        "icon" "database"
+        "searchProp" "dct:title")
+    }}
+  </div>
+
+  {{ template "relationships" (dict "page" . "collapsed" true) }}
+
+</div>
+{{ end }}

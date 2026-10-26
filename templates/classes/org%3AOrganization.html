@@ -1,0 +1,72 @@
+<!-- org:Organization Class Template, listing all organizations
+
+     On the Visoto QLever endpoint these are the 244 I14Y register agents
+     (https://register.ld.admin.ch/i14y/agent/…), each typed foaf:Agent,
+     foaf:Organization and org:Organization at once. They carry nothing but a
+     multilingual foaf:name — everything worth showing points INTO them:
+     dct:publisher from datasets, data services, concept schemes and catalogs,
+     m8g:hasCompetentAuthority from public services. So the table counts those
+     incoming links rather than listing the organizations' own properties.
+
+     This class template also keeps the class page from being taken over by
+     instances/org%3AOrganization.html (resolution step 5). -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="mb-3">
+    <!-- One COUNT subquery per kind, each grouped on its own: counting them all
+         in one GROUP BY would multiply them into each other. The membership
+         triple stays "?organization a ??", the shape DeriveKeyVar looks for.
+
+         A few hundred rows, far below the 20,000-row working-set cap, so the set
+         loads complete and every column filters and sorts locally — the
+         declarations below carry labels only (the declaration rule). -->
+    <sparql-async id="organizationInstances">
+      SELECT ?organization ?datasets ?dataServices ?publicServices ?conceptSchemes WHERE {
+        ?organization a ?? .
+        OPTIONAL {
+          SELECT ?organization (COUNT(DISTINCT ?dataset) AS ?datasets) WHERE {
+            ?dataset dct:publisher ?organization ; a dcat:Dataset .
+          } GROUP BY ?organization
+        }
+        OPTIONAL {
+          SELECT ?organization (COUNT(DISTINCT ?service) AS ?dataServices) WHERE {
+            ?service dct:publisher ?organization ; a dcat:DataService .
+          } GROUP BY ?organization
+        }
+        OPTIONAL {
+          SELECT ?organization (COUNT(DISTINCT ?publicService) AS ?publicServices) WHERE {
+            ?publicService &lt;http://data.europa.eu/m8g/hasCompetentAuthority&gt; ?organization .
+          } GROUP BY ?organization
+        }
+        OPTIONAL {
+          SELECT ?organization (COUNT(DISTINCT ?scheme) AS ?conceptSchemes) WHERE {
+            ?scheme dct:publisher ?organization ; a skos:ConceptScheme .
+          } GROUP BY ?organization
+        }
+      } ORDER BY DESC(?datasets)
+    </sparql-async>
+    <sparql-columns for="organizationInstances">
+      <sparql-column var="organization" label="{{ t "facet.name" "Name" }}" icon></sparql-column>
+      <sparql-column var="datasets" label="{{ t "card.datasets" "Datasets" }}" type="number"></sparql-column>
+      <sparql-column var="dataServices" label="{{ t "card.dataServices" "Data Services" }}" type="number"></sparql-column>
+      <sparql-column var="publicServices" label="{{ t "card.publicServices" "Public Services" }}" type="number"></sparql-column>
+      <sparql-column var="conceptSchemes" label="{{ t "card.conceptSchemes" "Concept Schemes" }}" type="number"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "organizationInstances"
+        "iri" .ResourceIRI
+        "title" (t "card.instances" "Instances")
+        "icon" "building"
+        "searchProp" "foaf:name")
+    }}
+  </div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

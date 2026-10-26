@@ -34,6 +34,7 @@
               <div class="dropdown-menu">
                 <a class="dropdown-item" href="/resource?iri=schch:ZefixOrganisation"><img class="nav-sub-icon" src="{{ classIcon "schch:ZefixOrganisation" }}" alt="">{{ t "nav.zefixOrganisation" "Zefix Organisation" }}</a>
                 <a class="dropdown-item" href="/resource?iri=schema:Organization"><img class="nav-sub-icon" src="{{ classIcon "schema:Organization" }}" alt="">{{ t "nav.organizationSchemaOrg" "Organization (schema.org)" }}</a>
+                <a class="dropdown-item" href="/resource?iri=org:Organization"><img class="nav-sub-icon" src="{{ classIcon "org:Organization" }}" alt="">{{ t "nav.organizationOrg" "Organization (org)" }}</a>
                 <a class="dropdown-item" href="/resource?iri=vcard:Organization"><img class="nav-sub-icon" src="{{ classIcon "vcard:Organization" }}" alt="">{{ t "nav.organizationVCard" "Organization (vCard)" }}</a>
                 <a class="dropdown-item" href="/resource?iri=foaf:Organization"><img class="nav-sub-icon" src="{{ classIcon "foaf:Organization" }}" alt="">{{ t "nav.organizationFoaf" "Organization (foaf)" }}</a>
                 <a class="dropdown-item" href="/resource?iri=schema:GovernmentOrganization"><img class="nav-sub-icon" src="{{ classIcon "schema:GovernmentOrganization" }}" alt="">{{ t "nav.governmentOrganization" "Government Organization" }}</a>
@@ -426,6 +427,16 @@
           {{ else }}
 
             <!-- Generic fallback for unknown endpoints -->
+            <!-- Organizations -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource?iri=org:Organization">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Organization.svg" alt="{{ t "nav.organizations" "Organizations" }}">
+                </span>
+                <span class="nav-link-title">{{ t "nav.organizations" "Organizations" }}</span>
+              </a>
+            </li>
+
             <!-- Concept Schemes -->
             <li class="nav-item">
               <a class="nav-link" href="/resource?iri=skos:ConceptScheme">

@@ -1109,3 +1109,23 @@ sparql-tree-query { display: none; }
 [data-bs-theme="dark"] .vs-icon-mono {
   filter: invert(1);
 }
+
+/* row-deck: side-by-side cards share the taller one's height. An async table's
+   card sits inside its hx-get wrapper, so the wrapper must stretch too. A
+   collapsed card keeps its header height instead of stretching empty. */
+.row-deck > [class*="col-"] > [hx-get] {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.row-deck > [class*="col-"]:has(.card > .collapse:not(.show, .collapsing)) {
+  align-items: flex-start;
+}
+
+/* Tabler sets line-height: 1rem on .form-control-sm but not .form-select-sm, so a
+   small select stood 4px taller than a small input beside it (card-header
+   search + group-by). */
+.form-select-sm {
+  line-height: 1rem;
+}

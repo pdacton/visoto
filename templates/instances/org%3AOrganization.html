@@ -1,0 +1,149 @@
+<!-- org:Organization Instance Template
+
+     The I14Y register agents on the Visoto QLever endpoint
+     (https://register.ld.admin.ch/i14y/agent/…). An agent holds only rdf:type and
+     foaf:name in up to five languages, so the page is built from what points AT
+     it:
+
+       dcat:Dataset          dct:publisher               2,512 from 40 orgs
+       dcat:DataService      dct:publisher                  80 from 19 orgs
+       cpsv:PublicService    m8g:hasCompetentAuthority     139 from 27 orgs
+       m8g:Channel           m8g:ownedBy                    52 from 10 orgs
+
+     Each kind gets its own table. They are bounded by one organization — the
+     largest, CH1 (Swiss Confederation), publishes ~1,700 datasets — so every set
+     loads complete and filters locally; the column declarations carry labels and
+     icons only. A table whose query returns nothing collapses itself.
+
+     The agents are also typed foaf:Agent and foaf:Organization; neither has an
+     instance template, so resolution step 7 lands here. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- The columns of the dcat:Dataset class page (classes/dcat%3ADataset.html,
+       which explains each one), minus Publisher, which is this organization.
+       Themes and distributions are aggregated per dataset in subqueries scoped
+       to this publisher, so neither walks the whole store. -->
+  <div class="mb-3">
+    <sparql-async id="organizationDatasets">
+      SELECT DISTINCT ?dataset ?themes ?issued ?modified ?frequency ?distributions ?structure WHERE {
+        ?dataset dct:publisher ?? ; a dcat:Dataset .
+        OPTIONAL {
+          SELECT ?dataset (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes) WHERE {
+            ?dataset dct:publisher ?? .
+            ?dataset dcat:theme/(schema:name|skos:prefLabel) ?themeName .
+            FILTER(lang(?themeName) = visoto:dispLang)
+          } GROUP BY ?dataset
+        }
+        OPTIONAL { ?dataset dct:issued ?issued . }
+        OPTIONAL { ?dataset dct:modified ?dctModified . }
+        OPTIONAL { ?dataset schema:dateModified ?schemaModified . }
+        BIND (COALESCE(?dctModified, ?schemaModified) AS ?modified)
+        OPTIONAL { ?dataset dct:accrualPeriodicity ?frequency . }
+        OPTIONAL {
+          SELECT ?dataset (COUNT(DISTINCT ?distribution) AS ?distributions) WHERE {
+            ?dataset dct:publisher ?? ; dcat:distribution ?distribution .
+          } GROUP BY ?dataset
+        }
+        BIND (IF(EXISTS { ?dataset dct:conformsTo/dct:hasPart/sh:property ?column },
+                 "✓", "") AS ?structure)
+      } ORDER BY DESC(?issued)
+    </sparql-async>
+    <sparql-columns for="organizationDatasets">
+      <sparql-column var="dataset" label="{{ t "facet.dataset" "Dataset" }}" icon></sparql-column>
+      <sparql-column var="themes" label="{{ t "facet.themes" "Themes" }}"
+                     tip="{{ t "facet.tip.datasetThemes" "All DCAT themes of the dataset, separated by “; ”." }}"></sparql-column>
+      <sparql-column var="issued" label="{{ t "facet.issued" "Issued" }}"></sparql-column>
+      <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}"></sparql-column>
+      <sparql-column var="frequency" label="{{ t "facet.frequency" "Update frequency" }}"></sparql-column>
+      <sparql-column var="distributions" label="{{ t "card.distributions" "Distributions" }}" type="number"></sparql-column>
+      <sparql-column var="structure" label="{{ t "card.dataStructures" "Data Structures" }}"
+                     tip="{{ t "facet.structureTip" "Columns described by a SHACL structure (I14Y)" }}"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "organizationDatasets"
+        "iri" .ResourceIRI
+        "title" (t "card.datasets" "Datasets")
+        "icon" "database")
+    }}
+  </div>
+
+  <div class="mb-3">
+    <sparql-async id="organizationDataServices">
+      SELECT ?service ?endpointURL ?modified WHERE {
+        ?service dct:publisher ?? ; a dcat:DataService .
+        OPTIONAL { ?service dcat:endpointURL ?endpointURL . }
+        OPTIONAL { ?service dct:modified ?modified . }
+      } ORDER BY DESC(?modified)
+    </sparql-async>
+    <sparql-columns for="organizationDataServices">
+      <sparql-column var="service" label="{{ t "facet.dataService" "Data service" }}" icon></sparql-column>
+      <sparql-column var="endpointURL" label="{{ t "facet.endpointUrl" "Endpoint URL" }}"></sparql-column>
+      <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "organizationDataServices"
+        "iri" .ResourceIRI
+        "title" (t "card.dataServices" "Data Services")
+        "icon" "server")
+    }}
+  </div>
+
+  <div class="mb-3">
+    <sparql-async id="organizationPublicServices">
+      SELECT ?publicService ?modified WHERE {
+        ?publicService &lt;http://data.europa.eu/m8g/hasCompetentAuthority&gt; ?? .
+        OPTIONAL { ?publicService dct:modified ?modified . }
+      } ORDER BY DESC(?modified)
+    </sparql-async>
+    <sparql-columns for="organizationPublicServices">
+      <sparql-column var="publicService" label="{{ t "facet.publicService" "Public service" }}" icon></sparql-column>
+      <sparql-column var="modified" label="{{ t "facet.modified" "Modified" }}"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "organizationPublicServices"
+        "iri" .ResourceIRI
+        "title" (t "card.publicServices" "Public Services")
+        "icon" "landmark")
+    }}
+  </div>
+
+  <!-- Channels are blank nodes with no title, and their dct:type points into the
+       EU com-channel vocabulary (http://data.europa.eu/snb/com-channel/…), which
+       is not loaded, so it would render as a bare hash. The identifier and the
+       URL are what tell them apart. -->
+  <div class="mb-3">
+    <sparql-async id="organizationChannels">
+      SELECT ?identifier ?url WHERE {
+        ?channel &lt;http://data.europa.eu/m8g/ownedBy&gt; ?? .
+        OPTIONAL { ?channel dct:identifier ?identifier . }
+        OPTIONAL { ?channel schema:url ?url . }
+      } ORDER BY ?identifier
+    </sparql-async>
+    <sparql-columns for="organizationChannels">
+      <sparql-column var="identifier" label="{{ t "facet.identifier" "Identifier" }}"></sparql-column>
+      <sparql-column var="url" label="{{ t "facet.url" "URL" }}"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "organizationChannels"
+        "iri" .ResourceIRI
+        "title" (t "card.channels" "Channels")
+        "icon" "radio-tower")
+    }}
+  </div>
+
+  <!-- Collapsed: its incoming card repeats every dataset above (dct:publisher),
+       but it is the only place catalogs, concept schemes and versions show up. -->
+  {{ template "relationships" (dict "page" . "collapsed" true) }}
+
+</div>
+{{ end }}

@@ -7,12 +7,14 @@
 
   {{ template "literals" . }}
 
-  <!-- datasets in this catalog -->
+  <!-- datasets in this catalog. Themes are joined per dataset (a quarter
+       have several), and the subquery is scoped to this catalog so it never
+       walks the whole store. -->
   <div class="row">
     <div class="col-lg">
       <div class="mb-3">
         <sparql-query id="datasets">
-          SELECT ?type ?dataset ?title ?identifier WHERE {
+          SELECT ?type ?dataset ?title ?identifier ?themes WHERE {
             BIND (?? AS ?catalog)
             ?catalog dcat:dataset ?dataset .
             OPTIONAL { ?dataset a ?type . }
@@ -21,12 +23,21 @@
               FILTER (langMatches(lang(?title), visoto:dispLang) || !langMatches(lang(?title), "*"))
             }
             OPTIONAL { ?dataset dct:identifier ?identifier . }
+            OPTIONAL {
+              SELECT ?dataset (GROUP_CONCAT(DISTINCT ?themeName; separator="; ") AS ?themes) WHERE {
+                ?? dcat:dataset ?dataset .
+                ?dataset dcat:theme/(schema:name|skos:prefLabel) ?themeName .
+                FILTER(lang(?themeName) = visoto:dispLang)
+              } GROUP BY ?dataset
+            }
           }
           ORDER BY ?title
           LIMIT 10000
         </sparql-query>
         <sparql-columns for="datasets">
           <sparql-column var="type" icon filter></sparql-column>
+          <sparql-column var="themes" label="{{ t "facet.themes" "Themes" }}"
+                         tip="{{ t "facet.tip.datasetThemes" "All DCAT themes of the dataset, separated by “; ”." }}"></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlTable" (dict

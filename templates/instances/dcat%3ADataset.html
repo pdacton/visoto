@@ -1,0 +1,269 @@
+<!-- dcat:Dataset Instance Template
+
+     Two populations describe a dataset in two vocabularies, and one template
+     serves both: every card is an alternation or an OPTIONAL, so a dataset from
+     either side renders the cards it has data for and collapses the rest.
+
+       I14Y (register.ld.admin.ch/i14y/dataset/…), on LINDAS and on the Visoto
+       QLever endpoint — DCAT-AP CH throughout: dct:title/description/issued,
+       dct:publisher -> an I14Y agent (org:Organization), dcat:theme,
+       dct:accrualPeriodicity, dcat:accessRights, dcat:landingPage, a vCard
+       contact point, and dcat:distribution (up to 136 per dataset, one per
+       language and format). Contact points and distributions are skolem IRIs
+       (/.well-known/genid/…).
+
+       LINDAS-native (~130, e.g. politics.ld.admin.ch/.well-known/void/dataset/…,
+       agriculture system-map) — mostly schema.org: schema:name/description,
+       schema:publisher, schema:dateModified, schema:creativeWorkStatus,
+       void:sparqlEndpoint, schema:contactPoint -> a person or organization IRI,
+       usually no distributions.
+
+     The 2,068 LINDAS cubes are dcat:Dataset too. cube:Cube sits in
+     type_priority (visoto.config) so instances/cube%3ACube.html keeps them;
+     skos:ConceptScheme, also co-typed on 11 datasets, is listed there already. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <div class="row row-deck row-cards mb-3">
+
+    <!-- Key metadata that is IRI-valued, so the literals card does not show it.
+         VALUES carries the display order; the grid merges properties sharing a
+         value (LINDAS datasets repeat the same IRI under dct:rights and
+         dct:license). -->
+    <div class="col-lg-7">
+      <sparql-query id="datasetOverview">
+        SELECT ?property ?value WHERE {
+          VALUES (?order ?property) {
+            (1 dct:publisher) (2 schema:publisher) (3 dcat:theme)
+            (4 dct:accrualPeriodicity) (5 schema:creativeWorkStatus)
+            (6 dcat:accessRights) (7 dct:license) (8 dct:rights)
+            (9 dcat:landingPage) (10 schema:url) (11 void:sparqlEndpoint)
+            (12 dct:conformsTo) (13 foaf:page)
+          }
+          ?? ?property ?value .
+          FILTER (!isLiteral(?value))
+        } ORDER BY ?order
+      </sparql-query>
+      {{ template "sparqlGrid" (dict
+          "result" .QueryResults.datasetOverview
+          "id" "datasetOverview"
+          "title" (t "card.overview" "Overview")
+          "icon" "info")
+      }}
+    </div>
+
+    <!-- vCard on I14Y (fn and the address are tagged per language, the e-mail a
+         mailto: IRI); schema.org on LINDAS, where the contact is often a
+         Staatskalender person IRI worth linking. A skolem contact is not: its
+         page holds nothing more than this card, so ?contact stays unbound for
+         it (the IF's unbound else-branch is an error, which leaves the BIND
+         unbound).
+
+         DISTINCT because LINDAS datasets name the same contact under both
+         dcat:contactPoint and schema:contactPoint. Staatskalender people have
+         no name property at all, only givenName/familyName. -->
+    <div class="col-lg-5">
+      <sparql-query id="datasetContact">
+        SELECT DISTINCT ?contact ?name ?email ?telephone ?address WHERE {
+          ?? (dcat:contactPoint|schema:contactPoint) ?c .
+          BIND (IF(isIRI(?c) && !CONTAINS(STR(?c), "/.well-known/genid/"), ?c, ?none) AS ?contact)
+          OPTIONAL {
+            ?c (vcard:fn|schema:name|foaf:name) ?fullName .
+            FILTER (langMatches(lang(?fullName), visoto:dispLang) || !langMatches(lang(?fullName), "*"))
+          }
+          OPTIONAL { ?c schema:givenName ?givenName ; schema:familyName ?familyName . }
+          BIND (COALESCE(?fullName, CONCAT(?givenName, " ", ?familyName)) AS ?name)
+          # vcard:hasEmail is a mailto: IRI, which would link to a Visoto
+          # resource page; shown as the bare address instead.
+          OPTIONAL { ?c (vcard:hasEmail|schema:email) ?emailValue . }
+          BIND (REPLACE(STR(?emailValue), "^mailto:", "") AS ?email)
+          OPTIONAL { ?c (vcard:hasTelephone|schema:telephone) ?telephone . }
+          OPTIONAL {
+            ?c vcard:adrWork ?address .
+            FILTER (langMatches(lang(?address), visoto:dispLang) || !langMatches(lang(?address), "*"))
+          }
+        }
+      </sparql-query>
+      <sparql-columns for="datasetContact">
+        <sparql-column var="contact" label="{{ t "facet.contact" "Contact" }}" icon></sparql-column>
+        <sparql-column var="name" label="{{ t "facet.name" "Name" }}"></sparql-column>
+        <sparql-column var="email" label="{{ t "facet.email" "E-mail" }}"></sparql-column>
+        <sparql-column var="telephone" label="{{ t "facet.telephone" "Telephone" }}"></sparql-column>
+        <sparql-column var="address" label="{{ t "card.address" "Address" }}"></sparql-column>
+      </sparql-columns>
+      {{ template "sparqlTable" (dict
+          "result" .QueryResults.datasetContact
+          "id" "datasetContact"
+          "title" (t "card.contactPoint" "Contact point")
+          "icon" "contact")
+      }}
+    </div>
+
+  </div>
+
+  {{ template "literals" . }}
+
+  <!-- Distributions. I14Y gives each language its own distribution, so a
+       dataset lists up to 136 rows. Bounded, so the set loads complete and
+       filters locally. The distribution cell resolves its dct:title through the
+       label magic property.
+
+       Most I14Y distributions state their format twice: an EU file type
+       (dct:format, …/file-type/CSV) and an IANA media type (dcat:mediaType,
+       …/media-types/text/csv). One alternation path over both returned a row
+       per value and listed those distributions twice, so the two are bound
+       separately and collapsed with COALESCE — the file type first, as it reads
+       better ("CSV" rather than "csv", "JSON_LD" rather than "ld+json"). -->
+  <div class="mb-3">
+    <sparql-async id="datasetDistributions">
+      SELECT ?distribution ?language ?format ?accessURL ?downloadURL WHERE {
+        ?? (dcat:distribution|schema:distribution) ?distribution .
+        OPTIONAL { ?distribution dct:language ?language . }
+        OPTIONAL { ?distribution dct:format ?fileType . }
+        OPTIONAL { ?distribution (dcat:mediaType|schema:encodingFormat) ?mediaType . }
+        BIND (COALESCE(?fileType, ?mediaType) AS ?format)
+        # STR(): a literal http(s) URL renders as a link out of Visoto (new tab)
+        # in sparql-table.js; left an IRI it would link to its own resource page.
+        OPTIONAL { ?distribution dcat:accessURL ?accessIRI . }
+        OPTIONAL { ?distribution (dcat:downloadURL|schema:contentUrl) ?downloadIRI . }
+        BIND (STR(?accessIRI) AS ?accessURL)
+        BIND (STR(?downloadIRI) AS ?downloadURL)
+      } ORDER BY ?language
+    </sparql-async>
+    <sparql-columns for="datasetDistributions">
+      <sparql-column var="distribution" label="{{ t "card.distributions" "Distributions" }}" icon></sparql-column>
+      <sparql-column var="language" label="{{ t "facet.language" "Language" }}"></sparql-column>
+      <sparql-column var="format" label="{{ t "facet.format" "Format" }}"></sparql-column>
+      <sparql-column var="accessURL" label="{{ t "facet.accessUrl" "Access URL" }}"></sparql-column>
+      <sparql-column var="downloadURL" label="{{ t "facet.downloadUrl" "Download URL" }}"></sparql-column>
+    </sparql-columns>
+
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "datasetDistributions"
+        "iri" .ResourceIRI
+        "title" (t "card.distributions" "Distributions")
+        "icon" "package")
+    }}
+  </div>
+
+  <!-- Structure: the dataset's columns, from its SHACL shapes (I14Y only —
+       dct:conformsTo -> the untyped /structure node -> dct:hasPart -> node
+       shapes -> sh:property). Rows are property shapes in sh:order.
+
+       - The ?property cell shows sh:name through the label magic property
+         (sh:name is listed there), so the server's language ranking picks the
+         best name: names exist in de/en/fr/it with uneven coverage, and a
+         dispLang FILTER here would blank out every column lacking the page
+         language. Descriptions have no such resolver, hence page language
+         first, then any language, collapsed outside the GROUP BY (COALESCE
+         over two SAMPLEs 500s on QLever).
+       - Type is sh:datatype, or for a nested structure the sh:node / sh:class
+         it points to. Cardinality is "min..max", language-neutral.
+       - 45 BFE property shapes are also listed directly under dct:hasPart;
+         every one of them is reachable through a node shape too, so no second
+         branch is needed.
+
+       1,357 datasets have one shape, six have 2-15. Those six get the same
+       table grouped by shape, which is a separate query id because column
+       declarations cannot be conditional. The two query bodies must stay
+       identical. No structure (every LINDAS-native dataset) -> no card. -->
+  <sparql-query id="datasetShapeCount">
+    SELECT (COUNT(DISTINCT ?shape) AS ?count) WHERE {
+      ?? dct:conformsTo/dct:hasPart ?shape .
+      ?shape sh:property ?property .
+    }
+  </sparql-query>
+  {{ $shapeCount := firstValue .QueryResults.datasetShapeCount "count" }}
+  <div class="mb-3">
+    <sparql-async id="datasetStructure">
+      SELECT ?property ?type ?cardinality ?description ?codelist ?shape WHERE {
+        {
+          SELECT ?shape ?property (MIN(?o) AS ?order) (SAMPLE(?t) AS ?type)
+                 (SAMPLE(?card) AS ?cardinality) (SAMPLE(?cl) AS ?codelist)
+                 (SAMPLE(?dPage) AS ?descPage) (SAMPLE(?dAny) AS ?descAny) WHERE {
+            ?? dct:conformsTo/dct:hasPart ?shape .
+            ?shape sh:property ?property .
+            OPTIONAL { ?property sh:order ?o . }
+            OPTIONAL { ?property (sh:datatype|sh:node|sh:class) ?t . }
+            OPTIONAL { ?property sh:minCount ?min . }
+            OPTIONAL { ?property sh:maxCount ?max . }
+            BIND (CONCAT(COALESCE(STR(?min), "0"), "..", COALESCE(STR(?max), "*")) AS ?card)
+            OPTIONAL { ?property dct:conformsTo ?cl . }
+            OPTIONAL {
+              ?property (sh:description|dct:description) ?dPage .
+              FILTER (langMatches(lang(?dPage), visoto:dispLang))
+            }
+            OPTIONAL { ?property (sh:description|dct:description|rdfs:comment) ?dAny . }
+          } GROUP BY ?shape ?property
+        }
+        BIND (COALESCE(?descPage, ?descAny) AS ?description)
+      } ORDER BY ?shape ?order
+    </sparql-async>
+    <sparql-columns for="datasetStructure" order>
+      <sparql-column var="property" label="{{ t "facet.name" "Name" }}"></sparql-column>
+      <sparql-column var="type" label="{{ t "facet.dataType" "Data type" }}"></sparql-column>
+      <sparql-column var="cardinality" label="{{ t "facet.cardinality" "Cardinality" }}" tip="{{ t "facet.cardinalityTip" "Minimum..maximum number of values; * = unbounded" }}"></sparql-column>
+      <sparql-column var="description" label="{{ t "facet.description" "Description" }}"></sparql-column>
+      <sparql-column var="codelist" label="{{ t "facet.codeList" "Code list" }}"></sparql-column>
+    </sparql-columns>
+    <sparql-async id="datasetStructureByShape">
+      SELECT ?property ?type ?cardinality ?description ?codelist ?shape WHERE {
+        {
+          SELECT ?shape ?property (MIN(?o) AS ?order) (SAMPLE(?t) AS ?type)
+                 (SAMPLE(?card) AS ?cardinality) (SAMPLE(?cl) AS ?codelist)
+                 (SAMPLE(?dPage) AS ?descPage) (SAMPLE(?dAny) AS ?descAny) WHERE {
+            ?? dct:conformsTo/dct:hasPart ?shape .
+            ?shape sh:property ?property .
+            OPTIONAL { ?property sh:order ?o . }
+            OPTIONAL { ?property (sh:datatype|sh:node|sh:class) ?t . }
+            OPTIONAL { ?property sh:minCount ?min . }
+            OPTIONAL { ?property sh:maxCount ?max . }
+            BIND (CONCAT(COALESCE(STR(?min), "0"), "..", COALESCE(STR(?max), "*")) AS ?card)
+            OPTIONAL { ?property dct:conformsTo ?cl . }
+            OPTIONAL {
+              ?property (sh:description|dct:description) ?dPage .
+              FILTER (langMatches(lang(?dPage), visoto:dispLang))
+            }
+            OPTIONAL { ?property (sh:description|dct:description|rdfs:comment) ?dAny . }
+          } GROUP BY ?shape ?property
+        }
+        BIND (COALESCE(?descPage, ?descAny) AS ?description)
+      } ORDER BY ?shape ?order
+    </sparql-async>
+    <sparql-columns for="datasetStructureByShape" order>
+      <sparql-column var="property" label="{{ t "facet.name" "Name" }}"></sparql-column>
+      <sparql-column var="type" label="{{ t "facet.dataType" "Data type" }}"></sparql-column>
+      <sparql-column var="cardinality" label="{{ t "facet.cardinality" "Cardinality" }}" tip="{{ t "facet.cardinalityTip" "Minimum..maximum number of values; * = unbounded" }}"></sparql-column>
+      <sparql-column var="description" label="{{ t "facet.description" "Description" }}"></sparql-column>
+      <sparql-column var="codelist" label="{{ t "facet.codeList" "Code list" }}"></sparql-column>
+      <sparql-column var="shape" label="{{ t "facet.shape" "Shape" }}" group hidden></sparql-column>
+    </sparql-columns>
+
+    {{ if eq $shapeCount "1" }}
+      {{ template "sparqlAsyncTable" (dict
+          "queryId" "datasetStructure"
+          "iri" .ResourceIRI
+          "title" (t "card.dataStructures" "Data Structures")
+          "icon" "columns-3")
+      }}
+    {{ else if and $shapeCount (ne $shapeCount "0") }}
+      {{ template "sparqlAsyncTable" (dict
+          "queryId" "datasetStructureByShape"
+          "iri" .ResourceIRI
+          "title" (t "card.dataStructures" "Data Structures")
+          "icon" "columns-3")
+      }}
+    {{ end }}
+  </div>
+
+  <!-- Collapsed: the outgoing card repeats the overview and the distributions.
+       It stays for what the cards above do not cover — dct:relation (law
+       references), qualified relations, parts, data services serving the
+       dataset (incoming dcat:servesDataset). -->
+  {{ template "relationships" (dict "page" . "collapsed" true) }}
+
+</div>
+{{ end }}

@@ -22,7 +22,7 @@
     <div class="col-lg">
       <div class="mb-3">
         <sparql-async id="skosConceptSchemeInstances">
-          SELECT ?scheme ?publisher ?status ?definition ?identifier ?conceptCount WHERE {
+          SELECT ?scheme ?publisher ?status ?definition ?identifier ?conceptCount ?referenceCount WHERE {
             ?scheme a ?? .
 
             OPTIONAL { ?scheme dct:publisher ?pub_lang . FILTER (LANG(?pub_lang) = visoto:dispLang)}
@@ -48,11 +48,23 @@
               } GROUP BY ?scheme
             }
 
+            # Datasets with at least one column (I14Y structure property
+            # shape) taking its values from this scheme — the distinct datasets
+            # of the "Referencing structures" card on the instance page.
+            OPTIONAL {
+              SELECT ?scheme (COUNT(DISTINCT ?dataset) AS ?referenceCount) WHERE {
+                ?column dct:conformsTo ?scheme .
+                ?shape sh:property ?column .
+                ?dataset dct:conformsTo/dct:hasPart ?shape .
+              } GROUP BY ?scheme
+            }
+
           } LIMIT 10000
         </sparql-async>
         <sparql-columns for="skosConceptSchemeInstances">
           <sparql-column var="scheme" icon></sparql-column>
           <sparql-column var="status" badge filter></sparql-column>
+          <sparql-column var="referenceCount" label="{{ t "facet.references" "References" }}" tip="{{ t "facet.referencesTip" "Datasets with at least one column taking its values from this scheme" }}" type="number"></sparql-column>
         </sparql-columns>
 
         {{ template "sparqlAsyncTable" (dict
