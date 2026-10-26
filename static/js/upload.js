@@ -380,6 +380,14 @@
     initURLInput();
     initSubmit();
 
+    // Read-only endpoint (notice rendered by the template): nothing to submit.
+    if (document.querySelector('[data-upload-read-only]')) {
+      ['upload-submit-btn', 'upload-ontologies-btn'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = true;
+      });
+    }
+
     const modal = document.getElementById('uploadDataModal');
     if (modal) {
       modal.addEventListener('show.bs.modal', () => {

@@ -224,6 +224,16 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t "modal.close" "Close" }}"></button>
       </div>
       <div class="modal-body">
+        <!-- Read-only endpoint: the server refuses the upload (see SparqlEndpoint.Writable),
+             so say so up front and offer the writable endpoints instead. -->
+        {{ range .SparqlEndpoints }}{{ if and (eq .Slug $.SelectedEndpointSlug) (not .Writable) }}
+        <div class="alert alert-warning" role="alert" data-upload-read-only>
+          {{ t "upload.readOnly" "This endpoint is read-only in visoto. Switch to a writable endpoint to upload:" }}
+          {{ range $.SparqlEndpoints }}{{ if .Writable }}
+          <a href="#" class="alert-link endpoint-menu-item" data-endpoint-slug="{{ .Slug }}">{{ .Name }}</a>
+          {{ end }}{{ end }}
+        </div>
+        {{ end }}{{ end }}
         <!-- Source tabs -->
         <ul class="nav nav-tabs mb-3" id="uploadTabs" role="tablist">
           <li class="nav-item" role="presentation">

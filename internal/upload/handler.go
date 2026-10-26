@@ -255,6 +255,11 @@ func endpointFromSlug(cfg *config.ApplicationConfig, slug string) *config.Sparql
 	return cfg.DefaultEndpoint()
 }
 
+// readOnlyError is the error for a write to an endpoint without write credentials.
+func readOnlyError(ep *config.SparqlEndpoint) string {
+	return fmt.Sprintf("%s is read-only in visoto (no write credentials configured); switch to a writable endpoint", ep.Name)
+}
+
 // UploadHandler handles POST /api/upload.
 // Accepts multipart/form-data with:
 //   - file   (mutually exclusive with url) — the RDF file to upload
@@ -274,6 +279,10 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		ep := endpointFromSlug(cfg, endpointSlug)
 		if ep == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "no SPARQL endpoint configured"})
+			return
+		}
+		if !ep.Writable() {
+			c.JSON(http.StatusForbidden, gin.H{"success": false, "error": readOnlyError(ep)})
 			return
 		}
 
@@ -466,6 +475,10 @@ func DeleteNamedGraphHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		ep := endpointFromSlug(cfg, c.Query("endpoint"))
 		if ep == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "no SPARQL endpoint configured"})
+			return
+		}
+		if !ep.Writable() {
+			c.JSON(http.StatusForbidden, gin.H{"success": false, "error": readOnlyError(ep)})
 			return
 		}
 		if graphURI == "" {

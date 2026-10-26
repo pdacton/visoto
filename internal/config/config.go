@@ -168,6 +168,15 @@ func (e *SparqlEndpoint) ApplyAuth(req *http.Request) {
 	}
 }
 
+// Writable reports whether visoto may write to the endpoint (upload, delete
+// graph). Write credentials are the opt-in: public read-only endpoints have
+// none, and writing to them fails late with whatever their proxy answers
+// (e.g. nginx's 413 for a large upload). Value receiver so templates can call
+// it on the endpoints they range over.
+func (e SparqlEndpoint) Writable() bool {
+	return e.AccessToken != "" || e.Username != ""
+}
+
 // RDFConfig holds RDF-related settings
 type RDFConfig struct {
 	Prefixes        []string `toml:"prefixes"`
