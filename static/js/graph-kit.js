@@ -435,7 +435,7 @@
     };
 
     // GL-14: places newly added nodes (ids) with every other node fixed, by a
-    // Network pass. Not an undo step of its own: the batch that added the
+    // Network pass, and selects them. Not an undo step of its own: the batch that added the
     // nodes removes them on undo, and re-adds them where they end up.
     kit.placeNew = function (ids) {
       var c = kit.commands;
@@ -449,6 +449,8 @@
           var moves = {};
           ids.forEach(function (i) { if (positions[i]) moves[i] = positions[i]; });
           c.movePositions(moves);
+          // Selected, so the next step (lay out, colour, remove) is one click.
+          c.setSelection(ids);
         });
     };
 

@@ -358,6 +358,10 @@
       onSelectionChange: function (fn) {
         workspace.getEditor().events.on('changeSelection', fn);
       },
+      // Elements added or removed, by any path (seed load, expand, undo).
+      onCellsChange: function (fn) {
+        model.events.on('changeCells', fn);
+      },
       elementIds: function () {
         return model.elements.map(function (el) { return el.id; });
       },
@@ -404,15 +408,16 @@
         if (els.length) workspace.getEditor().removeItems(els);
       },
       // Neighbour IRIs of `ids` in the data (not only on the canvas), with the
-      // canvas element each was found from: [{ iri, from }].
-      neighbourIris: function (ids, limit) {
+      // canvas element each was found from: [{ iri, from }]. `linkId` and
+      // `direction` ('in' | 'out') narrow it to one property (GL-60).
+      neighbourIris: function (ids, limit, linkId, direction) {
         var provider = model.dataProvider;
         var onCanvas = {};
         model.elements.forEach(function (el) { onCanvas[el.iri] = true; });
         return Promise.all(ids.map(function (id) {
           var el = model.getElement(id);
           if (!el) return [];
-          return provider.linkElements({ elementId: el.iri, linkId: null, offset: 0, limit: limit })
+          return provider.linkElements({ elementId: el.iri, linkId: linkId || null, direction: direction, offset: 0, limit: limit })
             .then(function (dict) {
               return Object.keys(dict).map(function (iri) { return { iri: iri, from: id }; });
             });
@@ -422,6 +427,39 @@
             if (onCanvas[item.iri] || seen[item.iri]) return false;
             seen[item.iri] = true;
             return true;
+          });
+        });
+      },
+      // GL-60: the properties of `ids` in the data, one entry per link type and
+      // direction, with how many of the elements carry it and their summed
+      // link count: [{ id, label, direction, nodes, links }].
+      linkStats: function (ids) {
+        var provider = model.dataProvider;
+        var view = workspace.getDiagram();
+        var stats = {};
+        return Promise.all(ids.map(function (id) {
+          var el = model.getElement(id);
+          if (!el) return null;
+          return provider.linkTypesOf({ elementId: el.iri }).then(function (counts) {
+            counts.forEach(function (t) {
+              [['out', t.outCount], ['in', t.inCount]].forEach(function (pair) {
+                if (!pair[1]) return;
+                var key = pair[0] + ' ' + t.id;
+                var s = stats[key] = stats[key] || { id: t.id, direction: pair[0], nodes: 0, links: 0 };
+                s.nodes++;
+                s.links += pair[1];
+              });
+            });
+          });
+        })).then(function () {
+          var list = Object.keys(stats).map(function (key) { return stats[key]; });
+          var typeIds = list.map(function (s) { return s.id; }).filter(function (tid, i, all) { return all.indexOf(tid) === i; });
+          var info = typeIds.length ? provider.linkTypesInfo({ linkTypeIds: typeIds }) : Promise.resolve([]);
+          return info.then(function (types) {
+            var labels = {};
+            (types || []).forEach(function (t) { labels[t.id] = t.label ? t.label.values : []; });
+            list.forEach(function (s) { s.label = view.formatLabel(labels[s.id] || [], s.id); });
+            return list;
           });
         });
       },

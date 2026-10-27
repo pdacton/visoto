@@ -245,7 +245,6 @@
       });
       added.loaded.then(function (ids) {
         return kit.placeNew(ids).then(function () {
-          c.setSelection(ids);
           if (kit.fitSelection) kit.fitSelection();
         });
       });

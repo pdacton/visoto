@@ -249,6 +249,19 @@
             aria-label="{{ t "graph.expandAll" "Expand all: add every neighbour" }}" title="{{ t "graph.expandAll" "Expand all: add every neighbour" }}">
       <i data-lucide="git-branch-plus" class="icon"></i>
     </button>
+    <!-- GL-60: expand one property on every selected node; list filled by graph-selection.js. -->
+    <div class="dropup" data-graph-expand-property>
+      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+              aria-expanded="false" aria-label="{{ t "graph.expandProperty" "Expand by property" }}" title="{{ t "graph.expandProperty" "Expand by property" }}">
+        <i data-lucide="list-tree" class="icon"></i>
+      </button>
+      <div class="dropdown-menu p-2 graph-add-menu">
+        <input type="search" class="form-control form-control-sm mb-1" autocomplete="off"
+               placeholder="{{ t "graph.expandPropertyFilter" "Filter properties" }}"
+               aria-label="{{ t "graph.expandPropertyFilter" "Filter properties" }}">
+        <div data-graph-expand-property-list aria-live="polite"></div>
+      </div>
+    </div>
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="select-neighbours"
             aria-label="{{ t "graph.selectNeighbours" "Select neighbours" }}" title="{{ t "graph.selectNeighbours" "Select neighbours" }}">
       <i data-lucide="waypoints" class="icon"></i>

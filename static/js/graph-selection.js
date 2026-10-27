@@ -147,9 +147,20 @@
     style.setAttribute('data-graph-decor', id);
     document.head.appendChild(style);
     var scope = '#' + CSS.escape(id + '-root');
+    // The node of the resource this page shows, ringed in white below any
+    // selection frame and the halo (which renders in a layer above).
+    var pageIri = new URLSearchParams(window.location.search).get('iri');
+    var pageEid = null;
 
     function decorate() {
       var rules = [];
+      pageEid = c.elementIdByIri(pageIri);
+      if (pageEid) {
+        // Ring plus a drop shadow in Visoto orange (#E97132, the logo's) that
+        // lifts it off the flat canvas; a
+        // selection outline (3px offset) paints over the ring's outer edge.
+        rules.push(scope + ' [data-element-id=' + quote(pageEid) + '] .graph-explorer-standard-template{box-shadow:0 0 0 4px #fff,0 0 0 5px var(--tblr-border-color,#dadfe5),0 8px 24px rgba(233,113,50,.45);border-radius:var(--tblr-border-radius,6px)}');
+      }
       Object.keys(colors).forEach(function (eid) {
         var host = scope + ' [data-element-id=' + quote(eid) + ']';
         rules.push(host + ' .graph-explorer-standard-template__body,' + host + ' .graph-explorer-standard-template__dropdown{background-color:' +
@@ -529,10 +540,14 @@
       });
     }
 
-    function expandAll() {
+    // Expand all adds every neighbour of the selection; with a property
+    // (GL-60: { id, direction }) only the neighbours over that one.
+    function expandAll(property) {
       var ids = c.selectedIds();
+      var retry = function () { expandAll(property); };
+      var title = property ? vsT('js.graph.cmd.expandProperty', 'Expand by property') : vsT('js.graph.cmd.expandAll', 'Expand all');
       var done = kit.busy(vsT('js.graph.loadingNeighbours', 'Loading neighbours…'));
-      c.neighbourIris(ids, EXPAND_LIMIT).then(function (items) {
+      c.neighbourIris(ids, EXPAND_LIMIT, property && property.id, property && property.direction).then(function (items) {
         done();
         if (!items.length) {
           kit.showMessage(vsT('js.graph.noNeighbours', 'No further neighbours found.'), { level: 'info' });
@@ -556,19 +571,112 @@
           });
         });
         var added;
-        kit.batch(vsT('js.graph.cmd.expandAll', 'Expand all'), function () { added = c.addElements(items); });
+        kit.batch(title, function () { added = c.addElements(items); });
         return added.loaded.then(function (newIds) { return kit.placeNew(newIds); });
       }).catch(function (err) {
         done();
         if (err && err.name === 'AbortError') return;
-        kit.showMessage(vsT('js.graph.endpointFailed', 'The endpoint did not answer.'), { retry: expandAll });
+        kit.showMessage(vsT('js.graph.endpointFailed', 'The endpoint did not answer.'), { retry: retry });
       });
+    }
+
+    // --- Expand by property (GL-60) --------------------------------------------
+    // Lists the selection's properties when the menu opens: those every
+    // selected node carries first, then by how many carry them.
+    var propMenu = bar && bar.querySelector('[data-graph-expand-property]');
+    var propInput = propMenu && propMenu.querySelector('input');
+    var propList = propMenu && propMenu.querySelector('[data-graph-expand-property-list]');
+    var propStats = [];
+    var propSeq = 0;
+
+    function propNote(text) {
+      var p = document.createElement('div');
+      p.className = 'dropdown-item-text small text-secondary';
+      p.textContent = text;
+      return p;
+    }
+    function renderProperties() {
+      var text = propInput.value.trim().toLowerCase();
+      var total = c.selectedIds().length;
+      var rows = propStats.filter(function (s) {
+        return !text || s.name.toLowerCase().indexOf(text) >= 0 || s.label.toLowerCase().indexOf(text) >= 0 ||
+          s.id.toLowerCase().indexOf(text) >= 0;
+      });
+      propList.replaceChildren();
+      if (!rows.length) {
+        propList.appendChild(propNote(vsT('js.graph.noProperties', 'No properties found.')));
+        return;
+      }
+      rows.forEach(function (s) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'dropdown-item d-flex align-items-center gap-2';
+        btn.title = s.label + '\n' + s.id;
+        var arrow = document.createElement('span');
+        arrow.className = 'text-secondary';
+        arrow.textContent = s.direction === 'out' ? '→' : '←';
+        arrow.title = s.direction === 'out' ? vsT('js.graph.outgoing', 'Outgoing') : vsT('js.graph.incoming', 'Incoming');
+        var name = document.createElement('span');
+        name.className = 'd-flex flex-column flex-fill text-truncate';
+        var main = document.createElement('span');
+        main.className = 'text-truncate' + (s.nodes === total ? ' fw-medium' : '');
+        main.textContent = s.name;
+        name.appendChild(main);
+        if (!s.curie) {
+          // Unprefixed namespaces (cube dimensions) share labels like "canton".
+          var sub = document.createElement('span');
+          sub.className = 'small text-secondary text-truncate';
+          sub.textContent = s.id;
+          name.appendChild(sub);
+        }
+        var count = document.createElement('span');
+        count.className = 'small text-secondary text-nowrap';
+        count.textContent = vsTf('js.graph.propertyCount', '{n}/{total} · {links} links', {
+          n: s.nodes, total: total, links: s.links.toLocaleString(document.documentElement.lang || undefined),
+        });
+        btn.append(arrow, name, count);
+        btn.addEventListener('click', function () {
+          var Dropdown = window.tabler && window.tabler.Dropdown; // Tabler's bundle, not window.bootstrap
+          if (Dropdown) Dropdown.getOrCreateInstance(propMenu.querySelector('[data-bs-toggle="dropdown"]')).hide();
+          expandAll({ id: s.id, direction: s.direction });
+        });
+        propList.appendChild(btn);
+      });
+    }
+    function loadProperties() {
+      var seq = ++propSeq;
+      propStats = [];
+      propInput.value = '';
+      propList.replaceChildren(propNote(vsT('js.graph.loadingProperties', 'Loading properties…')));
+      c.linkStats(c.selectedIds()).then(function (stats) {
+        if (seq !== propSeq) return;
+        // Shown as a CURIE (rdf:type) where the endpoint's prefixes allow, the
+        // label being a bare local name more often than not.
+        var prefixes = window.VisotoPrefixes.fromPage();
+        stats.forEach(function (s) {
+          var curie = prefixes.compact(s.id);
+          s.curie = !!curie;
+          s.name = curie ? curie.prefix + ':' + curie.local : s.label;
+        });
+        propStats = stats.sort(function (a, b) {
+          return b.nodes - a.nodes || a.name.localeCompare(b.name) || (a.direction === 'out' ? -1 : 1);
+        });
+        renderProperties();
+      }).catch(function (err) {
+        if (seq !== propSeq || (err && err.name === 'AbortError')) return;
+        propList.replaceChildren(propNote(vsT('js.graph.endpointFailed', 'The endpoint did not answer.')));
+      });
+    }
+    if (propMenu) {
+      propMenu.addEventListener('show.bs.dropdown', loadProperties);
+      propMenu.addEventListener('shown.bs.dropdown', function () { propInput.focus(); });
+      propInput.addEventListener('input', renderProperties);
     }
 
     function runAction(name) {
       var ids = c.selectedIds();
       switch (name) {
-        case 'expand-all': expandAll(); break;
+        case 'expand-all': expandAll(null); break;
         case 'remove':
           kit.batch(vsT('js.graph.cmd.remove', 'Remove'), function () { c.removeElements(ids); });
           break;
@@ -618,6 +726,9 @@
     }
 
     c.onSelectionChange(function () { decorate(); updateBar(); });
+    c.onCellsChange(function () {
+      if (c.elementIdByIri(pageIri) !== pageEid) decorate();
+    });
     setMode('select');
     decorate();
     updateBar();
