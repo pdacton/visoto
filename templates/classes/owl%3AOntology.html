@@ -7,7 +7,8 @@
      untagged, else any) instead of a plain OPTIONAL that would repeat the row per
      language. The rank must stay a SINGLE DIGIT: SUBSTR(?picked, 3) strips "N|".
 
-     The membership triple sits inside GRAPH so the graph can be shown. A blank-node
+     The graph is looked up in an OPTIONAL: endpoints with only a default graph
+     (DBLP on QLever) would otherwise list no ontologies at all. A blank-node
      ontology (one on LINDAS) is dropped: it has no page to link to. -->
 
 {{ define "pageTitle" }}{{ t "type.ontology.title" "Ontologies" }}{{ end }}
@@ -69,8 +70,9 @@
                  (GROUP_CONCAT(DISTINCT ?creatorName_; separator=", ") AS ?creator)
                  (SAMPLE(?graph_) AS ?graph)
           WHERE {
-            GRAPH ?graph_ { ?instance a ?? . }
+            ?instance a ?? .
             FILTER (isIRI(?instance))
+            OPTIONAL { GRAPH ?graph_ { ?instance a ?? . } }
             OPTIONAL { ?instance visoto:description ?d_ .
                        BIND(IF(langMatches(lang(?d_), visoto:dispLang), 1,
                             IF(langMatches(lang(?d_), "en"), 2,

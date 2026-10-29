@@ -1,0 +1,57 @@
+<!-- Component: dblpPublicationList
+     The publications of a dblp publication class (dblp:Publication or one of its
+     subclasses: Article, Inproceedings, …) as a count card plus a working-set table.
+     Usage on a class page: {{ template "dblpPublicationList" . }}
+
+     Shared by the eight publication class templates so their table stays one query.
+     Every class here is far above the 20000-row working-set threshold (Data, the
+     smallest, has 27k), so each filtered column declares path= to reach the whole
+     class rather than the loaded sample.
+
+     ?type is the subclass, and only exists on the dblp:Publication page: the FILTER
+     drops the page's own class and dblp:Publication, which leaves nothing on a
+     subclass page, and Tabulator hides a column that is empty on every row. -->
+
+<sparql-async id="dblpPublicationCount">
+  SELECT (COUNT(?publication) AS ?count) WHERE { ?publication a ?? . }
+</sparql-async>
+
+<sparql-async id="dblpPublications">
+  SELECT ?publication ?type ?year ?venue ?creators ?doi WHERE {
+    ?publication a ?? .
+    OPTIONAL { ?publication a ?type . FILTER (?type != ?? && ?type != dblp:Publication) }
+    OPTIONAL { ?publication dblp:yearOfPublication ?year . }
+    OPTIONAL { ?publication dblp:publishedIn ?venue . }
+    OPTIONAL { ?publication dblp:numberOfCreators ?creators . }
+    OPTIONAL { ?publication dblp:doi ?doi . }
+  }
+</sparql-async>
+<!-- Years are xsd:gYear, which a range control would cast and silently match
+     nothing; with ~90 distinct years a checkbox list is the better control anyway. -->
+<sparql-columns for="dblpPublications" order>
+  <sparql-column var="publication" icon filter></sparql-column>
+  <sparql-column var="type" label="{{ t "facet.type" "Type" }}" badge></sparql-column>
+  <sparql-column var="year" label="{{ t "facet.year" "Year" }}" path="dblp:yearOfPublication" filter="select"></sparql-column>
+  <sparql-column var="venue" label="{{ t "facet.publishedIn" "Published in" }}" path="dblp:publishedIn" filter="text"></sparql-column>
+  <sparql-column var="creators" label="{{ t "facet.numberOfCreators" "Creators" }}" type="number"></sparql-column>
+  <sparql-column var="doi" label="{{ t "facet.doi" "DOI" }}"></sparql-column>
+</sparql-columns>
+
+{{ define "dblpPublicationList" }}
+<div class="row row-deck row-cards mb-3">
+  {{ template "sparqlMetric" (dict
+      "queryId" "dblpPublicationCount"
+      "iri" .ResourceIRI
+      "title" (t "card.publications" "Publications")
+      "icon" (resourceIcon .)) }}
+</div>
+
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "dblpPublications"
+      "iri" .ResourceIRI
+      "searchProp" "dblp:title"
+      "title" (t "card.publications" "Publications")
+      "icon" "file-text") }}
+</div>
+{{ end }}

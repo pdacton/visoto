@@ -1,0 +1,122 @@
+<!-- dblp:Stream Instance Template
+
+     A stream is a venue: a conference series, a journal, a book series or a data
+     repository. Each also carries its subclass type, none of which has an instance
+     template of its own, so the rdf:type lookup lands here for all of them.
+
+     Venues vary from a handful of papers to CoRR's 977k, so the publication list is
+     capped at the 2000 newest; the per-year table and the metrics carry the full
+     picture. Top authors over CoRR group 860k creators and still take 0.5 s on
+     QLever. The shared relationships component is NOT used: a venue's incoming
+     links are its publications. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource?iri=dblp:Stream">{{ t "nav.dblpVenues" "Venues" }}</a></li>
+{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  <sparql-async id="dblpStreamPublicationCount">
+    SELECT (COUNT(?publication) AS ?count) WHERE { ?publication dblp:publishedInStream ?? . }
+  </sparql-async>
+  <sparql-async id="dblpStreamCreatorCount">
+    SELECT (COUNT(DISTINCT ?creator) AS ?count) WHERE {
+      ?publication dblp:publishedInStream ?? ; dblp:createdBy ?creator .
+    }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpStreamPublicationCount"
+        "iri" .ResourceIRI
+        "title" (t "card.publications" "Publications")
+        "icon" "/static/img/resource/Publication.fallback.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpStreamCreatorCount"
+        "iri" .ResourceIRI
+        "title" (t "card.creators" "Creators")
+        "icon" "/static/img/resource/Person.svg") }}
+  </div>
+
+  {{ template "literals" . }}
+
+  <div class="mb-3">
+    <sparql-async id="dblpStreamPublications">
+      SELECT ?publication ?type ?year WHERE {
+        ?publication dblp:publishedInStream ?? .
+        OPTIONAL { VALUES ?type { dblp:Article dblp:Inproceedings dblp:Informal dblp:Book dblp:Incollection dblp:Editorship dblp:Reference dblp:Data dblp:Withdrawn } ?publication a ?type . }
+        OPTIONAL { ?publication dblp:yearOfPublication ?year . }
+      } ORDER BY DESC(?year) LIMIT 2000
+    </sparql-async>
+    <sparql-columns for="dblpStreamPublications" order>
+      <sparql-column var="publication" label="{{ t "facet.publication" "Publication" }}" icon></sparql-column>
+      <sparql-column var="type" label="{{ t "facet.type" "Type" }}" badge></sparql-column>
+      <sparql-column var="year" label="{{ t "facet.year" "Year" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpStreamPublications"
+        "iri" .ResourceIRI
+        "title" (t "card.latestPublications" "Latest Publications")
+        "icon" "file-text") }}
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-async id="dblpStreamYears">
+          SELECT ?year (COUNT(?publication) AS ?publications) WHERE {
+            ?publication dblp:publishedInStream ?? ; dblp:yearOfPublication ?year .
+          } GROUP BY ?year
+          ORDER BY DESC(?year)
+        </sparql-async>
+        <sparql-columns for="dblpStreamYears">
+          <sparql-column var="year" label="{{ t "facet.year" "Year" }}"></sparql-column>
+          <sparql-column var="publications" label="{{ t "facet.publications" "Publications" }}" type="number"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "dblpStreamYears"
+            "iri" .ResourceIRI
+            "title" (t "card.publicationsPerYear" "Publications per Year")
+            "icon" "calendar") }}
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-async id="dblpStreamAuthors">
+          SELECT ?creator (COUNT(?publication) AS ?publications) WHERE {
+            ?publication dblp:publishedInStream ?? ; dblp:authoredBy ?creator .
+          } GROUP BY ?creator
+          ORDER BY DESC(?publications) LIMIT 100
+        </sparql-async>
+        <sparql-columns for="dblpStreamAuthors">
+          <sparql-column var="creator" label="{{ t "facet.creator" "Creator" }}" icon></sparql-column>
+          <sparql-column var="publications" label="{{ t "facet.publications" "Publications" }}" type="number"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "dblpStreamAuthors"
+            "iri" .ResourceIRI
+            "title" (t "card.topAuthors" "Top Authors")
+            "icon" "users") }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Parent, child, predecessor and successor venues, Wikidata, homepage … -->
+  <div class="mb-3">
+    <sparql-query id="dblpStreamLinks">
+      SELECT ?property ?link WHERE {
+        ?? ?property ?link .
+        FILTER (isIRI(?link) && ?property != rdf:type)
+      }
+    </sparql-query>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.dblpStreamLinks
+        "id" "dblpStreamLinks"
+        "title" (t "card.links" "Links")
+        "icon" "link") }}
+  </div>
+
+</div>
+{{ end }}

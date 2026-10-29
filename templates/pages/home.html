@@ -108,6 +108,110 @@
   <h2 class="mt-5 mb-3">{{ t "page.home.lindasMetrics" "Key figures on LINDAS content" }}</h2>
   {{ end }}
 
+  {{ if eq .EndpointTag "dblp" }}
+  <h2 class="mt-4 mb-3">{{ t "page.home.dblpHighlights" "Highlights from dblp" }}</h2>
+  <div class="row row-deck row-cards mb-3">
+
+    <!-- A classic paper: the publication page shows its authors and the thousands
+         of dblp records citing it. -->
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+          <img src="/static/img/resource/Article.svg" class="mb-3" width="48" height="48" alt="">
+          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.dblpClassic" "A classic paper" }}</h3>
+          <p class="text-secondary mt-auto">{{ tHTML "page.home.dblpClassicText" "In 1978 <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Fpid%2Fl%2FLeslieLamport\">Leslie Lamport</a> showed how to order events without a shared clock. See who still cites <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Frec%2Fjournals%2Fcacm%2FLamport78\">Time, Clocks, and the Ordering of Events in a Distributed System</a> today." }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- A Swiss angle: Niklaus Wirth and ETH Zurich. -->
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+          <img src="/static/img/resource/Person.svg" class="mb-3" width="48" height="48" alt="">
+          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.dblpWirth" "Computer science in Switzerland" }}</h3>
+          <p class="text-secondary mt-auto">{{ tHTML "page.home.dblpWirthText" "Follow <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Fpid%2Fw%2FNiklausWirth\">Niklaus Wirth</a>, creator of Pascal and Oberon, through his publications and co-authors, or browse the researchers affiliated with <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Finst%2F1%2F339\">ETH Zurich</a>." }}</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Venues: CoRR, the largest stream by far. -->
+    <div class="col-sm-6 col-lg-4">
+      <div class="card h-100">
+        <div class="card-body d-flex flex-column">
+          <img src="/static/img/resource/Journal.svg" class="mb-3" width="48" height="48" alt="">
+          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.dblpVenues" "Conferences and journals" }}</h3>
+          <p class="text-secondary mt-auto">{{ tHTML "page.home.dblpVenuesText" "Every paper belongs to a venue. Compare the <a href=\"/resource?iri=dblp:Conference\">conferences</a> and <a href=\"/resource?iri=dblp:Journal\">journals</a>, or watch preprints pile up year by year in <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Fstreams%2Fjournals%2Fcorr\">CoRR</a>, the arXiv section for computer science." }}</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2 class="mt-5 mb-3">{{ t "page.home.dblpMetrics" "Key figures on dblp content" }}</h2>
+  <div class="row row-deck row-cards mb-3">
+    <sparql-async id="dblpHomePublicationCount">
+      SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Publication . }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomePublicationCount" "title" (t "card.publications" "Publications") "href" "/resource?iri=dblp:Publication" "icon" "/static/img/resource/Publication.fallback.svg") }}
+
+    <sparql-async id="dblpHomePersonCount">
+      SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Person . }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomePersonCount" "title" (t "card.persons" "Persons") "href" "/resource?iri=dblp:Person" "icon" "/static/img/resource/Person.svg") }}
+
+    <sparql-async id="dblpHomeStreamCount">
+      SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Stream . }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeStreamCount" "title" (t "card.venues" "Venues") "href" "/resource?iri=dblp:Stream" "icon" "/static/img/resource/Stream.fallback.svg") }}
+
+    <sparql-async id="dblpHomeInstitutionCount">
+      SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Institution . }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInstitutionCount" "title" (t "card.institutions" "Institutions") "href" "/resource?iri=dblp:Institution" "icon" "/static/img/resource/Institution.svg") }}
+  </div>
+  <div class="row row-deck row-cards mb-3">
+    <sparql-async id="dblpHomeArticleCount">
+      SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Article . }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeArticleCount" "title" (t "nav.dblpArticles" "Journal Articles") "href" "/resource?iri=dblp:Article" "icon" "/static/img/resource/Article.svg") }}
+
+    <sparql-async id="dblpHomeInproceedingsCount">
+      SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Inproceedings . }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInproceedingsCount" "title" (t "nav.dblpInproceedings" "Conference Papers") "href" "/resource?iri=dblp:Inproceedings" "icon" "/static/img/resource/Inproceedings.svg") }}
+
+    <sparql-async id="dblpHomeInformalCount">
+      SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Informal . }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInformalCount" "title" (t "nav.dblpInformal" "Preprints & Informal") "href" "/resource?iri=dblp:Informal" "icon" "/static/img/resource/Informal.svg") }}
+
+    <!-- OpenCitations links between works, inside dblp or not. -->
+    <sparql-async id="dblpHomeCitationCount">
+      SELECT (COUNT(?x) AS ?count) WHERE { ?x a cito:Citation . }
+    </sparql-async>
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeCitationCount" "title" (t "card.citations" "Citations") "href" "/resource?iri=cito:Citation" "icon" "/static/img/resource/Citation.fallback.svg") }}
+  </div>
+
+  <!-- The 25 largest venues; the count over all 8.7M publications takes 0.5 s. -->
+  <sparql-async id="dblpHomeTopVenues">
+    SELECT ?venue (COUNT(?publication) AS ?publications) WHERE {
+      ?publication dblp:publishedInStream ?venue .
+    } GROUP BY ?venue
+    ORDER BY DESC(?publications) LIMIT 25
+  </sparql-async>
+  <sparql-columns for="dblpHomeTopVenues">
+    <sparql-column var="venue" label="{{ t "facet.venue" "Venue" }}" icon></sparql-column>
+    <sparql-column var="publications" label="{{ t "facet.publications" "Publications" }}" type="number"></sparql-column>
+  </sparql-columns>
+  <div class="mb-3">
+    {{ template "sparqlAsyncTable" (dict "queryId" "dblpHomeTopVenues" "title" (t "card.largestVenues" "Largest Venues") "icon" "layers") }}
+  </div>
+  {{ end }}
+
+
+  {{/* The generic rows below mean little on dblp, which has no SKOS or DCAT data. */}}
+  {{ if ne .EndpointTag "dblp" }}
   <div id="stats-cards" class="row row-deck row-cards mb-3">
 
     <!-- classes card -->
@@ -145,6 +249,8 @@
     {{ template "sparqlMetric" (dict "queryId" "conceptCount" "class" "skos:Concept" "title" (t "card.concepts" "Concepts") "href" "/resource?iri=skos:Concept" "icon" "/static/img/resource/Concept.svg") }}
 
   </div>
+
+  {{ end }}
 
   {{ if eq .EndpointTag "stadtzuerich" }}
     <div class="row row-deck row-cards mb-3">
@@ -241,6 +347,7 @@
     </div>
   {{ end }}
 
+  {{ if ne .EndpointTag "dblp" }}
   <div id="dcat-cards" class="row row-deck row-cards mb-3">
 
     <!-- dcat catalogs card -->
@@ -280,6 +387,7 @@
     {{ end }}
 
   </div>
+  {{ end }}
 
   {{ if eq .EndpointTag "lindas" }}
     <div class="row row-deck row-cards mb-3">

@@ -1,0 +1,63 @@
+<!-- dblp:Institution class template: the research institutions dblp links creators
+     to. Title and subtitle come from the dblp ontology.
+
+     10.7k institutions, so the table loads complete and filters locally. Locations
+     are blank nodes (dblp:hasLocation → countryName / cityName), and some
+     institutions have several, so they are concatenated per institution rather than
+     listing it once per location; the "; " separator also lets the user group by
+     country. The creator count runs in its own subquery so the location join does
+     not multiply it. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <sparql-async id="dblpInstitutionCount">
+    SELECT (COUNT(?institution) AS ?count) WHERE { ?institution a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpInstitutionCount"
+        "iri" .ResourceIRI
+        "title" (t "card.institutions" "Institutions")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <sparql-async id="dblpInstitutions">
+    SELECT ?institution
+           (GROUP_CONCAT(DISTINCT ?country_; separator="; ") AS ?country)
+           (GROUP_CONCAT(DISTINCT ?city_; separator="; ") AS ?city)
+           (SAMPLE(?members_) AS ?members)
+    WHERE {
+      ?institution a ?? .
+      OPTIONAL {
+        ?institution dblp:hasLocation ?location_ .
+        ?location_ dblp:countryName ?country_ .
+        OPTIONAL { ?location_ dblp:cityName ?city_ . }
+      }
+      OPTIONAL {
+        SELECT ?institution (COUNT(DISTINCT ?creator_) AS ?members_) WHERE {
+          ?creator_ dblp:affiliatedWith ?institution .
+        } GROUP BY ?institution
+      }
+    } GROUP BY ?institution
+    ORDER BY DESC(?members)
+  </sparql-async>
+  <sparql-columns for="dblpInstitutions" order>
+    <sparql-column var="institution" icon></sparql-column>
+    <sparql-column var="country" label="{{ t "facet.country" "Country" }}"></sparql-column>
+    <sparql-column var="city" label="{{ t "facet.city" "City" }}"></sparql-column>
+    <sparql-column var="members" label="{{ t "facet.affiliatedCreators" "Affiliated creators" }}" type="number"></sparql-column>
+  </sparql-columns>
+
+  <div class="mb-3">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpInstitutions"
+        "iri" .ResourceIRI
+        "title" (t "card.institutions" "Institutions")
+        "icon" "landmark") }}
+  </div>
+
+</div>
+{{ end }}

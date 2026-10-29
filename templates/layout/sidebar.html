@@ -424,6 +424,73 @@
               </a>
             </li>
 
+          {{ else if eq .EndpointTag "dblp" }}
+
+            <li class="nav-item nav-section-title" role="presentation">{{ t "nav.sectionContent" "Content" }}</li>
+
+            <!-- Publications, by dblp record type -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Publication.fallback.svg" alt="{{ t "nav.dblpPublications" "Publications" }}">
+                </span>
+                <span class="nav-link-title">{{ t "nav.dblpPublications" "Publications" }}</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=dblp:Publication"><img class="nav-sub-icon" src="{{ classIcon "dblp:Publication" }}" alt="">{{ t "nav.dblpAllPublications" "All Publications" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Article"><img class="nav-sub-icon" src="{{ classIcon "dblp:Article" }}" alt="">{{ t "nav.dblpArticles" "Journal Articles" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Inproceedings"><img class="nav-sub-icon" src="{{ classIcon "dblp:Inproceedings" }}" alt="">{{ t "nav.dblpInproceedings" "Conference Papers" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Informal"><img class="nav-sub-icon" src="{{ classIcon "dblp:Informal" }}" alt="">{{ t "nav.dblpInformal" "Preprints & Informal" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Book"><img class="nav-sub-icon" src="{{ classIcon "dblp:Book" }}" alt="">{{ t "nav.dblpBooks" "Books & Theses" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Incollection"><img class="nav-sub-icon" src="{{ classIcon "dblp:Incollection" }}" alt="">{{ t "nav.dblpIncollection" "Book Chapters" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Editorship"><img class="nav-sub-icon" src="{{ classIcon "dblp:Editorship" }}" alt="">{{ t "nav.dblpEditorship" "Edited Volumes" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Data"><img class="nav-sub-icon" src="{{ classIcon "dblp:Data" }}" alt="">{{ t "nav.dblpData" "Research Data" }}</a>
+              </div>
+            </li>
+
+            <!-- People -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Person.svg" alt="{{ t "nav.dblpCreators" "Creators" }}">
+                </span>
+                <span class="nav-link-title">{{ t "nav.dblpCreators" "Creators" }}</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=dblp:Creator"><img class="nav-sub-icon" src="{{ classIcon "dblp:Creator" }}" alt="">{{ t "nav.dblpAllCreators" "All Creators" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Person"><img class="nav-sub-icon" src="{{ classIcon "dblp:Person" }}" alt="">{{ t "nav.dblpPersons" "Persons" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Group"><img class="nav-sub-icon" src="{{ classIcon "dblp:Group" }}" alt="">{{ t "nav.dblpGroups" "Groups" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:AmbiguousCreator"><img class="nav-sub-icon" src="{{ classIcon "dblp:AmbiguousCreator" }}" alt="">{{ t "nav.dblpAmbiguousCreators" "Ambiguous Names" }}</a>
+              </div>
+            </li>
+
+            <!-- Venues (dblp streams) -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Stream.fallback.svg" alt="{{ t "nav.dblpVenues" "Venues" }}">
+                </span>
+                <span class="nav-link-title">{{ t "nav.dblpVenues" "Venues" }}</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=dblp:Stream"><img class="nav-sub-icon" src="{{ classIcon "dblp:Stream" }}" alt="">{{ t "nav.dblpAllVenues" "All Venues" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Conference"><img class="nav-sub-icon" src="{{ classIcon "dblp:Conference" }}" alt="">{{ t "nav.dblpConferences" "Conferences" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Journal"><img class="nav-sub-icon" src="{{ classIcon "dblp:Journal" }}" alt="">{{ t "nav.dblpJournals" "Journals" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Series"><img class="nav-sub-icon" src="{{ classIcon "dblp:Series" }}" alt="">{{ t "nav.dblpSeries" "Book Series" }}</a>
+                <a class="dropdown-item" href="/resource?iri=dblp:Repository"><img class="nav-sub-icon" src="{{ classIcon "dblp:Repository" }}" alt="">{{ t "nav.dblpRepositories" "Data Repositories" }}</a>
+              </div>
+            </li>
+
+            <!-- Institutions -->
+            <li class="nav-item">
+              <a class="nav-link" href="/resource?iri=dblp:Institution">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="/static/img/resource/Institution.svg" alt="{{ t "nav.dblpInstitutions" "Institutions" }}">
+                </span>
+                <span class="nav-link-title">{{ t "nav.dblpInstitutions" "Institutions" }}</span>
+              </a>
+            </li>
+
           {{ else }}
 
             <!-- Generic fallback for unknown endpoints -->

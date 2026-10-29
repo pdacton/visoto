@@ -1,0 +1,14 @@
+<!-- dblp:Group class template: consortia and groups publishing under a collective name. Title and subtitle come from the dblp
+     ontology; the table is the shared dblpCreatorList. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource?iri=dblp:Creator">{{ t "nav.dblpCreators" "Creators" }}</a></li>
+{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  {{ template "dblpCreatorList" . }}
+</div>
+{{ end }}

@@ -1,0 +1,176 @@
+<!-- dblp:Creator Instance Template
+
+     Persons, groups and ambiguous name entries all carry dblp:Creator next to their
+     own type, so this one template covers the three. The title is the rdfs:label
+     (the dblp name, with a disambiguation number like "Wei Wang 0001" where needed);
+     the subtitle is the primary affiliation.
+
+     Every list here is bounded by one creator: the most prolific has about 3.4k
+     records and 1.9k co-authors, so the tables always load complete. The shared
+     relationships component is NOT used: a creator's incoming links are its
+     publications (twice, via authoredBy and createdBy), which the publications
+     table already shows, and its synchronous LIMIT 1000 would stall the page. -->
+
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="creatorHead">
+  SELECT ?affiliation WHERE { ?? dblp:primaryAffiliation ?affiliation . } LIMIT 1
+</sparql-query>
+
+{{ define "pageTitle" }}{{ .Title }}{{ end }}
+{{ define "metaTitle" }}{{ .Title }}{{ end }}
+{{ define "metaIcon" }}{{ resourceIcon . }}{{ end }}
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+{{ define "pageSubtitle" }}{{ firstValue .QueryResults.creatorHead "affiliation" }}{{ end }}
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource?iri=dblp:Creator">{{ t "nav.dblpCreators" "Creators" }}</a></li>
+{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  <sparql-async id="dblpCreatorPublicationCount">
+    SELECT (COUNT(DISTINCT ?publication) AS ?count) WHERE { ?publication dblp:createdBy ?? . }
+  </sparql-async>
+  <sparql-async id="dblpCoauthorCount">
+    SELECT (COUNT(DISTINCT ?coauthor) AS ?count) WHERE {
+      ?publication dblp:authoredBy ?? , ?coauthor .
+      FILTER (?coauthor != ??)
+    }
+  </sparql-async>
+  <!-- Citations of all the creator's records, from OpenCitations (see the
+       publication template); 0.3 s for the most prolific author. -->
+  <sparql-async id="dblpCreatorCitationCount">
+    SELECT (COUNT(DISTINCT ?citation) AS ?count) WHERE {
+      ?publication dblp:createdBy ?? ; dblp:omid ?omid .
+      ?citation cito:hasCitedEntity ?omid .
+    }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpCreatorPublicationCount"
+        "iri" .ResourceIRI
+        "title" (t "card.publications" "Publications")
+        "icon" "/static/img/resource/Publication.fallback.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpCoauthorCount"
+        "iri" .ResourceIRI
+        "title" (t "card.coauthors" "Co-authors")
+        "icon" "/static/img/resource/Person.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpCreatorCitationCount"
+        "iri" .ResourceIRI
+        "title" (t "card.citedBy" "Cited by")
+        "icon" "/static/img/resource/Citation.fallback.svg") }}
+  </div>
+
+  <!-- createdBy covers both authorship and editorship. -->
+  <div class="mb-3">
+    <sparql-async id="dblpCreatorPublications">
+      SELECT ?publication ?type ?year ?venue WHERE {
+        ?publication dblp:createdBy ?? .
+        OPTIONAL { VALUES ?type { dblp:Article dblp:Inproceedings dblp:Informal dblp:Book dblp:Incollection dblp:Editorship dblp:Reference dblp:Data dblp:Withdrawn } ?publication a ?type . }
+        OPTIONAL { ?publication dblp:yearOfPublication ?year . }
+        OPTIONAL { ?publication dblp:publishedIn ?venue . }
+      } ORDER BY DESC(?year)
+    </sparql-async>
+    <sparql-columns for="dblpCreatorPublications" order>
+      <sparql-column var="publication" label="{{ t "facet.publication" "Publication" }}" icon></sparql-column>
+      <sparql-column var="type" label="{{ t "facet.type" "Type" }}" badge></sparql-column>
+      <sparql-column var="year" label="{{ t "facet.year" "Year" }}"></sparql-column>
+      <sparql-column var="venue" label="{{ t "facet.publishedIn" "Published in" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpCreatorPublications"
+        "iri" .ResourceIRI
+        "title" (t "card.publications" "Publications")
+        "icon" "file-text") }}
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-async id="dblpCoauthors">
+          SELECT ?coauthor (COUNT(DISTINCT ?publication) AS ?joint) WHERE {
+            ?publication dblp:authoredBy ?? , ?coauthor .
+            FILTER (?coauthor != ??)
+          } GROUP BY ?coauthor
+          ORDER BY DESC(?joint)
+        </sparql-async>
+        <sparql-columns for="dblpCoauthors">
+          <sparql-column var="coauthor" label="{{ t "facet.coauthor" "Co-author" }}" icon></sparql-column>
+          <sparql-column var="joint" label="{{ t "facet.jointPublications" "Joint publications" }}" type="number"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "dblpCoauthors"
+            "iri" .ResourceIRI
+            "title" (t "card.coauthors" "Co-authors")
+            "icon" "users") }}
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-async id="dblpCreatorVenues">
+          SELECT ?venue (COUNT(DISTINCT ?publication) AS ?publications) WHERE {
+            ?publication dblp:createdBy ?? ; dblp:publishedInStream ?venue .
+          } GROUP BY ?venue
+          ORDER BY DESC(?publications)
+        </sparql-async>
+        <sparql-columns for="dblpCreatorVenues">
+          <sparql-column var="venue" label="{{ t "facet.venue" "Venue" }}" icon></sparql-column>
+          <sparql-column var="publications" label="{{ t "facet.publications" "Publications" }}" type="number"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "dblpCreatorVenues"
+            "iri" .ResourceIRI
+            "title" (t "card.venues" "Venues")
+            "icon" "layers") }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Affiliations are blank nodes holding the affiliation as dblp received it
+       (a free-text string); the typed ones are marked primary or former. The kinds
+       are listed in VALUES: an `OPTIONAL { ?node a ?kind FILTER … }` makes QLever
+       scan every typed node first (3.3 s instead of 0.16 s). -->
+  <div class="mb-3">
+    <sparql-async id="dblpCreatorAffiliations">
+      SELECT ?affiliation ?kind WHERE {
+        ?? dblp:hasAffiliation ?node .
+        ?node dblp:affiliationInstitutionRawString ?affiliation .
+        OPTIONAL { VALUES ?kind { dblp:PrimaryAffiliation dblp:FormerAffiliation } ?node a ?kind . }
+      }
+    </sparql-async>
+    <sparql-columns for="dblpCreatorAffiliations">
+      <sparql-column var="affiliation" label="{{ t "facet.affiliation" "Affiliation" }}"></sparql-column>
+      <sparql-column var="kind" label="{{ t "facet.type" "Type" }}" badge></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpCreatorAffiliations"
+        "iri" .ResourceIRI
+        "title" (t "card.affiliations" "Affiliations")
+        "icon" "briefcase") }}
+  </div>
+
+  {{ template "literals" . }}
+
+  <!-- ORCID, homepage, Wikidata, Wikipedia, linked institutions … -->
+  <div class="mb-3">
+    <sparql-query id="dblpCreatorLinks">
+      SELECT ?property ?link WHERE {
+        ?? ?property ?link .
+        FILTER (isIRI(?link) && ?property != rdf:type)
+      }
+    </sparql-query>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.dblpCreatorLinks
+        "id" "dblpCreatorLinks"
+        "title" (t "card.links" "Links")
+        "icon" "link") }}
+  </div>
+
+</div>
+{{ end }}

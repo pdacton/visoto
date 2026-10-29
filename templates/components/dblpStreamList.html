@@ -1,0 +1,43 @@
+<!-- Component: dblpStreamList
+     The venues of a dblp stream class (dblp:Stream or one of Conference, Journal,
+     Series, Repository) with their publication counts, largest first.
+     Usage on a class page: {{ template "dblpStreamList" . }}
+
+     9330 streams in all, so the table always loads complete and every column filters
+     locally without a declaration. The count runs in its own subquery over the whole
+     publishedInStream index (0.5 s on QLever) rather than being multiplied by the
+     OPTIONALs. ISSNs are left out: journals carry a print and an online one, which
+     would list the journal twice.
+
+     ?type is the subclass, empty (and so hidden) on a subclass page; see
+     dblpPublicationList for the same trick. -->
+
+<sparql-async id="dblpStreams">
+  SELECT ?stream ?type ?abbreviation ?publications WHERE {
+    ?stream a ?? .
+    OPTIONAL { ?stream a ?type . FILTER (?type != ?? && ?type != dblp:Stream) }
+    OPTIONAL { ?stream dblp:iso4 ?abbreviation . }
+    OPTIONAL {
+      SELECT ?stream (COUNT(?publication) AS ?publications) WHERE {
+        ?publication dblp:publishedInStream ?stream .
+      } GROUP BY ?stream
+    }
+  }
+  ORDER BY DESC(?publications)
+</sparql-async>
+<sparql-columns for="dblpStreams" order>
+  <sparql-column var="stream" icon></sparql-column>
+  <sparql-column var="type" label="{{ t "facet.type" "Type" }}" badge></sparql-column>
+  <sparql-column var="abbreviation" label="{{ t "facet.abbreviation" "Abbreviation" }}"></sparql-column>
+  <sparql-column var="publications" label="{{ t "facet.publications" "Publications" }}" type="number"></sparql-column>
+</sparql-columns>
+
+{{ define "dblpStreamList" }}
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "dblpStreams"
+      "iri" .ResourceIRI
+      "title" (t "card.venues" "Venues")
+      "icon" "layers") }}
+</div>
+{{ end }}

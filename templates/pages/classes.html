@@ -26,8 +26,10 @@
 
   <!-- implicit classes: used as rdf:type target but not declared as rdfs:Class or owl:Class -->
   <sparql-async id="implicitClassCount">
-    SELECT (COUNT(DISTINCT ?class) AS ?count) WHERE {
-      ?s a ?class .
+    SELECT (COUNT(?class) AS ?count) WHERE {
+      # DISTINCT first, so the two FILTERs run once per class rather than once per
+      # typed resource: the other order fails on QLever with PubChem (HTTP 500).
+      { SELECT DISTINCT ?class WHERE { ?s a ?class } }
       FILTER NOT EXISTS { ?class a rdfs:Class }
       FILTER NOT EXISTS { ?class a owl:Class }
     }
@@ -72,12 +74,57 @@
               "NO DOMAIN") AS ?domain)
         }
       </sparql-async>
+      <!-- The same table for QLever. The count above runs over a three-way UNION,
+           which QLever can only answer by materializing every rdf:type triple first:
+           an out-of-memory error on the DNB dataset and an empty table on dblp's 300M
+           type triples. Here the count runs on the bare `?instance a ?class` pattern,
+           which QLever answers from its index (dblp: 18 s → 0.2 s), and declared
+           classes without instances are unioned in afterwards with a 0. Same rows
+           and counts — but on GraphDB this shape is 3× slower (LINDAS: 16 s → 55 s,
+           near the timeout), hence two queries rather than one. -->
+      <sparql-async id="allClassesQLever">
+        SELECT DISTINCT ?class ?type ?instances ?iri ?domain WHERE {
+          {
+            SELECT ?class (SUM(?n) AS ?instances) WHERE {
+              { SELECT ?class (COUNT(?instance) AS ?n) WHERE { ?instance a ?class } GROUP BY ?class }
+              UNION { ?class a rdfs:Class BIND (0 AS ?n) }
+              UNION { ?class a owl:Class BIND (0 AS ?n) }
+            } GROUP BY ?class
+          }
+          # A class declared both rdfs:Class and owl:Class (e.g. cube:Observation) yields
+          # one row per declaration. That duplication is deliberate: it keeps ?type a
+          # single value so the table can be grouped by it. Spelled as a CURIE literal so
+          # the two declarations stay distinguishable in the column.
+          #
+          # The outer SELECT is DISTINCT because of a SECOND, unwanted source of rows:
+          # the same a-triple asserted in several named graphs. The default graph is
+          # their union, so this OPTIONAL matches once PER GRAPH and emits identical
+          # rows. Fedlex shows it plainly — skos:Concept a owl:Class lives in three
+          # graphs (jolux, skos/core, skos-xl), which listed the class three times.
+          # DISTINCT collapses those; the rdfs:/owl: pair above survives it, since
+          # those rows differ in ?type.
+          OPTIONAL { ?class a ?rawType }
+          BIND(IF(?rawType = rdfs:Class, "rdfs:Class",
+               IF(?rawType = owl:Class,  "owl:Class",
+               STR(?rawType))) AS ?type)
+          BIND (STR(?class) AS ?iri)
+          BIND(
+            IF(CONTAINS(?iri, "http://") || CONTAINS(?iri, "https://"),
+              REPLACE(REPLACE(?iri, "^https?://", ""), "/.*$", ""),
+              "NO DOMAIN") AS ?domain)
+        }
+      </sparql-async>
+      {{ $classQuery := "allClasses" }}
+      {{ if eq .SearchProvider "qlever" }}{{ $classQuery = "allClassesQLever" }}{{ end }}
       <sparql-columns for="allClasses">
+        <sparql-column var="class" icon filter></sparql-column>
+      </sparql-columns>
+      <sparql-columns for="allClassesQLever">
         <sparql-column var="class" icon filter></sparql-column>
       </sparql-columns>
 
       {{ template "sparqlAsyncTable" (dict
-          "queryId" "allClasses"
+          "queryId" $classQuery
           "title" (t "card.classes" "Classes")
           "icon" "circle-dot")
       }}

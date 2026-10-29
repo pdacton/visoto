@@ -1,0 +1,14 @@
+<!-- dblp:Incollection class template: chapters in books and collections (44k). Title and subtitle come from the dblp
+     ontology's rdfs:label / rdfs:comment; the table is the shared dblpPublicationList. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource?iri=dblp:Publication">{{ t "nav.dblpPublications" "Publications" }}</a></li>
+{{ end }}
+
+{{ define "pageContent" }}
+<div>
+  {{ template "dblpPublicationList" . }}
+</div>
+{{ end }}

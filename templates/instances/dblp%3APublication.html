@@ -1,0 +1,174 @@
+<!-- dblp:Publication Instance Template
+
+     Every dblp record carries dblp:Publication plus one subclass (Article,
+     Inproceedings, Informal, Book, …). None of the subclasses has an instance
+     template, so the rdf:type lookup lands here for all of them.
+
+     The rdfs:label of a record is a full citation ("Leslie Lamport: Time, Clocks,
+     and the Ordering of Events in a Distributed System. (1978)"), so the page title
+     is dblp:title instead and the venue and year move to the subtitle; the label
+     stays as the link text in tables, where the citation form helps.
+
+     Authors and editors are reached through blank-node signatures, which carry the
+     author position; the generic relationship cards would show them unordered.
+
+     Citations come from OpenCitations: a record links to its OpenCitations entity
+     with dblp:omid, and cito:Citation nodes join two such entities. Both directions
+     resolve back to dblp records through dblp:omid again; a citing or cited work
+     that is not in dblp is counted in the metrics but cannot be listed. -->
+
+<sparql-query id="pageClasses">SELECT ?class WHERE { ?? (rdf:type|owl:type) ?class . }</sparql-query>
+<sparql-query id="publicationHead">
+  SELECT ?title ?venue ?year WHERE {
+    BIND (?? AS ?publication)
+    OPTIONAL { ?publication dblp:title ?title . }
+    OPTIONAL { ?publication dblp:publishedIn ?venue . }
+    OPTIONAL { ?publication dblp:yearOfPublication ?year . }
+  } LIMIT 1
+</sparql-query>
+
+{{ define "pageTitle" }}{{ with firstValue .QueryResults.publicationHead "title" }}{{ . }}{{ else }}{{ .Title }}{{ end }}{{ end }}
+{{ define "metaTitle" }}{{ with firstValue .QueryResults.publicationHead "title" }}{{ . }}{{ else }}{{ .Title }}{{ end }}{{ end }}
+{{ define "metaIcon" }}{{ resourceIcon . }}{{ end }}
+{{ define "pageClasses" }}
+  {{ range $index, $binding := .QueryResults.pageClasses.Bindings }}
+    {{- if $index }}, {{ end }}{{ render ((index $binding "class")) -}}
+  {{ end }}
+{{ end }}
+{{ define "pageSubtitle" }}
+  {{- $venue := firstValue .QueryResults.publicationHead "venue" -}}
+  {{- $year := firstValue .QueryResults.publicationHead "year" -}}
+  {{- $venue }}{{ if and $venue $year }} · {{ end }}{{ $year -}}
+{{ end }}
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource?iri=dblp:Publication">{{ t "nav.dblpPublications" "Publications" }}</a></li>
+{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  <!-- Citation counts cover every citing / cited work OpenCitations knows, inside
+       dblp or not; the tables further down can only list the dblp ones. -->
+  <sparql-async id="dblpCitedByCount">
+    SELECT (COUNT(DISTINCT ?citation) AS ?count) WHERE {
+      ?? dblp:omid ?omid .
+      ?citation cito:hasCitedEntity ?omid .
+    }
+  </sparql-async>
+  <sparql-async id="dblpReferenceCount">
+    SELECT (COUNT(DISTINCT ?citation) AS ?count) WHERE {
+      ?? dblp:omid ?omid .
+      ?citation cito:hasCitingEntity ?omid .
+    }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpCitedByCount"
+        "iri" .ResourceIRI
+        "title" (t "card.citedBy" "Cited by")
+        "icon" "/static/img/resource/Citation.fallback.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpReferenceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.references" "References")
+        "icon" "/static/img/resource/Citation.fallback.svg") }}
+  </div>
+
+  <!-- Authors, then editors, each in signature order. A record has at most a few
+       thousand signatures, so the table always loads complete. The roles are
+       VALUES rather than a FILTER on ?role, which QLever would apply only after
+       joining every typed node (1.5 s instead of 0.13 s). -->
+  <div class="mb-3">
+    <sparql-async id="dblpSignatures">
+      SELECT ?position ?creator ?role WHERE {
+        VALUES ?role { dblp:AuthorSignature dblp:EditorSignature }
+        ?? dblp:hasSignature ?signature .
+        ?signature dblp:signatureCreator ?creator ;
+                   a ?role .
+        OPTIONAL { ?signature dblp:signatureOrdinal ?position . }
+      } ORDER BY ?role ?position
+    </sparql-async>
+    <sparql-columns for="dblpSignatures" order>
+      <sparql-column var="position" label="#" type="number" width="70"></sparql-column>
+      <sparql-column var="creator" label="{{ t "facet.creator" "Creator" }}" icon></sparql-column>
+      <sparql-column var="role" label="{{ t "facet.role" "Role" }}" badge></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpSignatures"
+        "iri" .ResourceIRI
+        "title" (t "card.authorsAndEditors" "Authors and Editors")
+        "icon" "users") }}
+  </div>
+
+  {{ template "literals" . }}
+
+  <!-- The records inside this one: the papers of a proceedings volume, the
+       chapters of a book. Empty (and collapsed) for an ordinary paper. -->
+  <div class="mb-3">
+    <sparql-async id="dblpParts">
+      SELECT ?part ?year WHERE {
+        ?part dblp:publishedAsPartOf ?? .
+        OPTIONAL { ?part dblp:yearOfPublication ?year . }
+      }
+    </sparql-async>
+    <sparql-columns for="dblpParts">
+      <sparql-column var="part" label="{{ t "facet.publication" "Publication" }}" icon></sparql-column>
+      <sparql-column var="year" label="{{ t "facet.year" "Year" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpParts"
+        "iri" .ResourceIRI
+        "title" (t "card.contents" "Contents")
+        "icon" "list") }}
+  </div>
+
+  <!-- Capped at 5000 newest: the most cited dblp records have over 100k
+       citations. The "Cited by" metric above carries the full number. -->
+  <div class="mb-3">
+    <sparql-async id="dblpCitedBy">
+      SELECT DISTINCT ?citing ?year WHERE {
+        ?? dblp:omid ?omid .
+        ?citation cito:hasCitedEntity ?omid ;
+                  cito:hasCitingEntity ?citingOmid .
+        ?citing dblp:omid ?citingOmid .
+        OPTIONAL { ?citing dblp:yearOfPublication ?year . }
+      } ORDER BY DESC(?year) LIMIT 5000
+    </sparql-async>
+    <sparql-columns for="dblpCitedBy">
+      <sparql-column var="citing" label="{{ t "facet.publication" "Publication" }}" icon></sparql-column>
+      <sparql-column var="year" label="{{ t "facet.year" "Year" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpCitedBy"
+        "iri" .ResourceIRI
+        "title" (t "card.citedByInDblp" "Cited by (in dblp)")
+        "icon" "quote") }}
+  </div>
+
+  <div class="mb-3">
+    <sparql-async id="dblpReferences">
+      SELECT DISTINCT ?cited ?year WHERE {
+        ?? dblp:omid ?omid .
+        ?citation cito:hasCitingEntity ?omid ;
+                  cito:hasCitedEntity ?citedOmid .
+        ?cited dblp:omid ?citedOmid .
+        OPTIONAL { ?cited dblp:yearOfPublication ?year . }
+      } ORDER BY DESC(?year)
+    </sparql-async>
+    <sparql-columns for="dblpReferences">
+      <sparql-column var="cited" label="{{ t "facet.publication" "Publication" }}" icon></sparql-column>
+      <sparql-column var="year" label="{{ t "facet.year" "Year" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpReferences"
+        "iri" .ResourceIRI
+        "title" (t "card.referencesInDblp" "References (in dblp)")
+        "icon" "book-marked") }}
+  </div>
+
+  <!-- Venue, DOI, Wikidata and the other links. A record's incoming links are
+       few (its parts, at most), so the shared component is affordable here. -->
+  {{ template "relationships" (dict "page" . "collapsed" true) }}
+
+</div>
+{{ end }}

@@ -1,0 +1,40 @@
+<!-- dblp:Publication class template: every record in the dblp bibliography.
+     Title and subtitle come from the dblp ontology. Besides the shared
+     dblpPublicationList it breaks the publications down by subclass, so the page
+     doubles as the entry point to the per-type class pages. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  <!-- Each publication carries dblp:Publication plus exactly one subclass. Nine
+       rows, so the table is local and needs no column declarations beyond labels.
+       The class is BOUND rather than written as `?publication a ??`: that pattern
+       is what marks a class listing, and would turn this aggregate into an
+       8.7M-row working set. -->
+  <sparql-async id="dblpPublicationTypes">
+    SELECT ?type (COUNT(?publication) AS ?publications) WHERE {
+      BIND (?? AS ?class)
+      ?publication a ?class , ?type .
+      FILTER (?type != ?class)
+    } GROUP BY ?type
+    ORDER BY DESC(?publications)
+  </sparql-async>
+  <sparql-columns for="dblpPublicationTypes">
+    <sparql-column var="type" label="{{ t "facet.type" "Type" }}" icon></sparql-column>
+    <sparql-column var="publications" label="{{ t "facet.publications" "Publications" }}" type="number"></sparql-column>
+  </sparql-columns>
+
+  {{ template "dblpPublicationList" . }}
+
+  <div class="mb-3">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpPublicationTypes"
+        "iri" .ResourceIRI
+        "title" (t "card.publicationTypes" "Publication Types")
+        "icon" "shapes") }}
+  </div>
+
+</div>
+{{ end }}

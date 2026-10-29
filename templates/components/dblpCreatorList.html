@@ -1,0 +1,46 @@
+<!-- Component: dblpCreatorList
+     The creators of a dblp creator class (dblp:Creator, Person or Group) as a count
+     card plus a working-set table.
+     Usage on a class page: {{ template "dblpCreatorList" . }}
+
+     4.2 million creators, so the filtered columns declare path= (see
+     dblpPublicationList). A creator's name is its rdfs:label, which the ?creator
+     cell already shows. ?type is the subclass, empty and hidden on a subclass page. -->
+
+<sparql-async id="dblpCreatorCount">
+  SELECT (COUNT(?creator) AS ?count) WHERE { ?creator a ?? . }
+</sparql-async>
+
+<sparql-async id="dblpCreators">
+  SELECT ?creator ?type ?affiliation ?orcid WHERE {
+    ?creator a ?? .
+    OPTIONAL { ?creator a ?type . FILTER (?type != ?? && ?type != dblp:Creator) }
+    OPTIONAL { ?creator dblp:primaryAffiliation ?affiliation . }
+    OPTIONAL { ?creator dblp:orcid ?orcid . }
+  }
+</sparql-async>
+<sparql-columns for="dblpCreators" order>
+  <sparql-column var="creator" icon filter></sparql-column>
+  <sparql-column var="type" label="{{ t "facet.type" "Type" }}" badge></sparql-column>
+  <sparql-column var="affiliation" label="{{ t "facet.affiliation" "Affiliation" }}" path="dblp:primaryAffiliation" filter="text"></sparql-column>
+  <sparql-column var="orcid" label="{{ t "facet.orcid" "ORCID" }}"></sparql-column>
+</sparql-columns>
+
+{{ define "dblpCreatorList" }}
+<div class="row row-deck row-cards mb-3">
+  {{ template "sparqlMetric" (dict
+      "queryId" "dblpCreatorCount"
+      "iri" .ResourceIRI
+      "title" (t "card.creators" "Creators")
+      "icon" (resourceIcon .)) }}
+</div>
+
+<div class="mb-3">
+  {{ template "sparqlAsyncTable" (dict
+      "queryId" "dblpCreators"
+      "iri" .ResourceIRI
+      "searchProp" "dblp:creatorName"
+      "title" (t "card.creators" "Creators")
+      "icon" "users") }}
+</div>
+{{ end }}

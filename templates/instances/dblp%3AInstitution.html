@@ -1,0 +1,90 @@
+<!-- dblp:Institution Instance Template
+
+     A research institution, with the creators dblp links to it (dblp:affiliatedWith)
+     and its place in the institution hierarchy. Its location is a blank node
+     (dblp:hasLocation → country / state / city names), which the literals card
+     cannot reach. The largest institution has about 800 affiliated creators, so
+     every table loads complete. The shared relationships component is NOT used:
+     the incoming links are those creators, listed below with their counts. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "breadcrumb" }}
+  <li class="breadcrumb-item"><a href="/resource?iri=dblp:Institution">{{ t "nav.dblpInstitutions" "Institutions" }}</a></li>
+{{ end }}
+
+{{ define "pageContent" }}
+<div>
+
+  <sparql-async id="dblpInstitutionCreatorCount">
+    SELECT (COUNT(DISTINCT ?creator) AS ?count) WHERE { ?creator dblp:affiliatedWith ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" "dblpInstitutionCreatorCount"
+        "iri" .ResourceIRI
+        "title" (t "card.affiliatedCreators" "Affiliated Creators")
+        "icon" "/static/img/resource/Person.svg") }}
+  </div>
+
+  {{ template "literals" . }}
+
+  <div class="mb-3">
+    <sparql-query id="dblpInstitutionLocation">
+      SELECT ?country ?state ?city WHERE {
+        ?? dblp:hasLocation ?location .
+        OPTIONAL { ?location dblp:countryName ?country . }
+        OPTIONAL { ?location dblp:stateName ?state . }
+        OPTIONAL { ?location dblp:cityName ?city . }
+      }
+    </sparql-query>
+    <sparql-columns for="dblpInstitutionLocation">
+      <sparql-column var="country" label="{{ t "facet.country" "Country" }}"></sparql-column>
+      <sparql-column var="state" label="{{ t "facet.state" "State" }}"></sparql-column>
+      <sparql-column var="city" label="{{ t "facet.city" "City" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.dblpInstitutionLocation
+        "id" "dblpInstitutionLocation"
+        "title" (t "card.location" "Location")
+        "icon" "map-pin") }}
+  </div>
+
+  <div class="mb-3">
+    <sparql-async id="dblpInstitutionCreators">
+      SELECT ?creator ?affiliation (COUNT(DISTINCT ?publication) AS ?publications) WHERE {
+        ?creator dblp:affiliatedWith ?? .
+        OPTIONAL { ?creator dblp:primaryAffiliation ?affiliation . }
+        OPTIONAL { ?publication dblp:createdBy ?creator . }
+      } GROUP BY ?creator ?affiliation
+      ORDER BY DESC(?publications)
+    </sparql-async>
+    <sparql-columns for="dblpInstitutionCreators" order>
+      <sparql-column var="creator" label="{{ t "facet.creator" "Creator" }}" icon></sparql-column>
+      <sparql-column var="affiliation" label="{{ t "facet.primaryAffiliation" "Primary affiliation" }}"></sparql-column>
+      <sparql-column var="publications" label="{{ t "facet.publications" "Publications" }}" type="number"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dblpInstitutionCreators"
+        "iri" .ResourceIRI
+        "title" (t "card.affiliatedCreators" "Affiliated Creators")
+        "icon" "users") }}
+  </div>
+
+  <!-- Parent and sub-institutions, predecessors, ROR, Wikidata, homepage … -->
+  <div class="mb-3">
+    <sparql-query id="dblpInstitutionLinks">
+      SELECT ?property ?link WHERE {
+        ?? ?property ?link .
+        FILTER (isIRI(?link) && ?property != rdf:type)
+      }
+    </sparql-query>
+    {{ template "sparqlTable" (dict
+        "result" .QueryResults.dblpInstitutionLinks
+        "id" "dblpInstitutionLinks"
+        "title" (t "card.links" "Links")
+        "icon" "link") }}
+  </div>
+
+</div>
+{{ end }}

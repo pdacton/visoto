@@ -33,13 +33,47 @@
               IF(EXISTS { ?property a owl:DatatypeProperty }, "ValueProperty", ?unbound)) AS ?kind )
         }
       </sparql-async>
+      <!-- The same table for QLever, which answers the UNION above by materializing
+           every triple before the DISTINCT: out of memory on dblp (1.4B triples) and
+           on the small IMDb dataset alike. Taking DISTINCT predicates in their own
+           subquery first returns the same properties (dblp: 136, 10.7 s cold).
+           GraphDB keeps the original, as on the classes page. -->
+      <sparql-async id="allPropertiesQLever">
+        SELECT DISTINCT ?property ?iri ?domain ?type ?kind WHERE {
+          {
+            SELECT DISTINCT ?property WHERE {
+              { SELECT DISTINCT ?property WHERE { ?s ?property ?o } }
+              UNION { ?property a rdf:Property }
+              UNION { ?property rdfs:subPropertyOf ?p }
+              UNION { ?property a owl:ObjectProperty }
+              UNION { ?property a owl:DatatypeProperty }
+            }
+          }
+          OPTIONAL { ?property a ?type }
+          BIND (STR(?property) AS ?iri)
+          BIND(
+            IF(CONTAINS(?iri, "http://") || CONTAINS(?iri, "https://"),
+              REPLACE(REPLACE(?iri, "^https?://", ""), "/.*$", ""), "NO DOMAIN") AS ?domain )
+          # object vs. value (datatype) property; unbound when neither is declared
+          BIND(
+            IF(EXISTS { ?property a owl:ObjectProperty }, "ObjectProperty",
+              IF(EXISTS { ?property a owl:DatatypeProperty }, "ValueProperty", ?unbound)) AS ?kind )
+        }
+      </sparql-async>
       <sparql-columns for="allProperties">
         <sparql-column var="kind" label="{{ t "page.properties.kind" "Kind" }}"
                        tip="{{ t "page.properties.kindTip" "Declared as owl:ObjectProperty or owl:DatatypeProperty" }}"
                        badge filter width="150"></sparql-column>
       </sparql-columns>
+      <sparql-columns for="allPropertiesQLever">
+        <sparql-column var="kind" label="{{ t "page.properties.kind" "Kind" }}"
+                       tip="{{ t "page.properties.kindTip" "Declared as owl:ObjectProperty or owl:DatatypeProperty" }}"
+                       badge filter width="150"></sparql-column>
+      </sparql-columns>
+      {{ $propertyQuery := "allProperties" }}
+      {{ if eq .SearchProvider "qlever" }}{{ $propertyQuery = "allPropertiesQLever" }}{{ end }}
       {{ template "sparqlAsyncTable" (dict
-           "queryId" "allProperties"
+           "queryId" $propertyQuery
            "title" (t "card.properties" "Properties")
            "icon" "tag")
       }}
