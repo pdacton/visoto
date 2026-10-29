@@ -125,8 +125,14 @@
          foag/system-map, federal-council, meta). -->
     <div class="mb-3">
       <sparql-async id="governmentOrganizationInstances">
-        SELECT ?organization ?parentOrganization ?addressLocality WHERE {
+        SELECT ?organization ?alternateName ?parentOrganization ?addressLocality WHERE {
           ?organization a ?? .
+          # Short forms (BK, EDÖB, …): every one is language-tagged, at most one per
+          # language, so the dispLang filter keeps one row per organization. Only
+          # ~115 carry an English one, hence the fallback to German.
+          OPTIONAL { ?organization schema:alternateName ?altDisp . FILTER (langMatches(lang(?altDisp), visoto:dispLang) || !langMatches(lang(?altDisp), "*")) }
+          OPTIONAL { ?organization schema:alternateName ?altDe . FILTER (lang(?altDe) = "de") }
+          BIND (COALESCE(?altDisp, ?altDe) AS ?alternateName)
           OPTIONAL { ?organization schema:parentOrganization ?parentOrganization . }
           OPTIONAL { ?organization schema:address/schema:addressLocality ?addressLocality . }
         }
@@ -141,6 +147,7 @@
            DeriveKeyVar looks for. -->
       <sparql-columns for="governmentOrganizationInstances">
         <sparql-column var="organization" label="{{ t "facet.name" "Name" }}" icon></sparql-column>
+        <sparql-column var="alternateName" label="{{ t "facet.alternateName" "Abbreviation" }}"></sparql-column>
         <sparql-column var="parentOrganization" label="{{ t "facet.parentOrganization" "Part of" }}"></sparql-column>
         <sparql-column var="addressLocality" label="{{ t "facet.locality" "Locality" }}"></sparql-column>
       </sparql-columns>

@@ -310,11 +310,14 @@
               # multiplied three or four times over. At most one per language, so
               # the filter leaves exactly one row per organization. These are the
               # short forms — BK, BR, DTI, EDOEB — which is what makes the column
-              # worth having beside the full name.
+              # worth having beside the full name. Only 16 have an English one, so
+              # the column falls back to German rather than staying blank.
               OPTIONAL {
-                ?organization schema:alternateName ?alternateName .
-                FILTER (langMatches(lang(?alternateName), visoto:dispLang) || !langMatches(lang(?alternateName), "*"))
+                ?organization schema:alternateName ?altDisp .
+                FILTER (langMatches(lang(?altDisp), visoto:dispLang) || !langMatches(lang(?altDisp), "*"))
               }
+              OPTIONAL { ?organization schema:alternateName ?altDe . FILTER (lang(?altDe) = "de") }
+              BIND (COALESCE(?altDisp, ?altDe) AS ?alternateName)
               OPTIONAL { ?organization schema:address/schema:addressLocality ?addressLocality . }
               {
                 SELECT ?organization (COUNT(DISTINCT ?grandChild) AS ?subUnits) WHERE {
