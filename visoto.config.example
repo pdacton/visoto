@@ -139,6 +139,17 @@ monitor = false
 tag = "lindas"
 slug = "lindasnext-int"
 
+# dblp computer science bibliography on the public QLever instance. The "dblp" tag
+# selects its own home page, sidebar menu and the dblp:* class/instance templates;
+# those templates also need the dblp: and cito: prefixes below.
+[[application.sparqlEndpoints]]
+name = "DBLP (QLever)"
+url = "https://qlever.dev/api/dblp"
+monitor = false
+tag = "dblp"
+slug = "dblp"
+search_provider = "qlever"
+
 # GraphDB endpoint with Simple FTS (no Lucene connector required)
 # [[application.sparqlEndpoints]]
 # name = "GraphDB (local)"
@@ -208,6 +219,8 @@ prefixes = [
   "PREFIX regch:  <https://register.ld.admin.ch/>",
   "PREFIX refch:  <https://reference.data.admin.ch/>",
   "PREFIX euvoc:  <http://publications.europa.eu/ontology/euvoc#>",
+  "PREFIX cito:   <http://purl.org/spar/cito/>",
+  "PREFIX dblp:   <https://dblp.org/rdf/schema#>",
   "@prefix vl:       <https://version.link/>",
   "@prefix cube:     <https://cube.link/> .",
   "@prefix meta:     <https://cube.link/meta/> .",
