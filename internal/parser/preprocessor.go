@@ -129,7 +129,7 @@ func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
 	return p.sp.QueryTypes(iri)
 }
 
-// QueryIsClass checks whether the given IRI is a class
-func (p *Preprocessor) QueryIsClass(iri string) (bool, error) {
-	return p.sp.QueryIsClass(iri)
+// QueryRole reports whether the given IRI is used as a class, a property or a named graph
+func (p *Preprocessor) QueryRole(iri string, knownClass bool) (sparql.Role, error) {
+	return p.sp.QueryRole(iri, knownClass)
 }

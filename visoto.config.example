@@ -209,6 +209,7 @@ prefixes = [
   "PREFIX vcard:  <http://www.w3.org/2006/vcard/ns#>",
   "PREFIX schema: <http://schema.org/>",
   "PREFIX void:   <http://rdfs.org/ns/void#>",
+  "PREFIX sd:     <http://www.w3.org/ns/sparql-service-description#>",
   "PREFIX foaf:   <http://xmlns.com/foaf/0.1/>",
   "PREFIX dct:    <http://purl.org/dc/terms/>",
   "PREFIX dc:     <http://purl.org/dc/elements/1.1/>",

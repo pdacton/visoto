@@ -3,6 +3,7 @@ package sparql
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -434,22 +435,64 @@ func (p *Preprocessor) ExecuteQueryWithContext(ctx context.Context, query string
 	return p.executeQueryWithContext(ctx, query, resolveLabels, acceptLanguage, endpoint, opts...)
 }
 
-// QueryIsClass checks whether the given IRI is a class by looking for:
-// - rdfs:subClassOf relationships (as subject or object)
-// - incoming rdf:type statements (implicitly defined classes)
-func (p *Preprocessor) QueryIsClass(iri string) (bool, error) {
-	query := fmt.Sprintf(`ASK {
+// Role is what an IRI is used as in the data, independent of its rdf:type.
+// Undeclared properties and named graphs carry no type at all, so usage is the
+// only way to recognise them.
+type Role struct {
+	IsClass    bool // has rdfs:subClassOf triples (either side) or instances
+	IsProperty bool // appears in predicate position
+	IsGraph    bool // names a graph that holds at least one triple
+}
+
+// QueryRole runs the three usage ASKs concurrently, so a resource that matched
+// no template pays one round trip for all of them. knownClass skips the class
+// ASK when the caller already decided it from the resource's types.
+//
+// A failed ASK counts as false; the errors are joined and returned alongside
+// whatever the other ASKs found.
+func (p *Preprocessor) QueryRole(iri string, knownClass bool) (Role, error) {
+	type askTarget struct {
+		query  string
+		result *bool
+	}
+	role := Role{IsClass: knownClass}
+	asks := []askTarget{
+		{fmt.Sprintf(`ASK { ?s <%s> ?o }`, iri), &role.IsProperty},
+		{fmt.Sprintf(`ASK { GRAPH <%s> { ?s ?p ?o } }`, iri), &role.IsGraph},
+	}
+	if !knownClass {
+		asks = append(asks, askTarget{fmt.Sprintf(`ASK {
 		{ <%s> rdfs:subClassOf ?x }
 		UNION
 		{ ?x rdfs:subClassOf <%s> }
 		UNION
 		{ ?x a <%s> }
-	}`, iri, iri, iri)
+	}`, iri, iri, iri), &role.IsClass})
+	}
 
+	var wg sync.WaitGroup
+	errs := make([]error, len(asks))
+	for i, a := range asks {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			*a.result, errs[i] = p.ask(a.query)
+		}()
+	}
+	wg.Wait()
+
+	if err := errors.Join(errs...); err != nil {
+		return role, fmt.Errorf("failed to query role for IRI %s: %w", iri, err)
+	}
+	return role, nil
+}
+
+// ask runs an ASK query on the configured endpoint.
+func (p *Preprocessor) ask(query string) (bool, error) {
 	finalizedQuery := p.finalizeQuery(query, "", p.config.EndpointURL)
 	response, err := p.querySparqlEndpoint(context.Background(), p.config.EndpointURL, finalizedQuery)
 	if err != nil {
-		return false, fmt.Errorf("failed to query class status for IRI %s: %w", iri, err)
+		return false, err
 	}
 
 	var askResp struct {

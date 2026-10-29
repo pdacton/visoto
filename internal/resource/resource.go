@@ -119,10 +119,12 @@ func namedGraphsQuery(iri string) (string, bool) {
 
 // ResolveTemplate determines the appropriate template for this resource
 // Resolution order:
-// 1. Direct IRI match in templates/classes/ (tries both full IRI and short IRI)
-// 2. Direct IRI match in templates/instances/ (tries both full IRI and short IRI)
-// 3. rdf:type match in templates/instances/ (with type priority)
-// 4. Fallback to templates/pages/resource.html
+//  1. Direct IRI match in templates/classes/ (tries both full IRI and short IRI)
+//  2. Direct IRI match in templates/instances/ (tries both full IRI and short IRI)
+//  3. rdf:type match in templates/instances/ (with type priority)
+//  4. Usage-based role (see templateForRole): class default, property page,
+//     named-graph page, else the instance default
+//  5. Fallback to templates/pages/resource.html
 //
 // It also records TemplateType: the class this page is rendered *as*, which the
 // breadcrumb names so the trail describes the page rather than guessing from the
@@ -197,7 +199,8 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 		}
 	}
 
-	// 4. Detect class vs instance for default fallback
+	// 4. Detect the resource's role from its usage: class, property, named graph,
+	// or plain instance. A failed ASK counts as false and is only logged.
 	isClass := false
 	for _, t := range types {
 		if t == "http://www.w3.org/2000/01/rdf-schema#Class" || t == "http://www.w3.org/2002/07/owl#Class" {
@@ -205,9 +208,9 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 			break
 		}
 	}
-	if !isClass {
-		// subClassOf + incoming rdf:type check (ignore error → treated as false)
-		isClass, _ = preprocessor.QueryIsClass(r.IRI)
+	role, err := preprocessor.QueryRole(r.IRI, isClass)
+	if err != nil {
+		log.Warn("role detection incomplete", slog.String("iri", r.IRI), slog.String("error", err.Error()))
 	}
 	// No template matched, but the ranking still holds: types is already sorted by
 	// sortTypesByPriority above, so the first entry is the best description of the
@@ -226,14 +229,14 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 		}
 	}
 
-	if isClass {
-		if tryTemplate("templates/classes/", "default.html", "via default class template") {
-			return nil
+	if dir, file, roleType := templateForRole(role); tryTemplate(dir, file, "via "+file+" by usage") {
+		if roleType != "" {
+			r.TemplateType = roleType
 		}
-	} else {
-		if tryTemplate("templates/instances/", "default.html", "via default instance template") {
-			return nil
-		}
+		return nil
+	}
+	if tryTemplate("templates/instances/", "default.html", "via default instance template") {
+		return nil
 	}
 
 	// 5. Hard fallback to generic resource template
@@ -244,6 +247,23 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 }
 
 // ---internal Helper functions ----------------------------
+
+// templateForRole picks the fallback template for a resource no type matched.
+// Precedence is class, property, named graph, then the instance default. roleType
+// is the class the page is rendered as, for the breadcrumb: rdf:Property links to
+// the list of all predicates; a graph gets none, since no sd:NamedGraph class
+// page has instances to show.
+func templateForRole(role sparql.Role) (dir, file, roleType string) {
+	switch {
+	case role.IsClass:
+		return "templates/classes/", "default.html", ""
+	case role.IsProperty:
+		return "templates/instances/", "rdf%3AProperty.html", "http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"
+	case role.IsGraph:
+		return "templates/instances/", "sd%3ANamedGraph.html", ""
+	}
+	return "templates/instances/", "default.html", ""
+}
 
 // normalizeToFilename converts an IRI to a URL-encoded filename.
 //

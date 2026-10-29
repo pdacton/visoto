@@ -95,7 +95,13 @@ When a request arrives for IRI `X`, Visoto does the following:
 5. Look for `templates/instances/<short-IRI-encoded>.html` — use it if found.
 6. Look for `templates/instances/<full-IRI-encoded>.html` — use it if found.
 7. Issue a SPARQL query for all `rdf:type` values of `X`. Sort the types by `rdf.type_priority` (configured types first, then the rest). For each type (short then full IRI form), look for a match in `templates/instances/`.
-8. Detect whether `X` is a class (it has `rdfs:Class` or `owl:Class` as its type, or has `rdfs:subClassOf` triples). Use `templates/classes/default.html` for classes, `templates/instances/default.html` for instances.
+8. Detect what `X` is **used as**, with three concurrent ASKs. First match wins:
+   - **class** (`rdfs:Class`/`owl:Class` among its types, `rdfs:subClassOf` triples, or instances): `templates/classes/default.html`;
+   - **property** (`X` appears in predicate position): `templates/instances/rdf%3AProperty.html`;
+   - **named graph** (`GRAPH <X>` holds triples): `templates/instances/sd%3ANamedGraph.html`;
+   - otherwise `templates/instances/default.html`.
+
+   This step is what gives undeclared properties and untyped graph IRIs their page. A typed `rdf:Property` already reaches the same template in step 7. A declared but unused `owl:ObjectProperty` has no usage to detect, so it gets the instance default.
 9. Hard fallback: `templates/pages/resource.html`.
 
 The first match wins. See [configuration.md](configuration.md) for how `rdf.prefixes` and `rdf.type_priority` are configured.

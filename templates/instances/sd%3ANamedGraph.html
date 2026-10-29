@@ -1,0 +1,115 @@
+<!-- sd:NamedGraph Instance Template — one named graph.
+
+     Graph IRIs are almost never typed, so this page is reached by usage: the
+     resolver sends any IRI that names a non-empty graph and matched no other
+     template here (templateForRole in internal/resource/resource.go). Metadata
+     attached to the graph IRI itself, if any, shows in the literals and
+     relationships cards.
+
+     LINDAS graphs reach 145 M triples (foen/plazi), which rules out scanning a
+     graph per page view: the triple count comes from GraphDB's statistics graph,
+     and the per-property breakdown — 38 s at 27 M triples, a timeout above —
+     is only run on graphs below 10 M triples. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageIcon" }}
+  {{ $icon := resourceIcon . }}
+  {{ if contains $icon "default.svg" }}{{ $icon = "/static/img/resource/NamedGraph.svg" }}{{ end }}
+  <img src="{{ $icon }}" alt="{{ t "header.pageIconAlt" "Page icon" }}" width="48" height="48">
+{{ end }}
+
+<!-- Synchronous size probe (~0.2 s): is the graph too large for the property scan?
+     GraphDB only. QLever answers 0 and Virtuoso fails on the statistics graph, so
+     both read as small and get the scan, which they answer quickly.
+
+     The query must stay a bare COUNT(*): GraphDB answers only that shape from its
+     statistics, and a comparison in the projection or a HAVING makes it count for
+     real (timeout on plazi). So the threshold is applied in the template, as the
+     number of digits: 8 or more = at least 10 M triples, where the scan nears the
+     60 s request timeout (38 s at 27 M). -->
+<sparql-query id="graphSize">
+  SELECT (COUNT(*) AS ?count) FROM <http://www.ontotext.com/owlim/system#statistics> WHERE { GRAPH ?? { ?s ?p ?o } }
+</sparql-query>
+
+<sparql-async id="graphTriplesGraphDB">
+  SELECT (COUNT(*) AS ?count) FROM <http://www.ontotext.com/owlim/system#statistics> WHERE { GRAPH ?? { ?s ?p ?o } }
+</sparql-async>
+<sparql-async id="graphTriples">
+  SELECT (COUNT(*) AS ?count) WHERE { GRAPH ?? { ?s ?p ?o } }
+</sparql-async>
+
+<!-- Typed resources per class: < 1 s on most graphs, ~9 s on plazi. -->
+<sparql-async id="graphClasses">
+  SELECT ?class (COUNT(?s) AS ?instances) WHERE { GRAPH ?? { ?s a ?class } }
+  GROUP BY ?class
+  ORDER BY DESC(?instances)
+</sparql-async>
+
+<sparql-async id="graphProperties">
+  SELECT ?property (COUNT(*) AS ?triples) WHERE { GRAPH ?? { ?s ?property ?o } }
+  GROUP BY ?property
+  ORDER BY DESC(?triples)
+</sparql-async>
+
+{{ define "pageContent" }}
+<div>
+
+  {{ $graphdb := contains .SearchProvider "graphdb" }}
+
+  <div class="row row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" (or (and $graphdb "graphTriplesGraphDB") "graphTriples")
+        "iri" .ResourceIRI
+        "title" (t "type.namedGraph.tripleCount" "Triples in this graph")
+        "href" "/namedGraphs.html"
+        "icon" "/static/img/resource/NamedGraph.svg") }}
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-columns for="graphClasses">
+          <sparql-column var="class" label="{{ t "type.namedGraph.class" "Class" }}" icon></sparql-column>
+          <sparql-column var="instances" label="{{ t "type.namedGraph.instances" "Instances" }}"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "graphClasses"
+            "iri" .ResourceIRI
+            "title" (t "type.namedGraph.classes" "Classes in this graph")
+            "icon" "shapes") }}
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ if ge (len (firstValue .QueryResults.graphSize "count")) 8 }}
+        <div class="card">
+          <div class="card-header d-flex align-items-center gap-2">
+            <i data-lucide="list-tree" style="width: 1.5em; height: 1.5em;"></i>
+            <h3 class="card-title mb-0">{{ t "type.namedGraph.properties" "Properties in this graph" }}</h3>
+          </div>
+          <div class="card-body text-secondary">
+            {{ t "type.namedGraph.tooLarge" "This graph is too large to list its properties on page load." }}
+          </div>
+        </div>
+        {{ else }}
+        <sparql-columns for="graphProperties">
+          <sparql-column var="property" label="{{ t "type.namedGraph.property" "Property" }}" icon></sparql-column>
+          <sparql-column var="triples" label="{{ t "type.namedGraph.triples" "Triples" }}"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "graphProperties"
+            "iri" .ResourceIRI
+            "title" (t "type.namedGraph.properties" "Properties in this graph")
+            "icon" "list-tree") }}
+        {{ end }}
+      </div>
+    </div>
+  </div>
+
+  {{ template "literals" . }}
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

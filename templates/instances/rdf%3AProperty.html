@@ -1,0 +1,183 @@
+<!-- rdf:Property Instance Template — one property, declared or not.
+
+     Reached two ways: by rdf:type (a declared rdf:Property), and by usage — the
+     resolver sends any IRI that appears in predicate position and matched no other
+     template here (templateForRole in internal/resource/resource.go). Most LINDAS
+     cube dimensions are never declared, so for them the observed usage below IS
+     the page; the declaration, when there is one, shows in the literals and
+     relationships cards.
+
+     Heavy predicates (rdf:type: 40 M triples, schema:name: 6 M) shape every query:
+     the type/value breakdowns group a 10 000-triple sample, never the whole
+     property, and the counts come from GraphDB's statistics graph where it has one. -->
+
+{{ template "pageHeader" . }}
+
+<!-- Any statement about the property itself. Empty = used but never declared. -->
+<sparql-query id="propertyDeclared">
+  SELECT ?p WHERE { ?? ?p ?o } LIMIT 1
+</sparql-query>
+
+{{ define "pageIcon" }}
+  {{ $icon := resourceIcon . }}
+  {{ if contains $icon "default.svg" }}{{ $icon = "/static/img/resource/Property.svg" }}{{ end }}
+  <img src="{{ $icon }}" alt="{{ t "header.pageIconAlt" "Page icon" }}" width="48" height="48">
+{{ end }}
+
+<!-- Usage count. GraphDB answers from its statistics graph in ~0.1 s even for
+     rdf:type (approximate, ~0.02 % off); a plain COUNT there takes minutes. Other
+     engines count from their predicate index directly. -->
+<sparql-async id="propertyUsageGraphDB">
+  SELECT (COUNT(*) AS ?count) FROM <http://www.ontotext.com/owlim/system#statistics> WHERE { ?s ?? ?o }
+</sparql-async>
+<sparql-async id="propertyUsage">
+  SELECT (COUNT(*) AS ?count) WHERE { ?s ?? ?o }
+</sparql-async>
+
+<!-- Subject types in a sample: the property's de facto domain. -->
+<sparql-async id="propertySubjectTypes">
+  SELECT ?type (COUNT(?s) AS ?triples) WHERE {
+    { SELECT ?s WHERE { ?s ?? ?o } LIMIT 10000 }
+    ?s a ?type .
+  }
+  GROUP BY ?type
+  ORDER BY DESC(?triples)
+</sparql-async>
+
+<!-- Value types in a sample: the de facto range. A literal contributes its
+     datatype (and language), an IRI its rdf:type. Untyped IRIs and blank nodes get
+     a plain English literal: translation calls cannot go inside a query body. -->
+<sparql-async id="propertyValueTypes">
+  SELECT ?valueType ?language (COUNT(*) AS ?triples) WHERE {
+    { SELECT ?o WHERE { ?s ?? ?o } LIMIT 10000 }
+    OPTIONAL { ?o a ?t . FILTER(isIRI(?o)) }
+    BIND(COALESCE(IF(isLiteral(?o), datatype(?o), ?t),
+                  IF(isBlank(?o), "blank node", "untyped IRI")) AS ?valueType)
+    BIND(IF(isLiteral(?o) && lang(?o) != "", lang(?o), ?unbound) AS ?language)
+  }
+  GROUP BY ?valueType ?language
+  ORDER BY DESC(?triples)
+</sparql-async>
+
+<sparql-async id="propertySampleTriples">
+  SELECT ?subject ?value WHERE { ?subject ?? ?value } LIMIT 100
+</sparql-async>
+
+<!-- Named graphs using the property. GraphDB lists its graphs via onto:graphs and
+     probes each (~0.4 s); the portable DISTINCT scan takes ~12 s for schema:name
+     on LINDAS and times out for rdf:type, so it only runs on other engines. -->
+<sparql-async id="propertyGraphsGraphDB">
+  SELECT ?graph WHERE {
+    ?x <http://www.ontotext.com/graphs> ?graph .
+    FILTER EXISTS { GRAPH ?graph { ?s ?? ?o } }
+  }
+</sparql-async>
+<sparql-async id="propertyGraphs">
+  SELECT DISTINCT ?graph WHERE { GRAPH ?graph { ?s ?? ?o } } LIMIT 100
+</sparql-async>
+
+<!-- SHACL property shapes constraining this property, with their node shape. -->
+<sparql-async id="propertyShapes">
+  SELECT ?shape ?nodeShape WHERE {
+    ?shape sh:path ?? .
+    OPTIONAL { ?nodeShape sh:property ?shape . }
+  }
+  LIMIT 1000
+</sparql-async>
+
+{{ define "pageContent" }}
+<div>
+
+  {{ $graphdb := contains .SearchProvider "graphdb" }}
+
+  {{ if not .QueryResults.propertyDeclared.Bindings }}
+  <div class="alert alert-info" role="status">
+    <div class="d-flex align-items-center gap-2">
+      <i data-lucide="info"></i>
+      <div>{{ t "type.property.undeclared" "This property is used in the data but not declared: the endpoint holds no statements about it. Everything below is observed from its usage." }}</div>
+    </div>
+  </div>
+  {{ end }}
+
+  <div class="row row-cards mb-3">
+    {{ template "sparqlMetric" (dict
+        "queryId" (or (and $graphdb "propertyUsageGraphDB") "propertyUsage")
+        "iri" .ResourceIRI
+        "title" (t "type.property.usage" "Triples using this property")
+        "icon" "/static/img/resource/Property.svg") }}
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-columns for="propertySubjectTypes">
+          <sparql-column var="type" label="{{ t "type.property.type" "Type" }}" icon></sparql-column>
+          <sparql-column var="triples" label="{{ t "type.property.triplesInSample" "Triples in sample" }}"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "propertySubjectTypes"
+            "iri" .ResourceIRI
+            "title" (t "type.property.subjectTypes" "Subject types (sample)")
+            "icon" "log-in") }}
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-columns for="propertyValueTypes">
+          <sparql-column var="valueType" label="{{ t "type.property.valueType" "Value type" }}" icon></sparql-column>
+          <sparql-column var="language" label="{{ t "facet.language" "Language" }}"></sparql-column>
+          <sparql-column var="triples" label="{{ t "type.property.triplesInSample" "Triples in sample" }}"></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "propertyValueTypes"
+            "iri" .ResourceIRI
+            "title" (t "type.property.valueTypes" "Value types (sample)")
+            "icon" "log-out") }}
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-6">
+      <div class="mb-3">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" (or (and $graphdb "propertyGraphsGraphDB") "propertyGraphs")
+            "iri" .ResourceIRI
+            "title" (t "type.property.graphs" "Named graphs")
+            "icon" "package") }}
+      </div>
+    </div>
+    <div class="col-lg-6">
+      <div class="mb-3">
+        <sparql-columns for="propertyShapes">
+          <sparql-column var="shape" label="{{ t "type.property.propertyShape" "Property shape" }}" icon></sparql-column>
+          <sparql-column var="nodeShape" label="{{ t "type.property.nodeShape" "Node shape" }}" icon group></sparql-column>
+        </sparql-columns>
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "propertyShapes"
+            "iri" .ResourceIRI
+            "title" (t "type.property.shapes" "SHACL shapes")
+            "icon" "shapes") }}
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    <sparql-columns for="propertySampleTriples">
+      <sparql-column var="subject" label="{{ t "type.property.subject" "Subject" }}" icon></sparql-column>
+      <sparql-column var="value" label="{{ t "type.property.value" "Value" }}"></sparql-column>
+    </sparql-columns>
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "propertySampleTriples"
+        "iri" .ResourceIRI
+        "title" (t "type.property.sampleTriples" "Example usage")
+        "icon" "list"
+        "collapsed" true) }}
+  </div>
+
+  {{ template "literals" . }}
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

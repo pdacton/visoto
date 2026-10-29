@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"hutzli.org/visoto/internal/config"
+	"hutzli.org/visoto/internal/sparql"
 )
 
 func TestIRIExpansionAndShortening(t *testing.T) {
@@ -327,5 +328,29 @@ func TestEndpointPrefixOverrideInverse(t *testing.T) {
 	}
 	if r.ShortIRI != "schema:DefinedTerm" {
 		t.Errorf("ShortIRI = %q, want schema:DefinedTerm", r.ShortIRI)
+	}
+}
+
+// TestTemplateForRole checks the usage-based fallback precedence: class beats
+// property beats named graph, and a resource used as none of them is an instance.
+func TestTemplateForRole(t *testing.T) {
+	cases := []struct {
+		name string
+		role sparql.Role
+		want string
+	}{
+		{"class", sparql.Role{IsClass: true, IsProperty: true, IsGraph: true}, "templates/classes/default.html"},
+		{"property", sparql.Role{IsProperty: true, IsGraph: true}, "templates/instances/rdf%3AProperty.html"},
+		{"graph", sparql.Role{IsGraph: true}, "templates/instances/sd%3ANamedGraph.html"},
+		{"instance", sparql.Role{}, "templates/instances/default.html"},
+	}
+	for _, c := range cases {
+		dir, file, _ := templateForRole(c.role)
+		if got := dir + file; got != c.want {
+			t.Errorf("%s: got %s, want %s", c.name, got, c.want)
+		}
+		if !templateExists(filepath.Join("..", "..", c.want)) {
+			t.Errorf("%s: template %s does not exist", c.name, c.want)
+		}
 	}
 }
