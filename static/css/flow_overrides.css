@@ -1,0 +1,101 @@
+/* Pele flowchart overrides for the "sparqlFlow" partial.
+   Pele draws from --pele-* variables, so mapping them onto Tabler's tokens makes
+   the diagram follow light/dark mode without a re-render. */
+
+.vs-flow-body {
+  position: relative;
+  min-height: 200px;
+  height: 500px;
+  overflow: hidden;
+  display: flex;
+}
+
+.vs-flow-diagram {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  /* Flex so the SVG's auto margins centre it both ways (see below). */
+  display: flex;
+  --pele-bg: var(--tblr-bg-surface);
+  --pele-fg: var(--tblr-body-color);
+  --pele-muted: var(--tblr-secondary);
+  --pele-line: var(--tblr-secondary);
+  --pele-surface: var(--tblr-bg-surface-secondary);
+  --pele-surface-alt: var(--tblr-bg-surface-tertiary);
+  --pele-border: var(--tblr-border-color-dark, var(--tblr-border-color));
+  --pele-accent: var(--tblr-primary);
+  --pele-font: var(--tblr-font-sans-serif);
+  --pele-radius: var(--tblr-border-radius);
+}
+
+/* Fit the whole diagram into the card, not just its width: Pele styles the SVG
+   max-width:100%; height:auto, so a tall diagram overflows. Capping the height
+   too keeps the aspect ratio, and Pele's zoom measures the SVG at this size, so
+   zooming starts from the fitted view. (Zooming sets inline sizes that override
+   these; reset restores them.) Auto margins in the flex container centre it
+   horizontally and vertically. */
+.vs-flow-diagram > svg.pele {
+  max-height: 100%;
+  width: auto;
+  min-width: 0;
+  min-height: 0;
+  flex: none;
+  margin: auto;
+}
+
+.vs-flow-diagram .pele-node a:hover rect,
+.vs-flow-diagram .pele-node a:hover polygon,
+.vs-flow-diagram .pele-node a:hover path,
+.vs-flow-diagram .pele-node a:hover circle,
+.vs-flow-diagram .pele-node a:hover ellipse {
+  stroke: var(--tblr-primary);
+}
+
+/* Card nodes (typeMap "cssClass": "card"), after Graph Explorer's element template:
+   white box, coloured left stripe, soft shadow. The stripe is a hard drop-shadow
+   offset to the left, so it follows the box's rounded corners. */
+.vs-flow-diagram {
+  --vs-flow-card-accent: var(--tblr-azure);
+}
+
+.vs-flow-diagram .pele-node.card rect {
+  fill: var(--tblr-bg-surface);
+  stroke: none;
+  rx: 6px;
+  filter: drop-shadow(-5px 0 0 var(--vs-flow-card-accent)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.18));
+}
+
+.vs-flow-diagram .pele-node.card .pele-label {
+  fill: var(--tblr-body-color);
+}
+
+.vs-flow-diagram .pele-node.card tspan[font-style="italic"] {
+  fill: var(--tblr-secondary);
+  font-size: 0.75em;
+}
+
+.vs-flow-diagram .pele-node.card a:hover rect {
+  stroke: none;
+  filter: drop-shadow(-5px 0 0 var(--vs-flow-card-accent)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.25));
+}
+
+.vs-flow-resize {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+  cursor: nwse-resize;
+  z-index: 1000;
+}
+
+.vs-flow-resize svg {
+  opacity: 0.5;
+  transition: opacity 0.2s;
+  stroke: var(--tblr-border-color, #cbd5e1);
+  stroke-width: 2;
+}
+
+.vs-flow-resize:hover svg {
+  opacity: 1;
+}

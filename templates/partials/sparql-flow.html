@@ -1,0 +1,164 @@
+<!--
+  Partial template for rendering SPARQL query results as a flowchart (Pele).
+
+  Usage:
+    {{ template "sparqlFlow" (dict "result" .QueryResults.flow "id" "flow" "title" (t "card.relationshipFlow" "Relationship Flow") "direction" "LR") }}
+
+  With a config (define your own config variable first):
+    {{ template "sparqlFlow" (dict "result" .QueryResults.flow "id" "flow" "config" .YourConfigVariable) }}
+
+  Parameters (via dict):
+    - result: QueryResult object with .Vars, .Bindings, .Error
+    - id: (required) unique identifier for the diagram
+    - title: (optional) card title
+    - icon: (optional) Lucide icon name to display before the title
+    - collapsed: (optional) if true, card starts in collapsed state
+    - direction: (optional) "LR" (default), "TD", "RL" or "BT"
+    - extraField: (optional) variable shown as an extra label line; ?from<Field>/?to<Field>
+                  per end, or a shared ?<field>
+    - config: (optional) configuration object for node styling, shapes and edge direction
+
+  Configuration Object Structure:
+    {
+      "typeMap": {
+        "TypeName": { "cssClass": "className", "shape": "shapeName", "icon": true }
+      },
+      "classDefs": [
+        "classDef version fill:#d1ecf1,stroke:#17a2b8,stroke-width:2px,color:#17a2b8"
+      ],
+      "reversePredicates": ["predecessor", "partOf"],  // Laid out backwards (dotted); the arrow keeps its true direction
+      "defaultShape": "rounded",                       // Shape for nodes without type mapping
+      "curve": "step"                                  // Edge routing: "step" (default), "basis" or "linear"
+    }
+
+  "icon": true draws the node as a card after Graph Explorer: the type line on top, then
+  the resource icon and the label in bold. Give it "cssClass": "card" for Graph Explorer's
+  look (white box, coloured left stripe, shadow; static/css/flow_overrides.css). The stripe
+  colour is --vs-flow-card-accent.
+
+  Available Shapes:
+    rectangle, rounded, stadium, subroutine, cylindrical, circle, asymmetric,
+    rhombus, hexagon, parallelogram, parallelogram_alt, trapezoid, trapezoid_alt, double_circle
+
+  Default Behavior (no config):
+    - Rounded nodes in the page theme's colours (light and dark, via static/css/flow_overrides.css).
+      A classDef carries fixed colours, so it does not follow the theme.
+    - Give a classDef font-size in px: Pele sizes nodes from px only, so a pt size
+      draws text larger than its node.
+    - No edge reversal
+    - Nodes are links to their resource page
+
+  Layout is Pele's own; there is no external layout engine (no ELK).
+
+  SPARQL Query Requirements:
+    - Must return at least three variables: ?from, ?predicate, ?to
+    - All three must be URIs
+    - Optional: ?fromType and ?toType for node styling based on RDF type
+-->
+
+{{ define "sparqlFlow" }}
+
+  {{ $result := .result }}
+  {{ $id := .id }}
+  {{ $title := .title }}
+  {{ $icon := .icon }}
+  {{ $collapsed := .collapsed }}
+  {{ $direction := or .direction "LR" }}
+  {{ $config := .config }}
+  {{ $extraField := .extraField }}
+
+  {{ if $result.Error }}
+    <div class="alert alert-danger">
+      <i data-lucide="triangle-alert" style="width: 1em; height: 1em;"></i>
+      {{ t "flow.queryFailed" "Query failed:" }} {{ $result.Error }}
+    </div>
+  {{ else if eq (len $result.Bindings) 0 }}
+    <div class="card">
+      <div class="card-header d-flex align-items-center justify-content-between">
+        <div class="d-flex align-items-center gap-2">
+          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          <h3 class="card-title mb-0 text-muted">{{ $title }} - {{ t "flow.noResultsTitle" "no results found" }}</h3>
+        </div>
+        <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
+          <i data-lucide="chevron-up"></i>
+        </a>
+      </div>
+      <div id="collapse-{{ $id }}" class="collapse">
+        <div class="card-body">
+          <div class="alert alert-info mb-0">
+            <i data-lucide="info" style="width: 1em; height: 1em;"></i>
+            {{ t "flow.noResults" "No results found." }}
+          </div>
+        </div>
+      </div>
+    </div>
+  {{ else }}
+
+    <div class="card">
+
+      <!-- card header with title and direction selector; zoom controls are Pele's own -->
+      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-2">
+          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
+        </div>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <select id="direction-{{ $id }}" class="form-select form-select-sm w-auto" aria-label="{{ t "flow.direction" "Direction" }}">
+            <option value="LR"{{ if eq $direction "LR" }} selected{{ end }}>{{ t "flow.leftToRight" "Left to Right" }}</option>
+            <option value="TD"{{ if eq $direction "TD" }} selected{{ end }}>{{ t "flow.topDown" "Top Down" }}</option>
+            <option value="RL"{{ if eq $direction "RL" }} selected{{ end }}>{{ t "flow.rightToLeft" "Right to Left" }}</option>
+            <option value="BT"{{ if eq $direction "BT" }} selected{{ end }}>{{ t "flow.bottomUp" "Bottom Up" }}</option>
+          </select>
+          <div class="btn-actions">
+            <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+              <i data-lucide="chevron-up"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">
+        <div id="{{ $id }}-card-body" class="card-body vs-flow-body">
+          <!-- The data-sparql-flow marker is what static/js/sparql-flow.js looks for;
+               the id, direction and zoom-control labels travel as attributes. -->
+          <div id="{{ $id }}-diagram" class="vs-flow-diagram"
+               data-sparql-flow
+               data-sparql-flow-id="{{ $id }}"
+               data-sparql-flow-direction="{{ $direction }}"
+               data-sparql-flow-zoom-in="{{ t "zoom.in" "Zoom in" }}"
+               data-sparql-flow-zoom-out="{{ t "zoom.out" "Zoom out" }}"
+               data-sparql-flow-zoom-reset="{{ t "zoom.reset" "Reset zoom" }}"
+               data-sparql-flow-error="{{ t "flow.renderFailed" "The diagram could not be drawn." }}"></div>
+
+          <!-- Inline JSON data: bindings is array of row objects -->
+          <template id="{{ $id }}-bindings">{{ toJSON $result.Bindings }}</template>
+
+          {{ if $config }}
+            <template id="{{ $id }}-config">{{ toJSON $config }}</template>
+          {{ end }}
+
+          <!-- Resource icon names, for typeMap entries with "icon": true (see static/js/visoto-icons.js) -->
+          <template id="{{ $id }}-available-icons">{{ iconNames | toJSON }}</template>
+
+          <template id="{{ $id }}-extraField">{{ if $extraField }}{{ $extraField }}{{ end }}</template>
+
+          <div id="{{ $id }}-resize-handle" class="vs-flow-resize" title="{{ t "flow.resize" "Drag to resize" }}">
+            <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
+              <line x1="20" y1="0" x2="0" y2="20"/>
+              <line x1="20" y1="7" x2="7" y2="20"/>
+              <line x1="20" y1="14" x2="14" y2="20"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <link rel="stylesheet" href="/static/css/flow_overrides.css">
+    <!-- Behaviour lives in static/js/sparql-flow.js, which also loads Pele from the
+         CDN (with SRI) once per page. -->
+    <script src="/static/js/visoto-icons.js" defer></script>
+    <script src="/static/js/sparql-flow.js" defer></script>
+
+  {{ end }}
+{{ end }}

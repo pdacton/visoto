@@ -62,7 +62,7 @@ Inside `pageContent`, you compose the page from components (which carry their ow
 
 **Components** (`literals`, `pageHeader`) — pass `.` (full context), `relationships` takes `(dict "page" .)`; all three issue their own SPARQL queries internally.
 
-**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlCube`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
+**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlCube`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlFlow`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
 
 ---
 
@@ -528,9 +528,18 @@ only one level at first paint, so a content-sized box would resize under the cur
 as levels load. To size it yourself, wrap it in a sized element and add the class
 `vs-lazy-tree-fill`.
 
+### `sparqlFlow`
+
+Flowchart of `?from ?predicate ?to` rows, drawn with [Pele](https://github.com/obsidianmd/pele)
+(loaded from the CDN by `static/js/sparql-flow.js`). Accepts `direction` (`"LR"`, `"TD"`,
+`"RL"` or `"BT"`), `extraField`, and a `config` for node shapes and classes (see the
+partial's header). Layout is Pele's own; there is no ELK. Nodes link to their resource
+page, and colours follow the light/dark theme unless a `classDef` fixes them. Give
+`classDef` font sizes in `px`: Pele ignores `pt` when it sizes a node.
+
 ### `sparqlMermaidFlow`
 
-Mermaid flowchart. Accepts `direction` (`"LR"` or `"TD"`).
+Mermaid flowchart, superseded by `sparqlFlow`. Accepts `direction` (`"LR"` or `"TD"`).
 
 ### `sparqlAsyncTable`
 

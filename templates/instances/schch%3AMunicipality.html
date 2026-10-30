@@ -217,24 +217,24 @@
           }
         </sparql-query>
 
-        <!-- Configuration for the mermaid diagram -->
+        <!-- Configuration for the flow diagram -->
         <script type="application/json" id="versionflow-config">
         {
           "typeMap": {
-            "Municipality": { "cssClass": "municipality", "shape": "rounded" },
+            "Municipality": { "cssClass": "card", "shape": "rounded", "icon": true },
             "Version": { "cssClass": "version", "shape": "stadium" },
             "ChangeEvent": { "cssClass": "changeEvent", "shape": "hexagon" }
           },
           "classDefs": [
-            "classDef municipality color:#fff, font-size:18pt, fill:#206bc4, stroke:#206bc4, stroke-width:0px",
-            "classDef version color:#206bc4, font-size:14pt, fill:#d4e6f9, stroke:#206bc4, stroke-width:0px",
-            "classDef changeEvent color:#f59f00, font-size:8pt, fill:#fef3c7, stroke:#f59f00, stroke-width:0px"
+            "classDef card font-size:19px",
+            "classDef version color:#206bc4, font-size:19px, fill:#d4e6f9, stroke:#206bc4, stroke-width:0px",
+            "classDef changeEvent color:#f59f00, font-size:11px, fill:#fef3c7, stroke:#f59f00, stroke-width:0px"
           ],
           "reversePredicates": ["predecessor"]
         }
         </script>
 
-        {{ template "sparqlMermaidFlow" (dict
+        {{ template "sparqlFlow" (dict
               "result" .QueryResults.versionflow
               "id" "versionflow"
               "title" (t "card.versionFlowForMunicipality" "Version Flow for Municipality")

@@ -155,21 +155,21 @@
           }
         </sparql-query>
 
-        <!-- Configuration for the mermaid diagram -->
+        <!-- Configuration for the flow diagram -->
         <script type="application/json" id="versionflow-config">
         {
           "typeMap": {
-            "District": { "cssClass": "district", "shape": "rounded" },
+            "District": { "cssClass": "card", "shape": "rounded", "icon": true },
             "Version": { "cssClass": "version", "shape": "stadium" }
           },
           "classDefs": [
-            "classDef district color:#fff, font-size:18pt, fill:#206bc4, stroke:#206bc4, stroke-width:0px",
-            "classDef version color:#206bc4, font-size:14pt, fill:#d4e6f9, stroke:#206bc4, stroke-width:0px"
+            "classDef card font-size:19px",
+            "classDef version color:#206bc4, font-size:19px, fill:#d4e6f9, stroke:#206bc4, stroke-width:0px"
           ]
         }
         </script>
 
-        {{ template "sparqlMermaidFlow" (dict
+        {{ template "sparqlFlow" (dict
               "result" .QueryResults.versionflow
               "id" "versionflow"
               "title" (t "card.versionFlowForDistrict" "Version Flow for District")

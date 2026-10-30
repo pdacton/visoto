@@ -57,7 +57,7 @@ failure in the PR body. Never open a red PR.
 Frontend libraries are CDN `<script>`/`<link>` tags with no `package.json`, so
 Dependabot is structurally blind to them. This is the highest-value mode.
 
-### The pins live in five files
+### The pins live in six files
 
 | File | Pins | SRI |
 |---|---|---|
@@ -65,6 +65,7 @@ Dependabot is structurally blind to them. This is the highest-value mode.
 | `templates/pages/monitoring.html` | 2 (chart.js, adapter) | Yes |
 | `static/js/mermaid-init.js` | 2 (mermaid, layout-elk) | No — impossible |
 | `static/js/sparql-graph.js` | 1 (graph-explorer) | No |
+| `static/js/sparql-flow.js` | 1 (pele) | Yes |
 | `static/js/schema-graph.js` | 1 (graph-explorer) | No |
 
 Find them all — do not trust this table to stay current:
