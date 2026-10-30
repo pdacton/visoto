@@ -45,6 +45,27 @@ cp visoto.config.example visoto.config
 
 ---
 
+## Shared graph layouts {#graph-layouts}
+
+Graph Explorer canvases can be shared with every visitor (toolbar → Save →
+*Share layout*). They live in `data/graph_layouts.db`, keyed by endpoint, page
+(path plus its `iri` parameter) and graph id; see `/api/graph-layouts` in the
+API docs.
+
+```toml
+[application.graph_layouts]
+mode = "open"          # "off" (default) serves stored layouts but refuses new ones
+keep_per_page = 20     # snapshots kept per page and graph (the default is never pruned)
+max_bytes = 524288     # largest accepted layout, in bytes
+max_rows = 50000       # total snapshots before sharing is refused
+```
+
+With `mode = "open"` anyone can share a layout, which becomes that page's
+default, and anyone can make an older kept snapshot the default again (a
+revert). A visitor's own autosave still wins over the shared default.
+
+---
+
 ## UI languages {#ui-languages}
 
 The interface is translated per request. `[[application.languages]]` is the

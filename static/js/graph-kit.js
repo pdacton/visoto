@@ -548,6 +548,8 @@
         case 'print': c.print(kit.dressForExport); break;
         case 'save-as': saveAs(); break;
         case 'my-diagrams': showDiagrams(); break;
+        case 'share-layout': shareLayout(); break;
+        case 'shared-layouts': showShared(); break;
         case 'download': download(); break;
         case 'open-file': openFilePicker(); break;
         case 'reset': kit.reset(); break;
@@ -566,7 +568,9 @@
     //   spec.fresh()        builds the page default (seeds, first layout) and
     //                       ends with kit.ready(); returns a promise
     // Boot restores, in this order: a canvas handed over by an endpoint switch
-    // (Open file), this graph's autosave, else the page default.
+    // (Open file), a share link (?layout=<id>), this graph's autosave, the
+    // page's shared default layout, else the page default. Shared layouts are
+    // only read here; the canvas reaches the autosave once the user changes it.
     var Store = window.VisotoGraphStore;
     var tracking = false;          // autosave only after the canvas is ready
     var suppressAutosave = false;  // history.reset() itself is not a change
@@ -613,10 +617,42 @@
       kit.spec = spec;
       var pending = Store && Store.takePending(id);
       if (pending) return restore(pending, false);
+      var linked = Store && Store.shared.linkedId();
+      if (linked) {
+        return Store.shared.get(linked).then(function (l) {
+          // A link names one graph; the page's other graphs boot as usual.
+          if (l.graph !== id || l.endpoint !== endpointSlug()) return bootLocal();
+          Store.shared.forgetLink();
+          return restore(l.snapshot, true);
+        }, function () {
+          Store.shared.forgetLink();
+          return bootLocal().then(function () {
+            kit.showMessage(vsT('js.graph.sharedExpired', 'This shared layout no longer exists. Showing the page default instead.'), { level: 'info' });
+          });
+        });
+      }
+      return bootLocal();
+    };
+
+    function bootLocal() {
       var saved = Store && Store.loadAutosave(id);
       if (saved) return restore(saved, true);
-      return spec.fresh();
-    };
+      return bootShared();
+    }
+
+    // The shared default, else the page default. Any failure (store off,
+    // network) quietly falls back: shared layouts are an extra, never a gate.
+    function bootShared() {
+      var slug = endpointSlug();
+      if (!Store || !slug) return kit.spec.fresh();
+      return Store.shared.list(slug, id).then(function (res) {
+        return res.default ? Store.shared.get(res.default) : null;
+      }).then(function (l) {
+        return l ? restore(l.snapshot, true) : kit.spec.fresh();
+      }, function () {
+        return kit.spec.fresh();
+      });
+    }
 
     function restore(saved, checkFingerprint) {
       var c = kit.commands;
@@ -799,6 +835,138 @@
       } else if (what === 'delete') {
         if (window.confirm(vsTf('js.graph.confirmDelete', 'Delete “{name}”?', { name: entry.name }))) Store.remove(entry.key);
         renderDiagrams();
+      }
+    }
+
+    // --- Shared layouts (internal/graphlayout) ----------------------------------
+    // Share stores the canvas on the server and makes it what every visitor
+    // without an autosave of their own sees; the dialog lists the page's kept
+    // history to preview, link or make default again (a revert).
+    function sharedError(err) {
+      switch (err && err.status) {
+        case 403: return vsT('js.graph.sharedOff', 'Sharing layouts is turned off on this server.');
+        case 413: return vsT('js.graph.sharedTooLarge', 'This diagram is too large to share.');
+        case 507: return vsT('js.graph.sharedFull', 'The server has no room for more shared layouts.');
+        default: return vsT('js.graph.sharedFailed', 'The shared layouts could not be reached.');
+      }
+    }
+
+    function copyText(text) {
+      if (!navigator.clipboard || !window.isSecureContext) return Promise.reject(new Error('no clipboard'));
+      return navigator.clipboard.writeText(text);
+    }
+
+    function shareLayout() {
+      if (!kit.commands || !Store) return;
+      if (!kit.commands.elementCount()) {
+        kit.showMessage(vsT('js.graph.sharedEmpty', 'Add something to the diagram before sharing it.'), { level: 'info' });
+        return;
+      }
+      var done = busy(vsT('js.graph.sharing', 'Sharing layout…'));
+      Store.shared.share(endpointSlug(), id, kit.snapshot()).then(function (res) {
+        done();
+        var ok = function (copied) {
+          kit.showMessage(copied
+            ? vsT('js.graph.sharedCopied', 'Shared: this is now the page’s default layout for everyone. Link copied.')
+            : vsT('js.graph.shared', 'Shared: this is now the page’s default layout for everyone.'), { level: 'success' });
+          setTimeout(clearMessage, 4000);
+        };
+        copyText(Store.shared.linkTo(res.id)).then(function () { ok(true); }, function () { ok(false); });
+        if (sharedModal && sharedModal.classList.contains('show')) renderShared();
+      }, function (err) {
+        done();
+        kit.showMessage(sharedError(err));
+      });
+    }
+
+    var sharedModal = document.getElementById(id + '-shared');
+    if (sharedModal) {
+      var shareBtn = sharedModal.querySelector('[data-graph-shared-share]');
+      if (shareBtn) shareBtn.addEventListener('click', shareLayout);
+    }
+    function showShared() {
+      if (!sharedModal || !Store) return;
+      renderShared();
+      var Modal = window.tabler && window.tabler.Modal;
+      if (Modal) Modal.getOrCreateInstance(sharedModal).show();
+    }
+    function hideShared() {
+      var Modal = window.tabler && window.tabler.Modal;
+      if (Modal) Modal.getOrCreateInstance(sharedModal).hide();
+    }
+
+    function renderShared() {
+      var list = sharedModal.querySelector('[data-graph-shared-list]');
+      var status = sharedModal.querySelector('[data-graph-shared-status]');
+      var shareBtn = sharedModal.querySelector('[data-graph-shared-share]');
+      list.replaceChildren();
+      status.hidden = false;
+      status.textContent = vsT('js.graph.sharedLoading', 'Loading shared layouts…');
+      Store.shared.list(endpointSlug(), id).then(function (res) {
+        if (shareBtn) shareBtn.hidden = !res.writable;
+        status.hidden = res.layouts.length > 0;
+        status.textContent = vsT('js.graph.sharedNone', 'No shared layouts for this page yet.');
+        var fmt = new Intl.DateTimeFormat(document.documentElement.lang || undefined, { dateStyle: 'medium', timeStyle: 'short' });
+        res.layouts.forEach(function (entry) {
+          list.appendChild(sharedRow(entry, entry.id === res.default, res.writable, fmt));
+        });
+      }, function (err) {
+        status.textContent = sharedError(err);
+      });
+    }
+
+    function sharedRow(entry, isDefault, writable, fmt) {
+      var row = document.createElement('div');
+      row.className = 'list-group-item d-flex align-items-center gap-2';
+      var text = document.createElement('div');
+      text.className = 'flex-fill text-truncate';
+      var name = document.createElement('div');
+      name.className = 'fw-medium text-truncate';
+      name.textContent = fmt.format(new Date(entry.createdAt));
+      if (isDefault) {
+        var badge = document.createElement('span');
+        badge.className = 'badge bg-green-lt ms-2';
+        badge.textContent = vsT('js.graph.sharedDefault', 'Default');
+        name.appendChild(badge);
+      }
+      var meta = document.createElement('div');
+      meta.className = 'small text-secondary text-truncate';
+      meta.textContent = [vsTf('js.graph.sharedNodes', '{n} nodes', { n: entry.nodes }), entry.layout].filter(Boolean).join(' · ');
+      text.appendChild(name);
+      text.appendChild(meta);
+      row.appendChild(text);
+      var buttons = [['open', vsT('js.graph.open', 'Open'), 'btn-primary'],
+                     ['link', vsT('js.graph.copyLink', 'Copy link'), 'btn-ghost-secondary']];
+      if (writable && !isDefault) buttons.push(['default', vsT('js.graph.makeDefault', 'Make default'), 'btn-ghost-secondary']);
+      buttons.forEach(function (b) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-sm ' + b[2];
+        btn.textContent = b[1];
+        btn.setAttribute('aria-label', b[1] + ': ' + name.firstChild.textContent);
+        btn.addEventListener('click', function () { sharedAction(b[0], entry, btn); });
+        row.appendChild(btn);
+      });
+      return row;
+    }
+
+    function sharedAction(what, entry, btn) {
+      if (what === 'open') {
+        Store.shared.get(entry.id).then(function (l) {
+          hideShared();
+          open(l.snapshot);
+        }, function (err) { kit.showMessage(sharedError(err)); });
+      } else if (what === 'link') {
+        var link = Store.shared.linkTo(entry.id);
+        copyText(link).then(function () {
+          btn.textContent = vsT('js.graph.copied', 'Copied');
+        }, function () {
+          window.prompt(vsT('js.graph.copyLinkPrompt', 'Link to this layout:'), link);
+        });
+      } else if (what === 'default') {
+        Store.shared.setDefault(endpointSlug(), id, entry.id).then(renderShared, function (err) {
+          kit.showMessage(sharedError(err));
+        });
       }
     }
 

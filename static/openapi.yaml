@@ -39,6 +39,12 @@ tags:
     description: Level-by-level loading for the `sparqlLazyTree` partial.
   - name: Named graphs
     description: Upload, list, export and drop named graphs. Writes need an endpoint with write credentials.
+  - name: Graph layouts
+    description: |
+      Graph Explorer canvases shared between users, kept in the local SQLite
+      store. Snapshots are immutable; each page and graph keeps a bounded
+      history and a default that every visitor without a local layout sees.
+      Writes need `graph_layouts.mode = "open"`.
   - name: Class statistics
     description: Daily per-class instance counts.
   - name: Monitoring
@@ -587,6 +593,158 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/LevelEnvelope" }
 
+  /api/graph-layouts:
+    get:
+      tags: [Graph layouts]
+      summary: List a page's shared layouts
+      description: |
+        The history of one graph on one page, newest first (metadata only),
+        and which snapshot is the page default. Never cached.
+      operationId: listGraphLayouts
+      parameters:
+        - $ref: "#/components/parameters/layoutEndpoint"
+        - $ref: "#/components/parameters/layoutPage"
+        - $ref: "#/components/parameters/layoutGraph"
+      responses:
+        "200":
+          description: The page's snapshots.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphLayoutList" }
+        "400":
+          description: Unknown endpoint, or invalid page or graph id.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "503":
+          description: The layout store is unavailable.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+    post:
+      tags: [Graph layouts]
+      summary: Share a layout
+      description: |
+        Stores a `visoto-graph` v1 canvas (as built by `graph-kit.js`) and
+        makes it the page default. A canvas identical to one the page still
+        keeps (ignoring `savedAt`) reuses that snapshot. Older snapshots beyond
+        `graph_layouts.keep_per_page` are pruned.
+      operationId: shareGraphLayout
+      parameters:
+        - $ref: "#/components/parameters/layoutEndpoint"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [page, graph, snapshot]
+              properties:
+                page:
+                  type: string
+                  description: Page path and query; reduced to the path and its `iri` parameter.
+                  example: /resource?iri=https%3A%2F%2Fld.admin.ch%2Fcanton%2F1
+                graph: { type: string, example: graph }
+                snapshot:
+                  type: object
+                  description: The `visoto-graph` v1 canvas.
+      responses:
+        "201":
+          description: Stored; the snapshot's id.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, example: 3fK9xQ2mZa }
+        "400":
+          description: Unknown endpoint, invalid page or graph id, or not a `visoto-graph` v1 canvas.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "403":
+          description: Sharing is turned off (`graph_layouts.mode`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "413":
+          description: Larger than `graph_layouts.max_bytes`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "503":
+          description: The layout store is unavailable.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "507":
+          description: The store holds `graph_layouts.max_rows` snapshots already.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/graph-layouts/default:
+    put:
+      tags: [Graph layouts]
+      summary: Set a page's default layout
+      description: Points the page default at one of its kept snapshots (also how a change is reverted).
+      operationId: setDefaultGraphLayout
+      parameters:
+        - $ref: "#/components/parameters/layoutEndpoint"
+        - $ref: "#/components/parameters/layoutPage"
+        - $ref: "#/components/parameters/layoutGraph"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string, example: 3fK9xQ2mZa }
+      responses:
+        "204":
+          description: Default moved.
+        "400":
+          description: Unknown endpoint, or invalid page or graph id.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "403":
+          description: Sharing is turned off (`graph_layouts.mode`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: No such snapshot for this page and graph.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/graph-layouts/{id}:
+    get:
+      tags: [Graph layouts]
+      summary: Get one shared layout
+      description: One snapshot with the page it belongs to. Snapshots never change, so hits are cached.
+      operationId: getGraphLayout
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          example: 3fK9xQ2mZa
+      responses:
+        "200":
+          description: The snapshot.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GraphLayout" }
+        "404":
+          description: Unknown id, or pruned from the page's history.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
   /api/class-tree:
     get:
       tags: [Class statistics]
@@ -1106,6 +1264,27 @@ components:
       description: "`application.metrics_token` from `visoto.config`."
 
   parameters:
+    layoutEndpoint:
+      name: endpoint
+      in: query
+      required: true
+      description: Endpoint slug. Unlike most routes, an unknown or absent slug is an error.
+      schema: { type: string }
+      example: lindas-prod
+    layoutPage:
+      name: page
+      in: query
+      required: true
+      description: Page path and query; reduced to the path and its `iri` parameter.
+      schema: { type: string }
+      example: /resource?iri=https%3A%2F%2Fld.admin.ch%2Fcanton%2F1
+    layoutGraph:
+      name: graph
+      in: query
+      required: true
+      description: Graph id on the page.
+      schema: { type: string }
+      example: graph
     endpoint:
       name: endpoint
       in: query
@@ -1177,6 +1356,33 @@ components:
           schema: { $ref: "#/components/schemas/Error" }
 
   schemas:
+    GraphLayoutSummary:
+      type: object
+      properties:
+        id: { type: string }
+        createdAt: { type: string, format: date-time }
+        nodes: { type: integer, description: Nodes on the canvas. }
+        layout: { type: string, description: Layout algorithm last applied. }
+
+    GraphLayoutList:
+      type: object
+      properties:
+        writable: { type: boolean, description: Whether sharing is open. }
+        default: { type: string, nullable: true, description: Id of the page default. }
+        layouts:
+          type: array
+          items: { $ref: "#/components/schemas/GraphLayoutSummary" }
+
+    GraphLayout:
+      allOf:
+        - $ref: "#/components/schemas/GraphLayoutSummary"
+        - type: object
+          properties:
+            endpoint: { type: string }
+            page: { type: string }
+            graph: { type: string }
+            snapshot: { type: object, description: The `visoto-graph` v1 canvas. }
+
     Error:
       type: object
       properties:

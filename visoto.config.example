@@ -194,6 +194,15 @@ search_provider = "qlever"
 # tag = "qlever"
 
 
+# Shared Graph Explorer layouts (internal/graphlayout, data/graph_layouts.db).
+# mode = "off" serves existing layouts but refuses new ones; "open" lets anyone
+# share a layout and move a page's default (no accounts yet).
+[application.graph_layouts]
+mode = "open"
+# keep_per_page = 20     # snapshots kept per page and graph
+# max_bytes = 524288     # largest accepted layout
+# max_rows = 50000       # total snapshots before writes are refused
+
 # RDF settings
 [rdf]
 # static prefixes, one per line, enclosed by quotes and terminated by a comma

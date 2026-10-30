@@ -1,8 +1,9 @@
 /* eslint-disable */
 /*
   Saved canvases for the Graph Explorer embeds (GL-35, GL-36, GL-50), in this
-  browser's localStorage. Pure storage: graph-kit.js builds and applies the
-  saved form (see kit.snapshot / kit.open there).
+  browser's localStorage, plus the shared layouts kept on the server
+  (VisotoGraphStore.shared, /api/graph-layouts). Pure storage: graph-kit.js
+  builds and applies the saved form (see kit.snapshot / kit.open there).
 
     visoto-graph:auto:<page URL>#<graph id>   autosave of one graph on one page
     visoto-graph:saves                        index of named saves [{ key, name, … }]
@@ -62,6 +63,31 @@
     return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
   }
 
+  // The server reduces this to the path and its ?iri= (CanonicalPage).
+  function pageKey() {
+    return window.location.pathname + window.location.search;
+  }
+
+  function httpError(status) {
+    var err = new Error('graph layouts: HTTP ' + status);
+    err.status = status;
+    return err;
+  }
+
+  function api(method, url, body) {
+    var init = { method: method, headers: { Accept: 'application/json' } };
+    if (body !== undefined) {
+      init.headers['Content-Type'] = 'application/json';
+      init.body = JSON.stringify(body);
+    }
+    return fetch(url, init).then(function (res) {
+      if (!res.ok) throw httpError(res.status);
+      return res.status === 204 ? null : res.json();
+    }, function () {
+      throw httpError(0);
+    });
+  }
+
   // A short, stable hash of the page's starting resources (GL-35).
   function fingerprint(iris) {
     var s = iris.slice().sort().join('\n');
@@ -112,6 +138,46 @@
     remove: function (key) {
       remove(PREFIX + 'save:' + key);
       write(INDEX, this.list().filter(function (entry) { return entry.key !== key; }));
+    },
+
+    // Shared layouts: the server-side half (internal/graphlayout), the same
+    // canvas format kept per page + graph for every visitor. Each call
+    // resolves to the parsed JSON, or rejects with an Error whose .status is
+    // the HTTP status (0 for a network failure).
+    shared: {
+      list: function (slug, graphId) {
+        return api('GET', '/api/graph-layouts?' + new URLSearchParams({ endpoint: slug, page: pageKey(), graph: graphId }));
+      },
+      get: function (layoutId) {
+        return api('GET', '/api/graph-layouts/' + encodeURIComponent(layoutId)).then(function (l) {
+          if (!valid(l.snapshot)) throw httpError(422);
+          return l;
+        });
+      },
+      share: function (slug, graphId, saved) {
+        return api('POST', '/api/graph-layouts?' + new URLSearchParams({ endpoint: slug }),
+          { page: pageKey(), graph: graphId, snapshot: saved });
+      },
+      setDefault: function (slug, graphId, layoutId) {
+        return api('PUT', '/api/graph-layouts/default?' + new URLSearchParams({ endpoint: slug, page: pageKey(), graph: graphId }),
+          { id: layoutId });
+      },
+      // ?layout=<id> on the page URL: a share link.
+      linkedId: function () {
+        return new URLSearchParams(window.location.search).get('layout') || '';
+      },
+      linkTo: function (layoutId) {
+        var url = new URL(window.location.href);
+        url.searchParams.set('layout', layoutId);
+        return url.toString();
+      },
+      // Drops ?layout= once applied, so a reload shows the autosave again.
+      forgetLink: function () {
+        var url = new URL(window.location.href);
+        if (!url.searchParams.has('layout')) return;
+        url.searchParams.delete('layout');
+        window.history.replaceState(window.history.state, '', url.toString());
+      },
     },
 
     // A canvas handed from one page load to the next, when opening a file

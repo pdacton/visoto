@@ -109,6 +109,7 @@
       </div>
       <!-- Floating exit button, shown only while maximized (see ontodia_overrides.css). -->
       {{ template "graphDiagramsModal" (dict "id" $id) }}
+      {{ template "graphSharedModal" (dict "id" $id) }}
       <button type="button" class="btn btn-icon graph-exit-fullscreen" id="{{ $id }}-exit" title="{{ t "graph.exitFullscreen" "Exit fullscreen" }}">
         <i data-lucide="minimize"></i>
       </button>

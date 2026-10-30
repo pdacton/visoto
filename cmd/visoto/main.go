@@ -21,6 +21,7 @@ import (
 	"hutzli.org/visoto/internal/chat"
 	"hutzli.org/visoto/internal/classstats"
 	"hutzli.org/visoto/internal/config"
+	"hutzli.org/visoto/internal/graphlayout"
 	"hutzli.org/visoto/internal/i18n"
 	"hutzli.org/visoto/internal/icon"
 	"hutzli.org/visoto/internal/lang"
@@ -933,6 +934,15 @@ func main() {
 		log.Info("class statistics started", slog.Bool("collecting", classStats.Enabled()))
 	}
 
+	// Shared Graph Explorer layouts. A store that fails to open leaves the
+	// routes answering 503; graph-kit.js then falls back to local layouts.
+	layoutStore, err := graphlayout.New(cfg.Application.GraphLayouts, "./data")
+	if err != nil {
+		log.Warn("failed to initialize shared graph layouts", slog.String("error", err.Error()))
+		layoutStore = nil
+	}
+	layouts := graphlayout.NewAPI(layoutStore, &cfg.Application, log)
+
 	// Build MCP handler (fixed default endpoint, no per-request cookie logic)
 	mcpPreprocessor := sparql.New(sparql.QueryInput{
 		EndpointURL:      cfg.Application.SparqlEndpoint,
@@ -1021,6 +1031,18 @@ func main() {
 	// The lazy tree's level fetches. One route for every role — see lazy_tree.go.
 	router.GET("/api/lazy-tree/:id/:role", epFromURL, langFromURL, lazyTreeHandler)
 	router.GET("/api/facet-values/:id/:var", epFromURL, langFromURL, facetValuesHandler)
+	// Shared Graph Explorer layouts. Every route takes ?endpoint= from the URL
+	// itself and validates it, never the cookie. Only the by-id read is cached:
+	// a snapshot never changes once stored.
+	router.GET("/api/graph-layouts", layouts.List)
+	router.POST("/api/graph-layouts", layouts.Share)
+	router.PUT("/api/graph-layouts/default", layouts.SetDefault)
+	router.GET("/api/graph-layouts/:id", func(c *gin.Context) {
+		markURLPure(c)
+		if layouts.Get(c) {
+			markCacheable(c)
+		}
+	})
 	router.GET("/resource", epFromURL, resourcePageHandler)
 	router.GET("/resource/*path", legacyResourceRedirectHandler)
 	router.Any("/mcp", gin.WrapH(mcpHandler))

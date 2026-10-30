@@ -174,6 +174,14 @@
             <i data-lucide="file-up" class="icon dropdown-item-icon"></i>{{ t "graph.openFile" "Open file…" }}
           </button>
           <div class="dropdown-divider"></div>
+          <h6 class="dropdown-header">{{ t "graph.shareHeader" "Share with everyone" }}</h6>
+          <button type="button" class="dropdown-item" data-graph-action="share-layout">
+            <i data-lucide="share-2" class="icon dropdown-item-icon"></i>{{ t "graph.shareLayout" "Share layout" }}
+          </button>
+          <button type="button" class="dropdown-item" data-graph-action="shared-layouts">
+            <i data-lucide="history" class="icon dropdown-item-icon"></i>{{ t "graph.sharedLayouts" "Shared layouts…" }}
+          </button>
+          <div class="dropdown-divider"></div>
           <h6 class="dropdown-header">{{ t "graph.export" "Export" }}</h6>
           <button type="button" class="dropdown-item" data-graph-action="export-ttl">
             <i data-lucide="file-text" class="icon dropdown-item-icon"></i>{{ t "graph.exportTtl" "Turtle (RDF)" }}
@@ -360,6 +368,39 @@
         </div>
         <div class="modal-footer small text-secondary">
           {{ t "graph.diagramsNote" "Saved diagrams stay in this browser only." }}
+        </div>
+      </div>
+    </div>
+  </div>
+{{ end }}
+
+<!--
+  "Shared layouts" dialog: the page's layouts kept on the server
+  (internal/graphlayout), newest first, the page default marked. The list is
+  filled by graph-kit.js; this is only the frame. The Share button is hidden
+  while the server refuses new layouts.
+
+  Usage (inside the graph card, outside the canvas frame):
+    template "graphSharedModal" (dict "id" $id)
+-->
+{{ define "graphSharedModal" }}
+  {{ $id := .id }}
+  <div class="modal fade" id="{{ $id }}-shared" tabindex="-1" aria-labelledby="{{ $id }}-shared-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-scrollable">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="{{ $id }}-shared-title">{{ t "graph.sharedLayoutsTitle" "Shared layouts" }}</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t "graph.close" "Close" }}"></button>
+        </div>
+        <div class="modal-body p-0">
+          <div class="list-group list-group-flush" data-graph-shared-list></div>
+          <p class="text-secondary m-3" data-graph-shared-status></p>
+        </div>
+        <div class="modal-footer d-flex align-items-center">
+          <span class="small text-secondary flex-fill">{{ t "graph.sharedNote" "The default is what every visitor sees until they change the diagram themselves." }}</span>
+          <button type="button" class="btn btn-primary btn-sm" data-graph-shared-share>
+            <i data-lucide="share-2" class="icon"></i>{{ t "graph.shareCurrent" "Share current layout" }}
+          </button>
         </div>
       </div>
     </div>

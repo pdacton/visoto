@@ -76,6 +76,40 @@ type ApplicationConfig struct {
 	// "Authorization: Bearer <token>". Empty = /metrics answers 404, so the
 	// endpoint is never open by accident. json:"-" like the endpoint secrets.
 	MetricsToken string `toml:"metrics_token" json:"-"`
+
+	// GraphLayouts configures the server-side shared Graph Explorer layouts
+	// (internal/graphlayout).
+	GraphLayouts GraphLayoutsConfig `toml:"graph_layouts"`
+}
+
+// GraphLayoutsConfig is the [application.graph_layouts] table. Zero values
+// fall back to the defaults below, so an absent table means "off".
+type GraphLayoutsConfig struct {
+	// Mode is "off" (default: shared layouts are served, never written) or
+	// "open" (anyone may share a layout and move a page's default).
+	Mode        string `toml:"mode"`
+	KeepPerPage int    `toml:"keep_per_page"` // snapshots kept per page and graph; default 20
+	MaxBytes    int    `toml:"max_bytes"`     // largest accepted request body; default 512 KiB
+	MaxRows     int    `toml:"max_rows"`      // total snapshots before writes are refused; default 50000
+}
+
+// Writable reports whether layouts may be shared.
+func (g GraphLayoutsConfig) Writable() bool { return g.Mode == "open" }
+
+// Keep is KeepPerPage with its default.
+func (g GraphLayoutsConfig) Keep() int { return orDefault(g.KeepPerPage, 20) }
+
+// BodyLimit is MaxBytes with its default.
+func (g GraphLayoutsConfig) BodyLimit() int { return orDefault(g.MaxBytes, 512*1024) }
+
+// RowLimit is MaxRows with its default.
+func (g GraphLayoutsConfig) RowLimit() int { return orDefault(g.MaxRows, 50000) }
+
+func orDefault(v, def int) int {
+	if v > 0 {
+		return v
+	}
+	return def
 }
 
 // Language is one entry in the UI language picker.
@@ -351,6 +385,12 @@ func Load(configPath string) (*Config, error) {
 	}
 	if err := cfg.Application.validateClassStatsFrom(); err != nil {
 		return cfg, fmt.Errorf("invalid endpoint config in %s: %w", configPath, err)
+	}
+
+	switch cfg.Application.GraphLayouts.Mode {
+	case "", "off", "open":
+	default:
+		return cfg, fmt.Errorf("invalid config in %s: graph_layouts.mode = %q (want \"off\" or \"open\")", configPath, cfg.Application.GraphLayouts.Mode)
 	}
 
 	// A config that lists a language with no catalog, or a default outside the
