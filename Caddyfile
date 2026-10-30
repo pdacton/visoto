@@ -253,10 +253,22 @@ visoto.hutzli.org {
             # trailing requests — visibly, the icons silently failed to render. Excluding
             # /static/* keeps the limiter focused on SPARQL/API abuse.
             match {
-                not path /static/* /favicon.ico /robots.txt
+                not path /static/* /favicon.ico /robots.txt /api/sparql
             }
             key {remote_host}
             events 100
+            window 1m
+        }
+        # The browser SPARQL proxy gets its own budget. Graph Explorer issues one
+        # query per selected node for every action (expand, expand by property,
+        # link loading), so a few clicks on a 10-node selection burned the shared
+        # 100/min and the trailing queries 429'd ("The endpoint did not answer").
+        zone sparql_proxy {
+            match {
+                path /api/sparql
+            }
+            key {remote_host}
+            events 600
             window 1m
         }
     }
