@@ -32,7 +32,7 @@ Front-end libraries (loaded from a CDN at runtime)
   Wunderbaum              0.14.1   MIT         https://mar10.github.io/wunderbaum/
   highlight.js            11.12.0  BSD-3-Clause  https://highlightjs.org
   SheetJS (xlsx)          0.18.5   Apache-2.0  https://sheetjs.com
-  svg-pan-zoom            3.6.2    BSD-2-Clause  https://github.com/bumbu/svg-pan-zoom
+  Pele                    1.12.0   MIT         https://github.com/obsidianmd/pele
 
 Go modules
 

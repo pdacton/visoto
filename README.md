@@ -152,7 +152,7 @@ templates/
   pages/           — static page templates (home, search, monitoring, …)
   classes/         — class-level RDF templates
   instances/       — instance-level RDF templates
-  partials/        — reusable SPARQL components (table, graph, grid, tree, metric, mermaid)
+  partials/        — reusable SPARQL components (table, graph, grid, tree, metric, flow)
   components/      — smaller shared fragments (literals, relationships, page header)
 static/            — CSS, JS, images
 ```

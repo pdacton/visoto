@@ -121,8 +121,8 @@ Both behaviours come from the same `resolveEndpoint(useCookie bool)` middleware 
 | `rightSidebarWidth` | Saved pixel width of the right sidebar after resizing. |
 | `visoto-chat-<IRI>` | Chat history for a specific resource, keyed by IRI. |
 | `tabulator-groupby-<id>` | Last selected group-by column for each `sparqlTable` instance. |
-| `mermaid-height-<id>` | Saved height for each `sparqlMermaidFlow` diagram card. |
-| `mermaid-direction-<id>` | Saved flow direction (`"LR"`/`"TD"`) for each Mermaid diagram. |
+| `flow-height-<id>` | Saved height for each `sparqlFlow` diagram card. |
+| `flow-direction-<id>` | Saved flow direction (`"LR"`/`"TD"`/`"RL"`/`"BT"`) for each `sparqlFlow` diagram. |
 
 ## Authentication and Security
 

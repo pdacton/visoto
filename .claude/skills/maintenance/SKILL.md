@@ -57,13 +57,12 @@ failure in the PR body. Never open a red PR.
 Frontend libraries are CDN `<script>`/`<link>` tags with no `package.json`, so
 Dependabot is structurally blind to them. This is the highest-value mode.
 
-### The pins live in six files
+### The pins live in five files
 
 | File | Pins | SRI |
 |---|---|---|
-| `templates/layout/base.html` | 13 | Yes |
+| `templates/layout/base.html` | 12 | Yes |
 | `templates/pages/monitoring.html` | 2 (chart.js, adapter) | Yes |
-| `static/js/mermaid-init.js` | 2 (mermaid, layout-elk) | No — impossible |
 | `static/js/sparql-graph.js` | 1 (graph-explorer) | No |
 | `static/js/sparql-flow.js` | 1 (pele) | Yes |
 | `static/js/schema-graph.js` | 1 (graph-explorer) | No |
@@ -88,11 +87,10 @@ grep -rno "https://\(cdn\.jsdelivr\.net/npm\|unpkg\.com\)/[^\"' ]*" templates/ s
   ```
   A stale hash makes the asset fail closed — the page loads with the library
   silently missing. Verify the new hash is actually different from the old.
-- **Do not add SRI to the three JS files.** `mermaid-init.js` explains why it
-  cannot: `integrity` is not expressible on a bare ES module import. The
-  graph-explorer loaders build their `<script>` tag dynamically; adding SRI
-  there is a real change, not maintenance — propose it in `audit`, don't do it
-  here.
+- **Do not add SRI to the two graph-explorer loaders.** They build their
+  `<script>` tag dynamically; adding SRI there is a real change, not
+  maintenance — propose it in `audit`, don't do it here. (`sparql-flow.js`
+  already carries SRI for Pele: recompute it on a bump.)
 - **xlsx@0.18.5 is a deliberate exception.** The comment above it in
   `base.html` documents two CVEs that are unreachable in this codebase and the
   migration path off the CDN. Leave the version alone and do not re-flag it;

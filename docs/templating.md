@@ -62,7 +62,7 @@ Inside `pageContent`, you compose the page from components (which carry their ow
 
 **Components** (`literals`, `pageHeader`) — pass `.` (full context), `relationships` takes `(dict "page" .)`; all three issue their own SPARQL queries internally.
 
-**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlCube`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlFlow`, `sparqlMermaidFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
+**Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlCube`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
 
 ---
 
@@ -536,10 +536,6 @@ Flowchart of `?from ?predicate ?to` rows, drawn with [Pele](https://github.com/o
 partial's header). Layout is Pele's own; there is no ELK. Nodes link to their resource
 page, and colours follow the light/dark theme unless a `classDef` fixes them. Give
 `classDef` font sizes in `px`: Pele ignores `pt` when it sizes a node.
-
-### `sparqlMermaidFlow`
-
-Mermaid flowchart, superseded by `sparqlFlow`. Accepts `direction` (`"LR"` or `"TD"`).
 
 ### `sparqlAsyncTable`
 

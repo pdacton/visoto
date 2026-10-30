@@ -73,7 +73,7 @@ You'll be prompted for:
 
 ### Advanced Template (`--advanced`)
 - All standard sections
-- Mermaid flow diagrams (version flow, hierarchies)
+- Flow diagrams via `sparqlFlow` (version flow, hierarchies)
 - Custom icons/images (e.g., Wikidata integration)
 - Interactive visualizations
 
@@ -83,7 +83,7 @@ You'll be prompted for:
 - **URL Encoding**: Automatically encodes instance URI for filename (e.g., `schch:Canton` → `schch%3ACanton.html`)
 - **Backup on Update**: Creates `.backup` file before overwriting existing templates
 - **Example Comments**: Includes helpful comments showing how to customize queries
-- **Partial Integration**: Uses the Visoto partials — `sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlMermaidFlow`, the graph-embedding partials `sparqlGraph` / `schemaGraph`, and `sparqlAsyncTable` (lazy HTMX working-set table) for any large related-resource lists
+- **Partial Integration**: Uses the Visoto partials — `sparqlTable`, `sparqlGrid`, `sparqlTree`, `sparqlMetric`, `sparqlFlow`, the graph-embedding partials `sparqlGraph` / `schemaGraph`, and `sparqlAsyncTable` (lazy HTMX working-set table) for any large related-resource lists
 - **Component Integration**: uses the pre-built, ready to use building blocks (`pageHeader`, `literals`, `relationships`). There is no `classHierarchy` or `ontologyShacl` component — calling one is a startup error. Subclass/superclass, ontology and SHACL tables live in the resource page's Schema view (`layout/base.html`) and appear on every resource page automatically.
 - **Smart Filtering**: Excludes class/subclass relationships (no `rdf:type`, `rdfs:subClassOf`)
 
@@ -163,7 +163,7 @@ This information is displayed before creating the template and used to generate 
 - Breadcrumbs should show the hierarchical path to this instance (Country → Canton → District → Municipality)
 - The skill will warn if the URI doesn't return any data from the endpoint
 - For geographic entities, consider adding map visualizations
-- For versioned entities, consider adding Mermaid flow diagrams
+- For versioned entities, consider adding a `sparqlFlow` diagram
 
 ## Common Custom Sections
 
