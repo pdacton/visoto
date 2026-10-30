@@ -48,16 +48,16 @@
   <div class="card mb-3 d-none" id="{{ $id }}-card">
     <div class="card-header d-flex align-items-center justify-content-between">
       <div class="d-flex align-items-center gap-2">
-        <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <i data-lucide="{{ $icon }}" class="icon"></i>
         <h3 class="card-title mb-0">{{ $title }}</h3>
       </div>
       <div class="btn-actions">
         <a class="btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
-          <i data-lucide="maximize"></i>
+          <i data-lucide="maximize" class="icon"></i>
         </a>
         <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
            aria-expanded="true" aria-controls="collapse-{{ $id }}" style="cursor: pointer;">
-          <i data-lucide="chevron-up"></i>
+          <i data-lucide="chevron-up" class="icon"></i>
         </a>
       </div>
     </div>

@@ -118,7 +118,7 @@
 
     <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
-        {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+        {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
         {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
       </div>
       <div class="ms-auto d-flex align-items-center gap-2">
@@ -144,17 +144,17 @@
             <a class="btn-action" href="#" data-vs-split-toggle aria-expanded="true"
                title="{{ t "split.hideTree" "Hide hierarchy" }}"
                aria-label="{{ t "split.hideTree" "Hide hierarchy" }}">
-              <i data-lucide="panel-left-close"></i>
+              <i data-lucide="panel-left-close" class="icon"></i>
             </a>
           {{ end }}
           <a id="collapse-tree-{{ $id }}" class="btn-action" href="#"
              title="{{ t "tree.collapseAll" "Collapse all" }}"
              aria-label="{{ t "tree.collapseAll" "Collapse all" }}">
-            <i data-lucide="list-chevrons-down-up"></i>
+            <i data-lucide="list-chevrons-down-up" class="icon"></i>
           </a>
           <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse"
              data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-            <i data-lucide="chevron-up"></i>
+            <i data-lucide="chevron-up" class="icon"></i>
           </a>
         </div>
       </div>

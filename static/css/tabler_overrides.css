@@ -64,6 +64,11 @@ header.navbar .nav-link:hover {
    page-init.js only while the page is scrolled, keeping the chrome flat at rest. */
 header.navbar.sticky-top {
     transition: box-shadow 0.2s ease;
+    /* Bootstrap's sticky-top (1020) is a stacking context below Tabler's fixed
+       sidebar (1030), so the Themes menu, which hangs left over the sidebar,
+       was drawn under it. 1035 clears the sidebar and stays under the right
+       sidebar (1040), the offcanvas backdrop (1040) and modals (1050+). */
+    z-index: 1035;
 }
 
 header.navbar.sticky-top.is-scrolled {
@@ -1128,4 +1133,12 @@ sparql-tree-query { display: none; }
    search + group-by). */
 .form-select-sm {
   line-height: 1rem;
+}
+
+/* Card-title icons: a tick larger and heavier than Tabler's 20px / 1.5 .icon, so
+   the card's own icon stands out from the ⋮ / chevron actions beside it. Matches
+   every partial's `<i class="icon"> <h3 class="card-title">` title row. */
+.card-header .icon:has(~ .card-title) {
+    --tblr-icon-size: 1.375rem;
+    stroke-width: 1.75;
 }

@@ -168,8 +168,9 @@
 "js.graph.findCount" = "{n} of {total}"
 "js.graph.selectNode" = "Select {name}"
 "js.graph.closeLeftPanel" = "Close the classes and instances panel"
+"js.graph.openLeftPanel" = "Open the classes and instances panel"
 "js.graph.closeRightPanel" = "Close the connections panel"
-"js.graph.toggleSidePanel" = "Show or hide the side panel"
+"js.graph.openRightPanel" = "Open the connections panel"
 
 # Monitoring page: daily class-instance counts (class-stats-monitor.js, monitoring.html)
 "js.monitoring.classStatsNoRun" = "No run yet. The first one starts when the server starts, then every day at 07:00."

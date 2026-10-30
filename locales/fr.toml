@@ -394,6 +394,11 @@
 "view.graph" = "Graphe"
 "view.schema" = "Schéma"
 "view.page" = "Page"
+"view.pageTip" = "Vue d'ensemble mise en forme de cette ressource"
+"view.graphTip" = "Explorer les connexions de cette ressource sous forme de graphe"
+"view.mapTip" = "Afficher la géométrie de cette ressource sur une carte"
+"view.dataTip" = "Tous les triplets de cette ressource"
+"view.schemaTip" = "Schéma dérivé des données autour de cette ressource"
 "zoom.in" = "Zoom avant"
 "zoom.out" = "Zoom arrière"
 "zoom.reset" = "Réinitialiser le zoom"
@@ -1767,8 +1772,9 @@
 "page.graphHelp.a11y2" = "Chaque bouton de la barre d'outils a un libellé et est accessible avec Tab. Le bouton ? liste les raccourcis clavier."
 "js.graph.selectNode" = "Sélectionner {name}"
 "js.graph.closeLeftPanel" = "Fermer le panneau des classes et instances"
+"js.graph.openLeftPanel" = "Ouvrir le panneau des classes et instances"
 "js.graph.closeRightPanel" = "Fermer le panneau des connexions"
-"js.graph.toggleSidePanel" = "Afficher ou masquer le panneau latéral"
+"js.graph.openRightPanel" = "Ouvrir le panneau des connexions"
 
 # Monitoring page: daily class-instance counts (class-stats-monitor.js, monitoring.html)
 "js.monitoring.classStatsNoRun" = "Aucune exécution pour l’instant. La première démarre avec le serveur, puis chaque jour à 07:00."

@@ -1104,8 +1104,9 @@
   --graph-free: calc(100% - var(--graph-inset-left) - var(--graph-inset-right));
   --graph-mid: calc(var(--graph-inset-left) + var(--graph-free) / 2);
 }
-/* × on an open GE side panel (graph-tools.js); GE's chevron reopens it. */
-.graph-sidebar-close {
+/* Open/close toggle of a GE side panel (graph-tools.js). It replaces GE's
+   chevrons, which it still clicks. */
+.graph-sidebar-toggle {
   position: absolute;
   z-index: 102;
   width: 32px;
@@ -1114,7 +1115,7 @@
   border: 1px solid var(--tblr-border-color, #e6e7e9);
   border-radius: 50%;
 }
-.graph-sidebar-close[hidden] {
+.graph-explorer-accordion-item__handle-btn {
   display: none !important;
 }
 /* Floating pill, top-centre over the canvas (Miro style), as GE's own toolbar

@@ -33,16 +33,19 @@
   {{ if .ResourceIRI }}
   <div class="btn-group btn-group-sm ms-auto flex-shrink-0" role="group" aria-label="{{ t "header.viewMode" "View mode" }}">
     <input type="radio" class="btn-check" name="resource-view" id="resource-view-table" data-view="table" autocomplete="off" checked>
-    <label for="resource-view-table" class="btn"><i data-lucide="table-2" class="me-1"></i>{{ t "view.page" "Page" }}</label>
+    <label for="resource-view-table" class="btn" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="{{ t "view.pageTip" "Formatted overview of this resource" }}"><i data-lucide="table-2" class="icon me-1"></i>{{ t "view.page" "Page" }}</label>
     <input type="radio" class="btn-check" name="resource-view" id="resource-view-graph" data-view="graph" autocomplete="off">
-    <label for="resource-view-graph" class="btn"><i data-lucide="share-2" class="me-1"></i>{{ t "view.graph" "Graph" }}</label>
-    <input type="radio" class="btn-check" name="resource-view" id="resource-view-data" data-view="data" autocomplete="off">
-    <label for="resource-view-data" class="btn"><i data-lucide="database" class="me-1"></i>{{ t "view.data" "Data" }}</label>
-    <input type="radio" class="btn-check" name="resource-view" id="resource-view-schema" data-view="schema" autocomplete="off">
-    <label for="resource-view-schema" class="btn"><i data-lucide="shapes" class="me-1"></i>{{ t "view.schema" "Schema" }}</label>
-    <!-- Hidden until static/js/sparql-map.js finds geometry for this resource. -->
+    <label for="resource-view-graph" class="btn" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="{{ t "view.graphTip" "Explore the connections of this resource as a graph" }}"><i data-lucide="share-2" class="icon me-1"></i>{{ t "view.graph" "Graph" }}</label>
+    <!-- Hidden until static/js/sparql-map.js finds geometry for this resource.
+         Next to Graph (the visual views) and never last: Bootstrap rounds only
+         the group's :last-child, so a hidden last button would leave the visible
+         one square-cornered. -->
     <input type="radio" class="btn-check d-none" name="resource-view" id="resource-view-map" data-view="map" autocomplete="off">
-    <label for="resource-view-map" class="btn d-none"><i data-lucide="map" class="me-1"></i>{{ t "view.map" "Map" }}</label>
+    <label for="resource-view-map" class="btn d-none" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="{{ t "view.mapTip" "Show the geometry of this resource on a map" }}"><i data-lucide="map" class="icon me-1"></i>{{ t "view.map" "Map" }}</label>
+    <input type="radio" class="btn-check" name="resource-view" id="resource-view-data" data-view="data" autocomplete="off">
+    <label for="resource-view-data" class="btn" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="{{ t "view.dataTip" "All triples of this resource" }}"><i data-lucide="database" class="icon me-1"></i>{{ t "view.data" "Data" }}</label>
+    <input type="radio" class="btn-check" name="resource-view" id="resource-view-schema" data-view="schema" autocomplete="off">
+    <label for="resource-view-schema" class="btn" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="{{ t "view.schemaTip" "Schema derived from the data around this resource" }}"><i data-lucide="shapes" class="icon me-1"></i>{{ t "view.schema" "Schema" }}</label>
   </div>
   {{ end }}
 </div>

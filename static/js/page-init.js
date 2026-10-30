@@ -21,7 +21,9 @@
     // Note: Tabler exposes Bootstrap under tabler.bootstrap
     var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new tabler.bootstrap.Tooltip(tooltipTriggerEl)
+      // A short delay keeps tips from flashing up while the pointer merely
+      // crosses the topbar or the view selector.
+      return new tabler.bootstrap.Tooltip(tooltipTriggerEl, { delay: { show: 1000, hide: 100 } })
     })
   }
 

@@ -274,28 +274,35 @@
 
     // --- GE's side panels (Classes / Instances left, Connections right) ---------
     // GE collapses them only through a small round chevron on their inner edge.
-    // Each open panel gets a visible × in its top-right corner that clicks that
-    // chevron (which stays, to reopen it), and the chevrons get a label. The
+    // Each panel gets one panel-left/right toggle in its place (the chevrons are
+    // hidden in ontodia_overrides.css, the toggle clicks them): in the panel's
+    // outer top corner while open, in the canvas corner while closed. The
     // panels' widths are published as --graph-inset-left/right on the stage, so
     // the floating toolbar, selection bar and docked panels sit between them
     // instead of over their headers (ontodia_overrides.css). Our buttons live in
     // the stage, not in GE's React DOM, and follow it through observers.
     var stage = kit.container.parentElement;
-    var closers = {};
-    function closer(side) {
+    var toggles = {};
+    function toggle(side) {
       var btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'btn btn-sm btn-icon graph-sidebar-close';
-      var label = side === 'left'
-        ? vsT('js.graph.closeLeftPanel', 'Close the classes and instances panel')
-        : vsT('js.graph.closeRightPanel', 'Close the connections panel');
-      btn.title = label;
-      btn.setAttribute('aria-label', label);
-      btn.innerHTML = '<i data-lucide="x" class="icon"></i>';
+      btn.className = 'btn btn-sm btn-icon graph-sidebar-toggle';
       btn.addEventListener('click', function () { if (btn._handle) btn._handle.click(); });
       stage.appendChild(btn);
+      return (toggles[side] = btn);
+    }
+    function setToggle(btn, side, open) {
+      if (btn._open === open) return;
+      btn._open = open;
+      var label = side === 'left'
+        ? (open ? vsT('js.graph.closeLeftPanel', 'Close the classes and instances panel')
+                : vsT('js.graph.openLeftPanel', 'Open the classes and instances panel'))
+        : (open ? vsT('js.graph.closeRightPanel', 'Close the connections panel')
+                : vsT('js.graph.openRightPanel', 'Open the connections panel'));
+      btn.title = label;
+      btn.setAttribute('aria-label', label);
+      btn.innerHTML = '<i data-lucide="panel-' + side + '-' + (open ? 'close' : 'open') + '" class="icon"></i>';
       if (window.lucide) window.lucide.createIcons();
-      return (closers[side] = btn);
     }
     function syncSidebars() {
       var insets = { left: 0, right: 0 };
@@ -304,17 +311,20 @@
         var side = handle.classList.contains('graph-explorer-accordion-item__handle-btn-left') ? 'left' : 'right';
         var item = handle.closest('.graph-explorer-accordion-item');
         if (!item) return;
-        handle.setAttribute('aria-label', vsT('js.graph.toggleSidePanel', 'Show or hide the side panel'));
         var r = item.getBoundingClientRect();
         insets[side] = Math.round(r.width);
         var open = item.classList.contains('graph-explorer-accordion-item--expanded');
-        var btn = closers[side] || closer(side);
+        var btn = toggles[side] || toggle(side);
         btn._handle = handle;
-        btn.hidden = !open;
-        if (!open) return;
+        setToggle(btn, side, open);
+        if (side === 'left') {
+          btn.style.top = (r.top - s.top + 4) + 'px';
+          btn.style.left = (open ? r.right - s.left - 36 : r.left - s.left + 4) + 'px';
+          return;
+        }
         // The fullscreen exit button owns the viewport's top-right corner: the
-        // right panel's × then sits just left of it, in the same row.
-        var beside = side === 'right' && kit.card && kit.card.classList.contains('graph-maximized') ? 52 : 0;
+        // right toggle then sits just left of it, in the same row.
+        var beside = kit.card && kit.card.classList.contains('graph-maximized') ? 52 : 0;
         btn.style.top = (r.top - s.top + (beside ? 16 : 4)) + 'px';
         btn.style.left = (r.right - s.left - 36 - beside) + 'px';
       });
