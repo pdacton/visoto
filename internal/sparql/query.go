@@ -231,7 +231,7 @@ func (p *Preprocessor) querySparqlEndpoint(ctx context.Context, endpointURL, que
 		log.Error("failed to execute HTTP request",
 			slog.String("error", err.Error()),
 			slog.String("endpoint", endpointURL))
-		return nil, fmt.Errorf("failed to execute request: %w", err)
+		return nil, fmt.Errorf("failed to execute request: %w", RedactTransportError(err))
 	}
 	defer resp.Body.Close()
 

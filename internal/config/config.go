@@ -109,12 +109,16 @@ func (l Language) DisplayName() string {
 
 // SparqlEndpoint represents a named SPARQL endpoint configuration
 type SparqlEndpoint struct {
-	Name    string `toml:"name"`    // Display name (e.g., "LINDAS", "Wikidata")
-	URL     string `toml:"url"`     // Full endpoint URL
-	Default bool   `toml:"default"` // Optional: mark as default
-	Monitor bool   `toml:"monitor"` // Enable health monitoring for this endpoint
-	Tag     string `toml:"tag"`     // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
-	Slug    string `toml:"slug"`    // Unique URL-safe identifier for the ?endpoint= query param (shareable links)
+	Name string `toml:"name"` // Display name (e.g., "LINDAS", "Wikidata")
+	// URL is server-side only, hence json:"-" — the same serialisation path
+	// as the credentials below would otherwise put every endpoint's URL,
+	// including Docker-private hosts, into the HTML of every page. The wire
+	// identifier is Slug.
+	URL     string `toml:"url" json:"-"` // Full endpoint URL
+	Default bool   `toml:"default"`      // Optional: mark as default
+	Monitor bool   `toml:"monitor"`      // Enable health monitoring for this endpoint
+	Tag     string `toml:"tag"`          // Logical group tag for UI customization (e.g., "lindas", "stadtzuerich")
+	Slug    string `toml:"slug"`         // Unique URL-safe identifier for the ?endpoint= query param (shareable links)
 	// Write credentials. json:"-" is load-bearing, not cosmetic: this struct
 	// reaches templates as TemplateData.SparqlEndpoints, which is serialised
 	// wholesale by the footer's raw-data dump and by the chat resource-data

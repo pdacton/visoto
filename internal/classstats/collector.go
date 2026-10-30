@@ -350,14 +350,14 @@ func (c *Collector) selectJSON(ctx context.Context, ep *config.SparqlEndpoint, q
 	defer cancel()
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, ep.URL, strings.NewReader(query))
 	if err != nil {
-		return nil, err
+		return nil, sparql.RedactTransportError(err)
 	}
 	req.Header.Set("Content-Type", "application/sparql-query")
 	req.Header.Set("Accept", "application/sparql-results+json")
 	ep.ApplyAuth(req)
 	resp, err := c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, sparql.RedactTransportError(err)
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {

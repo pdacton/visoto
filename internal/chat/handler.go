@@ -6,12 +6,14 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
 )
 
 // Handler returns a Gin handler function for chat requests.
 // apiKey is the Gemini API key; mcpURL is the base URL of the Visoto MCP server (e.g. http://localhost:8060/mcp).
-func Handler(apiKey, mcpURL string) gin.HandlerFunc {
+// cfg resolves the request's endpoint slug.
+func Handler(cfg *config.ApplicationConfig, apiKey, mcpURL string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log := logger.Get()
 
@@ -32,6 +34,14 @@ func Handler(apiKey, mcpURL string) gin.HandlerFunc {
 				Error: "Invalid request format",
 			})
 			return
+		}
+
+		ep := cfg.GetEndpointBySlug(req.Endpoint)
+		if ep == nil {
+			ep = cfg.DefaultEndpoint()
+		}
+		if ep != nil {
+			req.endpointName = ep.Name
 		}
 
 		log.Debug("processing chat request",

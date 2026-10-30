@@ -445,8 +445,9 @@ func hasSuffix(s, suffix string) bool {
 // TestSparqlEndpointJSONOmitsCredentials guards a real leak path: this struct
 // reaches templates as TemplateData.SparqlEndpoints, which the footer's
 // raw-data dump and the chat resource-data embed serialise wholesale into the
-// HTML of every page. Without json:"-" on the credential fields, encoding/json
-// exports them by Go field name and publishes them to every visitor.
+// HTML of every page. Without json:"-" on the credential fields and the URL,
+// encoding/json exports them by Go field name and publishes them to every
+// visitor — the URL of a Docker-private endpoint included.
 func TestSparqlEndpointJSONOmitsCredentials(t *testing.T) {
 	ep := SparqlEndpoint{
 		Name:        "Secured",
@@ -463,15 +464,15 @@ func TestSparqlEndpointJSONOmitsCredentials(t *testing.T) {
 	}
 	got := string(encoded)
 
-	for _, secret := range []string{"admin", "hunter2", "SECRET-BEARER-TOKEN", "Username", "Password", "AccessToken"} {
+	for _, secret := range []string{"admin", "hunter2", "SECRET-BEARER-TOKEN", "Username", "Password", "AccessToken", "example.org", `"URL"`} {
 		if strings.Contains(got, secret) {
-			t.Errorf("serialised endpoint exposes %q; credentials must carry json:\"-\"\ngot: %s", secret, got)
+			t.Errorf("serialised endpoint exposes %q; credentials and the URL must carry json:\"-\"\ngot: %s", secret, got)
 		}
 	}
 
 	// The menu still needs the non-sensitive fields, so the tags must not have
 	// been applied so broadly that the topbar selector breaks.
-	for _, needed := range []string{"Secured", "secured", "https://example.org/query"} {
+	for _, needed := range []string{"Secured", "secured"} {
 		if !strings.Contains(got, needed) {
 			t.Errorf("serialised endpoint is missing %q, which the endpoint menu needs\ngot: %s", needed, got)
 		}

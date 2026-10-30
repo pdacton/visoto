@@ -39,7 +39,7 @@ func CallGemini(apiKey, mcpURL string, req ChatRequest) (string, error) {
 	dataJSON := bytes.TrimRight(buffer.Bytes(), "\n")
 
 	// 2. Build system prompt and contents
-	systemPrompt := buildSystemPrompt(req.AcceptLanguage, req.ActiveEndpoint, string(dataJSON))
+	systemPrompt := buildSystemPrompt(req.AcceptLanguage, req.endpointName, string(dataJSON))
 	contents := buildContents(systemPrompt, req.History, req.Message)
 	tools := buildMCPToolDeclarations()
 
@@ -57,10 +57,10 @@ func CallGemini(apiKey, mcpURL string, req ChatRequest) (string, error) {
 }
 
 // buildSystemPrompt creates the system prompt with instructions and pre-fetched data.
-func buildSystemPrompt(language string, endpoint ActiveEndpointInfo, dataJSON string) string {
+func buildSystemPrompt(language, endpointName, dataJSON string) string {
 	return fmt.Sprintf(`You are a helpful assistant answering questions about RDF resources.
 
-ACTIVE SPARQL ENDPOINT: %s (%s)
+ACTIVE SPARQL ENDPOINT: %s
 When calling MCP tools that accept an "endpoint" parameter, always use this endpoint name unless the user explicitly asks otherwise.
 
 RULES:
@@ -75,7 +75,7 @@ RULES:
 9. Use the "Lol" field value for display when available (it contains the human-readable label)
 
 RESOURCE DATA (pre-fetched context, may be from a different endpoint — use as reference only):
-%s`, endpoint.Name, endpoint.URL, language, dataJSON)
+%s`, endpointName, language, dataJSON)
 }
 
 // buildContents creates the Gemini API contents array from system prompt, history, and current message.
