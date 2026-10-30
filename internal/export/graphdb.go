@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"hutzli.org/visoto/internal/config"
+	"hutzli.org/visoto/internal/sparql"
 )
 
 // GraphDBProvider exports named graphs using the GraphDB REST API.
@@ -51,7 +52,7 @@ func (g *GraphDBProvider) Export(params ExportParams) (io.ReadCloser, error) {
 func graphdbRepoBase(rawURL string) (string, error) {
 	u, err := url.Parse(rawURL)
 	if err != nil {
-		return "", err
+		return "", sparql.RedactTransportError(err)
 	}
 	p := strings.TrimSuffix(u.Path, "/sparql")
 	if !strings.Contains(p, "/repositories/") {
@@ -76,14 +77,14 @@ func graphdbFetch(repoBase, iri, format string, ep *config.SparqlEndpoint) (io.R
 
 	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
 	if err != nil {
-		return nil, err
+		return nil, sparql.RedactTransportError(err)
 	}
 	req.Header.Set("Accept", format)
 	ep.ApplyAuth(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, sparql.RedactTransportError(err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		resp.Body.Close()

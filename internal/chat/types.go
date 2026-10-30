@@ -7,13 +7,11 @@ type ChatRequest struct {
 	History        []Message              `json:"history"`
 	Data           map[string]interface{} `json:"data"`
 	AcceptLanguage string                 `json:"acceptLanguage"`
-	ActiveEndpoint ActiveEndpointInfo     `json:"activeEndpoint"`
-}
+	// Endpoint is the slug of the active endpoint. The handler resolves it
+	// against the config; an endpoint URL never comes from the browser.
+	Endpoint string `json:"endpoint"`
 
-// ActiveEndpointInfo carries the name and URL of the currently selected SPARQL endpoint.
-type ActiveEndpointInfo struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	endpointName string // resolved from Endpoint by the handler
 }
 
 // Message represents a single chat message in the conversation history

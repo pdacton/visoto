@@ -18,6 +18,7 @@ import (
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/export"
 	"hutzli.org/visoto/internal/logger"
+	"hutzli.org/visoto/internal/sparql"
 )
 
 // mimeForExtension returns the RDF MIME type for a file extension.
@@ -129,7 +130,7 @@ func sendToEndpoint(ep *config.SparqlEndpoint, graphURI, contentType string, rdf
 	if graphURI != "" {
 		u, err := url.Parse(ep.URL)
 		if err != nil {
-			return fmt.Errorf("invalid endpoint URL: %w", err)
+			return fmt.Errorf("invalid endpoint URL: %w", sparql.RedactTransportError(err))
 		}
 		q := u.Query()
 		q.Set("graph", graphURI)
@@ -139,7 +140,7 @@ func sendToEndpoint(ep *config.SparqlEndpoint, graphURI, contentType string, rdf
 
 	req, err := http.NewRequest(http.MethodPost, targetURL, rdfBody)
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", sparql.RedactTransportError(err))
 	}
 	req.Header.Set("Content-Type", contentType)
 	ep.ApplyAuth(req)
@@ -150,7 +151,7 @@ func sendToEndpoint(ep *config.SparqlEndpoint, graphURI, contentType string, rdf
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
+		return fmt.Errorf("request failed: %w", sparql.RedactTransportError(err))
 	}
 	defer resp.Body.Close()
 
@@ -195,14 +196,14 @@ func sparqlUpdate(ep *config.SparqlEndpoint, update string) error {
 
 	req, err := http.NewRequest(http.MethodPost, ep.URL, strings.NewReader(params.Encode()))
 	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
+		return fmt.Errorf("failed to create request: %w", sparql.RedactTransportError(err))
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	ep.ApplyAuth(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return err
+		return sparql.RedactTransportError(err)
 	}
 	defer resp.Body.Close()
 

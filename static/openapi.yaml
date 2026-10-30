@@ -1325,23 +1325,24 @@ components:
     ProbeMetric:
       type: object
       properties:
-        endpoint: { type: string }
         measured_at: { type: string, format: date-time }
         duration_ms: { type: integer, description: "-1 on error" }
-        status: { type: string, description: "`ok` or the error message" }
+        status:
+          type: string
+          description: "`ok`, `HTTP <code>`, `timeout`, `DNS lookup failed`, `connection failed`, `request failed` or `invalid endpoint URL`."
 
     EndpointStatus:
       type: object
       properties:
         name: { type: string }
-        url: { type: string }
+        slug: { type: string }
         last: { $ref: "#/components/schemas/ProbeMetric" }
 
     MonitorSeries:
       type: object
       properties:
         name: { type: string }
-        url: { type: string }
+        slug: { type: string }
         data:
           type: array
           description: "`[unix_ms, duration_ms]` pairs."
@@ -1407,11 +1408,9 @@ components:
           type: object
           description: Page data passed as context.
         acceptLanguage: { type: string }
-        activeEndpoint:
-          type: object
-          properties:
-            name: { type: string }
-            url: { type: string }
+        endpoint:
+          type: string
+          description: Endpoint slug; unknown or empty uses the default endpoint.
 
     ChatResponse:
       type: object

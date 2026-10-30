@@ -178,19 +178,8 @@
     // Get accept language from browser
     const acceptLanguage = navigator.language || 'en';
 
-    // Resolve the active endpoint via the shared slug resolver + page data
+    // The active endpoint's slug; the server resolves it (empty → default).
     const selectedSlug = (typeof activeEndpointSlug === 'function') ? activeEndpointSlug() : '';
-    const endpoints = resourceData.SparqlEndpoints || [];
-    let activeEndpoint = { name: '', url: '' };
-    if (selectedSlug) {
-      const match = endpoints.find(ep => ep.Slug === selectedSlug);
-      if (match) activeEndpoint = { name: match.Name, url: match.URL };
-    }
-    if (!activeEndpoint.name) {
-      // Fall back to the default endpoint
-      const def = endpoints.find(ep => ep.Default) || endpoints[0];
-      if (def) activeEndpoint = { name: def.Name, url: def.URL };
-    }
 
     // Prepare request
     const requestData = {
@@ -199,7 +188,7 @@
       history: chatHistory,
       data: resourceData.QueryResults || {},
       acceptLanguage: acceptLanguage,
-      activeEndpoint: activeEndpoint
+      endpoint: selectedSlug
     };
 
     // Call API

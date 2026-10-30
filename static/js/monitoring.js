@@ -32,7 +32,7 @@
       const last = ep.last;
       if (!last) {
         return `<tr>
-          <td>${escHtml(ep.name)}<br><small class="text-muted">${escHtml(ep.url)}</small></td>
+          <td>${escHtml(ep.name)}<br><small class="text-muted">${escHtml(ep.slug)}</small></td>
           <td colspan="3" class="text-muted">no data yet</td>
         </tr>`;
       }
@@ -41,7 +41,7 @@
       const cls = ok ? 'text-success' : 'text-danger';
       const ts = new Date(last.measured_at).toLocaleString();
       return `<tr>
-        <td>${escHtml(ep.name)}<br><small class="text-muted">${escHtml(ep.url)}</small></td>
+        <td>${escHtml(ep.name)}<br><small class="text-muted">${escHtml(ep.slug)}</small></td>
         <td class="${cls}">${dur}</td>
         <td class="${cls}">${escHtml(last.status)}</td>
         <td>${ts}</td>

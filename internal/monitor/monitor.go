@@ -21,6 +21,7 @@ import (
 
 	"hutzli.org/visoto/internal/config"
 	"hutzli.org/visoto/internal/logger"
+	"hutzli.org/visoto/internal/sparql"
 )
 
 const (
@@ -33,7 +34,7 @@ const (
 
 // Metric is a single probe result.
 type Metric struct {
-	Endpoint   string    `json:"endpoint"`
+	Endpoint   string    `json:"-"` // endpoint URL; server-side only
 	MeasuredAt time.Time `json:"measured_at"`
 	DurationMs int64     `json:"duration_ms"` // -1 on error
 	Status     string    `json:"status"`      // "ok" or error message
@@ -42,7 +43,7 @@ type Metric struct {
 // EndpointStatus holds the most recent metric for one endpoint.
 type EndpointStatus struct {
 	Name   string  `json:"name"`
-	URL    string  `json:"url"`
+	Slug   string  `json:"slug"`
 	Metric *Metric `json:"last,omitempty"`
 }
 
@@ -130,7 +131,7 @@ func (m *Monitor) LatestStatus() []EndpointStatus {
 		if !ep.Monitor {
 			continue
 		}
-		es := EndpointStatus{Name: ep.Name, URL: ep.URL}
+		es := EndpointStatus{Name: ep.Name, Slug: ep.Slug}
 		if metric, ok := m.latest[ep.URL]; ok {
 			copy := *metric
 			es.Metric = &copy
@@ -259,7 +260,7 @@ func (m *Monitor) probeOne(ep config.SparqlEndpoint) *Metric {
 
 	req, err := http.NewRequest(http.MethodPost, ep.URL, strings.NewReader(probeQuery))
 	if err != nil {
-		return &Metric{Endpoint: ep.URL, MeasuredAt: start, DurationMs: -1, Status: err.Error()}
+		return &Metric{Endpoint: ep.URL, MeasuredAt: start, DurationMs: -1, Status: "invalid endpoint URL"}
 	}
 	req.Header.Set("Content-Type", "application/sparql-query")
 	req.Header.Set("Accept", "application/sparql-results+json")
@@ -267,7 +268,8 @@ func (m *Monitor) probeOne(ep config.SparqlEndpoint) *Metric {
 	resp, err := client.Do(req)
 	elapsed := time.Since(start).Milliseconds()
 	if err != nil {
-		return &Metric{Endpoint: ep.URL, MeasuredAt: start, DurationMs: -1, Status: err.Error()}
+		logger.Get().Warn("monitor: probe failed", slog.String("endpoint", ep.Name), slog.String("error", err.Error()))
+		return &Metric{Endpoint: ep.URL, MeasuredAt: start, DurationMs: -1, Status: sparql.TransportErrorReason(err)}
 	}
 	defer resp.Body.Close()
 	io.Copy(io.Discard, resp.Body) // drain body

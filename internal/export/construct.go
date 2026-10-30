@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"hutzli.org/visoto/internal/config"
+	"hutzli.org/visoto/internal/sparql"
 )
 
 // ConstructProvider exports named graphs using SPARQL CONSTRUCT queries.
@@ -48,7 +49,7 @@ func constructFetch(ep *config.SparqlEndpoint, iri, format string) (io.ReadClose
 
 	req, err := http.NewRequest(http.MethodPost, ep.URL, strings.NewReader(form.Encode()))
 	if err != nil {
-		return nil, err
+		return nil, sparql.RedactTransportError(err)
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.Header.Set("Accept", format)
@@ -56,7 +57,7 @@ func constructFetch(ep *config.SparqlEndpoint, iri, format string) (io.ReadClose
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, sparql.RedactTransportError(err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		resp.Body.Close()

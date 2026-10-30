@@ -826,7 +826,7 @@ func monitoringDataHandler(c *gin.Context) {
 	type point [2]int64 // [unix_ms, duration_ms]
 	type series struct {
 		Name string  `json:"name"`
-		URL  string  `json:"url"`
+		Slug string  `json:"slug"`
 		Data []point `json:"data"`
 	}
 	var out []series
@@ -836,7 +836,7 @@ func monitoringDataHandler(c *gin.Context) {
 		for _, m := range metrics {
 			pts = append(pts, point{m.MeasuredAt.UnixMilli(), m.DurationMs})
 		}
-		out = append(out, series{Name: ep.Name, URL: ep.URL, Data: pts})
+		out = append(out, series{Name: ep.Name, Slug: ep.Slug, Data: pts})
 	}
 	c.JSON(http.StatusOK, gin.H{"series": out})
 }
@@ -978,7 +978,7 @@ func main() {
 	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
 	router.GET("/search", epFromURLOrCookie, searchHandler)
 	mcpURL := fmt.Sprintf("http://localhost:%d/mcp", cfg.Application.Port)
-	router.POST("/api/chat", chat.Handler(cfg.Application.GeminiAPIKey, mcpURL))
+	router.POST("/api/chat", chat.Handler(&cfg.Application, cfg.Application.GeminiAPIKey, mcpURL))
 	router.POST("/api/upload", upload.UploadHandler(&cfg.Application))
 	// Browser-side SPARQL (Graph Explorer, schema diagram). Deliberately takes
 	// neither epFromURL nor langFromURL, unlike every other /api route: the
