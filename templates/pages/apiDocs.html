@@ -1,0 +1,41 @@
+{{ define "pageTitle" }}{{ t "page.apiDocs.title" "API" }}{{ end }}
+{{ define "pageSubtitle" }}{{ t "page.apiDocs.subtitle" "Every HTTP route Visoto serves, with a client to try them out." }}{{ end }}
+{{ define "pageIcon"}}<span class="avatar avatar-lg bg-primary-lt"><i data-lucide="braces" style="width: 1.75rem; height: 1.75rem;"></i></span>{{end}}
+{{ define "metaIcon" }}/static/img/info.svg{{ end }}
+
+{{ define "pageContent" }}
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.3/swagger-ui.css" integrity="sha384-Ov4/wv3j2bmct8cDc5X4ngJZohVPzEmc6uDPH8WeljUxO5vtoykvMEfbu9Vh6RaW" crossorigin="anonymous">
+<link rel="stylesheet" href="/static/css/swagger_overrides.css">
+
+<div class="row row-cards">
+  <div class="col-12">
+    <div class="alert alert-warning mb-0" role="alert">
+      <i data-lucide="triangle-alert" style="width:1em;" aria-hidden="true"></i>
+      {{ t "page.apiDocs.writesAreReal" "Try it out sends real requests to this instance. Uploads, graph deletions, cache purges and the monitoring toggle take effect." }}
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body">
+        <p class="mb-0">
+          {{ tHTML "page.apiDocs.specLink" "OpenAPI 3.1 specification: <a href=\"/static/openapi.yaml\">/static/openapi.yaml</a>" }}
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="col-12">
+    <div class="card">
+      <div class="card-body p-0">
+        <div data-api-docs data-spec-url="/static/openapi.yaml"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{{ end }}
+
+{{ define "pageScripts" }}
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.33.3/swagger-ui-bundle.js" integrity="sha384-h00llMzD1afyNow1pDmnZKlHsUZgp9KE9HXLFXF2CvbwsBY0+WBO4f75SfGwvM4K" crossorigin="anonymous"></script>
+<script src="/static/js/api-docs.js"></script>
+{{ end }}

@@ -1,0 +1,1420 @@
+openapi: 3.1.0
+info:
+  title: Visoto HTTP API
+  version: "1"
+  description: |
+    Every HTTP route Visoto serves besides its HTML pages: the JSON APIs, the
+    HTML fragments HTMX swaps into pages, the SPARQL proxy, and the operational
+    routes (`/metrics`, `/health`, `/ping`, `/mcp`).
+
+    **Endpoints.** Each configured SPARQL endpoint is addressed by its **slug**
+    (`[[application.sparqlEndpoints]]` in `visoto.config`, e.g. `lindas-prod`).
+    An unknown or absent `endpoint` falls back to the default endpoint, except
+    on `POST /api/sparql`, which rejects an unknown slug.
+
+    **Language.** Routes taking `lang` read the display language from the URL
+    only, never from the `site-lang` cookie, so their responses are pure
+    functions of the URL and may be cached.
+
+    **Template-scoped query ids.** The fragment and table routes never accept
+    SPARQL. They take an `id` declared by a `<sparql-async>` or
+    `<sparql-tree-queries>` element plus `src`, the template set that declared
+    it (`pages/home.html`, `classes/default.html`, …). An id from another set is
+    not found.
+
+    **Authentication.** None yet, except `/metrics`. Write routes
+    (`/api/upload`, `DELETE /api/named-graphs`, `/api/cache/purge`,
+    `/api/monitoring/toggle`) act for real when tried out here.
+servers:
+  - url: /
+tags:
+  - name: SPARQL
+    description: Read-only SPARQL passthrough used by Graph Explorer and the schema diagram.
+  - name: Search
+  - name: Tables
+    description: Async, working-set, faceted and cube tables behind the table partials.
+  - name: Fragments
+    description: HTML fragments loaded by HTMX after the page has painted.
+  - name: Trees
+    description: Level-by-level loading for the `sparqlLazyTree` partial.
+  - name: Named graphs
+    description: Upload, list, export and drop named graphs. Writes need an endpoint with write credentials.
+  - name: Class statistics
+    description: Daily per-class instance counts.
+  - name: Monitoring
+    description: Endpoint response-time probes stored in the local SQLite history.
+  - name: Chat
+  - name: Operations
+
+paths:
+  /api/sparql:
+    post:
+      tags: [SPARQL]
+      summary: Run a read-only SPARQL query
+      description: |
+        Forwards the query verbatim to the endpoint named by `endpoint`,
+        attaching its credentials server-side. Only SELECT, ASK, CONSTRUCT and
+        DESCRIBE are accepted; anything else is rejected before it reaches the
+        endpoint. Upstream errors pass through with their status and body.
+        Never cached. Body limit 64 KiB, response limit 32 MiB.
+      operationId: sparqlProxy
+      parameters:
+        - name: endpoint
+          in: query
+          description: Endpoint slug. Unlike other routes, an unknown slug is an error, not a fallback.
+          schema: { type: string }
+          example: lindas-prod
+        - name: Accept
+          in: header
+          description: Forwarded when it names a known SPARQL result type, otherwise `application/sparql-results+json` is requested.
+          schema:
+            type: string
+            enum:
+              - application/sparql-results+json
+              - application/sparql-results+xml
+              - application/json
+              - application/ld+json
+              - application/n-triples
+              - application/rdf+xml
+              - text/turtle
+      requestBody:
+        required: true
+        content:
+          application/sparql-query:
+            schema: { type: string }
+            example: |
+              SELECT ?class (COUNT(?s) AS ?n) WHERE { ?s a ?class } GROUP BY ?class ORDER BY DESC(?n) LIMIT 10
+      responses:
+        "200":
+          description: The endpoint's response, with its content type.
+          content:
+            application/sparql-results+json:
+              schema: { $ref: "#/components/schemas/SparqlResults" }
+            text/turtle:
+              schema: { type: string }
+        "400":
+          description: Unknown endpoint slug, unreadable body, or not a read-only query.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "413":
+          description: Query larger than 64 KiB.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "415":
+          description: Content-Type is not `application/sparql-query`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "502": { description: Endpoint unreachable. }
+        "504": { description: Endpoint timed out. }
+
+  /api/search:
+    get:
+      tags: [Search]
+      summary: Search resources by label
+      description: |
+        JSON twin of the `/search` page: the endpoint's full-text provider,
+        falling back to a CONTAINS scan. One hit per IRI.
+      operationId: search
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+          example: Bern
+        - name: class
+          in: query
+          description: Restrict to instances of this class IRI.
+          schema: { type: string, format: iri }
+        - name: property
+          in: query
+          description: Property to match. Absent means `rdfs:label`; present but empty means any property.
+          schema: { type: string, format: iri }
+        - name: limit
+          in: query
+          description: 1–50; anything else yields 50.
+          schema: { type: integer, minimum: 1, maximum: 50, default: 50 }
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: Hits.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/SearchHit" }
+        "400":
+          description: Missing `q`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "502":
+          description: Search query failed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/async-table/{id}:
+    get:
+      tags: [Tables]
+      summary: Render an async table
+      description: |
+        Runs the `<sparql-async id>` query and returns a rendered `sparqlTable`
+        fragment. For a class-instance query (`?key a ??`) on a class above the
+        working-set threshold it returns a Tabulator shell instead, which loads
+        its rows from `/api/async-table-data/{id}`.
+      operationId: asyncTable
+      parameters:
+        - $ref: "#/components/parameters/queryId"
+        - $ref: "#/components/parameters/src"
+        - $ref: "#/components/parameters/iri"
+        - $ref: "#/components/parameters/title"
+        - $ref: "#/components/parameters/icon"
+        - $ref: "#/components/parameters/collapsed"
+        - name: facetFor
+          in: query
+          description: Base query id of a faceted table; wires the header filter controls.
+          schema: { type: string }
+        - name: searchProp
+          in: query
+          description: Name property to search in working-set mode (IRI or CURIE). Default `rdfs:label`.
+          schema: { type: string }
+        - name: max
+          in: query
+          description: Working-set cap passed on to the shell.
+          schema: { type: integer }
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200": { $ref: "#/components/responses/HTMLFragment" }
+        "400": { $ref: "#/components/responses/PlainError" }
+        "404": { $ref: "#/components/responses/PlainError" }
+
+  /api/async-table-data/{id}:
+    get:
+      tags: [Tables]
+      summary: Load a table's working set
+      description: |
+        Loads one bounded working set for a class-instance table: the whole
+        class when it fits under `max`, otherwise the first `max` keys (or
+        search matches). The client then pages, sorts and searches locally.
+      operationId: asyncTableData
+      parameters:
+        - $ref: "#/components/parameters/queryId"
+        - $ref: "#/components/parameters/src"
+        - name: iri
+          in: query
+          required: true
+          description: Class IRI substituted for `??`.
+          schema: { type: string, format: iri }
+          example: http://schema.org/Person
+        - name: max
+          in: query
+          description: Working-set cap, clamped to 20000.
+          schema: { type: integer, default: 20000, maximum: 20000 }
+        - name: search
+          in: query
+          description: Full-class search term; rebuilds the working set from matches.
+          schema: { type: string }
+        - name: searchProp
+          in: query
+          description: Name property to search (IRI or CURIE). Default `rdfs:label`.
+          schema: { type: string }
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: Working set.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkingSet" }
+        "400":
+          description: Invalid IRI or query not usable as a working set.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkingSet" }
+        "404":
+          description: Unknown query id in this template set.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkingSet" }
+
+  /api/faceted-table/{id}:
+    get:
+      tags: [Tables]
+      summary: Filter a faceted table
+      description: |
+        Rewrites the base `<sparql-async>` query with the active facet
+        selections and returns either a rendered `sparqlTable` fragment or,
+        with `Accept: application/json`, the working-set envelope. Results are
+        capped at 20000 rows. A response applying a free-text facet is not cached.
+
+        Facet selections are passed as `f.<var>` parameters, one family per
+        filterable `<sparql-column>`:
+
+        | Facet kind | Parameters |
+        |---|---|
+        | select | `f.<var>` repeated, one per selected value |
+        | range | `f.<var>.min`, `f.<var>.max` |
+        | text | `f.<var>` (single term) |
+        | any | `f.<var>.novalue=1` also matches members without a value |
+        | any | `f.<var>.as`, `f.<var>.type` — control/type the client resolved from the data |
+      operationId: facetedTable
+      parameters:
+        - $ref: "#/components/parameters/queryId"
+        - $ref: "#/components/parameters/src"
+        - $ref: "#/components/parameters/iri"
+        - name: facets
+          in: query
+          description: Facet selections, sent as individual `f.<var>` query parameters.
+          style: form
+          explode: true
+          schema:
+            type: object
+            additionalProperties: { type: string }
+          example:
+            f.type: http://schema.org/Organization
+        - name: max
+          in: query
+          description: Lowers the 20000-row cap.
+          schema: { type: integer }
+        - $ref: "#/components/parameters/title"
+        - $ref: "#/components/parameters/icon"
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+        - name: Accept
+          in: header
+          description: "`application/json` selects the JSON envelope."
+          schema: { type: string, enum: [text/html, application/json] }
+      responses:
+        "200":
+          description: Filtered table.
+          headers:
+            Vary: { schema: { type: string, const: Accept } }
+          content:
+            text/html:
+              schema: { type: string }
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkingSet" }
+        "400": { $ref: "#/components/responses/PlainError" }
+        "404": { $ref: "#/components/responses/PlainError" }
+
+  /api/facet-values/{id}/{var}:
+    get:
+      tags: [Tables]
+      summary: List a select facet's values
+      description: Distinct values of one select facet with per-value member counts. Bounded and cached for 5 minutes.
+      operationId: facetValues
+      parameters:
+        - $ref: "#/components/parameters/queryId"
+        - name: var
+          in: path
+          required: true
+          description: Facet variable name, with or without the leading `?`.
+          schema: { type: string }
+          example: instance
+        - $ref: "#/components/parameters/src"
+        - $ref: "#/components/parameters/iri"
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: Values. `error` is set when enumeration failed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacetValues" }
+        "400":
+          description: Invalid IRI.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacetValues" }
+        "404":
+          description: Unknown query id or variable is not a facet.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/FacetValues" }
+
+  /api/cube-table/{id}:
+    get:
+      tags: [Tables]
+      summary: Render a cube's observations
+      description: |
+        Backs the `sparqlCube` partial. Reads the dimension list from the cube's
+        SHACL observation constraint, then generates a query with one OPTIONAL
+        per dimension and renders the wide result as a `sparqlTable` fragment.
+        `id` is only the DOM id of the table; no template query is looked up.
+      operationId: cubeTable
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Table id used in the rendered fragment.
+          schema: { type: string }
+          example: cubeObservations
+        - name: iri
+          in: query
+          required: true
+          description: Cube IRI.
+          schema: { type: string, format: iri }
+        - $ref: "#/components/parameters/title"
+        - $ref: "#/components/parameters/icon"
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200": { $ref: "#/components/responses/HTMLFragment" }
+        "400": { $ref: "#/components/responses/PlainError" }
+
+  /api/metric/{id}:
+    get:
+      tags: [Fragments]
+      summary: Render a metric count
+      description: |
+        Runs the `<sparql-async id>` count query and returns the formatted
+        number as an HTML fragment, together with the finalized query for the
+        card's "Execute on endpoint" action. Failures are not cached.
+      operationId: metric
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          example: tripleCount
+        - name: src
+          in: query
+          required: true
+          description: Template set that declares the query.
+          schema: { type: string }
+          example: pages/home.html
+        - name: iri
+          in: query
+          description: Resource IRI substituted for `??`.
+          schema: { type: string, format: iri }
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200": { $ref: "#/components/responses/HTMLFragment" }
+        "400":
+          description: Invalid IRI (body `0`).
+          content:
+            text/plain:
+              schema: { type: string }
+        "404":
+          description: Unknown query id (body `0`).
+          content:
+            text/plain:
+              schema: { type: string }
+
+  /api/bnode-tree:
+    get:
+      tags: [Fragments]
+      summary: Render a resource's blank-node structure
+      description: |
+        The outgoing blank-node structure of `iri` as the `bnodeTreeCard`
+        fragment, or with `format` as a download of the same triples. A
+        resource without blank nodes yields an empty 200.
+      operationId: bnodeTree
+      parameters:
+        - name: iri
+          in: query
+          required: true
+          schema: { type: string, format: iri }
+        - name: property
+          in: query
+          description: Restrict the first hop to this predicate (IRI or CURIE).
+          schema: { type: string }
+        - name: via
+          in: query
+          description: Follow this predicate to IRI roots first (IRI or CURIE).
+          schema: { type: string }
+        - name: format
+          in: query
+          description: Download instead of rendering.
+          schema: { type: string, enum: [ttl, nt, jsonld] }
+        - name: title
+          in: query
+          schema: { type: string, default: Nested structure }
+        - name: icon
+          in: query
+          description: Lucide icon name.
+          schema: { type: string, default: brackets }
+        - name: anchor
+          in: query
+          description: DOM anchor for the card.
+          schema: { type: string }
+        - $ref: "#/components/parameters/collapsed"
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: Fragment, or the RDF download.
+          content:
+            text/html:
+              schema: { type: string }
+            text/turtle:
+              schema: { type: string }
+            application/n-triples:
+              schema: { type: string }
+            application/ld+json:
+              schema: { type: object }
+        "400": { $ref: "#/components/responses/PlainError" }
+        "502": { $ref: "#/components/responses/PlainError" }
+
+  /api/shape-summary:
+    get:
+      tags: [Fragments]
+      summary: Render a SHACL shape summary
+      description: Plain-language summary of the SHACL shape `iri` as the `shapeSummaryCard` fragment. A resource that is no shape yields an empty 200.
+      operationId: shapeSummary
+      parameters:
+        - name: iri
+          in: query
+          required: true
+          schema: { type: string, format: iri }
+        - name: title
+          in: query
+          schema: { type: string, default: Summary }
+        - name: icon
+          in: query
+          description: Lucide icon name.
+          schema: { type: string, default: book-open-text }
+        - $ref: "#/components/parameters/collapsed"
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200": { $ref: "#/components/responses/HTMLFragment" }
+        "400": { $ref: "#/components/responses/PlainError" }
+
+  /api/lazy-tree/{id}/{role}:
+    get:
+      tags: [Trees]
+      summary: Load one level of a lazy tree
+      description: |
+        `id` names a `<sparql-tree-queries for>` block; `role` picks which of
+        its queries runs. The client never sends SPARQL. All IRIs are validated
+        and search terms bound as literals.
+
+        | role | input | response |
+        |---|---|---|
+        | `roots` | `limit`, `offset` | `LevelEnvelope` |
+        | `children` | `parent`, `limit`, `offset` | `LevelEnvelope` |
+        | `parents` | `node` (repeated, ≤ 500) | `{pairs: [{node, parent}]}` |
+        | `search` | `q`, `limit` | `LevelEnvelope` |
+        | `focus` | `node` (one IRI) | `FocusResponse`: path from the roots and every level along it |
+        | `node-data` | `node` (repeated, ≤ 500) | `{nodes: [TreeNode]}` |
+      operationId: lazyTree
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+          example: recordSetClassTree
+        - name: role
+          in: path
+          required: true
+          schema: { type: string, enum: [roots, children, parents, search, focus, node-data] }
+        - name: src
+          in: query
+          required: true
+          description: Template set that declares the tree.
+          schema: { type: string }
+          example: classes/rico%3ARecordSet.html
+        - name: iri
+          in: query
+          description: Page IRI substituted for `??`.
+          schema: { type: string, format: iri }
+        - name: parent
+          in: query
+          description: "`children`: the node whose children to load."
+          schema: { type: string, format: iri }
+        - name: node
+          in: query
+          description: "`parents`, `node-data`: the batch; `focus`: the target node."
+          style: form
+          explode: true
+          schema:
+            type: array
+            maxItems: 500
+            items: { type: string, format: iri }
+        - name: q
+          in: query
+          description: "`search`: the term."
+          schema: { type: string }
+        - name: limit
+          in: query
+          description: Page size; clamped to the tree's cap.
+          schema: { type: integer, minimum: 1 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, default: 0 }
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: The role's response; `error` is set when the query failed.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LevelEnvelope"
+                  - $ref: "#/components/schemas/FocusResponse"
+                  - type: object
+                    properties:
+                      pairs:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            node: { type: string }
+                            parent: { type: string }
+                      error: { type: string }
+                  - type: object
+                    properties:
+                      nodes:
+                        type: array
+                        items: { $ref: "#/components/schemas/TreeNode" }
+                      error: { type: string }
+        "400":
+          description: Missing or invalid input for the role.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LevelEnvelope" }
+        "404":
+          description: Unknown tree id in this template set, or unknown role.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LevelEnvelope" }
+
+  /api/class-tree:
+    get:
+      tags: [Class statistics]
+      summary: Get the class tree
+      description: |
+        The Graph Explorer class tree as SPARQL JSON (`?class ?label ?parent`,
+        plus `?instcount` from the latest daily snapshot once one exists).
+        Cached in memory for up to 6 hours.
+      operationId: classTree
+      parameters:
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: Class tree.
+          content:
+            application/sparql-results+json:
+              schema: { $ref: "#/components/schemas/SparqlResults" }
+        "404":
+          description: No class statistics for this endpoint.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "502":
+          description: Class tree query failed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/class-stats/status:
+    get:
+      tags: [Class statistics]
+      summary: List class-statistics runs
+      description: Every endpoint that collects class statistics, with its latest run.
+      operationId: classStatsStatus
+      responses:
+        "200":
+          description: One row per collecting endpoint.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ClassStatsEndpoint" }
+
+  /api/class-stats/changes:
+    get:
+      tags: [Class statistics]
+      summary: Compare class counts between snapshots
+      operationId: classStatsChanges
+      parameters:
+        - name: endpoint
+          in: query
+          required: true
+          schema: { type: string }
+          example: lindas-prod
+        - name: days
+          in: query
+          description: Compare the latest snapshot with the one this many days earlier (1–3650).
+          schema: { type: integer, minimum: 1, maximum: 3650, default: 1 }
+      responses:
+        "200":
+          description: Changes.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClassStatsChanges" }
+        "404":
+          description: No class statistics, or no snapshot yet.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500": { $ref: "#/components/responses/JSONError" }
+        "503":
+          description: Class statistics store unavailable.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/class-stats/series:
+    get:
+      tags: [Class statistics]
+      summary: Get one class's daily counts
+      operationId: classStatsSeries
+      parameters:
+        - name: endpoint
+          in: query
+          required: true
+          schema: { type: string }
+          example: lindas-prod
+        - name: class
+          in: query
+          required: true
+          schema: { type: string, format: iri }
+          example: http://schema.org/Person
+        - name: days
+          in: query
+          description: 1–3650.
+          schema: { type: integer, minimum: 1, maximum: 3650, default: 365 }
+      responses:
+        "200":
+          description: Daily points, oldest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ClassCountPoint" }
+        "400":
+          description: Missing `class`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          description: No class statistics for this endpoint.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "500": { $ref: "#/components/responses/JSONError" }
+        "503":
+          description: Class statistics store unavailable.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/named-graphs:
+    get:
+      tags: [Named graphs]
+      summary: List named graphs
+      description: Named graphs with their self-describing `rdfs:label` and triple count (at most 1000). A failed query yields an empty list.
+      operationId: listNamedGraphs
+      parameters:
+        - $ref: "#/components/parameters/endpoint"
+      responses:
+        "200":
+          description: Graphs.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  graphs:
+                    type: array
+                    items: { $ref: "#/components/schemas/NamedGraph" }
+    delete:
+      tags: [Named graphs]
+      summary: Drop a named graph
+      description: Runs `DROP SILENT GRAPH <graph>`, or `DROP SILENT DEFAULT` for `graph=default`.
+      operationId: dropNamedGraph
+      parameters:
+        - name: graph
+          in: query
+          required: true
+          description: Graph IRI, or `default`.
+          schema: { type: string }
+        - $ref: "#/components/parameters/endpoint"
+      responses:
+        "200":
+          description: Dropped.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "400":
+          description: Missing `graph` or no endpoint configured.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "403":
+          description: Endpoint has no write credentials.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "502":
+          description: SPARQL Update failed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+
+  /api/upload:
+    post:
+      tags: [Named graphs]
+      summary: Load RDF into a named graph
+      description: |
+        Loads an uploaded file, or a URL the server fetches, into `graphURI`
+        through the Graph Store Protocol, then stores `label` and the upload
+        time on the graph. Provide either `file` or `url`.
+
+        File extensions: `.ttl`, `.nt`, `.nq`, `.trig`, `.jsonld`, `.rdf`,
+        `.owl`, `.xml`. URLs must be http(s) and, unless
+        `allow_private_upload_urls` is set, must not resolve to a private or
+        loopback address.
+      operationId: upload
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                url:
+                  type: string
+                  format: uri
+                  example: https://www.w3.org/2009/08/skos-reference/skos.rdf
+                graphURI:
+                  type: string
+                  description: Target graph IRI; surrounding `<…>` is stripped.
+                  example: urn:ontology:w3/skos
+                label:
+                  type: string
+                endpoint:
+                  type: string
+                  description: Endpoint slug.
+      responses:
+        "200":
+          description: Loaded. `warning` is set when the label could not be stored.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "400":
+          description: No file or URL, unsupported extension, or undetectable content type.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "403":
+          description: Endpoint has no write credentials.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "500":
+          description: Uploaded file unreadable.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "502":
+          description: Remote URL failed, or the endpoint rejected the data.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+
+  /api/export-graphs:
+    get:
+      tags: [Named graphs]
+      summary: Export named graphs
+      description: |
+        One graph, or a quad format: a single RDF file. Several graphs in a
+        triple format: a ZIP with one file per graph (graphs that fail are
+        skipped). Tries the GraphDB, Graph Store and CONSTRUCT providers in turn.
+      operationId: exportGraphs
+      parameters:
+        - name: graph
+          in: query
+          required: true
+          style: form
+          explode: true
+          schema:
+            type: array
+            minItems: 1
+            items: { type: string }
+        - name: format
+          in: query
+          schema:
+            type: string
+            default: text/turtle
+            enum:
+              - text/turtle
+              - application/n-triples
+              - application/n-quads
+              - application/trig
+              - application/rdf+xml
+              - application/ld+json
+        - $ref: "#/components/parameters/endpoint"
+      responses:
+        "200":
+          description: Attachment (`export.<ext>` or `export.zip`).
+          content:
+            application/zip:
+              schema: { type: string, format: binary }
+            text/turtle:
+              schema: { type: string }
+        "400":
+          description: No `graph` given.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "502":
+          description: Every export provider failed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /api/ontologies:
+    get:
+      tags: [Named graphs]
+      summary: List preset ontologies
+      description: The `[[ontologies]]` entries from `visoto.config`, offered for one-click upload.
+      operationId: ontologies
+      responses:
+        "200":
+          description: Ontologies.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ontologies:
+                    type: array
+                    items: { $ref: "#/components/schemas/Ontology" }
+
+  /api/monitoring/status:
+    get:
+      tags: [Monitoring]
+      summary: Get the latest probe per endpoint
+      operationId: monitoringStatus
+      responses:
+        "200":
+          description: Status.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+                  endpoints:
+                    type: array
+                    items: { $ref: "#/components/schemas/EndpointStatus" }
+        "503": { $ref: "#/components/responses/MonitoringUnavailable" }
+
+  /api/monitoring/toggle:
+    post:
+      tags: [Monitoring]
+      summary: Switch probing on or off
+      description: Flips the persisted enabled state and returns the new one.
+      operationId: monitoringToggle
+      responses:
+        "200":
+          description: New state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  enabled: { type: boolean }
+        "503": { $ref: "#/components/responses/MonitoringUnavailable" }
+
+  /api/monitoring/data:
+    get:
+      tags: [Monitoring]
+      summary: Get response-time series
+      operationId: monitoringData
+      parameters:
+        - name: range
+          in: query
+          description: Unknown values yield `24h`. History is kept for 30 days.
+          schema: { type: string, enum: [1h, 24h, 7d, 30d, 3M], default: 24h }
+      responses:
+        "200":
+          description: One series per configured endpoint, in config order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  series:
+                    type: array
+                    items: { $ref: "#/components/schemas/MonitorSeries" }
+        "500": { $ref: "#/components/responses/JSONError" }
+        "503": { $ref: "#/components/responses/MonitoringUnavailable" }
+
+  /api/chat:
+    post:
+      tags: [Chat]
+      summary: Ask the resource assistant
+      description: Sends the message and history to Gemini, which may call Visoto's own MCP tools before answering.
+      operationId: chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ChatRequest" }
+      responses:
+        "200":
+          description: Answer.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatResponse" }
+        "400":
+          description: Malformed request.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatResponse" }
+        "429":
+          description: Model rate limit reached.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatResponse" }
+        "500":
+          description: Model call failed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatResponse" }
+        "503":
+          description: No Gemini API key configured.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatResponse" }
+
+  /api/cache/purge:
+    post:
+      tags: [Operations]
+      summary: Purge the shared HTTP cache
+      description: Asks the Souin cache in front of Visoto to flush everything. Only works where Visoto runs behind that Caddy.
+      operationId: cachePurge
+      responses:
+        "200":
+          description: Purged.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "500":
+          description: Request could not be built.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "502":
+          description: Cache unreachable or refused.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+
+  /metrics:
+    get:
+      tags: [Operations]
+      summary: Prometheus metrics
+      description: Go runtime, process, endpoint monitoring and class statistics metrics in the Prometheus text format. Answers 404 when no `metrics_token` is configured.
+      operationId: metrics
+      security:
+        - metricsToken: []
+      responses:
+        "200":
+          description: Metrics.
+          content:
+            text/plain:
+              schema: { type: string }
+        "401": { description: Missing or wrong bearer token. }
+        "404": { description: Metrics disabled. }
+
+  /mcp:
+    post:
+      tags: [Operations]
+      summary: MCP server
+      description: |
+        Model Context Protocol server over streamable HTTP (JSON-RPC 2.0). See
+        `/connectmcp.html` for client setup. The route accepts every method;
+        clients use POST for requests and GET for the event stream.
+      operationId: mcp
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+            example:
+              jsonrpc: "2.0"
+              id: 1
+              method: initialize
+              params:
+                protocolVersion: "2025-06-18"
+                capabilities: {}
+                clientInfo: { name: swagger, version: "1" }
+      responses:
+        "200":
+          description: JSON-RPC response, as JSON or an event stream.
+          content:
+            application/json:
+              schema: { type: object }
+            text/event-stream:
+              schema: { type: string }
+    get:
+      tags: [Operations]
+      summary: MCP event stream
+      operationId: mcpStream
+      responses:
+        "200":
+          description: Server-sent events.
+          content:
+            text/event-stream:
+              schema: { type: string }
+
+  /health:
+    get:
+      tags: [Operations]
+      summary: Health check
+      operationId: health
+      responses:
+        "200":
+          description: "`ok`"
+          content:
+            text/plain:
+              schema: { type: string, const: ok }
+
+  /ping:
+    get:
+      tags: [Operations]
+      summary: Liveness check
+      operationId: ping
+      responses:
+        "200":
+          description: "`pong`"
+          content:
+            text/plain:
+              schema: { type: string, const: pong }
+
+components:
+  securitySchemes:
+    metricsToken:
+      type: http
+      scheme: bearer
+      description: "`application.metrics_token` from `visoto.config`."
+
+  parameters:
+    endpoint:
+      name: endpoint
+      in: query
+      description: Endpoint slug. Unknown or absent uses the default endpoint.
+      schema: { type: string }
+      example: lindas-prod
+    lang:
+      name: lang
+      in: query
+      description: Display language for labels (`de`, `en`, `fr`, `it`, `rm`, or empty for no language). Absent uses the configured default.
+      schema: { type: string }
+      example: en
+    queryId:
+      name: id
+      in: path
+      required: true
+      description: Id of a `<sparql-async>` element in the template set `src`.
+      schema: { type: string }
+      example: instances
+    src:
+      name: src
+      in: query
+      required: true
+      description: Template set that declares the query, as `<dir>/<file>`.
+      schema: { type: string }
+      example: classes/default.html
+    iri:
+      name: iri
+      in: query
+      description: Resource IRI substituted for the `??` placeholder.
+      schema: { type: string, format: iri }
+      example: http://schema.org/Person
+    title:
+      name: title
+      in: query
+      description: Card title.
+      schema: { type: string }
+    icon:
+      name: icon
+      in: query
+      description: Card icon (Lucide name or image path).
+      schema: { type: string }
+    collapsed:
+      name: collapsed
+      in: query
+      description: Any non-empty value starts the card collapsed.
+      schema: { type: string }
+
+  responses:
+    HTMLFragment:
+      description: Rendered HTML fragment.
+      content:
+        text/html:
+          schema: { type: string }
+    PlainError:
+      description: Error message.
+      content:
+        text/plain:
+          schema: { type: string }
+    JSONError:
+      description: Internal error.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    MonitoringUnavailable:
+      description: Monitoring store unavailable.
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+
+    Success:
+      type: object
+      properties:
+        success: { type: boolean }
+        error: { type: string }
+        warning: { type: string }
+
+    SparqlResults:
+      description: W3C SPARQL 1.1 Query Results JSON.
+      type: object
+      properties:
+        head:
+          type: object
+          properties:
+            vars:
+              type: array
+              items: { type: string }
+        boolean: { type: boolean }
+        results:
+          type: object
+          properties:
+            bindings:
+              type: array
+              items:
+                type: object
+                additionalProperties:
+                  type: object
+                  properties:
+                    type: { type: string, enum: [uri, literal, bnode, typed-literal] }
+                    value: { type: string }
+                    datatype: { type: string }
+                    xml:lang: { type: string }
+
+    Binding:
+      description: One cell of a Visoto query result. Keys are capitalized.
+      type: object
+      properties:
+        Type: { type: string, enum: [uri, literal, bnode, typed-literal] }
+        Value: { type: string }
+        DisplayText: { type: string, description: Resolved label for IRIs, the value otherwise. }
+        Datatype: { type: string }
+        Lang: { type: string }
+
+    WorkingSet:
+      type: object
+      properties:
+        vars:
+          type: array
+          items: { type: string }
+        data:
+          type: array
+          items:
+            type: object
+            additionalProperties: { $ref: "#/components/schemas/Binding" }
+        total: { type: integer, description: Distinct keys in the class or result. }
+        complete: { type: boolean, description: True when `data` holds every row. }
+        error: { type: string }
+        icons:
+          type: object
+          description: IRI → resource icon path.
+          additionalProperties: { type: string }
+
+    FacetValues:
+      type: object
+      properties:
+        values:
+          type: array
+          items:
+            type: object
+            properties:
+              value: { type: string }
+              label: { type: string }
+              type: { type: string }
+              count: { type: integer }
+        error: { type: string }
+
+    SearchHit:
+      type: object
+      properties:
+        iri: { type: string }
+        label: { type: string }
+        type: { type: string }
+
+    TreeNode:
+      description: Wunderbaum node source. Extra projected variables appear as further keys of shape `{value, label, type}`.
+      type: object
+      properties:
+        key: { type: string, description: Node IRI. }
+        title: { type: string }
+        lazy: { type: boolean, description: Has or may have children. }
+        icon:
+          description: Resource icon path, or `false` for none.
+          oneOf:
+            - type: string
+            - type: boolean
+      additionalProperties:
+        type: object
+        properties:
+          value: { type: string }
+          label: { type: string }
+          type: { type: string }
+
+    LevelEnvelope:
+      type: object
+      properties:
+        nodes:
+          type: array
+          items: { $ref: "#/components/schemas/TreeNode" }
+        total: { type: integer }
+        complete: { type: boolean }
+        limitMode: { type: string, enum: [page, cap] }
+        error: { type: string }
+
+    FocusResponse:
+      type: object
+      properties:
+        path:
+          type: array
+          description: Root → … → target.
+          items: { type: string }
+        levels:
+          type: object
+          description: Parent IRI (`""` for the roots) → that level.
+          additionalProperties: { $ref: "#/components/schemas/LevelEnvelope" }
+        error: { type: string }
+
+    NamedGraph:
+      type: object
+      properties:
+        iri: { type: string }
+        label: { type: string }
+        tripleCount: { type: integer }
+
+    Ontology:
+      type: object
+      properties:
+        name: { type: string }
+        url: { type: string }
+        graph: { type: string }
+
+    ProbeMetric:
+      type: object
+      properties:
+        endpoint: { type: string }
+        measured_at: { type: string, format: date-time }
+        duration_ms: { type: integer, description: "-1 on error" }
+        status: { type: string, description: "`ok` or the error message" }
+
+    EndpointStatus:
+      type: object
+      properties:
+        name: { type: string }
+        url: { type: string }
+        last: { $ref: "#/components/schemas/ProbeMetric" }
+
+    MonitorSeries:
+      type: object
+      properties:
+        name: { type: string }
+        url: { type: string }
+        data:
+          type: array
+          description: "`[unix_ms, duration_ms]` pairs."
+          items:
+            type: array
+            minItems: 2
+            maxItems: 2
+            items: { type: integer }
+
+    ClassStatsEndpoint:
+      type: object
+      properties:
+        slug: { type: string }
+        name: { type: string }
+        day: { type: string, format: date }
+        engine: { type: string }
+        triples: { type: integer }
+        classes: { type: integer }
+        failures: { type: integer }
+        finished: { type: string, format: date-time }
+        seconds: { type: integer }
+
+    ClassStatsChanges:
+      type: object
+      properties:
+        from: { type: string, description: Empty when there is no older snapshot. }
+        to: { type: string }
+        triplesBefore: { type: [integer, "null"] }
+        triplesAfter: { type: [integer, "null"] }
+        classes: { type: integer }
+        changes:
+          type: array
+          items:
+            type: object
+            properties:
+              class: { type: string }
+              before: { type: [integer, "null"], description: null for a new class }
+              after: { type: [integer, "null"], description: null for a vanished class }
+              delta: { type: integer }
+              pct: { type: number }
+              drop: { type: boolean, description: Shrank beyond the drop threshold. }
+
+    ClassCountPoint:
+      type: object
+      properties:
+        day: { type: string, format: date }
+        count: { type: [integer, "null"], description: null when not counted that day }
+
+    ChatRequest:
+      type: object
+      required: [message]
+      properties:
+        resourceIRI: { type: string }
+        message: { type: string }
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              role: { type: string, enum: [user, assistant] }
+              content: { type: string }
+        data:
+          type: object
+          description: Page data passed as context.
+        acceptLanguage: { type: string }
+        activeEndpoint:
+          type: object
+          properties:
+            name: { type: string }
+            url: { type: string }
+
+    ChatResponse:
+      type: object
+      properties:
+        response: { type: string }
+        error: { type: string }

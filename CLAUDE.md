@@ -89,6 +89,11 @@ SPARQL endpoints are configured in `visoto.config` under
 identifier on the wire (`/resource?iri=<IRI>&endpoint=<slug>`). Default is
 LINDAS prod cached (`https://cached.lindas.admin.ch/query`).
 
+Every `/api/*` route (plus `/metrics`, `/mcp`, `/health`, `/ping`) is documented
+in `static/openapi.yaml`, rendered with Swagger UI at `/apiDocs.html`. Adding,
+removing or changing a route means updating the spec; `TestOpenAPICoversRoutes`
+fails on any route/spec mismatch.
+
 Cacheable routes (`/resource`, `/api/*`) must stay pure functions of the URL —
 never read the endpoint cookie in them.
 
