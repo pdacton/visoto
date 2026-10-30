@@ -1,0 +1,15 @@
+/* Swagger UI overrides for the API page (templates/pages/apiDocs.html). */
+
+/* Swagger UI ships a light theme only. Keep it on a light surface in dark mode
+   rather than restyling its every rule. */
+[data-api-docs] {
+  color-scheme: light;
+  background: #fff;
+  border-radius: inherit;
+  padding: 0 1rem 1rem;
+}
+
+/* Tabler's base sizes leak into Swagger UI's headings. */
+[data-api-docs] .swagger-ui .info {
+  margin: 1.5rem 0;
+}
