@@ -29,7 +29,7 @@
         nodes.forEach(function (d) { d.open = !anyOpen; });
         var label = anyOpen ? toggle.getAttribute('data-label-expand') : toggle.getAttribute('data-label-collapse');
         toggle.setAttribute('title', label);
-        toggle.innerHTML = '<i data-lucide="' + (anyOpen ? 'chevrons-up-down' : 'chevrons-down-up') + '"></i>';
+        toggle.innerHTML = '<i data-lucide="' + (anyOpen ? 'chevrons-up-down' : 'chevrons-down-up') + '" class="icon"></i>';
         if (window.lucide) lucide.createIcons({ nodes: [toggle] });
       });
     }

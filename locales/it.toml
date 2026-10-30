@@ -394,6 +394,11 @@
 "view.graph" = "Grafo"
 "view.schema" = "Schema"
 "view.page" = "Pagina"
+"view.pageTip" = "Panoramica formattata di questa risorsa"
+"view.graphTip" = "Esplora le connessioni di questa risorsa come grafo"
+"view.mapTip" = "Mostra la geometria di questa risorsa su una mappa"
+"view.dataTip" = "Tutte le triple di questa risorsa"
+"view.schemaTip" = "Schema derivato dai dati attorno a questa risorsa"
 "zoom.in" = "Ingrandisci"
 "zoom.out" = "Riduci"
 "zoom.reset" = "Reimposta lo zoom"
@@ -1767,8 +1772,9 @@
 "page.graphHelp.a11y2" = "Ogni pulsante della barra degli strumenti ha un'etichetta ed è raggiungibile con Tab. Il pulsante ? elenca le scorciatoie da tastiera."
 "js.graph.selectNode" = "Seleziona {name}"
 "js.graph.closeLeftPanel" = "Chiudi il pannello di classi e istanze"
+"js.graph.openLeftPanel" = "Apri il pannello di classi e istanze"
 "js.graph.closeRightPanel" = "Chiudi il pannello delle connessioni"
-"js.graph.toggleSidePanel" = "Mostra o nascondi il pannello laterale"
+"js.graph.openRightPanel" = "Apri il pannello delle connessioni"
 
 # Monitoring page: daily class-instance counts (class-stats-monitor.js, monitoring.html)
 "js.monitoring.classStatsNoRun" = "Nessuna esecuzione finora. La prima parte all’avvio del server, poi ogni giorno alle 07:00."

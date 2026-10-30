@@ -36,13 +36,13 @@
     <!-- card header with title -->
     <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
-        {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+        {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
         {{ if $title }} <h3 class="card-title mb-0{{ if or $hasError (not $hasResults) }} text-muted{{ end }}">{{ $title }}</h3> {{ end }}
       </div>
       <div class="btn-actions ms-auto">
           <div class="dropdown" style="display: contents;">
             <a class="btn-action" data-bs-toggle="dropdown" aria-expanded="false">
-              <i data-lucide="ellipsis-vertical"></i>
+              <i data-lucide="ellipsis-vertical" class="icon"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               {{ if $hasResults }}
@@ -56,7 +56,7 @@
             </ul>
           </div>
           <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-            <i data-lucide="chevron-up"></i>
+            <i data-lucide="chevron-up" class="icon"></i>
           </a>
         </div>
     </div>

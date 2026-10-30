@@ -288,8 +288,9 @@
 "page.graphHelp.a11y2" = "Mintga buttun da la trav d'utensils ha ina inscripziun e po vegnir cuntanschì cun Tab. Il buttun ? enumerescha las scursanidas da tastatura."
 "js.graph.selectNode" = "Tscherner {name}"
 "js.graph.closeLeftPanel" = "Serrar il panel da classas ed instanzas"
+"js.graph.openLeftPanel" = "Avrir il panel da classas ed instanzas"
 "js.graph.closeRightPanel" = "Serrar il panel da colliaziuns"
-"js.graph.toggleSidePanel" = "Mussar u zuppentar il panel lateral"
+"js.graph.openRightPanel" = "Avrir il panel da colliaziuns"
 
 # Monitoring page: daily class-instance counts (class-stats-monitor.js, monitoring.html)
 "js.monitoring.classStatsNoRun" = "Anc nagina execuziun. L’emprima cumenza cun il server, lura mintga di a las 07:00."

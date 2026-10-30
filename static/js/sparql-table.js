@@ -1156,7 +1156,7 @@
       toggleGroupsBtn.title = expanded
         ? vsT("js.table.collapseAllGroups", "Collapse all groups")
         : vsT("js.table.expandAllGroups", "Expand all groups");
-      toggleGroupsBtn.innerHTML = '<i data-lucide="' + iconName + '"></i>';
+      toggleGroupsBtn.innerHTML = '<i data-lucide="' + iconName + '" class="icon"></i>';
       if (window.lucide) lucide.createIcons({ nodes: [toggleGroupsBtn] });
     }
     if (toggleGroupsBtn) {

@@ -394,6 +394,11 @@
 "view.graph" = "Graph"
 "view.schema" = "Schema"
 "view.page" = "Seite"
+"view.pageTip" = "Aufbereitete Übersicht dieser Ressource"
+"view.graphTip" = "Verbindungen dieser Ressource als Graph erkunden"
+"view.mapTip" = "Geometrie dieser Ressource auf einer Karte zeigen"
+"view.dataTip" = "Alle Tripel dieser Ressource"
+"view.schemaTip" = "Aus den Daten rund um diese Ressource abgeleitetes Schema"
 "zoom.in" = "Vergrössern"
 "zoom.out" = "Verkleinern"
 "zoom.reset" = "Zoom zurücksetzen"
@@ -1768,8 +1773,9 @@
 "page.graphHelp.a11y2" = "Jede Schaltfläche der Werkzeugleiste hat eine Beschriftung und ist mit Tab erreichbar. Die Schaltfläche ? listet die Tastenkürzel."
 "js.graph.selectNode" = "{name} auswählen"
 "js.graph.closeLeftPanel" = "Klassen- und Instanzen-Panel schliessen"
+"js.graph.openLeftPanel" = "Klassen- und Instanzen-Panel öffnen"
 "js.graph.closeRightPanel" = "Verbindungen-Panel schliessen"
-"js.graph.toggleSidePanel" = "Seitenpanel ein- oder ausblenden"
+"js.graph.openRightPanel" = "Verbindungen-Panel öffnen"
 
 # Monitoring page: daily class-instance counts (class-stats-monitor.js, monitoring.html)
 "js.monitoring.classStatsNoRun" = "Noch kein Lauf. Der erste startet mit dem Server, danach täglich um 07:00."

@@ -44,11 +44,11 @@
     <div class="card">
       <div class="card-header d-flex align-items-center justify-content-between">
         <div class="d-flex align-items-center gap-2">
-          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
           <h3 class="card-title mb-0 text-muted">{{ $title }} - no results found</h3>
         </div>
         <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
-          <i data-lucide="chevron-up"></i>
+          <i data-lucide="chevron-up" class="icon"></i>
         </a>
       </div>
       <div id="collapse-{{ $id }}" class="collapse">
@@ -68,7 +68,7 @@
       <!-- card header with title, filter, and tree controls -->
       <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
-          {{ if $icon }} <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i> {{ end }}
+          {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
           {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
         </div>
         <div class="ms-auto d-flex align-items-center gap-2">
@@ -78,14 +78,14 @@
           <div class="btn-actions">
             {{ if $id }}
               <a id="expand-{{ $id }}" class="btn-action" title="{{ t "tree.expandAll" "Expand all" }}">
-                <i data-lucide="list-chevrons-up-down"></i>
+                <i data-lucide="list-chevrons-up-down" class="icon"></i>
               </a>
               <a id="collapse-tree-{{ $id }}" class="btn-action" title="{{ t "tree.collapseAll" "Collapse all" }}">
-                <i data-lucide="list-chevrons-down-up"></i>
+                <i data-lucide="list-chevrons-down-up" class="icon"></i>
               </a>
             {{ end }}
             <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-              <i data-lucide="chevron-up"></i>
+              <i data-lucide="chevron-up" class="icon"></i>
             </a>
           </div>
         </div>

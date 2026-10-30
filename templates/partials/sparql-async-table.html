@@ -153,7 +153,7 @@
     <div class="card placeholder-glow" aria-busy="true">
       {{ if or .icon .title }}
         <div class="card-header d-flex align-items-center gap-2">
-          {{ with .icon }}<i data-lucide="{{ . }}" style="width: 1.5em; height: 1.5em;"></i>{{ end }}
+          {{ with .icon }}<i data-lucide="{{ . }}" class="icon"></i>{{ end }}
           {{ with .title }}<h3 class="card-title mb-0">{{ . }}</h3>{{ end }}
         </div>
       {{ end }}

@@ -39,7 +39,7 @@
   <div hx-get="{{ $url }}" hx-trigger="{{ or .trigger "load" }}" hx-swap="outerHTML">
     <div class="card mb-3 placeholder-glow" aria-busy="true">
       <div class="card-header d-flex align-items-center gap-2">
-        <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <i data-lucide="{{ $icon }}" class="icon"></i>
         <h3 class="card-title mb-0">{{ $title }}</h3>
       </div>
       {{ if not .collapsed }}
@@ -58,17 +58,17 @@
   <div class="card mb-3 vs-ss-card" data-shape-summary>
     <div class="card-header">
       <h3 class="card-title d-flex align-items-center gap-2 mb-0">
-        <i data-lucide="{{ .icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <i data-lucide="{{ .icon }}" class="icon"></i>
         {{ .title }}
       </h3>
       <div class="btn-actions ms-auto">
         {{ if .summary }}
         <a class="btn-action" href="#" data-shape-copy title="{{ t "shape.copyText" "Copy as text" }}"
            data-label-done="{{ t "shape.copied" "Copied" }}" data-label-failed="{{ t "shape.copyFailed" "Copy failed" }}">
-          <i data-lucide="copy"></i>
+          <i data-lucide="copy" class="icon"></i>
         </a>
         {{ end }}
-        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="{{ not .collapsed }}"><i data-lucide="chevron-up"></i></a>
+        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="{{ not .collapsed }}"><i data-lucide="chevron-up" class="icon"></i></a>
       </div>
     </div>
 

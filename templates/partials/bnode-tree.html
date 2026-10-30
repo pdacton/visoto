@@ -59,7 +59,7 @@
   <div hx-get="{{ $url }}" hx-trigger="{{ or .trigger "load" }}" hx-swap="outerHTML">
     <div class="card mb-3 placeholder-glow" aria-busy="true">
       <div class="card-header d-flex align-items-center gap-2">
-        <i data-lucide="{{ $icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <i data-lucide="{{ $icon }}" class="icon"></i>
         <h3 class="card-title mb-0">{{ $title }}</h3>
       </div>
       {{ if not .collapsed }}
@@ -79,7 +79,7 @@
        data-bnode-tree data-bnode-tree-config="{{ $id }}-config">
     <div class="card-header">
       <h3 class="card-title d-flex align-items-center gap-2 mb-0">
-        <i data-lucide="{{ .icon }}" style="width: 1.5em; height: 1.5em;"></i>
+        <i data-lucide="{{ .icon }}" class="icon"></i>
         {{ .title }}
         {{ with .tree }}{{ if .BlankNodes }}<span class="badge bg-blue-lt">{{ tn "bnode.count" .BlankNodes "Blank nodes: {{.Count}}" }}</span>{{ end }}{{ end }}
       </h3>
@@ -89,11 +89,11 @@
            title="{{ t "bnode.collapseAll" "Collapse all nodes" }}"
            data-label-collapse="{{ t "bnode.collapseAll" "Collapse all nodes" }}"
            data-label-expand="{{ t "bnode.expandAll" "Expand all nodes" }}">
-          <i data-lucide="chevrons-down-up"></i>
+          <i data-lucide="chevrons-down-up" class="icon"></i>
         </a>
         {{ end }}
         <div class="dropdown" style="display: contents;">
-          <a class="btn-action" href="#" data-bs-toggle="dropdown" aria-expanded="false"><i data-lucide="ellipsis-vertical"></i></a>
+          <a class="btn-action" href="#" data-bs-toggle="dropdown" aria-expanded="false"><i data-lucide="ellipsis-vertical" class="icon"></i></a>
           <ul class="dropdown-menu dropdown-menu-end">
             {{ if .tree }}
             <li><h6 class="dropdown-header">{{ t "table.download" "Download" }}</h6></li>
@@ -107,7 +107,7 @@
             <li><a class="dropdown-item" href="#" data-bnode-endpoint><i data-lucide="play" style="width:1em;height:1em;"></i> {{ t "query.executeOnEndpoint" "Execute on endpoint" }}</a></li>
           </ul>
         </div>
-        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="true"><i data-lucide="chevron-up"></i></a>
+        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="true"><i data-lucide="chevron-up" class="icon"></i></a>
       </div>
     </div>
 

@@ -68,7 +68,7 @@
     {{ end }}
   {{ end }}
   {{ if $flagURL }}
-    <img src="{{ $flagURL }}" alt="{{ t "type.municipality.municipalityFlag" "Municipality flag" }}" width="64" height="64" style="object-fit: contain;">
+    <img src="{{ $flagURL }}" alt="{{ t "type.municipality.municipalityFlag" "Municipality flag" }}" width="64" height="64" class="rounded" style="object-fit: contain;">
   {{ else }}
     <img src="{{ resourceIcon . }}" alt="{{ t "type.municipality.pageIcon" "Page icon" }}" width="48" height="48">
   {{ end }}
@@ -111,21 +111,27 @@
 
   <div class="row mb-3">
 
-    <!-- Postal Codes -->
+    <!-- Zefix Organisationen -->
     <div class="col-lg mt-3">
-      <sparql-query id="postals">
-        SELECT ?postalCode WHERE {
-          BIND (?? AS ?s)
-          ?s schema:postalCode ?postalCode .
-        } LIMIT 1000
+      <sparql-query id="Organisationen">
+        SELECT ?zefix_Organisation ?form WHERE {
+          ?zefix_Organisation schch:municipality ?? .
+          ?zefix_Organisation a schema:Organization .
+          OPTIONAL { ?zefix_Organisation schema:additionalType ?form . }
+        } LIMIT 5000
       </sparql-query>
+      <sparql-columns for="Organisationen">
+        <sparql-column var="zefix_Organisation" label="{{ t "facet.organisation" "Organisation" }}" icon filter></sparql-column>
+        <sparql-column var="form" label="{{ t "facet.legalForm" "Legal form" }}" filter></sparql-column>
+      </sparql-columns>
+
       {{ template "sparqlTable" (dict
-            "result" .QueryResults.postals
-            "id" "postals"
-            "title" (t "card.postalCodes" "Postal Codes")
-            "icon" "mail") 
+          "result" .QueryResults.Organisationen
+          "id" "Organisationen"
+          "title" (t "card.zefixOrganisationen" "Zefix Organisationen")
+          "icon" "users")
       }}
-    </div>      
+    </div>    
 
     <!-- Stationen -->
     <div class="col-lg mt-3">
@@ -149,27 +155,21 @@
       }}
     </div>    
 
-    <!-- Zefix Organisationen -->
+    <!-- Postal Codes -->
     <div class="col-lg mt-3">
-      <sparql-query id="Organisationen">
-        SELECT ?zefix_Organisation ?form WHERE {
-          ?zefix_Organisation schch:municipality ?? .
-          ?zefix_Organisation a schema:Organization .
-          OPTIONAL { ?zefix_Organisation schema:additionalType ?form . }
-        } LIMIT 5000
+      <sparql-query id="postals">
+        SELECT ?postalCode WHERE {
+          BIND (?? AS ?s)
+          ?s schema:postalCode ?postalCode .
+        } LIMIT 1000
       </sparql-query>
-      <sparql-columns for="Organisationen">
-        <sparql-column var="zefix_Organisation" label="{{ t "facet.organisation" "Organisation" }}" icon filter></sparql-column>
-        <sparql-column var="form" label="{{ t "facet.legalForm" "Legal form" }}" filter></sparql-column>
-      </sparql-columns>
-
       {{ template "sparqlTable" (dict
-          "result" .QueryResults.Organisationen
-          "id" "Organisationen"
-          "title" (t "card.zefixOrganisationen" "Zefix Organisationen")
-          "icon" "users")
+            "result" .QueryResults.postals
+            "id" "postals"
+            "title" (t "card.postalCodes" "Postal Codes")
+            "icon" "mail") 
       }}
-    </div>    
+    </div>
 
   </div>
 
