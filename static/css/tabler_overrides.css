@@ -295,6 +295,9 @@ html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expan
     display: block;
     height: 1.5rem;
     margin-top: -1.5rem;
+    /* Tabler draws the sidebar's right border as an inset box-shadow, which
+       paints beneath the content: a full-width fade would wash it out too. */
+    margin-right: var(--tblr-border-width);
     pointer-events: none;
     background: linear-gradient(to top, var(--tblr-bg-surface), transparent);
 }
