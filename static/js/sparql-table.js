@@ -32,6 +32,22 @@
     return (typeof activeTemplateSet === 'function') ? activeTemplateSet() : '';
   }
 
+  // Header sort icon: Tabler's three-state chevrons (Lucide chevrons-up-down /
+  // chevron-up / chevron-down) instead of Tabulator's border triangle. Inline SVG
+  // rather than <i data-lucide>, because Tabulator re-renders this on every sort
+  // change and a placeholder would flash empty until the next createIcons().
+  // Colour and size live in tabulator_overrides.css (.tabulator-col-sorter).
+  var SORT_ICON_PATHS = {
+    none: '<path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/>',
+    asc: '<path d="m18 15-6-6-6 6"/>',
+    desc: '<path d="m6 9 6 6 6-6"/>'
+  };
+  function headerSortElement(column, dir) {
+    return '<svg class="vs-sort-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"' +
+      ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      (SORT_ICON_PATHS[dir] || SORT_ICON_PATHS.none) + '</svg>';
+  }
+
   function initSparqlTable(root) {
     var CFG;
     try {
@@ -593,6 +609,7 @@
         renderHorizontal: "virtual",
         renderVertical: "virtual",
         movableColumns: true,
+        headerSortElement: headerSortElement,
         sortMode: "local",
         pagination: "local",
         paginationSize: 10,
@@ -639,6 +656,25 @@
     }
     table.on("renderComplete", markClippedCells);
     table.on("columnResized", markClippedCells);
+
+    // Mark a table whose bottom edge is its card's (vs-ends-card): the card's
+    // border then closes the table, so the last row drops its own line and the
+    // corners round (tabulator_overrides.css). Measured, because a .row-deck card
+    // stretched to a taller neighbour leaves the table ending mid-card — and that
+    // changes as neighbouring cards load, so it is re-checked whenever the card
+    // or the table resizes (a stretched card keeps its size while the table grows).
+    var tableEl = document.getElementById(ID + "-table");
+    var cardEl = tableEl && tableEl.closest(".card");
+    if (cardEl && window.ResizeObserver) {
+      var endsCard = new ResizeObserver(function() {
+        var gap = cardEl.getBoundingClientRect().bottom - tableEl.getBoundingClientRect().bottom;
+        // Flush leaves just the card's 1px border; a collapsed card hides the
+        // table (bottom 0), which reads as a large gap and clears the mark.
+        tableEl.classList.toggle("vs-ends-card", gap >= 0 && gap < 2);
+      });
+      endsCard.observe(cardEl);
+      endsCard.observe(tableEl);
+    }
     // Keep the status bar + "Clear all" chip in sync with per-column header-
     // filters (they don't route through applyLocalFilter). renderStatus is a
     // hoisted function declaration, so it exists by the time this event fires.

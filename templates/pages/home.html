@@ -8,11 +8,11 @@
   <div class="row row-deck row-cards mb-3">
 
     <!-- Municipalities card. Photo: Tucker Monticelli on Unsplash (Unsplash License). -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-sm-6 col-md-4 vs-col-xwide-2">
       <div class="card h-100">
         <img src="/static/img/cards/municipalities.jpg" class="card-img-top" alt="{{ t "page.home.swissTownByTheRiver" "Houses along a river in a Swiss town" }}" title="Photo: Tucker Monticelli on Unsplash" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">
-          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.municipalities" "Municipalities" }}</h3>
+          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.municipalities" "Swiss Municipalities" }}</h3>
           <p class="text-secondary mt-auto">{{ tHTML "page.home.checkOutTheChangeHistory" "Check out the <a href=\"/resource?iri=https%3A%2F%2Fld.admin.ch%2Fmunicipality%2F3871\">change history of Klosters</a> (an example for a simpler merge), <a href=\"/resource?iri=https%3A%2F%2Fld.admin.ch%2Fmunicipality%2F2262\">Gurmels</a> (a rich example with many mutations), or <a href=\"/resource?iri=https%3A%2F%2Fld.admin.ch%2Fmunicipality%2F363\">Ostermundigen</a> (an example for a split)." }}</p>
         </div>
       </div>
@@ -22,7 +22,7 @@
          (RiC-O, graph sfa/ais), through the same partials/media-card.html as the
          Digital copy card on the record page. The #t= fragment plays just this
          item out of the weekly reel. -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-sm-6 col-md-4 vs-col-xwide-2">
       {{ template "mediaCard" (dict
           "url"       "https://media.zem.ch/01WS/1957/SFW_0761.mp4#t=121,144"
           "kind"      "video"
@@ -36,27 +36,24 @@
 
     <!-- Staatskalender card: the federal administration's organisation directory.
          Photo: Bundeshaus West, Superikonoskop, CC BY-SA 4.0 (Wikimedia Commons). -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-sm-6 col-md-4 vs-col-xwide-2">
       <div class="card h-100">
         <img src="/static/img/cards/staatskalender.jpg" class="card-img-top" alt="{{ t "page.home.bundeshausWest" "Bundeshaus West in Bern" }}" title="Bundeshaus West · Superikonoskop, CC BY-SA 4.0" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">
-          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.staatskalender" "Federal Staatskalender" }}</h3>
+          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.staatskalender" "Federal Directory (Staatskalender)" }}</h3>
           <p class="text-secondary mt-auto">{{ tHTML "page.home.staatskalenderText" "Who does what in the federal administration? Browse the departments, offices and units of the <a href=\"/resource?iri=http%3A%2F%2Fschema.org%2FGovernmentOrganization\">Staatskalender</a>." }}</p>
         </div>
       </div>
     </div>
 
-  </div>
-
-  <div class="row row-deck row-cards mb-3">
 
     <!-- Interoperability card: shared code lists and classifications, with the
          NOGA nomenclature as the example. -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-sm-6 col-md-4 vs-col-xwide-2">
       <div class="card h-100">
         <img src="https://www.bkw.ch/fileadmin/user_upload/02_Gebaeude/02_04_Gebaeudetechnik/Elektro/Elektro__c__BKW_Building_Solutions_AG_51.jpg" class="card-img-top" alt="{{ t "page.home.industrialBuilding" "Industrial building" }}" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">
-          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.interoperability" "Interoperability" }}</h3>
+          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.interoperability" "Data Interoperability" }}</h3>
           <p class="text-secondary mt-auto">{{ tHTML "page.home.interoperabilityNogaText" "Data fits together when everyone uses the same codes. Browse the <a href=\"/resource?iri=http%3A%2F%2Fwww.w3.org%2F2004%2F02%2Fskos%2Fcore%23ConceptScheme\">concept schemes</a> – shared code lists and classifications, many of them from I14Y, the Swiss interoperability platform – such as the <a href=\"/resource?iri=https%3A%2F%2Fregister.ld.admin.ch%2Fi14y%2Fconcept%2FnogaCode%2Fversion%2F2.0.0\">NOGA nomenclature</a> of economic activities." }}</p>
         </div>
       </div>
@@ -64,11 +61,11 @@
 
     <!-- Plazi card: taxonomic treatments liberated from the literature.
          Photo: Tyrannosaurus rex, Smithsonian NMNH, USDA, public domain (Wikimedia Commons). -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-sm-6 col-md-4 vs-col-xwide-2">
       <div class="card h-100">
         <img src="/static/img/cards/plazi.jpg" class="card-img-top" alt="{{ t "page.home.trexSkeleton" "Tyrannosaurus rex skeleton" }}" title="Tyrannosaurus rex, Smithsonian National Museum of Natural History · USDA, public domain" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">
-          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.plazi" "Plazi" }}</h3>
+          <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.plazi" "Plazi Species" }}</h3>
           <p class="text-secondary mt-auto">{{ tHTML "page.home.plaziText" "One of the largest datasets in LINDAS: species descriptions from the scientific literature, made searchable by Plazi. Say hello to <a href=\"/resource?iri=https%3A%2F%2Ftaxon-name.plazi.org%2Fid%2FAnimalia%2FTyrannosaurus_rex\"><i>Tyrannosaurus rex</i></a>, or browse the whole <a href=\"/plazi.html\">tree of life</a>." }}</p>
         </div>
       </div>
@@ -76,7 +73,7 @@
 
     <!-- System map card: the DigiAgriFoodCH system map of Swiss agricultural IT.
          Image: Visoto's own graph of the MARS III system architecture. -->
-    <div class="col-sm-6 col-lg-4">
+    <div class="col-sm-6 col-md-4 vs-col-xwide-2">
       <div class="card h-100">
         <img src="/static/img/cards/system-map.jpg" class="card-img-top" alt="{{ t "page.home.marsGraph" "Graph of the MARS III system architecture" }}" style="height: 200px; object-fit: cover;">
         <div class="card-body d-flex flex-column">

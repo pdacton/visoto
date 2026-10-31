@@ -79,30 +79,33 @@
     margin-left: 0.5rem;
 }
 
-.tabulator .tabulator-col-sorter .tabulator-arrow {
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-bottom: 4px solid var(--tblr-secondary);
-    opacity: 0.3;
-    transition: opacity 0.2s ease-in-out;
+/* Header icons (sort arrow + facet funnel) share one scheme: --tblr-secondary
+   at 0.5 idle, full on hover, --tblr-primary while active.
+
+   The sort icon is the chevron SVG from headerSortElement (sparql-table.js),
+   drawn in currentColor. The selectors repeat tabulator_bootstrap5's chain
+   (...[aria-sort=x] .tabulator-col-content .tabulator-col-sorter) to tie its
+   #bbb / #666 sorter colours; ties go to this file, which loads later. Anything
+   shorter loses, and the active icon comes out dark grey instead of primary. */
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort] .tabulator-col-content .tabulator-col-sorter {
+    color: var(--tblr-secondary);
+    opacity: 0.5;
+    transition: opacity 0.15s ease-in-out;
 }
 
-.tabulator .tabulator-col.tabulator-sortable:hover .tabulator-arrow {
-    opacity: 0.6;
-}
-
-/* Active sort indicators */
-.tabulator .tabulator-header .tabulator-col[aria-sort="ascending"] .tabulator-arrow {
-    border-bottom: 4px solid var(--tblr-primary);
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort]:hover .tabulator-col-content .tabulator-col-sorter {
     opacity: 1;
 }
 
-.tabulator .tabulator-header .tabulator-col[aria-sort="descending"] .tabulator-arrow {
-    border-bottom: none;
-    border-top: 4px solid var(--tblr-primary);
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort="ascending"] .tabulator-col-content .tabulator-col-sorter,
+.tabulator .tabulator-header .tabulator-col.tabulator-sortable[aria-sort="descending"] .tabulator-col-content .tabulator-col-sorter {
+    color: var(--tblr-primary);
     opacity: 1;
+}
+
+.tabulator .tabulator-col-sorter .vs-sort-icon {
+    width: 14px;
+    height: 14px;
 }
 
 /* Facet funnel placement: right-aligned, immediately left of the sort arrow,
@@ -116,7 +119,7 @@
    even though the containing block is the holder. `right` must therefore stay
    >= 0: pushed outside the title box the funnel becomes invisible AND
    non-hit-testable (elementFromPoint returns the title, not the button), with no
-   error to show for it. 18px = the 12px sorter + a 6px gap, measured against
+   error to show for it. 18px = the 14px chevron sorter + a 4px gap, measured against
    tabulator_bootstrap5.min.css, which places .tabulator-col-sorter at right:0
    (the base theme's right:4px does NOT apply here). Re-measure if the Tabulator
    version or theme changes.
@@ -136,7 +139,7 @@
     /* Reserve the funnel's lane so a long label ellipsises before it collides
        with the funnel instead of running underneath it. Keep >= the funnel's
        footprint, and in sync with the `right` offset above. */
-    padding-right: 26px;
+    padding-right: 20px;
 }
 
 .tabulator .tabulator-col-content .vs-facet-dd {
@@ -158,20 +161,28 @@
     border-bottom: 1px solid var(--tblr-border-color);
 }
 
-/* The footer's border-top already closes the table; the last row's own bottom
-   border sat directly on it and read as a doubled line. */
-.tabulator .tabulator-tableholder .tabulator-table .tabulator-row:last-child {
+/* The last row's bottom border is dropped only where something else already
+   draws that line — it would read as a doubled line:
+     - the footer's border-top, on a paginated table;
+     - the card's bottom border, when the table sits on it (.vs-ends-card).
+   Otherwise it stays: a .row-deck card stretched to a taller neighbour leaves
+   a footerless table ending mid-card, and its last row needs the line. */
+.tabulator:has(> .tabulator-footer) .tabulator-tableholder .tabulator-table .tabulator-row:last-child,
+.tabulator.vs-ends-card .tabulator-tableholder .tabulator-table .tabulator-row:last-child {
     border-bottom: 0;
 }
 
-/* A table that ends its card: round its bottom corners to the card's inner
-   radius, as Tabler does for .card-footer:last-child. Otherwise the footer's
-   square background paints over the card's rounded corner. The .tabulator
-   already clips (overflow: hidden), so the footer follows. The card itself
-   can't clip — its header ⋮ dropdowns would be cut off. "Last" ignores the
-   <template> config island that follows the table. */
-.card > .card-body:last-child > .tabulator:not(:has(~ :not(template))),
-.card > .collapse:last-child > .card-body:last-child > .tabulator:not(:has(~ :not(template))) {
+/* A table whose bottom edge is the card's: round its bottom corners to the
+   card's inner radius, as Tabler does for .card-footer:last-child. Otherwise
+   the footer's square background paints over the card's rounded corner. The
+   .tabulator already clips (overflow: hidden), so the footer follows. The card
+   itself can't clip — its header ⋮ dropdowns would be cut off.
+
+   .vs-ends-card is measured, not selected: sparql-table.js toggles it with a
+   ResizeObserver. A structural "last child of the card" selector can't tell a
+   stretched card, where the table ends above the bottom edge and rounded
+   corners would clip the last row's line short of the card's sides. */
+.tabulator.vs-ends-card {
     border-bottom-left-radius: var(--tblr-card-inner-border-radius);
     border-bottom-right-radius: var(--tblr-card-inner-border-radius);
 }
@@ -642,8 +653,38 @@ html .tabulator .tabulator-footer .tabulator-paginator .tabulator-page svg {
    copying its attributes over — so the funnel glyph must be sized on the
    generated element, not on the <i> the JS writes. */
 .vs-facet-btn svg {
-    width: 0.9em;
-    height: 0.9em;
+    width: 13px;
+    height: 13px;
+}
+
+/* A fixed square hit area (overrides Tabler's .btn-action 2rem sizing) so the
+   funnel's footprint is predictable for the offsets in .vs-facet-dd /
+   .vs-facet-label. The hover fill (--tblr-active-bg) is btn-action's own. */
+.tabulator .vs-facet-btn {
+    width: 20px;
+    height: 20px;
+    min-width: 0;
+    min-height: 0;
+    padding: 0 !important;
+    justify-content: center;
+    color: var(--tblr-secondary);
+    opacity: 0.5;
+    transition: opacity 0.15s ease-in-out;
+}
+
+.tabulator .tabulator-col:hover .vs-facet-btn,
+.tabulator .vs-facet-btn[aria-expanded="true"] {
+    opacity: 1;
+}
+
+.tabulator .vs-facet-btn:hover,
+.tabulator .vs-facet-btn[aria-expanded="true"] {
+    color: var(--tblr-body-color);
+}
+
+.tabulator .vs-facet-btn.vs-facet-active {
+    color: var(--tblr-primary);
+    opacity: 1;
 }
 
 /* ===== DARK MODE =====

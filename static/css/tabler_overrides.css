@@ -231,10 +231,8 @@ header.navbar.sticky-top.is-scrolled {
    which would size the element 16px wider than every offset computed from the
    name below — the sidebar and the content gutter would disagree. So the Tabler
    variable is pinned to ours rather than the other way round, keeping one name
-   for the width: sidebar.js reads it as its own fallback when it cannot measure
-   the element, so the pre-paint offset and the script's can never drift apart.
-   The measured width still wins once the script runs; this only has to hold for
-   the first frame. */
+   for the width: sidebar.js reads it too, so the pre-paint offset and the
+   script's can never drift apart. */
 :root {
     --vs-sidebar-width: 240px;
     --tblr-sidebar-width: var(--vs-sidebar-width);
@@ -494,9 +492,12 @@ aside.right-sidebar {
     position: fixed !important;
     top: 0 !important;
     right: 0;
+    /* Out-rank aside.right-sidebar's closed margin and z-index, or the overlay
+       stays 250px off-screen, or lands under its own backdrop (1045). */
+    margin-right: 0 !important;
     height: 100vh !important;
     width: 250px !important;
-    z-index: 1050;
+    z-index: 1050 !important;
     transform: translateX(100%);
     transition: transform 0.3s cubic-bezier(.4,0,.2,1);
 }
@@ -534,6 +535,18 @@ aside.right-sidebar {
 body.resizing {
     user-select: none;
     cursor: ew-resize !important;
+}
+
+/* --- Six-across column above Bootstrap's breakpoints --- */
+
+/* Bootstrap stops at xxl (1400px), but with the 240px sidebar six cards there
+   are ~190px wide and too narrow to read comfortably. Used by the homepage
+   highlight cards. */
+@media (min-width: 1700px) {
+    .vs-col-xwide-2 {
+        flex: 0 0 auto;
+        width: 16.66666667%;
+    }
 }
 
 /* --- Full-width datagrid items --- */
@@ -1175,12 +1188,32 @@ sparql-tree-query { display: none; }
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    padding: .1rem .5rem;
+    padding: .05rem .4rem;
     border-radius: var(--tblr-border-radius-pill);
-    background: rgba(15, 23, 42, .55);
-    font-size: .7rem;
-    color: rgba(255, 255, 255, .85);
+    background: rgba(15, 23, 42, .25);
+    font-size: .625rem;
+    color: rgba(255, 255, 255, .6);
     text-decoration: none;
+    opacity: 0;
+    transition: opacity .2s ease-in-out, color .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+/* The attribution appears while the pointer is on the photo (or the link has
+   keyboard focus). Touch screens have no hover, so there it stays visible —
+   the CC licences require the credit to be reachable. */
+.vs-hero:hover .vs-hero-credit,
+.vs-hero-credit:focus-visible {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .vs-hero-credit { opacity: 1; }
+}
+
+.vs-hero-credit:hover,
+.vs-hero-credit:focus-visible {
+    background: rgba(15, 23, 42, .55);
+    color: rgba(255, 255, 255, .9);
 }
 
 @media (max-width: 575.98px) {
