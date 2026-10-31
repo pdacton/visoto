@@ -187,17 +187,17 @@
           if (!e.dataTransfer.types.includes(DRAG_TYPE_IDX)) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'copy';
-            dropZone.classList.add('bookmarks-drop-zone--over');
+            dropZone.classList.add('dropzone-dragover');
           }
         }
       });
 
       target.addEventListener('dragleave', function () {
-        dropZone.classList.remove('bookmarks-drop-zone--over');
+        dropZone.classList.remove('dropzone-dragover');
       });
 
       target.addEventListener('drop', function (e) {
-        dropZone.classList.remove('bookmarks-drop-zone--over');
+        dropZone.classList.remove('dropzone-dragover');
         if (e.dataTransfer.types.includes(DRAG_TYPE_IDX)) return; // reorder handled by item
 
         e.preventDefault();

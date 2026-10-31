@@ -501,18 +501,27 @@ body.resizing {
     --tblr-nav-tabs-link-active-border-color: var(--tblr-border-color) var(--tblr-border-color) var(--tblr-bg-surface);
 }
 
-/* --- Bookmarks sidebar panel --- */
-.bookmarks-drop-zone {
-  border: 2px dashed currentColor;
+/* --- Drop targets: the bookmarks sidebar and the upload modal ---
+   Tabler's .dropzone look (padding, secondary text, a 1px dashed border in the
+   border colour). Tabler defines it only in tabler-vendors.css, for the
+   Dropzone.js plugin this app does not use, so its values are carried over
+   here rather than loading that stylesheet. The drag-over highlight is ours;
+   bookmarks.js and upload.js both toggle .dropzone-dragover. */
+.dropzone {
+  padding: 1rem;
+  color: var(--tblr-secondary);
+  text-align: center;
+  border: var(--tblr-border-width) dashed var(--tblr-border-color);
   border-radius: var(--tblr-border-radius);
-  transition: background-color 0.15s, border-color 0.15s;
-  cursor: default;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
-.bookmarks-drop-zone--over {
+.dropzone.dropzone-dragover {
   background-color: var(--tblr-primary-lt);
   border-color: var(--tblr-primary);
-  color: var(--tblr-primary) !important;
+  color: var(--tblr-primary);
 }
+
+/* --- Bookmarks sidebar panel --- */
 /* .navbar-nav prefix needed to override .navbar-nav .nav-item { flex-direction: column; justify-content: center } */
 .navbar-nav .bookmark-item {
   display: flex;
