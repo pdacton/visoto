@@ -3,8 +3,8 @@
 
     <div class="collapse navbar-collapse" id="sidebar-menu">
 
-      <!-- Tab strip: Nav / Bookmarks -->
-      <ul class="nav nav-tabs mt-2 px-1" id="sidebar-tabs" data-bs-toggle="tabs" role="tablist">
+      <!-- Tab strip: Nav / Bookmarks, as a Tabler segmented control -->
+      <ul class="nav nav-segmented nav-justified" id="sidebar-tabs" data-bs-toggle="tabs" role="tablist">
         <li class="nav-item" role="presentation">
           <a class="nav-link active" id="sidebar-tab-nav" data-bs-toggle="tab" href="#sidebar-panel-nav" role="tab" aria-selected="true">{{ t "nav.menu" "Menu" }}</a>
         </li>
@@ -570,11 +570,11 @@
         </div>
 
         <!-- Bookmarks tab -->
-        <div class="tab-pane" id="sidebar-panel-bookmarks" role="tabpanel">
+        <div class="tab-pane pb-3" id="sidebar-panel-bookmarks" role="tabpanel">
           <ul class="navbar-nav pt-lg-3" id="bookmarks-list">
             <!-- populated by bookmarks.js -->
           </ul>
-          <div id="bookmarks-drop-zone" class="bookmarks-drop-zone px-3 py-4 mt-1 text-center text-muted small rounded">
+          <div id="bookmarks-drop-zone" class="dropzone mx-2 mt-1 small">
             <i data-lucide="bookmark-plus" style="width:20px;height:20px;" class="d-block mx-auto mb-1 opacity-50"></i>
             {{ t "bookmarks.dropHint" "Drop a resource here" }}
           </div>

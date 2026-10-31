@@ -5,7 +5,7 @@
     <!-- hamburger button to toggle sidebar  -->
     <div class="nav-item flex-shrink-0">
         <button id="sidebar-toggle" class="nav-link" type="button" aria-label="{{ t "topbar.toggleSidebar" "Toggle sidebar" }}">
-          <i data-lucide="menu" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i data-lucide="menu" class="icon"></i>
         </button>
     </div>
 
@@ -29,7 +29,7 @@
              the hint gives icon-left/hint-right with both paddings correct. -->
         <div class="input-icon">
           <span class="input-icon-addon">
-            <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+            <i data-lucide="search" class="icon"></i>
           </span>
           <input
             type="text"
@@ -49,7 +49,7 @@
       </form>
       <!-- Phones only: closes the field opened by the button below (static/js/search.js). -->
       <button type="button" class="btn btn-ghost-secondary btn-icon topbar-search-close" aria-label="{{ t "modal.close" "Close" }}">
-        <i data-lucide="x" style="width: 1.25rem; height: 1.25rem;"></i>
+        <i data-lucide="x" class="icon"></i>
       </button>
     </div>
 
@@ -57,7 +57,7 @@
          across the whole topbar (tabler_overrides.css, static/js/search.js). -->
     <div class="nav-item flex-shrink-0 ms-auto topbar-search-open">
       <button type="button" class="nav-link" aria-label="{{ t "topbar.searchAria" "Search" }}">
-        <i data-lucide="search" style="width: 1.25rem; height: 1.25rem;"></i>
+        <i data-lucide="search" class="icon"></i>
       </button>
     </div>
 
@@ -71,7 +71,7 @@
              grid but draws it as r=1 stroked dots, which reads too light next to
              the other topbar icons; these are filled at r=2. currentColor keeps
              it in step with them. -->
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width: 1.25rem; height: 1.25rem;" aria-hidden="true" focusable="false">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="icon" aria-hidden="true" focusable="false">
           <circle cx="5" cy="5" r="2"/><circle cx="12" cy="5" r="2"/><circle cx="19" cy="5" r="2"/>
           <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
           <circle cx="5" cy="19" r="2"/><circle cx="12" cy="19" r="2"/><circle cx="19" cy="19" r="2"/>
@@ -129,12 +129,12 @@
              endpoint <select>. -->
         <a href="#" class="nav-link px-2 py-1 d-flex align-items-center gap-1" id="site-lang-toggle" data-bs-toggle="dropdown" data-bs-auto-close="true" role="button" aria-expanded="false" aria-label="{{ t "topbar.selectLanguage" "Select language" }}">
           <span id="site-lang-current">{{ range . }}{{ if .Selected }}{{ .Label }}{{ end }}{{ end }}</span>
-          <i data-lucide="chevron-down" style="width: 1rem; height: 1rem;" aria-hidden="true"></i>
+          <i data-lucide="chevron-down" class="icon icon-sm" aria-hidden="true"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-end">
           {{ range . }}
           <a class="dropdown-item site-lang-item{{ if .Selected }} active{{ end }}" href="#" data-lang-code="{{ .Code }}">
-            <i data-lucide="{{ if .Selected }}check{{ else }}languages{{ end }}" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ .Name }}
+            <i data-lucide="{{ if .Selected }}check{{ else }}languages{{ end }}" class="icon dropdown-item-icon"></i>{{ .Name }}
           </a>
           {{ end }}
         </div>
@@ -152,19 +152,19 @@
       <!-- darkmode button -->
       <div class="nav-item">
         <a href="#" id="theme-toggle" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "topbar.enableDarkMode" "Enable dark mode" }}" data-bs-original-title="{{ t "topbar.enableDarkMode" "Enable dark mode" }}">
-          <i id="theme-icon" data-lucide="moon" aria-hidden="true" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i id="theme-icon" data-lucide="moon" aria-hidden="true" class="icon"></i>
         </a>
       </div>
       <!-- assistant button -->
       <div class="nav-item d-none d-sm-flex">
         <a href="#" id="right-sidebar-toggle" class="nav-link" data-bs-toggle="tooltip" data-bs-placement="bottom" aria-label="{{ t "topbar.assistant" "Otto, the assistant" }}" data-bs-original-title="{{ t "topbar.assistant" "Otto, the assistant" }}">
-          <i data-lucide="bot" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i data-lucide="bot" class="icon"></i>
         </a>
       </div>
       <!-- settings menu -->
       <div class="nav-item dropdown">
         <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" aria-label="{{ t "topbar.openSettings" "Open settings menu" }}" data-bs-original-title="{{ t "topbar.settings" "Settings" }}">
-          <i data-lucide="settings" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i data-lucide="settings" class="icon"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-end">
           <!-- Endpoint list, narrow screens only: stands in for the hidden
@@ -174,7 +174,7 @@
             <h6 class="dropdown-header">{{ t "topbar.selectEndpoint" "SPARQL endpoint" }}</h6>
             {{ range .SparqlEndpoints }}
             <a class="dropdown-item endpoint-menu-item{{ if eq .Slug $.SelectedEndpointSlug }} active{{ end }}" href="#" data-endpoint-slug="{{ .Slug }}">
-              <i data-lucide="{{ if eq .Slug $.SelectedEndpointSlug }}check{{ else }}database{{ end }}" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ .Name }}
+              <i data-lucide="{{ if eq .Slug $.SelectedEndpointSlug }}check{{ else }}database{{ end }}" class="icon dropdown-item-icon"></i>{{ .Name }}
             </a>
             {{ end }}
             <div class="dropdown-divider"></div>
@@ -182,29 +182,29 @@
           {{ end }}
           <!-- Assistant, narrow screens only: its topbar button is hidden there. -->
           <a class="dropdown-item d-sm-none" href="#" id="right-sidebar-toggle-menu">
-            <i data-lucide="bot" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.assistant" "Otto, the assistant" }}
+            <i data-lucide="bot" class="icon dropdown-item-icon"></i>{{ t "topbar.assistant" "Otto, the assistant" }}
           </a>
           <div class="dropdown-divider d-sm-none"></div>
           <h6 class="dropdown-header">{{ t "topbar.settings" "Settings" }}</h6>
           <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#uploadDataModal">
-            <i data-lucide="upload" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.uploadData" "Upload data" }}
+            <i data-lucide="upload" class="icon dropdown-item-icon"></i>{{ t "topbar.uploadData" "Upload data" }}
           </a>
           <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#namedGraphsModal">
-            <i data-lucide="database" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.namedGraphs" "Named graphs" }}
+            <i data-lucide="database" class="icon dropdown-item-icon"></i>{{ t "topbar.namedGraphs" "Named graphs" }}
           </a>
           <div class="dropdown-divider"></div>
           <a class="dropdown-item" href="/monitoring">
-            <i data-lucide="chart-line" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.monitoring" "Endpoint Monitoring" }}
+            <i data-lucide="chart-line" class="icon dropdown-item-icon"></i>{{ t "topbar.monitoring" "Endpoint Monitoring" }}
           </a>
           <a class="dropdown-item" href="#" id="clear-cache-btn">
-            <i data-lucide="refresh-cw" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "topbar.clearCache" "Clear cache" }}
+            <i data-lucide="refresh-cw" class="icon dropdown-item-icon"></i>{{ t "topbar.clearCache" "Clear cache" }}
           </a>
         </div>
       </div>
       <!-- more menu -->
       <div class="nav-item dropdown">
         <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" aria-label="{{ t "topbar.openMore" "Open more menu" }}" data-bs-original-title="{{ t "topbar.more" "More" }}">
-          <i data-lucide="ellipsis-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i data-lucide="ellipsis-vertical" class="icon"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-end">
           {{ if .ResourceIRI }}
@@ -212,26 +212,26 @@
                static/js/resource-view-toggle.js wires the items to its radios. -->
           <div class="d-sm-none">
             <h6 class="dropdown-header">{{ t "header.viewMode" "View mode" }}</h6>
-            <a class="dropdown-item active" href="#" data-view-menu="table"><i data-lucide="table-2" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.page" "Page" }}</a>
-            <a class="dropdown-item" href="#" data-view-menu="graph"><i data-lucide="share-2" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.graph" "Graph" }}</a>
+            <a class="dropdown-item active" href="#" data-view-menu="table"><i data-lucide="table-2" class="icon dropdown-item-icon"></i>{{ t "view.page" "Page" }}</a>
+            <a class="dropdown-item" href="#" data-view-menu="graph"><i data-lucide="share-2" class="icon dropdown-item-icon"></i>{{ t "view.graph" "Graph" }}</a>
             <!-- Hidden until static/js/sparql-map.js finds geometry, like its button. -->
-            <a class="dropdown-item d-none" href="#" data-view-menu="map"><i data-lucide="map" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.map" "Map" }}</a>
-            <a class="dropdown-item" href="#" data-view-menu="data"><i data-lucide="database" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.data" "Data" }}</a>
-            <a class="dropdown-item" href="#" data-view-menu="schema"><i data-lucide="shapes" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.schema" "Schema" }}</a>
+            <a class="dropdown-item d-none" href="#" data-view-menu="map"><i data-lucide="map" class="icon dropdown-item-icon"></i>{{ t "view.map" "Map" }}</a>
+            <a class="dropdown-item" href="#" data-view-menu="data"><i data-lucide="database" class="icon dropdown-item-icon"></i>{{ t "view.data" "Data" }}</a>
+            <a class="dropdown-item" href="#" data-view-menu="schema"><i data-lucide="shapes" class="icon dropdown-item-icon"></i>{{ t "view.schema" "Schema" }}</a>
             <div class="dropdown-divider"></div>
           </div>
           {{ end }}
           <a class="dropdown-item" href="/about.html">
-            <i data-lucide="info" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "footer.about" "About" }}
+            <i data-lucide="info" class="icon dropdown-item-icon"></i>{{ t "footer.about" "About" }}
           </a>
           <a class="dropdown-item" href="/whatsnew.html">
-            <i data-lucide="sparkles" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "page.whatsnew.title" "What's New" }}
+            <i data-lucide="sparkles" class="icon dropdown-item-icon"></i>{{ t "page.whatsnew.title" "What's New" }}
           </a>
           <a class="dropdown-item" href="/connectmcp.html">
-            <i data-lucide="bot" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "nav.connectYourAi" "Connect your AI" }}
+            <i data-lucide="bot" class="icon dropdown-item-icon"></i>{{ t "nav.connectYourAi" "Connect your AI" }}
           </a>
           <a class="dropdown-item" href="/apiDocs.html">
-            <i data-lucide="braces" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "page.apiDocs.title" "API" }}
+            <i data-lucide="braces" class="icon dropdown-item-icon"></i>{{ t "page.apiDocs.title" "API" }}
           </a>
         </div>
       </div>

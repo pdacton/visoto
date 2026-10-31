@@ -100,10 +100,15 @@
     <div class="card">
 
       <!-- card header with title and direction selector; zoom controls are Pele's own -->
-      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
+      <div class="card-header vs-card-header">
+        <div class="d-inline-flex align-items-center gap-2">
           {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
           {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
+        </div>
+        <div class="card-actions btn-actions vs-card-controls">
+          <a class="btn btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+            <i data-lucide="chevron-up" class="icon"></i>
+          </a>
         </div>
         <div class="card-actions btn-actions">
           <select id="direction-{{ $id }}" class="form-select form-select-sm" aria-label="{{ t "flow.direction" "Direction" }}">
@@ -112,10 +117,7 @@
             <option value="RL"{{ if eq $direction "RL" }} selected{{ end }}>{{ t "flow.rightToLeft" "Right to Left" }}</option>
             <option value="BT"{{ if eq $direction "BT" }} selected{{ end }}>{{ t "flow.bottomUp" "Bottom Up" }}</option>
           </select>
-          <a class="btn btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-            <i data-lucide="chevron-up" class="icon"></i>
-          </a>
-        </div>
+          </div>
       </div>
 
       <div id="collapse-{{ $id }}" class="collapse{{ if not $collapsed }} show{{ end }}">

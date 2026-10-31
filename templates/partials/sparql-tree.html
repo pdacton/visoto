@@ -68,10 +68,15 @@
     <div class="card">
 
       <!-- card header with title, filter, and tree controls -->
-      <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-        <div class="d-flex align-items-center gap-2">
+      <div class="card-header vs-card-header">
+        <div class="d-inline-flex align-items-center gap-2">
           {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
           {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
+        </div>
+        <div class="card-actions btn-actions vs-card-controls">
+            <a class="btn btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+              <i data-lucide="chevron-up" class="icon"></i>
+            </a>
         </div>
         <div class="card-actions btn-actions">
           {{ if $id }}
@@ -85,10 +90,7 @@
                 <i data-lucide="list-chevrons-down-up" class="icon"></i>
               </a>
             {{ end }}
-            <a class="btn btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-              <i data-lucide="chevron-up" class="icon"></i>
-            </a>
-        </div>
+            </div>
       </div>
 
       <!-- tree container and inline JSON data -->
