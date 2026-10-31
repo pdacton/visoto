@@ -56,11 +56,14 @@
 {{ define "shapeSummaryCard" }}
   {{ $id := .id }}
   <div class="card vs-ss-card" data-shape-summary>
-    <div class="card-header flex-wrap gap-2">
-      <h3 class="card-title d-flex align-items-center gap-2 mb-0">
+    <div class="card-header vs-card-header">
+      <h3 class="card-title d-inline-flex align-items-center gap-2 mb-0">
         <i data-lucide="{{ .icon }}" class="icon"></i>
         {{ .title }}
       </h3>
+      <div class="card-actions btn-actions vs-card-controls">
+        <a class="btn btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="{{ not .collapsed }}"><i data-lucide="chevron-up" class="icon"></i></a>
+      </div>
       <div class="card-actions btn-actions">
         {{ if .summary }}
         <a class="btn btn-action" href="#" data-shape-copy title="{{ t "shape.copyText" "Copy as text" }}"
@@ -68,8 +71,7 @@
           <i data-lucide="copy" class="icon"></i>
         </a>
         {{ end }}
-        <a class="btn btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="{{ not .collapsed }}"><i data-lucide="chevron-up" class="icon"></i></a>
-      </div>
+        </div>
     </div>
 
     <div class="collapse{{ if not .collapsed }} show{{ end }}" id="{{ $id }}-body">

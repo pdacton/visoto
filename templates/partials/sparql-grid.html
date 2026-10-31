@@ -34,15 +34,15 @@
        data-sparql-grid-filename="{{ if $title }}{{ $title }}{{ else }}{{ $id }}{{ end }}">
 
     <!-- card header with title -->
-    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
-      <div class="d-flex align-items-center gap-2">
+    <div class="card-header vs-card-header">
+      <div class="d-inline-flex align-items-center gap-2">
         {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
         {{ if $title }} <h3 class="card-title mb-0{{ if or $hasError (not $hasResults) }} text-muted{{ end }}">{{ $title }}</h3> {{ end }}
       </div>
-      <div class="card-actions btn-actions">
+      <div class="card-actions btn-actions vs-card-controls">
           <div class="dropdown" style="display: contents;">
             <a class="btn btn-action" data-bs-toggle="dropdown" aria-expanded="false">
-              <i data-lucide="ellipsis-vertical" class="icon"></i>
+              <i data-lucide="ellipsis" class="icon"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
               {{ if $hasResults }}
@@ -59,6 +59,8 @@
             <i data-lucide="chevron-up" class="icon"></i>
           </a>
         </div>
+      <div class="card-actions btn-actions">
+          </div>
     </div>
 
     <!-- collapsible body -->

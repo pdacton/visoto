@@ -1,5 +1,5 @@
 <!-- Page Header -->
-<div class="d-flex align-items-center justify-content-between gap-3">
+<div class="vs-header-crumbs d-flex align-items-center justify-content-between gap-3">
   <nav aria-label="{{ t "header.breadcrumbs" "breadcrumbs" }}">
   <ol class="breadcrumb mb-0">
     {{/* The whole trail, so a page that is its own root (the homepage) can
@@ -51,7 +51,10 @@
   </div>
   {{ end }}
 </div>
-<div class="mt-3 d-flex align-items-start gap-3">
+<!-- Icon, title block and description on a two-column grid (.vs-page-heading in
+     tabler_overrides.css): the icon centres on the title and class line, and the
+     description sits below them, aligned with the title. -->
+<div class="mt-2 vs-page-heading">
   <!-- Beside the title at every width; tabler_overrides.css shrinks it on phones. -->
   <div class="flex-shrink-0 vs-page-icon">
     {{ block "pageIcon" . }}
@@ -95,10 +98,10 @@
       {{ end }}
     </div>
     <!-- The .iri-copy-btn click handler lives in static/js/page-init.js -->
-    <p class="text-uppercase small">{{ block "pageClasses" . }}{{ end }}</p>
-    <!-- mb-0: .page-body's own top margin already separates the header from the content. -->
-    <p class="mb-0">{{ block "pageSubtitle" . }}{{ end }}</p>
+    <p class="text-uppercase small mb-0">{{ block "pageClasses" . }}{{ end }}</p>
   </div>
+  <!-- mb-0: .page-body's own top margin already separates the header from the content. -->
+  <p class="vs-page-description mb-0">{{ block "pageSubtitle" . }}{{ end }}</p>
 </div>
 <!-- End Page Header -->
 

@@ -339,6 +339,47 @@ html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expan
     flex: 0 0 9rem;
 }
 
+/* .vs-card-header: the card-level controls (the ⋯ menu and the collapse
+   chevron) stay on the title's line, and only the other actions (search,
+   group-by, ...) drop below it when the header is too narrow, getting the full
+   width back there. Flexbox cannot do this (a later item cannot stay on line
+   one once an earlier one wraps), floats can: the markup is title, then
+   .vs-card-controls, then the actions, and both slots float right. The actions
+   float sits left of the controls when it fits beside the title, and below the
+   title, right-aligned at full width, when it does not. Every piece is 2.5rem
+   (the icon-button height) with a 0.25rem margin, so line one shares a centre
+   line and a dropped line keeps a 0.5rem gap; the header padding gives that
+   0.25rem back. */
+.card-header.vs-card-header {
+    display: flow-root;
+    padding-block: calc(var(--tblr-card-cap-padding-y) - 0.25rem);
+}
+
+/* The title, inline so the floats can share its line. Its max-width leaves
+   room for two action buttons, so a long title wraps beside the controls
+   instead of dropping below them. */
+.vs-card-header > :first-child {
+    min-height: 2.5rem;
+    max-width: calc(100% - 5.5rem);
+    margin-block: 0.25rem;
+    vertical-align: top;
+}
+
+.vs-card-header > .card-actions {
+    float: right;
+    align-items: center;
+    min-height: 2.5rem;
+    margin-block: 0.25rem;
+}
+
+/* Tabler's -0.5rem end margin pulls the last button's padding to the card
+   edge. Beside the controls float the actions float keeps its own end margin
+   out of the gap, so the controls' start margin alone is the 0.25rem gap. */
+.vs-card-header > .vs-card-controls {
+    flex-wrap: nowrap;
+    margin-inline-start: 0.25rem;
+}
+
 /* Phones: Tabler's 16px form text (see .form-control-sm above) needs 9.5rem
    for "Group by..." beside the 3rem arrow padding (Windows fonts run wider). */
 @media (max-width: 575.98px) {
@@ -358,6 +399,14 @@ html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expan
 .btn-icon[data-bs-toggle="collapse"].collapsed svg,
 .btn-action[data-bs-toggle="collapse"].collapsed svg {
     transform: rotate(180deg);
+}
+
+/* A collapsed card is its header alone, so the header's bottom border would sit
+   right on the card's own: hide it while the body below is shut. Transparent,
+   not removed, so the card does not shift by a pixel on toggle; Bootstrap swaps
+   .collapse for .collapsing during the animation, so it reappears as it opens. */
+.card-header:has(+ .collapse:not(.show)) {
+    border-bottom-color: transparent;
 }
 
 /* --- Theme-aware logo switching --- */
@@ -497,11 +546,45 @@ body.resizing {
 
 /* --- Sidebar tab strip --- */
 
-/* Make the active tab background and its bottom border match the sidebar surface,
-   so the active tab appears to "open into" the content below it. */
+/* A Tabler segmented control (.nav-segmented), stretched to the sidebar width
+   less a small inset; .nav-justified splits it evenly between the tabs. Its
+   default track is bg-surface-tertiary, which in dark mode is the sidebar's own
+   colour (and the active pill's), so the track uses the recessed
+   bg-surface-secondary instead. */
 #sidebar-tabs {
-    --tblr-nav-tabs-link-active-bg: var(--tblr-bg-surface);
-    --tblr-nav-tabs-link-active-border-color: var(--tblr-border-color) var(--tblr-border-color) var(--tblr-bg-surface);
+    --tblr-nav-bg: var(--tblr-bg-surface-secondary);
+    display: flex;
+    margin: 1rem 0.5rem;
+}
+
+/* The tab strip and the page's breadcrumb row read as one band across the top:
+   both start 1rem down (the page header's top margin trimmed from Tabler's
+   1.5rem page padding), and the breadcrumb row is as tall as the segmented
+   control (Tabler's 2.5rem --tblr-nav-height), so their centre lines meet. */
+/* Same selector as Tabler's own rule, which this overrides. */
+.page-wrapper .page-header {
+    margin-top: 1rem;
+}
+
+.vs-header-crumbs {
+    min-height: 2.5rem;
+}
+
+/* Page heading (layout/header.html): icon | title + class line, then the
+   description in the second column, so it lines up with the title. Icon and
+   title block centre on each other, as in Tabler's avatar-beside-title page
+   header, whichever is taller (a wrapped title, no class line, an 80px coat of
+   arms). The 1rem row gap is the space the class line's paragraph margin used
+   to give. */
+.vs-page-heading {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 1rem;
+}
+
+.vs-page-heading > .vs-page-description {
+    grid-column: 2;
 }
 
 /* --- Drop targets: the bookmarks sidebar and the upload modal ---
