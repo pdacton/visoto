@@ -153,6 +153,43 @@
 
     // Re-init Lucide icons for the newly injected remove buttons
     if (window.lucide) window.lucide.createIcons();
+
+    resolveMissingIcons(items);
+  }
+
+  // ── Icon lookup for bookmarks saved without one ────────────────────────────
+
+  // IRIs already asked about on this page load. A miss stays iconless, so
+  // without this every re-render would ask again.
+  var iconRequested = {};
+
+  // Ask the server for the type icon of each bookmark that has none — most drag
+  // sources (page title, breadcrumbs, relationship cards) have no icon to scrape.
+  // The answer comes from the active endpoint, so a resource that exists only on
+  // another one stays generic until the user switches there.
+  function resolveMissingIcons(items) {
+    var slug = typeof window.activeEndpointSlug === 'function' ? window.activeEndpointSlug() : '';
+    items.forEach(function (item) {
+      if (item.icon || iconRequested[item.iri]) return;
+      iconRequested[item.iri] = true;
+      var url = '/api/resource-icon?iri=' + encodeURIComponent(item.iri) +
+        (slug ? '&endpoint=' + encodeURIComponent(slug) : '');
+      fetch(url)
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (data && data.icon) setBookmarkIcon(item.iri, data.icon);
+        })
+        .catch(function () {});
+    });
+  }
+
+  function setBookmarkIcon(iri, icon) {
+    var items = loadBookmarks();
+    var item = items.find(function (b) { return b.iri === iri; });
+    if (!item || item.icon) return;
+    item.icon = icon;
+    saveBookmarks(items);
+    renderBookmarks();
   }
 
   function clearDropIndicators() {
@@ -264,7 +301,10 @@
       // Draggable page title on resource pages (see initTitleDrag).
       var title = e.target.closest('[data-drag-iri]');
       if (title) {
-        setDragPayload(e, title.dataset.dragIri, title.textContent.trim());
+        // The page icon sits beside the title, outside its wrapper.
+        var pageIcon = document.querySelector('.vs-page-icon');
+        setDragPayload(e, title.dataset.dragIri, title.textContent.trim(), undefined,
+          pageIcon ? findTypeIcon(pageIcon) : '');
         return;
       }
 

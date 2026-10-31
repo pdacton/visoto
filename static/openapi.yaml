@@ -163,6 +163,44 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
 
+  /api/resource-icon:
+    get:
+      tags: [Search]
+      summary: Icon of a resource
+      description: |
+        The type icon the resource page header shows for `iri`, resolved from
+        its `rdf:type`s. Used by the "My Links" sidebar for bookmarks created
+        without an icon. An empty `icon` means no icon matched.
+      operationId: resourceIcon
+      parameters:
+        - name: iri
+          in: query
+          required: true
+          description: Resource IRI or CURIE.
+          schema: { type: string, format: iri }
+          example: https://ld.admin.ch/canton/1
+        - $ref: "#/components/parameters/endpoint"
+        - $ref: "#/components/parameters/lang"
+      responses:
+        "200":
+          description: Icon path under `/static/img/resource/`, or empty.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  icon: { type: string }
+        "400":
+          description: Missing or invalid `iri`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "502":
+          description: Type query failed.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
   /api/async-table/{id}:
     get:
       tags: [Tables]
