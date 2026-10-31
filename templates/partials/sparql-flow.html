@@ -13,7 +13,8 @@
     - title: (optional) card title
     - icon: (optional) Lucide icon name to display before the title
     - collapsed: (optional) if true, card starts in collapsed state
-    - direction: (optional) "LR" (default), "TD", "RL" or "BT"
+    - direction: (optional) "LR" (default), "TD", "RL" or "BT"; phones always start
+                 with "TD" (static/js/sparql-flow.js), until the user picks one
     - extraField: (optional) variable shown as an extra label line; ?from<Field>/?to<Field>
                   per end, or a shared ?<field>
     - config: (optional) configuration object for node styling, shapes and edge direction
@@ -79,9 +80,11 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
           <h3 class="card-title mb-0 text-muted">{{ $title }} - {{ t "flow.noResultsTitle" "no results found" }}</h3>
         </div>
-        <a class="btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
-          <i data-lucide="chevron-up" class="icon"></i>
-        </a>
+        <div class="card-actions btn-actions">
+          <a class="btn btn-action collapsed" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="false">
+            <i data-lucide="chevron-up" class="icon"></i>
+          </a>
+        </div>
       </div>
       <div id="collapse-{{ $id }}" class="collapse">
         <div class="card-body">
@@ -102,18 +105,16 @@
           {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
           {{ if $title }} <h3 class="card-title mb-0">{{ $title }}</h3> {{ end }}
         </div>
-        <div class="ms-auto d-flex align-items-center gap-2">
-          <select id="direction-{{ $id }}" class="form-select form-select-sm w-auto" aria-label="{{ t "flow.direction" "Direction" }}">
+        <div class="card-actions btn-actions">
+          <select id="direction-{{ $id }}" class="form-select form-select-sm" aria-label="{{ t "flow.direction" "Direction" }}">
             <option value="LR"{{ if eq $direction "LR" }} selected{{ end }}>{{ t "flow.leftToRight" "Left to Right" }}</option>
             <option value="TD"{{ if eq $direction "TD" }} selected{{ end }}>{{ t "flow.topDown" "Top Down" }}</option>
             <option value="RL"{{ if eq $direction "RL" }} selected{{ end }}>{{ t "flow.rightToLeft" "Right to Left" }}</option>
             <option value="BT"{{ if eq $direction "BT" }} selected{{ end }}>{{ t "flow.bottomUp" "Bottom Up" }}</option>
           </select>
-          <div class="btn-actions">
-            <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
-              <i data-lucide="chevron-up" class="icon"></i>
-            </a>
-          </div>
+          <a class="btn btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+            <i data-lucide="chevron-up" class="icon"></i>
+          </a>
         </div>
       </div>
 

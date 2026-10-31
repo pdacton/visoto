@@ -77,15 +77,15 @@
   {{ $id := .id }}
   <div class="card mb-3 vs-bn-card" {{ with .anchor }}id="{{ . }}"{{ end }}
        data-bnode-tree data-bnode-tree-config="{{ $id }}-config">
-    <div class="card-header">
+    <div class="card-header flex-wrap gap-2">
       <h3 class="card-title d-flex align-items-center gap-2 mb-0">
         <i data-lucide="{{ .icon }}" class="icon"></i>
         {{ .title }}
         {{ with .tree }}{{ if .BlankNodes }}<span class="badge bg-blue-lt">{{ tn "bnode.count" .BlankNodes "Blank nodes: {{.Count}}" }}</span>{{ end }}{{ end }}
       </h3>
-      <div class="btn-actions ms-auto">
+      <div class="card-actions btn-actions">
         {{ if .tree }}
-        <a class="btn-action" href="#" data-bnode-toggle-all
+        <a class="btn btn-action" href="#" data-bnode-toggle-all
            title="{{ t "bnode.collapseAll" "Collapse all nodes" }}"
            data-label-collapse="{{ t "bnode.collapseAll" "Collapse all nodes" }}"
            data-label-expand="{{ t "bnode.expandAll" "Expand all nodes" }}">
@@ -93,7 +93,7 @@
         </a>
         {{ end }}
         <div class="dropdown" style="display: contents;">
-          <a class="btn-action" href="#" data-bs-toggle="dropdown" aria-expanded="false"><i data-lucide="ellipsis-vertical" class="icon"></i></a>
+          <a class="btn btn-action" href="#" data-bs-toggle="dropdown" aria-expanded="false"><i data-lucide="ellipsis-vertical" class="icon"></i></a>
           <ul class="dropdown-menu dropdown-menu-end">
             {{ if .tree }}
             <li><h6 class="dropdown-header">{{ t "table.download" "Download" }}</h6></li>
@@ -107,7 +107,7 @@
             <li><a class="dropdown-item" href="#" data-bnode-endpoint><i data-lucide="play" style="width:1em;height:1em;"></i> {{ t "query.executeOnEndpoint" "Execute on endpoint" }}</a></li>
           </ul>
         </div>
-        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="true"><i data-lucide="chevron-up" class="icon"></i></a>
+        <a class="btn btn-action" data-bs-toggle="collapse" data-bs-target="#{{ $id }}-body" aria-expanded="true"><i data-lucide="chevron-up" class="icon"></i></a>
       </div>
     </div>
 

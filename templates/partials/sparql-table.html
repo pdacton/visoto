@@ -101,9 +101,9 @@
         {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
         {{ if $title }} <h3 class="card-title mb-0{{ if or $hasError (not $hasResults) }} text-muted{{ end }}">{{ $title }}</h3> {{ end }}
       </div>
-      <div class="btn-actions ms-auto">
+      <div class="card-actions btn-actions">
         {{ if and $id $hasResults }}
-          <input type="text" id="search-{{ $id }}" class="search-table form-control form-control-sm text-secondary" style="min-width: 150px; max-width: 300px;" placeholder="{{ if and $workingSet $searchProp }}Search names...{{ else }}Search...{{ end }}">
+          <input type="text" id="search-{{ $id }}" class="search-table form-control form-control-sm" placeholder="{{ if and $workingSet $searchProp }}Search names...{{ else }}Search...{{ end }}">
         {{ end }}
           {{ if $workingSet }}
             <!-- Working set: the search box filters the loaded set instantly; this
@@ -117,18 +117,18 @@
             <!-- Group-by operates on the loaded set (the whole class when complete,
                  the working set otherwise). Column names come from the first data
                  response in working-set mode, so this is populated client-side. -->
-            <select id="groupby-{{ $id }}" class="form-select form-select-sm text-muted" style="min-width: 100px; padding-right: 1.5rem; background-size: 0.75rem; background-position: right 0.5rem center;"{{ if $workingSet }} data-ws-groupby="1"{{ end }}>
+            <select id="groupby-{{ $id }}" class="form-select form-select-sm"{{ if $workingSet }} data-ws-groupby="1"{{ end }}>
               <option value="" class="text-muted">{{ t "table.groupBy" "Group by..." }}</option>
               {{ range $result.Vars }}
               <option value="{{ . }}">{{ . }}</option>
               {{ end }}
             </select>
-            <a id="toggle-groups-{{ $id }}" class="btn-action d-none" title="{{ t "table.collapseGroups" "Collapse all groups" }}" style="cursor:pointer;">
+            <a id="toggle-groups-{{ $id }}" class="btn btn-action d-none" title="{{ t "table.collapseGroups" "Collapse all groups" }}" style="cursor:pointer;">
               <i data-lucide="list-chevrons-up-down" class="icon"></i>
             </a>
           {{ end }}
           <div class="dropdown" style="display: contents;">
-            <a class="btn-action" data-bs-toggle="dropdown" aria-expanded="false">
+            <a class="btn btn-action" data-bs-toggle="dropdown" aria-expanded="false">
               <i data-lucide="ellipsis-vertical" class="icon"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
@@ -146,7 +146,7 @@
               <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> {{ t "query.executeOnEndpoint" "Execute on endpoint" }}</a></li>
             </ul>
           </div>
-          <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+          <a class="btn btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
             <i data-lucide="chevron-up" class="icon"></i>
           </a>
         </div>

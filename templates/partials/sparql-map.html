@@ -26,6 +26,8 @@
       resource with no geometry of its own: "schema:hasPart" draws a district as its
       municipalities.
     - title / icon: (optional) card title and Lucide icon. Defaults "Map" / "map".
+    - margin: (optional) the card's bottom-margin class. Default "mb-3"; pass "mb-0" when
+      the next element brings its own top margin (a `col mt-3` row), or the gap doubles.
 
   Notes:
     - Geometry is found in the browser, after paint, through the proxy:
@@ -42,20 +44,21 @@
   {{ $height := or .height "calc(100vh - 200px)" }}
   {{ $title := or .title (t "map.title" "Map") }}
   {{ $icon := or .icon "map" }}
+  {{ $margin := or .margin "mb-3" }}
 
   <link rel="stylesheet" href="/static/css/map_overrides.css">
 
-  <div class="card mb-3 d-none" id="{{ $id }}-card">
-    <div class="card-header d-flex align-items-center justify-content-between">
+  <div class="card {{ $margin }} d-none" id="{{ $id }}-card">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
         <i data-lucide="{{ $icon }}" class="icon"></i>
         <h3 class="card-title mb-0">{{ $title }}</h3>
       </div>
-      <div class="btn-actions">
-        <a class="btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
+      <div class="card-actions btn-actions">
+        <a class="btn btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
           <i data-lucide="maximize" class="icon"></i>
         </a>
-        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
+        <a class="btn btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
            aria-expanded="true" aria-controls="collapse-{{ $id }}" style="cursor: pointer;">
           <i data-lucide="chevron-up" class="icon"></i>
         </a>

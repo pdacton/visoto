@@ -31,7 +31,9 @@
   </ol>
   </nav>
   {{ if .ResourceIRI }}
-  <div class="btn-group btn-group-sm ms-auto flex-shrink-0" role="group" aria-label="{{ t "header.viewMode" "View mode" }}">
+  <!-- Hidden on phones, where the trail needs the width: the same views are in
+       the topbar's more menu there (topbar.html), driving these radios. -->
+  <div class="btn-group btn-group-sm ms-auto flex-shrink-0 d-none d-sm-inline-flex" role="group" aria-label="{{ t "header.viewMode" "View mode" }}">
     <input type="radio" class="btn-check" name="resource-view" id="resource-view-table" data-view="table" autocomplete="off" checked>
     <label for="resource-view-table" class="btn" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-original-title="{{ t "view.pageTip" "Formatted overview of this resource" }}"><i data-lucide="table-2" class="icon me-1"></i>{{ t "view.page" "Page" }}</label>
     <input type="radio" class="btn-check" name="resource-view" id="resource-view-graph" data-view="graph" autocomplete="off">
@@ -49,8 +51,9 @@
   </div>
   {{ end }}
 </div>
-<div class="mt-3 d-flex flex-column flex-sm-row align-items-start gap-3">
-  <div class="flex-shrink-0">
+<div class="mt-3 d-flex align-items-start gap-3">
+  <!-- Beside the title at every width; tabler_overrides.css shrinks it on phones. -->
+  <div class="flex-shrink-0 vs-page-icon">
     {{ block "pageIcon" . }}
     <img src="{{ resourceIcon . }}" alt="{{ t "header.pageIconAlt" "Page icon" }}" width="48" height="48">
     {{ end }}
@@ -93,7 +96,8 @@
     </div>
     <!-- The .iri-copy-btn click handler lives in static/js/page-init.js -->
     <p class="text-uppercase small">{{ block "pageClasses" . }}{{ end }}</p>
-    <p>{{ block "pageSubtitle" . }}{{ end }}</p>
+    <!-- mb-0: .page-body's own top margin already separates the header from the content. -->
+    <p class="mb-0">{{ block "pageSubtitle" . }}{{ end }}</p>
   </div>
 </div>
 <!-- End Page Header -->

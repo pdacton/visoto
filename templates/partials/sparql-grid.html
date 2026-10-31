@@ -39,9 +39,9 @@
         {{ if $icon }} <i data-lucide="{{ $icon }}" class="icon"></i> {{ end }}
         {{ if $title }} <h3 class="card-title mb-0{{ if or $hasError (not $hasResults) }} text-muted{{ end }}">{{ $title }}</h3> {{ end }}
       </div>
-      <div class="btn-actions ms-auto">
+      <div class="card-actions btn-actions">
           <div class="dropdown" style="display: contents;">
-            <a class="btn-action" data-bs-toggle="dropdown" aria-expanded="false">
+            <a class="btn btn-action" data-bs-toggle="dropdown" aria-expanded="false">
               <i data-lucide="ellipsis-vertical" class="icon"></i>
             </a>
             <ul class="dropdown-menu dropdown-menu-end">
@@ -55,7 +55,7 @@
               <li><a class="dropdown-item sparql-endpoint-{{ $id }}" href="#" target="_blank"><i data-lucide="play" style="width:1em;height:1em;"></i> {{ t "query.executeOnEndpoint" "Execute on endpoint" }}</a></li>
             </ul>
           </div>
-          <a class="btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
+          <a class="btn btn-action{{ if $collapsed }} collapsed{{ end }}" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}" aria-expanded="{{ if $collapsed }}false{{ else }}true{{ end }}">
             <i data-lucide="chevron-up" class="icon"></i>
           </a>
         </div>

@@ -126,7 +126,17 @@
       }
     }
 
+    // Phone-only mirror of the radios in the topbar's more menu (topbar.html).
+    var menuItems = document.querySelectorAll('[data-view-menu]');
+
+    function syncMenu(view) {
+      menuItems.forEach(function (item) {
+        item.classList.toggle('active', item.dataset.viewMenu === view);
+      });
+    }
+
     function selectView(view) {
+      syncMenu(view);
       if (view === 'graph') {
         showGraph();
       } else if (view === 'data') {
@@ -165,6 +175,17 @@
         if (!input.checked) return;
         selectView(input.dataset.view);
         syncHash(input.dataset.view);
+      });
+    });
+
+    // A menu item selects its radio, so both paths share the change handler above.
+    menuItems.forEach(function (item) {
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+        var input = document.querySelector('.btn-check[data-view="' + item.dataset.viewMenu + '"]');
+        if (!input || input.checked) return;
+        input.checked = true;
+        input.dispatchEvent(new Event('change'));
       });
     });
 

@@ -111,6 +111,55 @@ header.navbar.sticky-top.is-scrolled {
     }
 }
 
+/* Phones: the field squeezes to a sliver between the logo and the icons, so it
+   is folded behind a search button and, once opened (#topbar.vs-search-open,
+   set by static/js/search.js), laid over the whole topbar with a close button. */
+.topbar-search-open,
+.topbar-search-close {
+    display: none;
+}
+
+@media (max-width: 575.98px) {
+    .topbar-search {
+        display: none;
+    }
+
+    .topbar-search-open {
+        display: block;
+    }
+
+    #topbar.vs-search-open .topbar-search {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        position: absolute;
+        inset: 0;
+        max-width: none;
+        margin: 0 !important;
+        padding: 0 var(--tblr-gutter-x, 0.75rem);
+        background: var(--tblr-bg-surface);
+        z-index: 2;
+    }
+
+    #topbar.vs-search-open .topbar-search form {
+        flex: 1 1 auto;
+    }
+
+    #topbar.vs-search-open .topbar-search-close {
+        display: inline-flex;
+    }
+}
+
+/* Page icon beside the title (header.html): scaled down on phones so the title
+   keeps its width. */
+@media (max-width: 575.98px) {
+    .vs-page-icon img,
+    .vs-page-icon svg {
+        width: 40px;
+        height: auto;
+    }
+}
+
 /* --- Kingdom cards (/plazi.html) --- */
 
 /* The count is the headline of each card, so it is set at display size and the
@@ -252,26 +301,47 @@ html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expan
 
 /* --- Card action buttons (.btn-actions / .btn-action) --- */
 
-/* These classes are used in Tabler demos but not defined in tabler.css v1.4.0 */
+/* Card headers put every control on the right in one Tabler
+   `.card-actions.btn-actions` slot, with `btn btn-action` icon buttons, as the
+   Tabler docs prescribe. Tabler 1.6.1 styles all of that except the spacing:
+   its .btn-actions is a bare display:flex, so a search box and a select would
+   touch. */
 .btn-actions {
-    display: flex;
     align-items: center;
     gap: 0.25rem;
 }
 
-.btn-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--tblr-border-radius);
-    cursor: pointer;
-    text-decoration: none;
-    transition: color 0.15s ease, background-color 0.15s ease;
+/* The card-header search box: one width (10rem) for every partial, and the one
+   control that gives way, down to 5.5rem, so search, group-by and the 40px action
+   buttons still fit one row of a phone-width or half-width card. Its flex-basis
+   is that 5.5rem minimum, because a line breaks on flex-basis, not on width: the
+   slot grows to take the header's free width, and the box grows back up to
+   10rem in it. Only when 5.5rem still does not fit do the controls wrap, kept
+   right-aligned. The select has a fixed width: auto would size it to its
+   longest option (a column name), and shrunk, "Group by..." stops reading as a
+   control. */
+.card-actions {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
 }
 
-.btn-action:hover {
-    color: var(--tblr-body-color);
-    background-color: var(--tblr-bg-surface-secondary);
+.card-actions .form-control {
+    flex: 1 1 5.5rem;
+    max-width: 10rem;
+}
+
+.card-actions .form-select {
+    flex: 0 0 8rem;
+}
+
+/* Phones: Tabler's 16px form text (see .form-control-sm above) needs 9.5rem
+   for "Group by..." beside the 3rem arrow padding (Windows fonts run wider). */
+@media (max-width: 575.98px) {
+    .card-actions .form-select {
+        flex-basis: 9.5rem;
+    }
 }
 
 /* --- Card collapse styling --- */
@@ -486,12 +556,6 @@ body.resizing {
    the menu, which would otherwise fade the trigger out from under it. */
 .vs-metric-actions:has(.dropdown-menu.show),
 .vs-metric-actions:has([aria-expanded="true"]) { opacity: 1; }
-
-/* Match sparqlTable's action size. Its "⋮" lives in a .card-header, where
-   Tabler's own header rules shrink the icon; on this card's bare .card-body
-   there is no such rule, so Lucide's 24x24 default would otherwise apply. */
-.vs-metric-actions .btn-action { padding: .25rem; color: var(--tblr-secondary); }
-.vs-metric-actions .btn-action svg { width: 1rem; height: 1rem; }
 
 @media (prefers-reduced-motion: reduce) {
   .vs-metric-actions { transition: none; }
@@ -1133,6 +1197,16 @@ sparql-tree-query { display: none; }
    search + group-by). */
 .form-select-sm {
   line-height: 1rem;
+}
+
+/* Phones: Tabler raises form fields to 16px (no iOS zoom on focus). A text input
+   never gets shorter than that font's natural line, so the input grew to 31px
+   while the select stayed 28px; a line height that fits the font for both evens them. */
+@media (max-width: 575.98px) {
+  .form-control-sm,
+  .form-select-sm {
+    line-height: 1.25rem;
+  }
 }
 
 /* Card-title icons: a tick larger and heavier than Tabler's 20px / 1.5 .icon, so
