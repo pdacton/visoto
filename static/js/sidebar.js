@@ -1,28 +1,13 @@
-// assets/js/sidebar.js
-// Unified sidebar toggle logic with responsive behavior
-// Desktop: slides sidebar in/out and squeezes content
-// Mobile: shows sidebar as overlay with menu auto-expanded
+// static/js/sidebar.js
+// Left nav sidebar: remembered collapsed state, tab persistence and active-link
+// highlighting. The slide-in/out itself is slide-sidebar.js; on mobile this
+// sidebar is Tabler's push-down menu, not an overlay.
 
 document.addEventListener('DOMContentLoaded', function () {
   const sidebar = document.querySelector('.navbar-vertical');
-  const pageWrapper = document.querySelector('.page-wrapper');
   const sidebarToggle = document.getElementById('sidebar-toggle');
-  const sidebarMenu = document.getElementById('sidebar-menu');
 
-  if (!sidebar || !pageWrapper || !sidebarToggle) return;
-
-  // Add transition classes for smooth sliding
-  sidebar.style.transition = 'margin-left 0.3s cubic-bezier(.4,0,.2,1), transform 0.3s cubic-bezier(.4,0,.2,1)';
-  pageWrapper.style.transition = 'margin-left 0.3s cubic-bezier(.4,0,.2,1)';
-
-  // Set initial state
-  let sidebarOpen = true;
-  // Measured width, falling back to the same custom property the pre-paint rule
-  // in tabler_overrides.css uses, so the two offsets cannot drift apart.
-  const sidebarWidth = sidebar.offsetWidth || (parseInt(
-    getComputedStyle(document.documentElement).getPropertyValue('--vs-sidebar-width'), 10
-  ) || 240);
-  const MOBILE_BREAKPOINT = 992;
+  if (!sidebar || !document.querySelector('.page-wrapper') || !sidebarToggle) return;
 
   // The desktop collapsed state is remembered across page loads, so closing the
   // sidebar survives a navigation instead of reopening on the next page. Only the
@@ -31,147 +16,52 @@ document.addEventListener('DOMContentLoaded', function () {
   // tabler_overrides.css documents that handoff.
   const COLLAPSED_KEY = 'visoto-sidebar-collapsed';
   const PRELOAD_CLASS = 'vs-sidebar-preload-collapsed';
+  const TAB_KEY = 'visoto-sidebar-tab';
 
   // Wrapped because localStorage throws outright in some privacy modes, where the
   // sidebar should still work — just without remembering.
-  function readCollapsed() {
-    try {
-      return localStorage.getItem(COLLAPSED_KEY) === '1';
-    } catch (e) {
-      return false;
-    }
+  function storageGet(key) {
+    try { return localStorage.getItem(key); } catch (e) { return null; }
   }
 
-  function writeCollapsed(collapsed) {
+  function storageSet(key, value) {
     try {
-      if (collapsed) localStorage.setItem(COLLAPSED_KEY, '1');
-      else localStorage.removeItem(COLLAPSED_KEY);
+      if (value === null) localStorage.removeItem(key);
+      else localStorage.setItem(key, value);
     } catch (e) { /* private mode: this visit just will not be remembered */ }
   }
 
-  function isMobile() {
-    return window.innerWidth < MOBILE_BREAKPOINT;
-  }
-
-  function openSidebarDesktop() {
-    sidebar.style.marginLeft = '0';
-    sidebar.style.transform = 'none';
-    pageWrapper.style.marginLeft = sidebarWidth + 'px';
-    sidebar.classList.remove('sidebar-overlay');
-    sidebarOpen = true;
-  }
-
-  function closeSidebarDesktop() {
-    sidebar.style.marginLeft = '-' + sidebarWidth + 'px';
-    sidebar.style.transform = 'none';
-    pageWrapper.style.marginLeft = '0';
-    sidebar.classList.remove('sidebar-overlay');
-    sidebarOpen = false;
-  }
-
-  function openSidebarMobile() {
-    sidebar.classList.add('sidebar-overlay', 'show');
-    sidebar.style.marginLeft = '';
-    sidebar.style.transform = '';
-    pageWrapper.style.marginLeft = '';
-    // Auto-expand menu on mobile
-    if (sidebarMenu) {
-      sidebarMenu.classList.add('show');
-    }
-    // Add backdrop
-    addBackdrop();
-    sidebarOpen = true;
-  }
-
-  function closeSidebarMobile() {
-    sidebar.classList.remove('show');
-    sidebar.style.transform = '';
-    sidebar.style.marginLeft = '';
-    if (sidebarMenu) {
-      sidebarMenu.classList.remove('show');
-    }
-    removeBackdrop();
-    sidebarOpen = false;
-  }
-
-  function addBackdrop() {
-    let backdrop = document.querySelector('.sidebar-backdrop');
-    if (!backdrop) {
-      backdrop = document.createElement('div');
-      backdrop.className = 'sidebar-backdrop';
-      backdrop.addEventListener('click', function() {
-        closeSidebarMobile();
-      });
-      document.body.appendChild(backdrop);
-    }
-    setTimeout(() => backdrop.classList.add('show'), 10);
-  }
-
-  function removeBackdrop() {
-    const backdrop = document.querySelector('.sidebar-backdrop');
-    if (backdrop) {
-      backdrop.classList.remove('show');
-      setTimeout(() => backdrop.remove(), 300);
-    }
-  }
-
-  // Initialize sidebar state based on screen size
-  function initializeSidebar() {
-    if (isMobile()) {
-      // Clear any inline styles from desktop mode
-      sidebar.style.marginLeft = '';
-      sidebar.style.transform = '';
-      pageWrapper.style.marginLeft = '';
-      sidebar.classList.remove('sidebar-overlay', 'show');
-      if (sidebarMenu) {
-        sidebarMenu.classList.remove('show');
-      }
-      sidebarOpen = false;
-    } else if (readCollapsed()) {
-      closeSidebarDesktop();
-    } else {
-      openSidebarDesktop();
-    }
-  }
-
-  initializeSidebar();
+  VisotoSlideSidebar({
+    el: sidebar,
+    side: 'left',
+    menu: document.getElementById('sidebar-menu'),
+    toggles: [sidebarToggle],
+    // The same custom property the pre-paint rule in tabler_overrides.css uses,
+    // so the two offsets cannot drift apart. Not measured: below the breakpoint
+    // the sidebar spans the viewport, and that width would stick on widening.
+    width: function () {
+      return parseInt(getComputedStyle(document.documentElement)
+        .getPropertyValue('--vs-sidebar-width'), 10) || 240;
+    },
+    readOpen: function () { return storageGet(COLLAPSED_KEY) !== '1'; },
+    writeOpen: function (open) { storageSet(COLLAPSED_KEY, open ? null : '1'); },
+  });
 
   // Hand over from the pre-paint head start in layout/base.html: the inline
-  // margins just set by initializeSidebar are the real state from here on, and
+  // margins just set by VisotoSlideSidebar are the real state from here on, and
   // leaving the root class in place would keep the sidebar shut through a later
   // reopen, since that selector knows nothing about the click.
   document.documentElement.classList.remove(PRELOAD_CLASS);
 
-  // Toggle handler
-  sidebarToggle.addEventListener('click', function (e) {
-    e.preventDefault();
-    if (isMobile()) {
-      if (sidebarOpen) {
-        closeSidebarMobile();
-      } else {
-        openSidebarMobile();
-      }
-    } else {
-      if (sidebarOpen) {
-        closeSidebarDesktop();
-      } else {
-        openSidebarDesktop();
-      }
-      // Desktop only: the mobile overlay always starts closed on a fresh page, so
-      // opening it there is a gesture for that page, not a remembered preference.
-      writeCollapsed(!sidebarOpen);
-    }
-  });
-
   // Persist active sidebar tab across page loads
-  const savedTab = localStorage.getItem('visoto-sidebar-tab');
+  const savedTab = storageGet(TAB_KEY);
   if (savedTab) {
     const tabLink = document.querySelector('#sidebar-tabs .nav-link[href="' + savedTab + '"]');
     if (tabLink) tabLink.click();
   }
   document.querySelectorAll('#sidebar-tabs .nav-link').forEach(function (el) {
     el.addEventListener('shown.bs.tab', function () {
-      localStorage.setItem('visoto-sidebar-tab', el.getAttribute('href'));
+      storageSet(TAB_KEY, el.getAttribute('href'));
     });
   });
 
@@ -211,17 +101,6 @@ document.addEventListener('DOMContentLoaded', function () {
         toggle.setAttribute('aria-expanded', 'true');
         menu.classList.add('show');
       }
-    }
-  });
-
-  // Handle resize - reinitialize on breakpoint change
-  let wasMobile = isMobile();
-  window.addEventListener('resize', function() {
-    const nowMobile = isMobile();
-    if (wasMobile !== nowMobile) {
-      // Breakpoint changed
-      wasMobile = nowMobile;
-      initializeSidebar();
     }
   });
 });
