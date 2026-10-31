@@ -98,7 +98,7 @@
             headers: { 'Content-Type': 'application/sparql-query', 'Accept': 'application/sparql-results+json' },
             body: query,
           }).then(function (res) {
-            if (!res.ok) throw new Error('SPARQL request failed: ' + res.status);
+            if (!res.ok) throw vsHttpError(res.status);
             return res.json();
           }).then(function (json) {
             var map = {};
@@ -414,7 +414,7 @@
             headers: { 'Content-Type': 'application/sparql-query', 'Accept': 'application/n-triples' },
             body: q.split('??').join('<' + iri + '>'),
           }).then(function(res) {
-            if (!res.ok) throw new Error('SPARQL request failed: ' + res.status);
+            if (!res.ok) throw vsHttpError(res.status);
             return res.text();
           }).then(function(text) { return MEM.parseNTriples(text, 'q' + i + '_'); });
         })).then(function(parts) {

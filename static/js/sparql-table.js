@@ -829,7 +829,7 @@
       wsErrorMsg = "";
       renderStatus();
       return fetch(url, dataFetchOptions({ headers: { "Accept": "application/json" } }))
-        .then(function(r) { return r.json(); })
+        .then(function(r) { if (!r.ok) throw vsHttpError(r.status); return r.json(); })
         .then(function(resp) {
           if (resp.error) { console.warn("working-set error:", resp.error); }
           var vars = resp.vars || [];
@@ -869,7 +869,7 @@
         .catch(function(e) {
           console.warn("working-set fetch failed:", e);
           wsBusyMsg = "";
-          wsErrorMsg = vsT("js.table.failedToLoad", "Failed to load data.");
+          wsErrorMsg = vsT("js.table.failedToLoad", "Failed to load data.") + (e && e.status ? " " + e.message : "");
           renderStatus();
         });
     }
@@ -1062,7 +1062,7 @@
       wsErrorMsg = "";
       renderStatus();
       fetch(url, dataFetchOptions({ headers: { "Accept": "application/json" } }))
-        .then(function (r) { return r.json(); })
+        .then(function (r) { if (!r.ok) throw vsHttpError(r.status); return r.json(); })
         .then(function (resp) {
           if (resp.error) { console.warn("faceted fetch error:", resp.error); }
           var vars = resp.vars || [];
@@ -1085,7 +1085,7 @@
           console.warn("faceted fetch failed:", e);
           wsLastFacetURL = ""; // allow the same facets to be retried after a failure
           wsBusyMsg = "";
-          wsErrorMsg = vsT("js.table.failedToLoadMatches", "Failed to load matches.");
+          wsErrorMsg = vsT("js.table.failedToLoadMatches", "Failed to load matches.") + (e && e.status ? " " + e.message : "");
           renderStatus();
         });
     }

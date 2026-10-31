@@ -169,7 +169,7 @@
       headers: { 'Content-Type': 'application/sparql-query', 'Accept': 'application/sparql-results+json' },
       body: query,
     }).then(function (res) {
-      if (!res.ok) throw new Error('SPARQL request failed: ' + res.status);
+      if (!res.ok) throw vsHttpError(res.status);
       return res.json();
     }).then(function (json) {
       return (json && json.results && json.results.bindings) || [];
