@@ -140,7 +140,7 @@ async function ngDeleteSelected() {
   }
 
   // Restore button
-  btn.innerHTML = '<i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete named graph';
+  btn.innerHTML = '<i data-lucide="trash" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete named graph';
   if (window.lucide) lucide.createIcons();
 
   // Show result
@@ -193,7 +193,7 @@ async function ngDeleteDefaultGraph() {
   }
 
   btn.disabled = false;
-  btn.innerHTML = '<i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete default graph';
+  btn.innerHTML = '<i data-lucide="trash" style="width: 1rem; height: 1rem;" class="me-1"></i>Delete default graph';
   if (window.lucide) lucide.createIcons();
 }
 

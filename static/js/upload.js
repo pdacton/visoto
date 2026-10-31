@@ -83,7 +83,7 @@
     btn.disabled = loading;
     btn.innerHTML = loading
       ? '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Uploading…'
-      : '<i data-lucide="upload-cloud" style="width:1rem;height:1rem;" class="me-1"></i>Upload';
+      : '<i data-lucide="cloud-upload" style="width:1rem;height:1rem;" class="me-1"></i>Upload';
     if (!loading && window.lucide) lucide.createIcons();
   }
 
@@ -104,7 +104,7 @@
     btn.disabled = loading;
     btn.innerHTML = loading
       ? `<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>${label || 'Uploading…'}`
-      : '<i data-lucide="upload-cloud" style="width:1rem;height:1rem;" class="me-1"></i>Load Selected';
+      : '<i data-lucide="cloud-upload" style="width:1rem;height:1rem;" class="me-1"></i>Load Selected';
     if (!loading && window.lucide) lucide.createIcons();
   }
 

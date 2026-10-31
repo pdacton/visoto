@@ -50,7 +50,7 @@
     {{ if $exp.Value }}
       <div class="alert alert-warning" role="alert">
         <div class="d-flex align-items-center gap-2">
-          <i data-lucide="alert-triangle"></i>
+          <i data-lucide="triangle-alert"></i>
           <div>
             <strong>{{ t "type.cube.thisVersionIsSuperseded" "This version is superseded" }}</strong> &mdash; it expired {{ $exp.Value }}.
             {{ $newest := index $b "newest" }}
@@ -240,7 +240,7 @@
             "queryId" "cubeVersions"
             "iri" .ResourceIRI
             "title" (t "card.otherVersions" "Other Versions")
-            "icon" "history"
+            "icon" "rotate-ccw-clock"
             "collapsed" true)
         }}
     </div>

@@ -179,7 +179,7 @@
             <i data-lucide="share-2" class="icon dropdown-item-icon"></i>{{ t "graph.shareLayout" "Share layout" }}
           </button>
           <button type="button" class="dropdown-item" data-graph-action="shared-layouts">
-            <i data-lucide="history" class="icon dropdown-item-icon"></i>{{ t "graph.sharedLayouts" "Shared layouts…" }}
+            <i data-lucide="rotate-ccw-clock" class="icon dropdown-item-icon"></i>{{ t "graph.sharedLayouts" "Shared layouts…" }}
           </button>
           <div class="dropdown-divider"></div>
           <h6 class="dropdown-header">{{ t "graph.export" "Export" }}</h6>
@@ -202,7 +202,7 @@
       <div class="dropdown">
         <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" aria-expanded="false"
                 aria-label="{{ t "graph.help" "Help and shortcuts" }}" title="{{ t "graph.help" "Help and shortcuts" }}">
-          <i data-lucide="circle-help" class="icon"></i>
+          <i data-lucide="circle-question-mark" class="icon"></i>
         </button>
         <div class="dropdown-menu dropdown-menu-end p-3 graph-help-menu">
           <h6 class="dropdown-header px-0 pt-0">{{ t "graph.shortcuts" "Keyboard shortcuts" }}</h6>
@@ -224,14 +224,14 @@
       <div class="dropdown">
         <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown"
                 aria-expanded="false" aria-label="{{ t "graph.more" "More actions" }}" title="{{ t "graph.more" "More actions" }}">
-          <i data-lucide="more-vertical" class="icon"></i>
+          <i data-lucide="ellipsis-vertical" class="icon"></i>
         </button>
         <div class="dropdown-menu dropdown-menu-end">
           <button type="button" class="dropdown-item" data-graph-action="reset">
             <i data-lucide="rotate-ccw" class="icon dropdown-item-icon"></i>{{ t "graph.reset" "Reset diagram" }}
           </button>
           <button type="button" class="dropdown-item text-danger" data-graph-action="clear-all">
-            <i data-lucide="trash-2" class="icon dropdown-item-icon"></i>{{ t "graph.clearAll" "Clear all" }}
+            <i data-lucide="trash" class="icon dropdown-item-icon"></i>{{ t "graph.clearAll" "Clear all" }}
           </button>
         </div>
       </div>
@@ -336,7 +336,7 @@
     </button>
     <button type="button" class="btn btn-sm btn-ghost-danger btn-icon" data-graph-action="remove"
             aria-label="{{ t "graph.removeSelected" "Remove from diagram" }}" title="{{ t "graph.removeSelected" "Remove from diagram" }}">
-      <i data-lucide="trash-2" class="icon"></i>
+      <i data-lucide="trash" class="icon"></i>
     </button>
     <div class="vr mx-1"></div>
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="clear-selection"

@@ -207,7 +207,7 @@
       btn.setAttribute('aria-expanded', 'false');
       btn.setAttribute('aria-label', vsTf('js.graph.classActions', 'Actions for {name}', { name: label }));
       var i = document.createElement('i');
-      i.setAttribute('data-lucide', 'more-vertical');
+      i.setAttribute('data-lucide', 'ellipsis-vertical');
       i.className = 'icon';
       btn.appendChild(i);
       var menu = document.createElement('div');

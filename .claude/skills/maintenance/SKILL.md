@@ -87,6 +87,10 @@ grep -rno "https://\(cdn\.jsdelivr\.net/npm\|unpkg\.com\)/[^\"' ]*" templates/ s
   ```
   A stale hash makes the asset fail closed — the page loads with the library
   silently missing. Verify the new hash is actually different from the old.
+- **A Lucide bump regenerates `cmd/visoto/testdata/lucide-icons.txt`** (the
+  command is in its header, and its `# lucide <version>` line must match).
+  `TestLucideIconNamesExist` fails until it does. If the new list drops a name
+  the templates use, Lucide renamed that icon: switch to the new name.
 - **Do not add SRI to the two graph-explorer loaders.** They build their
   `<script>` tag dynamically; adding SRI there is a real change, not
   maintenance — propose it in `audit`, don't do it here. (`sparql-flow.js`

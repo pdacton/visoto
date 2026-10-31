@@ -204,7 +204,7 @@
       <!-- more menu -->
       <div class="nav-item dropdown">
         <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" aria-label="{{ t "topbar.openMore" "Open more menu" }}" data-bs-original-title="{{ t "topbar.more" "More" }}">
-          <i data-lucide="more-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i data-lucide="ellipsis-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-end">
           {{ if .ResourceIRI }}
@@ -248,7 +248,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="uploadDataModalLabel">
-          <i data-lucide="upload-cloud" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>{{ t "upload.title" "Upload RDF data" }}
+          <i data-lucide="cloud-upload" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>{{ t "upload.title" "Upload RDF data" }}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t "modal.close" "Close" }}"></button>
       </div>
@@ -287,7 +287,7 @@
           <div class="tab-pane fade show active" id="tab-file" role="tabpanel" aria-labelledby="tab-file-btn">
             <div class="dropzone" id="upload-dropzone">
               <div class="dropzone-body">
-                <i data-lucide="upload-cloud" style="width: 2.5rem; height: 2.5rem;" class="mb-2 text-muted"></i>
+                <i data-lucide="cloud-upload" style="width: 2.5rem; height: 2.5rem;" class="mb-2 text-muted"></i>
                 <p class="mb-1">{{ tHTML "upload.dropzone" "Drag & drop a file here, or <label for=\"upload-file-input\" class=\"text-primary\" style=\"cursor:pointer;\">browse</label>" }}</p>
                 <p class="text-muted small mb-0">{{ t "upload.formats" "Supported formats: .ttl, .nq, .nt, .rdf, .jsonld, .trig" }}</p>
                 <input type="file" id="upload-file-input" accept=".ttl,.nq,.nt,.rdf,.owl,.xml,.jsonld,.trig" class="d-none">
@@ -332,10 +332,10 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">{{ t "modal.close" "Close" }}</button>
         <button type="button" class="btn btn-primary" id="upload-submit-btn">
-          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.submit" "Upload" }}
+          <i data-lucide="cloud-upload" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.submit" "Upload" }}
         </button>
         <button type="button" class="btn btn-primary d-none" id="upload-ontologies-btn">
-          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.loadSelected" "Load Selected" }}
+          <i data-lucide="cloud-upload" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.loadSelected" "Load Selected" }}
         </button>
       </div>
     </div>
@@ -382,10 +382,10 @@
       </div>
       <div class="modal-footer gap-2">
         <button type="button" class="btn btn-danger" id="ng-delete-btn" disabled>
-          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteSelected" "Delete selected" }}
+          <i data-lucide="trash" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteSelected" "Delete selected" }}
         </button>
         <button type="button" class="btn btn-outline-danger" id="ng-delete-default-btn">
-          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteDefault" "Delete default graph" }}
+          <i data-lucide="trash" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteDefault" "Delete default graph" }}
         </button>
         <div class="ms-auto d-flex gap-2 align-items-center">
           <select class="form-select form-select-sm" id="ng-export-format" style="width: auto;" aria-label="{{ t "graphs.exportFormat" "Export format" }}">
