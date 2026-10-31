@@ -1150,7 +1150,12 @@
   padding: 4rem .75rem .75rem;  /* messages start below the floating toolbar */
   z-index: 100;              /* above GE's own stacked paper layers */
 }
+/* flex: none because the busy indicator is a Tabler .card, and on a page laid
+   out in a .row-deck Tabler's `.row-deck > [class*="col-"] .card { flex: 1 1
+   auto }` reaches it through the descendant selector and stretches it down the
+   whole canvas. !important because that selector outranks this one. */
 .graph-overlay > * {
+  flex: none !important;
   pointer-events: auto;
   max-width: min(36rem, 100%);
 }
