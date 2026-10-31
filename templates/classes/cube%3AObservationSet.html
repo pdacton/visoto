@@ -25,7 +25,7 @@
     }
   </sparql-async>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "obsSetTotal"
         "title" (t "card.observationSetsAllVersions" "Observation Sets (all versions)")
@@ -60,9 +60,8 @@
        Cube column already displays the cube title — selecting it again would only
        add a second column repeating it. Set IRIs have no label and fall back to
        the IRI, which is the readable identity here (…/<cube>/observation/). -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
 
         <sparql-async id="observationSetCatalog">
           SELECT ?set ?path ?cube ?publisher ?themes ?status ?modified ?superseded WHERE {
@@ -151,7 +150,6 @@
             "title" (t "card.observationSets" "Observation Sets")
             "icon" "layers")
         }}
-      </div>
     </div>
   </div>
 

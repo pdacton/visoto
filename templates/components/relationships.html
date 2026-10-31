@@ -50,9 +50,8 @@
 </sparql-columns>
 
 {{ define "relationships" }}
-<div class="row">
+<div class="row row-deck row-cards">
   <div class="col-lg-6">
-    <div class="mb-3">
       {{ template "sparqlTable" (dict
             "result" .page.QueryResults.outgoing
             "id" "outgoing"
@@ -60,10 +59,8 @@
             "icon" "expand"
             "collapsed" .collapsed)
       }}
-    </div>
   </div>
   <div class="col-lg-6">
-    <div class="mb-3">
       {{ template "sparqlTable" (dict
             "result" .page.QueryResults.incoming
             "id" "incoming"
@@ -71,7 +68,6 @@
             "icon" "shrink"
             "collapsed" .collapsed)
       }}
-    </div>
   </div>
 </div>
 {{ end }}

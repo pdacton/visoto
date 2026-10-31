@@ -20,7 +20,7 @@
     }
   </sparql-async>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "hierarchyTotal"
         "title" (t "card.hierarchies" "Hierarchies")
@@ -48,9 +48,8 @@
 
        Levels are counted in a subquery grouped by ?hierarchy so the
        meta:nextInHierarchy join cannot multiply rows. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
 
         <sparql-async id="hierarchyCatalog">
           SELECT ?hierarchy ?root ?sharedDimension ?levels WHERE {
@@ -87,7 +86,6 @@
             "title" (t "card.hierarchies" "Hierarchies")
             "icon" "network")
         }}
-      </div>
     </div>
   </div>
 

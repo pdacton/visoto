@@ -51,10 +51,9 @@
 
 {{ define "pageContent" }}
 
-  <div class="row vs-split">
+  <div class="row row-cards vs-split">
 
     <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
-      <div class="mb-3">
 
         <!-- Copied from instances/rico%3ARecordSet.html, which explains them (roots
              by level, the position ordering, the Lucene search). Also in both class
@@ -102,16 +101,19 @@
           </sparql-tree-query>
         </sparql-tree-queries>
 
-        {{ template "sparqlLazyTree" (dict
-            "queryId" "recordTree"
-            "iri" .ResourceIRI
-            "ResourceIRI" .ResourceIRI
-            "title" (t "card.hierarchy" "Hierarchy")
-            "icon" "list-tree"
-            "breadcrumb" true
-            "splitToggle" true)
-        }}
-      </div>
+        <div class="row row-deck row-cards">
+          <div class="col-12">
+            {{ template "sparqlLazyTree" (dict
+                "queryId" "recordTree"
+                "iri" .ResourceIRI
+                "ResourceIRI" .ResourceIRI
+                "title" (t "card.hierarchy" "Hierarchy")
+                "icon" "list-tree"
+                "breadcrumb" true
+                "splitToggle" true)
+            }}
+          </div>
+        </div>
     </div>
 
     <div class="vs-split-handle" role="separator" tabindex="0"
@@ -130,13 +132,13 @@
 
       {{ template "ricoDigitalCopy" . }}
 
-      <div class="mb-3">
+      <div class="row row-deck row-cards"><div class="col-12">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.period
             "id" "period"
             "title" (t "card.period" "Period")
             "icon" "calendar-range") }}
-      </div>
+      </div></div>
 
 
       {{ template "ricoSeeAlso" . }}

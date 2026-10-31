@@ -66,46 +66,53 @@
 
   <!-- Hidden until static/js/sparql-map.js finds geometry; a feature without any
        shows no map card. -->
-  {{ template "sparqlMap" (dict
-        "id" "feature-map"
-        "iri" .ResourceIRI
-        "endpointUrl" .GraphQueryURL
-        "height" "400px") }}
+  <div class="row row-deck row-cards">
+    <div class="col-12">
+      {{ template "sparqlMap" (dict
+            "id" "feature-map"
+            "iri" .ResourceIRI
+            "endpointUrl" .GraphQueryURL
+            "height" "400px") }}
+    </div>
+  </div>
 
   {{ with .QueryResults.featureLinks.Bindings }}
-  <div class="d-flex flex-wrap gap-2 mb-3">
-    {{ range . }}
-    <a class="btn btn-sm" href="{{ .url.Value }}" target="_blank" rel="noopener" title="{{ .url.Value }}">
-      {{ if contains .property.Value "hasMap" }}
-        <i data-lucide="map-pinned" class="me-1"></i>{{ t "map.openMap" "Open in map viewer" }}
-      {{ else if contains .property.Value "sameAs" }}
-        <i data-lucide="link" class="me-1"></i>{{ t "map.sameAs" "Same as" }}
-      {{ else }}
-        <i data-lucide="globe" class="me-1"></i>{{ t "map.website" "Website" }}
+  <!-- A row of its own, so the card gutter spaces it like the cards around it. -->
+  <div class="row row-cards">
+    <div class="col-12 d-flex flex-wrap gap-2">
+      {{ range . }}
+      <a class="btn btn-sm" href="{{ .url.Value }}" target="_blank" rel="noopener" title="{{ .url.Value }}">
+        {{ if contains .property.Value "hasMap" }}
+          <i data-lucide="map-pinned" class="me-1"></i>{{ t "map.openMap" "Open in map viewer" }}
+        {{ else if contains .property.Value "sameAs" }}
+          <i data-lucide="link" class="me-1"></i>{{ t "map.sameAs" "Same as" }}
+        {{ else }}
+          <i data-lucide="globe" class="me-1"></i>{{ t "map.website" "Website" }}
+        {{ end }}
+        <span class="text-secondary text-truncate ms-1" style="max-width: 18rem;">{{ .url.Value }}</span>
+        <i data-lucide="external-link" class="ms-1"></i>
+      </a>
       {{ end }}
-      <span class="text-secondary text-truncate ms-1" style="max-width: 18rem;">{{ .url.Value }}</span>
-      <i data-lucide="external-link" class="ms-1"></i>
-    </a>
-    {{ end }}
+    </div>
   </div>
   {{ end }}
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "sparqlGrid" (dict
           "result" .QueryResults.featureRelationships
           "id" "featureRelationships"
           "title" (t "card.relationships" "Relationships")
           "icon" "expand") }}
-  </div>
+  </div></div>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "sparqlTable" (dict
           "result" .QueryResults.incoming
           "id" "incoming"
           "title" (t "card.incomingRelationships" "Incoming Relationships")
           "icon" "shrink"
           "collapsed" true) }}
-  </div>
+  </div></div>
 
 </div>
 {{ end }}

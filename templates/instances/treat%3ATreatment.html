@@ -16,9 +16,8 @@
   {{ template "literals" . }}
 
   <!-- Resources cited by this treatment (material citations, figures, ...) -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="citedResources">
           SELECT ?cited ?type WHERE {
             ?? (cito:cites|treat:citesMaterialCitation) ?cited .
@@ -36,7 +35,6 @@
             "title" (t "card.cites" "Cites")
             "icon" "quote")
         }}
-      </div>
     </div>
   </div>
 

@@ -18,7 +18,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="bookSectionInstances">
       SELECT ?section ?title ?creator ?date ?startPage ?endPage
       WHERE {
@@ -40,12 +40,16 @@
       <sparql-column var="date" filter></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "bookSectionInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.bookSections" "Book Sections")
-        "icon" "book-2")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "bookSectionInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.bookSections" "Book Sections")
+            "icon" "book-2")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

@@ -22,7 +22,7 @@
   <sparql-async id="instanceCount">
     SELECT (COUNT(?instance) AS ?count) WHERE { ?instance a ?? . }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "instanceCount"
         "iri" .ResourceIRI
@@ -45,7 +45,7 @@
        and record sets apart. ?mediaType is the same "video" / "document" split
        as the Media column of classes/rico%3ARecord.html (newsreel clips and
        debate videos vs scans, minutes and PDFs); plain text, not translated. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="instantiations">
       SELECT ?item ?period ?media ?mediaType WHERE {
         ?item rico:hasInstantiation ?copy .
@@ -68,7 +68,7 @@
         "title" (t "card.digitalCopies" "Records with a digital copy")
         "icon" "film")
     }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" .) }}
 </div>

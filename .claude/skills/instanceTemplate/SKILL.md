@@ -87,6 +87,25 @@ You'll be prompted for:
 - **Component Integration**: uses the pre-built, ready to use building blocks (`pageHeader`, `literals`, `relationships`). There is no `classHierarchy` or `ontologyShacl` component — calling one is a startup error. Subclass/superclass, ontology and SHACL tables live in the resource page's Schema view (`layout/base.html`) and appear on every resource page automatically.
 - **Smart Filtering**: Excludes class/subclass relationships (no `rdf:type`, `rdfs:subClassOf`)
 
+## Card layout
+
+Lay cards out with Tabler's card grid (docs/templating.md#card-layout): every card
+sits directly in a column of a `<div class="row row-deck row-cards">`, one card per
+column, with no `mb-3`/`mt-3` wrapper and no margin on the card. `literals`,
+`relationships`, `dblp*List` and `rico*` emit their own rows, so call them at the
+top level of `pageContent`.
+
+```html
+<div class="row row-deck row-cards">
+  <div class="col-lg-6">
+    {{ template "sparqlTable" (dict "result" $r "id" "parts" "title" (t "card.parts")) }}
+  </div>
+  <div class="col-lg-6">
+    {{ template "sparqlGrid" (dict "result" $g "id" "facts" "title" (t "card.facts")) }}
+  </div>
+</div>
+```
+
 ## UI strings must be translated
 
 Every user-visible string the generated template emits — card titles, headings,

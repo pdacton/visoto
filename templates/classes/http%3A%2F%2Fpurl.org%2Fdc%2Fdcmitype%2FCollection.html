@@ -20,9 +20,8 @@
   {{ template "literals" . }}
 
   <!-- instances of dcmitype:Collection, with their element count -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="dcmiCollectionInstances">
           PREFIX sm: &lt;https://agriculture.ld.admin.ch/system-map/&gt;
           SELECT ?instance ?description (COUNT(DISTINCT ?element) AS ?elements) WHERE {
@@ -47,7 +46,6 @@
             "title" (t "card.collections" "Collections")
             "icon" "library")
         }}
-      </div>
     </div>
   </div>
 

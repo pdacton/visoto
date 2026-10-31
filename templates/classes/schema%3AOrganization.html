@@ -20,7 +20,7 @@
        CompanyUID (structured schema:identifier node), additionalType (legal
        form / org type), addressLocality and description have the widest
        coverage and are the most useful for narrowing down an organization. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="organizationInstances">
       SELECT ?organization ?companyUID ?additionalType ?addressLocality ?description WHERE {
         ?organization a ?? .
@@ -83,7 +83,7 @@
         "icon" "circle-dot"
         "searchProp" "schema:name")
     }}
-  </div>
+  </div></div>
 
 </div>
 {{ end }}

@@ -16,7 +16,7 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <!-- One COUNT subquery per kind, each grouped on its own: counting them all
          in one GROUP BY would multiply them into each other. The membership
          triple stays "?organization a ??", the shape DeriveKeyVar looks for.
@@ -64,7 +64,7 @@
         "icon" "building"
         "searchProp" "foaf:name")
     }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" .) }}
 

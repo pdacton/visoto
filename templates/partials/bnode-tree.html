@@ -57,7 +57,7 @@
   {{ if .collapsed }}{{ $url = printf "%s&collapsed=1" $url }}{{ end }}
 
   <div hx-get="{{ $url }}" hx-trigger="{{ or .trigger "load" }}" hx-swap="outerHTML">
-    <div class="card mb-3 placeholder-glow" aria-busy="true">
+    <div class="card placeholder-glow" aria-busy="true">
       <div class="card-header d-flex align-items-center gap-2">
         <i data-lucide="{{ $icon }}" class="icon"></i>
         <h3 class="card-title mb-0">{{ $title }}</h3>
@@ -75,7 +75,7 @@
 
 {{ define "bnodeTreeCard" }}
   {{ $id := .id }}
-  <div class="card mb-3 vs-bn-card" {{ with .anchor }}id="{{ . }}"{{ end }}
+  <div class="card vs-bn-card" {{ with .anchor }}id="{{ . }}"{{ end }}
        data-bnode-tree data-bnode-tree-config="{{ $id }}-config">
     <div class="card-header flex-wrap gap-2">
       <h3 class="card-title d-flex align-items-center gap-2 mb-0">

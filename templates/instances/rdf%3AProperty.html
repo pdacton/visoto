@@ -99,7 +99,7 @@
   </div>
   {{ end }}
 
-  <div class="row row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" (or (and $graphdb "propertyUsageGraphDB") "propertyUsage")
         "iri" .ResourceIRI
@@ -107,9 +107,8 @@
         "icon" "/static/img/resource/Property.svg") }}
   </div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-columns for="propertySubjectTypes">
           <sparql-column var="type" label="{{ t "type.property.type" "Type" }}" icon></sparql-column>
           <sparql-column var="triples" label="{{ t "type.property.triplesInSample" "Triples in sample" }}"></sparql-column>
@@ -119,10 +118,8 @@
             "iri" .ResourceIRI
             "title" (t "type.property.subjectTypes" "Subject types (sample)")
             "icon" "log-in") }}
-      </div>
     </div>
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-columns for="propertyValueTypes">
           <sparql-column var="valueType" label="{{ t "type.property.valueType" "Value type" }}" icon></sparql-column>
           <sparql-column var="language" label="{{ t "facet.language" "Language" }}"></sparql-column>
@@ -133,22 +130,18 @@
             "iri" .ResourceIRI
             "title" (t "type.property.valueTypes" "Value types (sample)")
             "icon" "log-out") }}
-      </div>
     </div>
   </div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlAsyncTable" (dict
             "queryId" (or (and $graphdb "propertyGraphsGraphDB") "propertyGraphs")
             "iri" .ResourceIRI
             "title" (t "type.property.graphs" "Named graphs")
             "icon" "package") }}
-      </div>
     </div>
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-columns for="propertyShapes">
           <sparql-column var="shape" label="{{ t "type.property.propertyShape" "Property shape" }}" icon></sparql-column>
           <sparql-column var="nodeShape" label="{{ t "type.property.nodeShape" "Node shape" }}" icon group></sparql-column>
@@ -158,11 +151,10 @@
             "iri" .ResourceIRI
             "title" (t "type.property.shapes" "SHACL shapes")
             "icon" "shapes") }}
-      </div>
     </div>
   </div>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-columns for="propertySampleTriples">
       <sparql-column var="subject" label="{{ t "type.property.subject" "Subject" }}" icon></sparql-column>
       <sparql-column var="value" label="{{ t "type.property.value" "Value" }}"></sparql-column>
@@ -173,7 +165,7 @@
         "title" (t "type.property.sampleTriples" "Example usage")
         "icon" "list"
         "collapsed" true) }}
-  </div>
+  </div></div>
 
   {{ template "literals" . }}
 

@@ -27,7 +27,7 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Key metadata that is IRI-valued, so the literals card does not show it.
          VALUES carries the display order; the grid merges properties sharing a
@@ -117,7 +117,7 @@
        per value and listed those distributions twice, so the two are bound
        separately and collapsed with COALESCE — the file type first, as it reads
        better ("CSV" rather than "csv", "JSON_LD" rather than "ld+json"). -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="datasetDistributions">
       SELECT ?distribution ?language ?format ?accessURL ?downloadURL WHERE {
         ?? (dcat:distribution|schema:distribution) ?distribution .
@@ -147,7 +147,7 @@
         "title" (t "card.distributions" "Distributions")
         "icon" "package")
     }}
-  </div>
+  </div></div>
 
   <!-- Structure: the dataset's columns, from its SHACL shapes (I14Y only —
        dct:conformsTo -> the untyped /structure node -> dct:hasPart -> node
@@ -177,7 +177,7 @@
     }
   </sparql-query>
   {{ $shapeCount := firstValue .QueryResults.datasetShapeCount "count" }}
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="datasetStructure">
       SELECT ?property ?type ?cardinality ?description ?codelist ?shape WHERE {
         {
@@ -257,7 +257,7 @@
           "icon" "columns-3")
       }}
     {{ end }}
-  </div>
+  </div></div>
 
   <!-- Collapsed: the outgoing card repeats the overview and the distributions.
        It stays for what the cards above do not cover — dct:relation (law

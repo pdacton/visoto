@@ -16,7 +16,7 @@
   <sparql-async id="dblpInstitutionCount">
     SELECT (COUNT(?institution) AS ?count) WHERE { ?institution a ?? . }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "dblpInstitutionCount"
         "iri" .ResourceIRI
@@ -51,13 +51,13 @@
     <sparql-column var="members" label="{{ t "facet.affiliatedCreators" "Affiliated creators" }}" type="number"></sparql-column>
   </sparql-columns>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "sparqlAsyncTable" (dict
         "queryId" "dblpInstitutions"
         "iri" .ResourceIRI
         "title" (t "card.institutions" "Institutions")
         "icon" "landmark") }}
-  </div>
+  </div></div>
 
 </div>
 {{ end }}

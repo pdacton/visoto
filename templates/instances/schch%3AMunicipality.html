@@ -77,11 +77,11 @@
 
 {{ define "pageContent" }}
 <div>
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Attributes -->
 
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="attributes">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
@@ -103,17 +103,20 @@
   <!-- Boundary from geo:hasGeometry; the WKT lives on geo.ld.admin.ch and is
        fetched with a federated query (static/js/sparql-map.js). Hidden when the
        geometry is missing. -->
-  {{ template "sparqlMap" (dict
-        "id" "municipality-map"
-        "iri" .ResourceIRI
-        "endpointUrl" .GraphQueryURL
-        "height" "400px"
-        "margin" "mb-0") }}
+  <div class="row row-deck row-cards">
+    <div class="col-12">
+      {{ template "sparqlMap" (dict
+            "id" "municipality-map"
+            "iri" .ResourceIRI
+            "endpointUrl" .GraphQueryURL
+            "height" "400px") }}
+    </div>
+  </div>
 
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Zefix Organisationen -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="Organisationen">
         SELECT ?zefix_Organisation ?form WHERE {
           ?zefix_Organisation schch:municipality ?? .
@@ -135,7 +138,7 @@
     </div>    
 
     <!-- Stationen -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="stationen">
         SELECT ?station ?provider WHERE {
           ?station ?property ?? .
@@ -157,7 +160,7 @@
     </div>    
 
     <!-- Postal Codes -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="postals">
         SELECT ?postalCode WHERE {
           BIND (?? AS ?s)
@@ -175,9 +178,8 @@
   </div>
 
   <!-- Version Flow Diagram -->
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-0">
         <sparql-query id="versionflow">
           SELECT DISTINCT ?from ?predicate ?to ?fromType ?toType ?fromValidFrom ?toValidFrom WHERE {
             # starting point: the municipalitys latest version
@@ -243,7 +245,6 @@
               "direction" "LR"
               "extraField" "validFrom")
         }}
-      </div>
     </div>
   </div>
 

@@ -20,7 +20,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="cantonInstances">
       SELECT ?type ?canton ?identifier ?validFrom ?districts ?municipalities ?name_de ?name_fr ?name_it ?name_rm ?name_en
       WHERE {
@@ -98,12 +98,16 @@
       <sparql-column var="name_en" label="{{ t "facet.name" "Name" }} (en)" filter></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "cantonInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.cantons" "Cantons")
-        "icon" "circle-dot")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "cantonInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.cantons" "Cantons")
+            "icon" "circle-dot")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

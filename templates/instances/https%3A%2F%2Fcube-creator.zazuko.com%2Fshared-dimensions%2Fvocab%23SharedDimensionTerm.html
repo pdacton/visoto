@@ -36,9 +36,8 @@
     <!-- Wunderbaum builds the tree from flat ?node/?parent rows and promotes any
          child whose parent is absent to a root, so the extra root row needs no
          special handling in sparql-tree.js. -->
-    <div class="row">
+    <div class="row row-deck row-cards">
         <div class="col">
-            <div class="mb-3">
                 <sparql-query id="termTree">
                     SELECT ?node ?parent ?code WHERE {
                         # which shared dimension does this term belong to?
@@ -68,7 +67,6 @@
                     "treeExpanded" false
                     "ResourceIRI" .ResourceIRI)
                 }}
-            </div>
         </div>
     </div>
 
@@ -97,9 +95,8 @@
          requiring them loses nothing. -->
     <!-- sparqlTable needs an explicit "id" — omitting it fails at render with
          `executing "sparqlTable" at <.id>: invalid value; expected string`. -->
-    <div class="row">
+    <div class="row row-deck row-cards">
         <div class="col">
-            <div class="mb-3">
                 <sparql-query id="usedInCubes">
                     SELECT ?cube ?dimension ?publisher ?themes ?status ?modified ?superseded WHERE {
                         { SELECT ?cube ?dimension
@@ -157,7 +154,6 @@
                     "title" (t "card.usedInCubes" "Used in Cubes")
                     "icon" "box")
                 }}
-            </div>
         </div>
     </div>
 

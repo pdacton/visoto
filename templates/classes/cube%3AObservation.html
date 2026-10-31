@@ -50,7 +50,7 @@
     }
   </sparql-async>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "observationTotal"
         "title" (t "card.observations" "Observations")
@@ -93,7 +93,7 @@
        membership triple, misses it, and falls back to wrapping the whole query in
        "SELECT * WHERE { … }" — which puts this template's PREFIX line inside a
        group and makes the endpoint reject the request with a 400. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="observationInstances">
       SELECT ?observation ?observedBy ?cube WHERE {
         ?observation a ?? .
@@ -153,7 +153,7 @@
         "title" (t "card.observations" "Observations")
         "icon" "circle-dot")
     }}
-  </div>
+  </div></div>
 
   <!-- Multi-typed observations. Both groups are modelling quirks in the LINDAS
        fch/apg (lobby register) graphs rather than ordinary data points, and they
@@ -170,7 +170,7 @@
        Small and bounded (~1518 rows), so this table is INLINE: the class is
        written out rather than "a ??", nothing reaches /api/faceted-table, and
        every filter runs locally over the loaded rows. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="observationAnomalies">
       SELECT ?observation ?coType ?name ?observedBy WHERE {
         {
@@ -212,7 +212,7 @@
         "icon" "alert-triangle"
         "collapsed" true)
     }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" .) }}
 

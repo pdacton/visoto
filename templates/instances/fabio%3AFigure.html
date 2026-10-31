@@ -10,30 +10,28 @@
   {{ template "literals" . }}
 
   <!-- Representation image(s) -->
-  <div class="row">
-    <div class="col">
-      <div class="mb-3">
-        <sparql-query id="figureRepresentations">
-          SELECT ?representation WHERE {
-            ?? fabio:hasRepresentation ?representation .
-          } LIMIT 20
-        </sparql-query>
-        {{ range $binding := .QueryResults.figureRepresentations.Bindings }}
-          <div class="card mb-3">
-            <div class="card-body text-center">
-              <img src="{{ safeURL (index $binding "representation").Value }}" alt="{{ t "type.figure.figureRepresentation" "Figure representation" }}"
-                   class="img-fluid rounded" loading="lazy" style="max-height: 480px;">
-            </div>
-          </div>
-        {{ end }}
+  <sparql-query id="figureRepresentations">
+    SELECT ?representation WHERE {
+      ?? fabio:hasRepresentation ?representation .
+    } LIMIT 20
+  </sparql-query>
+  <!-- One column per image: row-deck lays a column's cards out side by side. -->
+  <div class="row row-deck row-cards">
+    {{ range $binding := .QueryResults.figureRepresentations.Bindings }}
+    <div class="col-12">
+      <div class="card">
+        <div class="card-body text-center">
+          <img src="{{ safeURL (index $binding "representation").Value }}" alt="{{ t "type.figure.figureRepresentation" "Figure representation" }}"
+               class="img-fluid rounded" loading="lazy" style="max-height: 480px;">
+        </div>
       </div>
     </div>
+    {{ end }}
   </div>
 
   <!-- Treatments that cite this figure -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="citingTreatments">
           SELECT ?treatment ?title WHERE {
             ?treatment cito:cites ?? .
@@ -51,7 +49,6 @@
             "title" (t "card.citedByTreatments" "Cited by Treatments")
             "icon" "file-description")
         }}
-      </div>
     </div>
   </div>
 

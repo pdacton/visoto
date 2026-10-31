@@ -38,10 +38,9 @@
 
      The handle, the collapse toggle and the reopen button are the same markup
      contract split-layout.js expects (see its header comment). -->
-<div class="row vs-split">
+<div class="row row-cards vs-split">
 
   <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
-    <div class="mb-3">
 
       <!-- The queries are duplicated from instances/schema%3AGovernmentOrganization.html
            rather than shared: <sparql-tree-queries> ids are scoped to the TEMPLATE SET,
@@ -94,13 +93,16 @@
            passing the class IRI would send the focus walk looking for an ancestor
            chain that does not exist. The tree opens at its 10 roots. With no
            focused node there is no breadcrumb either, so only splitToggle is on. -->
-      {{ template "sparqlLazyTree" (dict
-          "queryId" "governmentOrganizationTree"
-          "title" (t "card.hierarchy" "Hierarchy")
-          "icon" "list-tree"
-          "splitToggle" true)
-      }}
-    </div>
+      <div class="row row-deck row-cards">
+        <div class="col-12">
+          {{ template "sparqlLazyTree" (dict
+              "queryId" "governmentOrganizationTree"
+              "title" (t "card.hierarchy" "Hierarchy")
+              "icon" "list-tree"
+              "splitToggle" true)
+          }}
+        </div>
+      </div>
   </div>
 
   <div class="vs-split-handle" role="separator" tabindex="0"
@@ -123,7 +125,7 @@
     <!-- All instances, including the ~750 outside the Staatskalender that the tree
          beside it deliberately excludes (rvov, the extra-parliamentary commissions,
          foag/system-map, federal-council, meta). -->
-    <div class="mb-3">
+    <div class="row row-deck row-cards"><div class="col-12">
       <sparql-async id="governmentOrganizationInstances">
         SELECT ?organization ?alternateName ?parentOrganization ?addressLocality WHERE {
           ?organization a ?? .
@@ -159,7 +161,7 @@
           "icon" "building"
           "searchProp" "schema:name")
       }}
-    </div>
+    </div></div>
 
     <!-- The shared component, unchanged: a container query on .vs-split-main
          (see tabler_overrides.css) reflows its col-lg-6 pair to full width inside

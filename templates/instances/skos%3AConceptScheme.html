@@ -24,7 +24,7 @@
        concepts does not rearrange the page under the user. The aside is sticky,
        so the tree stays reachable however far the content scrolls; below lg the
        columns stack, tree first. -->
-  <div class="row vs-split">
+  <div class="row row-cards vs-split">
 
     <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
 
@@ -38,7 +38,6 @@
        ?label is projected deliberately on both level queries: they ORDER BY it,
        and labels are resolved AFTER the level query returns — so without the
        projection a limit would page over the wrong rows. -->
-      <div class="mb-3">
         <sparql-tree-queries for="conceptTree">
           <sparql-tree-query role="roots">
             SELECT ?node (SAMPLE(?nodeLabel) AS ?label) (MIN(STR(?notation)) AS ?code) ?hasChildren WHERE {
@@ -76,15 +75,18 @@
           </sparql-tree-query>
         </sparql-tree-queries>
 
-        {{ template "sparqlLazyTree" (dict
-          "queryId" "conceptTree"
-          "iri" .ResourceIRI
-          "title" (t "card.conceptHierarchy" "Concept Hierarchy")
-          "icon" "list-tree"
-          "breadcrumb" true
-          "splitToggle" true)
-        }}
-      </div>
+        <div class="row row-deck row-cards">
+          <div class="col-12">
+            {{ template "sparqlLazyTree" (dict
+              "queryId" "conceptTree"
+              "iri" .ResourceIRI
+              "title" (t "card.conceptHierarchy" "Concept Hierarchy")
+              "icon" "list-tree"
+              "breadcrumb" true
+              "splitToggle" true)
+            }}
+          </div>
+        </div>
     </div>
 
     <div class="vs-split-handle" role="separator" tabindex="0"
@@ -112,7 +114,7 @@
            sh:property ps); the class page's References column counts the same
            datasets. Collapses when nothing references the scheme, which is
            every non-I14Y scheme. -->
-      <div class="mb-3">
+      <div class="row row-deck row-cards"><div class="col-12">
         <sparql-async id="schemeDatasets">
           SELECT DISTINCT ?dataset ?publisher WHERE {
             ?column dct:conformsTo ?? .
@@ -132,16 +134,15 @@
             "title" (t "card.referencingDatasets" "Datasets using this code list")
             "icon" "database")
         }}
-      </div>
+      </div></div>
 
   <!-- relationships (custom: filters skos:inScheme from incoming).
        col-lg-6 as everywhere else: the container query on .vs-split-main reflows
        them to full width while this column is narrow. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
 
     <!-- incoming relationships -->
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="incoming">
           SELECT ?type ?source ?property WHERE {
             BIND (?? AS ?o)
@@ -163,12 +164,10 @@
           "icon" "shrink"
           "collapsed" true)
         }}
-      </div>
     </div>
 
     <!-- outgoing relationships -->
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="outgoing">
         SELECT ?property ?destination ?type WHERE {
           BIND (?? AS ?s)
@@ -189,7 +188,6 @@
           "icon" "expand"
           "collapsed" true)
         }}
-      </div>
     </div>
 
   </div>

@@ -23,10 +23,9 @@
 
 {{ define "pageContent" }}
 
-<div class="row vs-split">
+<div class="row row-cards vs-split">
 
   <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
-    <div class="mb-3">
 
       <!-- Copied from instances/rico%3ARecordSet.html, which explains them;
            <sparql-tree-queries> ids are scoped to the template set. Keep in step.
@@ -74,13 +73,16 @@
           </sparql-tree-query>
         </sparql-tree-queries>
 
-      {{ template "sparqlLazyTree" (dict
-          "queryId" "recordSetClassTree"
-          "title" (t "card.hierarchy" "Hierarchy")
-          "icon" "list-tree"
-          "splitToggle" true)
-      }}
-    </div>
+      <div class="row row-deck row-cards">
+        <div class="col-12">
+          {{ template "sparqlLazyTree" (dict
+              "queryId" "recordSetClassTree"
+              "title" (t "card.hierarchy" "Hierarchy")
+              "icon" "list-tree"
+              "splitToggle" true)
+          }}
+        </div>
+      </div>
   </div>
 
   <div class="vs-split-handle" role="separator" tabindex="0"
@@ -99,7 +101,7 @@
     <sparql-async id="instanceCount">
       SELECT (COUNT(?instance) AS ?count) WHERE { ?instance a ?? . }
     </sparql-async>
-    <div class="row row-deck row-cards mb-3">
+    <div class="row row-deck row-cards">
       {{ template "sparqlMetric" (dict
           "queryId" "instanceCount"
           "iri" .ResourceIRI
@@ -124,7 +126,7 @@
          itself is free, but the first 20,000 loaded rows hold no media at all,
          so Tabulator hides the empty column until a search or another filter
          brings such rows in. -->
-    <div class="mb-3">
+    <div class="row row-deck row-cards"><div class="col-12">
       <sparql-async id="recordSetInstances">
         SELECT ?instance ?level ?referenceCode ?period ?media WHERE {
           ?instance a ?? .
@@ -154,7 +156,7 @@
           "icon" "circle-dot"
           "searchProp" "https://www.ica.org/standards/RiC/ontology#title")
       }}
-    </div>
+    </div></div>
 
     {{ template "relationships" (dict "page" .) }}
   </div>

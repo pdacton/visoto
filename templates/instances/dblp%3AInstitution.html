@@ -19,7 +19,7 @@
   <sparql-async id="dblpInstitutionCreatorCount">
     SELECT (COUNT(DISTINCT ?creator) AS ?count) WHERE { ?creator dblp:affiliatedWith ?? . }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "dblpInstitutionCreatorCount"
         "iri" .ResourceIRI
@@ -29,7 +29,7 @@
 
   {{ template "literals" . }}
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-query id="dblpInstitutionLocation">
       SELECT ?country ?state ?city WHERE {
         ?? dblp:hasLocation ?location .
@@ -48,9 +48,9 @@
         "id" "dblpInstitutionLocation"
         "title" (t "card.location" "Location")
         "icon" "map-pin") }}
-  </div>
+  </div></div>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dblpInstitutionCreators">
       SELECT ?creator ?affiliation (COUNT(DISTINCT ?publication) AS ?publications) WHERE {
         ?creator dblp:affiliatedWith ?? .
@@ -69,10 +69,10 @@
         "iri" .ResourceIRI
         "title" (t "card.affiliatedCreators" "Affiliated Creators")
         "icon" "users") }}
-  </div>
+  </div></div>
 
   <!-- Parent and sub-institutions, predecessors, ROR, Wikidata, homepage … -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-query id="dblpInstitutionLinks">
       SELECT ?property ?link WHERE {
         ?? ?property ?link .
@@ -84,7 +84,7 @@
         "id" "dblpInstitutionLinks"
         "title" (t "card.links" "Links")
         "icon" "link") }}
-  </div>
+  </div></div>
 
 </div>
 {{ end }}

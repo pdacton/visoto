@@ -41,7 +41,7 @@
 
 {{ define "ricoDigitalCopy" }}
 {{ range $b := .QueryResults.ricoDigitalCopy.Bindings }}
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "mediaCard" (dict
         "url"     (index $b "url").Value
         "kind"    (index $b "kind").Value
@@ -49,6 +49,6 @@
         "alt"     (index $b "name").Value
         "caption" (index $b "name").Value
         "title"   (t "card.digitalCopy" "Digital copy")) }}
-  </div>
+  </div></div>
 {{ end }}
 {{ end }}

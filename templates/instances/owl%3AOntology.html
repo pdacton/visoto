@@ -411,22 +411,26 @@ CONSTRUCT {
   {{ template "literals" . }}
 
   {{ if .QueryResults.ontologyLinks.Bindings }}
-  <div class="card mb-3">
-    <div class="card-header d-flex align-items-center gap-2">
-      <i data-lucide="link" class="icon"></i>
-      <h3 class="card-title mb-0">{{ t "card.seeAlso" "See also" }}</h3>
-    </div>
-    <div class="card-body">
-      <div class="datagrid">
-        {{ range .QueryResults.ontologyLinks.Bindings }}
-          <div class="datagrid-item">
-            <div class="datagrid-title text-uppercase">{{ render .property }}</div>
-            <div class="datagrid-content">
-              <a href="{{ .page.Value }}" target="_blank" rel="noopener">{{ .page.Value }}
-                <i data-lucide="external-link" style="width: 1em; height: 1em;"></i></a>
-            </div>
+  <div class="row row-deck row-cards">
+    <div class="col-12">
+      <div class="card">
+        <div class="card-header d-flex align-items-center gap-2">
+          <i data-lucide="link" class="icon"></i>
+          <h3 class="card-title mb-0">{{ t "card.seeAlso" "See also" }}</h3>
+        </div>
+        <div class="card-body">
+          <div class="datagrid">
+            {{ range .QueryResults.ontologyLinks.Bindings }}
+              <div class="datagrid-item">
+                <div class="datagrid-title text-uppercase">{{ render .property }}</div>
+                <div class="datagrid-content">
+                  <a href="{{ .page.Value }}" target="_blank" rel="noopener">{{ .page.Value }}
+                    <i data-lucide="external-link" style="width: 1em; height: 1em;"></i></a>
+                </div>
+              </div>
+            {{ end }}
           </div>
-        {{ end }}
+        </div>
       </div>
     </div>
   </div>
@@ -451,9 +455,8 @@ CONSTRUCT {
        ranked by a two-digit prefix (own before shape, display language before
        English before untagged) and MIN picks the best. Defined by: the term's
        rdfs:isDefinedBy other than this ontology. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="ontologyTerms">
           SELECT ?term (STR(?term) AS ?iri) ?kind (SUBSTR(MIN(?rankedDescription), 3) AS ?description) (SAMPLE(?vocabulary) AS ?definedBy) WHERE {
             {
@@ -497,14 +500,13 @@ CONSTRUCT {
             "title" (t "card.definedTerms" "Defined Terms")
             "icon" "book-open")
         }}
-      </div>
     </div>
   </div>
 
   <!-- A distinct `id` is required: the base layout's page-level graph already
        claims the default "sparql-graph" DOM id. Eager (not lazy): the card sits
        in the default view, so its container is measurable at mount. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "sparqlGraph" (dict
         "id" "ontologyDiagram"
         "iri" .ResourceIRI
@@ -514,7 +516,7 @@ CONSTRUCT {
         "title" (t "card.ontologyDiagram" "Ontology diagram")
         "icon" "shapes"
         "height" "700px") }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" .) }}
 

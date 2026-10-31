@@ -30,9 +30,8 @@
   {{ template "literals" . }}
 
   <!-- Access & Download URLs -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="accessLinks">
           SELECT ?property ?url WHERE {
             BIND (?? AS ?dist)
@@ -51,14 +50,12 @@
           "title" (t "card.accessDownloadURLs" "Access & Download URLs")
           "icon" "link")
         }}
-      </div>
     </div>
   </div>
 
   <!-- Parent Dataset -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="parentDataset">
           SELECT ?dataset ?title WHERE {
             ?dataset dcat:distribution ?? .
@@ -71,12 +68,10 @@
           "title" (t "card.partOfDataset" "Part of Dataset")
           "icon" "database")
         }}
-      </div>
     </div>
 
     <!-- Format & Media Type -->
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="formatInfo">
           SELECT ?property ?value WHERE {
             BIND (?? AS ?dist)
@@ -98,14 +93,12 @@
           "title" (t "card.formatMediaType" "Format & Media Type")
           "icon" "file")
         }}
-      </div>
     </div>
   </div>
 
   <!-- License & Rights -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="licenseInfo">
           SELECT ?property ?value WHERE {
             BIND (?? AS ?dist)
@@ -130,12 +123,10 @@
           "title" (t "card.licenseRights" "License & Rights")
           "icon" "lock")
         }}
-      </div>
     </div>
 
     <!-- Access Service -->
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="accessService">
           SELECT ?service ?title WHERE {
             ?? dcat:accessService ?service .
@@ -148,14 +139,12 @@
           "title" (t "card.accessService" "Access Service")
           "icon" "server")
         }}
-      </div>
     </div>
   </div>
 
   <!-- Incoming & Outgoing Relationships -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="incoming">
           SELECT ?type ?source ?property WHERE {
             BIND (?? AS ?o)
@@ -176,11 +165,9 @@
           "icon" "shrink"
           "collapsed" true)
         }}
-      </div>
     </div>
 
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="outgoing">
           SELECT ?property ?destination ?type WHERE {
             BIND (?? AS ?s)
@@ -201,7 +188,6 @@
           "icon" "expand"
           "collapsed" true)
         }}
-      </div>
     </div>
   </div>
 

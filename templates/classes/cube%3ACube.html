@@ -30,7 +30,7 @@
     }
   </sparql-async>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "cubeTotal"
         "title" (t "card.cubesAllVersions" "Cubes (all versions)")
@@ -61,9 +61,8 @@
        schema:name is one of the properties it looks up, so the Cube column already
        displays the cube title. Selecting the title again only produced a second
        column repeating it. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
 
         <sparql-async id="cubeCatalog">
           SELECT ?cube ?publisher ?themes ?status ?modified ?superseded WHERE {
@@ -135,7 +134,6 @@
             "title" (t "card.dataCubes" "Data Cubes")
             "icon" "box")
         }}
-      </div>
     </div>
   </div>
 

@@ -38,7 +38,7 @@
 </sparql-columns>
 
 {{ define "dblpPublicationList" }}
-<div class="row row-deck row-cards mb-3">
+<div class="row row-deck row-cards">
   {{ template "sparqlMetric" (dict
       "queryId" "dblpPublicationCount"
       "iri" .ResourceIRI
@@ -46,12 +46,12 @@
       "icon" (resourceIcon .)) }}
 </div>
 
-<div class="mb-3">
+<div class="row row-deck row-cards"><div class="col-12">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "dblpPublications"
       "iri" .ResourceIRI
       "searchProp" "dblp:title"
       "title" (t "card.publications" "Publications")
       "icon" "file-text") }}
-</div>
+</div></div>
 {{ end }}

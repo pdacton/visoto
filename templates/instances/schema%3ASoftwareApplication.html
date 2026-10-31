@@ -125,7 +125,7 @@
 
        600px rather than the viewport-height default, because this graph is one
        card among several on a scrolling page, not the whole view. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "sparqlGraph" (dict
         "id" "dependencyGraph"
         "iri" .ResourceIRI
@@ -134,7 +134,7 @@
         "title" (t "card.dependencyGraph" "Dependencies")
         "icon" "workflow"
         "height" "600px") }}
-  </div>
+  </div></div>
 
   <!-- Services consumed, and the application behind each one.
 
@@ -150,7 +150,7 @@
        tagged de/fr/it/en and an unfiltered OPTIONAL multiplies each row four
        times over. Async: the table is below the graph and dispensable at first
        paint. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="consumedServices">
       PREFIX svc: &lt;http://purl.org/ontology/service#&gt;
       SELECT ?service ?provider ?description WHERE {
@@ -175,7 +175,7 @@
         "iri" .ResourceIRI
         "title" (t "card.consumedServices" "Services used")
         "icon" "plug") }}
-  </div>
+  </div></div>
 
   <!-- The other direction: who depends on THIS application.
 
@@ -188,7 +188,7 @@
 
        This is the table that carries Agate's ~70 dependents, which the graph
        above deliberately caps. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dependentApplications">
       PREFIX svc: &lt;http://purl.org/ontology/service#&gt;
       SELECT DISTINCT ?consumer ?service WHERE {
@@ -205,7 +205,7 @@
         "iri" .ResourceIRI
         "title" (t "card.dependentApplications" "Used by")
         "icon" "share-2") }}
-  </div>
+  </div></div>
 
   <!-- Operators and developers, in one table with a role column rather than two
        cards: both are organizations, the rows are few, and a single sorted list
@@ -218,7 +218,7 @@
        sm:operatedBy is the direction asserted ON the application; sm:operates is
        its converse, asserted on the organization, and is the one with 535 triples.
        Both arms are queried because coverage differs between them. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="responsibleOrganizations">
       PREFIX sm: &lt;https://agriculture.ld.admin.ch/system-map/&gt;
       SELECT DISTINCT ?organization ?role WHERE {
@@ -240,7 +240,7 @@
         "iri" .ResourceIRI
         "title" (t "card.responsibleOrganizations" "Operators and developers")
         "icon" "building") }}
-  </div>
+  </div></div>
 
   <!-- Everything else touching this resource, unfiltered. The curated tables
        above cover the dependency vocabulary; this catches the rest (sm:contains

@@ -28,7 +28,7 @@
   <sparql-async id="datasetCount">
     SELECT (COUNT(DISTINCT ?dataset) AS ?count) WHERE { ?dataset a ?? . }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "datasetCount"
         "iri" .ResourceIRI
@@ -36,7 +36,7 @@
         "icon" (resourceIcon .)) }}
   </div>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <!-- ABN sits just below the working-set cap and grows, so every column
          declares filter + path= now: past the cap the table loads a sample,
          and only a declared path filters the whole class (the declaration
@@ -103,7 +103,7 @@
         "icon" "database"
         "searchProp" "dct:title")
     }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" . "collapsed" true) }}
 

@@ -317,9 +317,9 @@ html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expan
    is that 5.5rem minimum, because a line breaks on flex-basis, not on width: the
    slot grows to take the header's free width, and the box grows back up to
    10rem in it. Only when 5.5rem still does not fit do the controls wrap, kept
-   right-aligned. The select has a fixed width: auto would size it to its
-   longest option (a column name), and shrunk, "Group by..." stops reading as a
-   control. */
+   right-aligned. The select has a fixed width, sized for its longest fixed
+   label ("Left to Right"): auto would size it to its longest option (a column
+   name), and shrunk, "Group by..." stops reading as a control. */
 .card-actions {
     flex: 1 1 auto;
     flex-wrap: wrap;
@@ -333,7 +333,7 @@ html:not([data-bs-navbar-position="vertical"]) .page:has(> [class*="navbar-expan
 }
 
 .card-actions .form-select {
-    flex: 0 0 8rem;
+    flex: 0 0 9rem;
 }
 
 /* Phones: Tabler's 16px form text (see .form-control-sm above) needs 9.5rem
@@ -1179,16 +1179,34 @@ sparql-tree-query { display: none; }
   filter: invert(1);
 }
 
+/* --- Card layout: Tabler .row-cards ---
+   Every card on a resource page sits directly in a col of a
+   `.row.row-deck.row-cards`; neither the card nor a wrapper carries a margin
+   (docs/templating.md). The gutter is the only spacing. */
+
+/* A template stacks several card rows. Bootstrap pulls each row up by one gutter
+   to cancel its first line's top gutter, so stacked rows would touch; every row
+   after the first keeps that gutter instead. */
+.row-cards ~ .row-cards {
+  margin-top: 0;
+}
+
+/* A col left with nothing to show (a map with no geometry, a blank-node tree or
+   shape summary that removed itself) would still hold its gutter. */
+.row-cards > [class*="col"]:not(:has(> :not(.d-none, link, script, style, template))) {
+  display: none;
+}
+
 /* row-deck: side-by-side cards share the taller one's height. An async table's
    card sits inside its hx-get wrapper, so the wrapper must stretch too. A
    collapsed card keeps its header height instead of stretching empty. */
-.row-deck > [class*="col-"] > [hx-get] {
+.row-deck > [class*="col"] > [hx-get] {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
   min-width: 0;
 }
-.row-deck > [class*="col-"]:has(.card > .collapse:not(.show, .collapsing)) {
+.row-deck > [class*="col"]:has(.card > .collapse:not(.show, .collapsing)) {
   align-items: flex-start;
 }
 

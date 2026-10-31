@@ -60,7 +60,7 @@
          not appear as its own member's job title.
 
        Ordered newest first; roles with no dates sort last. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="personRoles">
       SELECT ?org ?roleName ?start ?end WHERE {
         { ?? schema:memberOf ?role } UNION { ?? schema:hasOccupation ?role }
@@ -96,7 +96,7 @@
         "title" (t "card.roles" "Roles")
         "icon" "briefcase")
     }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" .) }}
 

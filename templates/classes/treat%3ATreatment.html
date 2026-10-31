@@ -22,7 +22,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="treatmentInstances">
       SELECT ?treatment ?title ?creator ?publishedIn ?augmentsTaxonConcept
       WHERE {
@@ -47,12 +47,16 @@
       <sparql-column var="augmentsTaxonConcept" filter="text" root="?treatment" path="treat:augmentsTaxonConcept"></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "treatmentInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.treatments" "Treatments")
-        "icon" "file-description")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "treatmentInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.treatments" "Treatments")
+            "icon" "file-description")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

@@ -22,10 +22,9 @@
        so it stays put (sticky, see .vs-split-aside) while the content beside it
        scrolls, and the user can keep clicking through without scrolling back up.
        Below lg the two columns stack, tree first. -->
-  <div class="row vs-split">
+  <div class="row row-cards vs-split">
 
     <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
-      <div class="mb-3">
                 <sparql-tree-queries for="conceptTree">
                     <sparql-tree-query role="roots">
                         SELECT ?node (SAMPLE(?nodeLabel) AS ?label) (MIN(STR(?notation)) AS ?code) ?hasChildren WHERE {
@@ -71,16 +70,19 @@
                     </sparql-tree-query>
                 </sparql-tree-queries>
 
-        {{ template "sparqlLazyTree" (dict
-            "queryId" "conceptTree"
-            "iri" .ResourceIRI
-            "ResourceIRI" .ResourceIRI
-            "title" (t "card.hierarchy" "Hierarchy")
-            "icon" "list-tree"
-            "breadcrumb" true
-            "splitToggle" true)
-        }}
-      </div>
+        <div class="row row-deck row-cards">
+          <div class="col-12">
+            {{ template "sparqlLazyTree" (dict
+                "queryId" "conceptTree"
+                "iri" .ResourceIRI
+                "ResourceIRI" .ResourceIRI
+                "title" (t "card.hierarchy" "Hierarchy")
+                "icon" "list-tree"
+                "breadcrumb" true
+                "splitToggle" true)
+            }}
+          </div>
+        </div>
     </div>
 
     <div class="vs-split-handle" role="separator" tabindex="0"

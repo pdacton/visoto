@@ -18,7 +18,11 @@
     {{ template "literals" . }}
 
     <!-- The shape in plain language, one line per property (internal/shapeprose). -->
-    {{ template "shapeSummary" (dict "iri" .ResourceIRI) }}
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "shapeSummary" (dict "iri" .ResourceIRI) }}
+      </div>
+    </div>
 
     <!-- One row per sh:property shape.
 
@@ -82,18 +86,22 @@
                        tip="{{ t "type.shacl.tip.message" "sh:message — the text a validator reports when a value violates the shape." }}" filter="text"></sparql-column>
     </sparql-columns>
 
-    <div class="mb-3">
+    <div class="row row-deck row-cards"><div class="col-12">
         {{ template "sparqlTable" (dict
             "result" .QueryResults.propertyShapes
             "id" "propertyShapes"
             "title" (t "type.shacl.propertyShapes" "Property Shapes")
             "icon" "list-checks")
         }}
-    </div>
+    </div></div>
 
     <!-- Everything blank under the shape: blank property shapes, sh:in lists,
          sh:or alternatives, complex paths. Removes itself when there is none. -->
-    {{ template "bnodeTree" (dict "iri" .ResourceIRI "collapsed" true) }}
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "bnodeTree" (dict "iri" .ResourceIRI "collapsed" true) }}
+      </div>
+    </div>
 
     {{ template "relationships" (dict "page" .) }}
 

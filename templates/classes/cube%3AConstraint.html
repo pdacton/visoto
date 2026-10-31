@@ -22,7 +22,7 @@
     }
   </sparql-async>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "constraintTotal"
         "title" (t "card.constraints" "Constraints")
@@ -50,9 +50,8 @@
        ?cube is joined OUTSIDE that subquery: a constraint belongs to exactly one
        cube, so it adds no rows, and keeping it out of the GROUP BY leaves the
        count query a plain membership pattern. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
 
         <sparql-async id="constraintCatalog">
           SELECT ?constraint ?cube ?dimensions ?closed WHERE {
@@ -88,7 +87,6 @@
             "title" (t "card.constraints" "Constraints")
             "icon" "shield-check")
         }}
-      </div>
     </div>
   </div>
 

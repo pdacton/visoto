@@ -33,7 +33,7 @@
        every element and bury the relations between them. -->
   {{ $elements := columnValues .QueryResults.collectionElements "element" }}
   {{ if $elements }}
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "sparqlGraph" (dict
         "id" "collectionGraph"
         "iris" $elements
@@ -43,7 +43,7 @@
         "title" (t "card.collectionElements" "Elements")
         "icon" "boxes"
         "height" "700px") }}
-  </div>
+  </div></div>
   {{ end }}
 
   {{ template "relationships" (dict "page" .) }}

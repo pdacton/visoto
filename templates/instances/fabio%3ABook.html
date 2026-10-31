@@ -10,9 +10,8 @@
   {{ template "literals" . }}
 
   <!-- Component parts (figures, ...) -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="parts">
           SELECT ?part ?type WHERE {
             ?? fabio:hasPart ?part .
@@ -29,14 +28,12 @@
             "title" (t "card.parts" "Parts")
             "icon" "photo")
         }}
-      </div>
     </div>
   </div>
 
   <!-- Treatments published in this book -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="publishedTreatments">
           SELECT ?treatment ?title ?date WHERE {
             ?treatment treat:publishedIn ?? .
@@ -54,7 +51,6 @@
             "title" (t "card.treatmentsPublishedIn" "Treatments Published In")
             "icon" "file-description")
         }}
-      </div>
     </div>
   </div>
 
