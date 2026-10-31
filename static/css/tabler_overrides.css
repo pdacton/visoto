@@ -537,6 +537,18 @@ body.resizing {
     cursor: ew-resize !important;
 }
 
+/* --- Six-across column above Bootstrap's breakpoints --- */
+
+/* Bootstrap stops at xxl (1400px), but with the 240px sidebar six cards there
+   are ~190px wide and too narrow to read comfortably. Used by the homepage
+   highlight cards. */
+@media (min-width: 1700px) {
+    .vs-col-xwide-2 {
+        flex: 0 0 auto;
+        width: 16.66666667%;
+    }
+}
+
 /* --- Full-width datagrid items --- */
 
 /* Tabler's datagrid uses auto-fit columns, so col-span-12 has no effect.
