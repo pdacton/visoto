@@ -69,25 +69,21 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.definedTermIdentity
             "id" "definedTermIdentity"
             "title" (t "card.identity" "Identity")
-            "icon" "fingerprint") }}
-      </div>
+            "icon" "fingerprint-pattern") }}
     </div>
 
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.definedTermLabels
             "id" "definedTermLabels"
             "title" (t "card.labels" "Labels & Languages")
             "icon" "languages") }}
-      </div>
     </div>
   </div>
 

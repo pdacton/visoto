@@ -16,9 +16,8 @@
   {{ template "literals" . }}
 
   <!-- Treatments that augment this concept -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="augmentingTreatments">
           SELECT ?treatment ?title ?date WHERE {
             ?treatment treat:augmentsTaxonConcept ?? .
@@ -34,9 +33,8 @@
             "result" .QueryResults.augmentingTreatments
             "id" "augmentingTreatments"
             "title" (t "card.augmentedByTreatments" "Augmented by Treatments")
-            "icon" "file-description")
+            "icon" "file-text")
         }}
-      </div>
     </div>
   </div>
 

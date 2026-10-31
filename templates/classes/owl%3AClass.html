@@ -25,9 +25,8 @@
        it names the ontology a class comes from. 1,255 rows in 0.8s on LINDAS.
        The 168 blank-node owl:Classes (anonymous restrictions/unions) are dropped:
        they have no page to link to. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="owlClassInstances">
           SELECT ?class
                  (SAMPLE(?super_) AS ?superclass)
@@ -65,7 +64,6 @@
             "title" (t "card.classesInDataset" "Classes in Dataset")
             "icon" "circle-dot")
         }}
-      </div>
     </div>
   </div>
 

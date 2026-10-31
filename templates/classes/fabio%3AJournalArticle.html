@@ -18,7 +18,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="journalArticleInstances">
       SELECT ?article ?title ?creator ?date ?journal ?volume ?startPage
       WHERE {
@@ -44,12 +44,16 @@
       <sparql-column var="volume" filter="text" root="?article" path="bibo:volume"></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "journalArticleInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.journalArticles" "Journal Articles")
-        "icon" "article")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "journalArticleInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.journalArticles" "Journal Articles")
+            "icon" "newspaper")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

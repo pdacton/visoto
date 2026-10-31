@@ -33,11 +33,11 @@
 </sparql-columns>
 
 {{ define "dblpStreamList" }}
-<div class="mb-3">
+<div class="row row-deck row-cards"><div class="col-12">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "dblpStreams"
       "iri" .ResourceIRI
       "title" (t "card.venues" "Venues")
       "icon" "layers") }}
-</div>
+</div></div>
 {{ end }}

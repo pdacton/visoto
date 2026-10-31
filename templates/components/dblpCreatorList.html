@@ -27,7 +27,7 @@
 </sparql-columns>
 
 {{ define "dblpCreatorList" }}
-<div class="row row-deck row-cards mb-3">
+<div class="row row-deck row-cards">
   {{ template "sparqlMetric" (dict
       "queryId" "dblpCreatorCount"
       "iri" .ResourceIRI
@@ -35,12 +35,12 @@
       "icon" (resourceIcon .)) }}
 </div>
 
-<div class="mb-3">
+<div class="row row-deck row-cards"><div class="col-12">
   {{ template "sparqlAsyncTable" (dict
       "queryId" "dblpCreators"
       "iri" .ResourceIRI
       "searchProp" "dblp:creatorName"
       "title" (t "card.creators" "Creators")
       "icon" "users") }}
-</div>
+</div></div>
 {{ end }}

@@ -22,7 +22,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="taxonConceptInstances">
       SELECT ?taxonConcept ?rank ?authority ?kingdom ?phylum ?class ?order ?family
       WHERE {
@@ -52,12 +52,16 @@
       <sparql-column var="authority" filter="text" root="?taxonConcept" path="dwc:authority"></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "taxonConceptInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.taxonConcepts" "Taxon Concepts")
-        "icon" "bug")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "taxonConceptInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.taxonConcepts" "Taxon Concepts")
+            "icon" "bug")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

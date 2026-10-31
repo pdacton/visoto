@@ -19,7 +19,7 @@
     <sparql-async id="observationCount">
       SELECT (COUNT(?obs) AS ?count) WHERE { ?? cube:observation ?obs . }
     </sparql-async>
-    <div class="row row-deck row-cards mb-3">
+    <div class="row row-deck row-cards">
       {{ template "sparqlMetric" (dict
           "queryId" "observationCount"
           "iri" .ResourceIRI
@@ -43,16 +43,14 @@
          The partial accepts this set's IRI directly; /api/cube-table resolves
          the constraint back through cube:observationSet. Bounds are the
          partial's own: 15 columns, 1000 observations paged locally. -->
-    <div class="row" id="data">
+    <div class="row row-deck row-cards" id="data">
         <div class="col-lg">
-            <div class="mb-3">
                 {{ template "sparqlCube" (dict
                     "id" "observationSetData"
                     "iri" .ResourceIRI
                     "title" (t "card.dataPreview" "Data Preview")
                     "icon" "table")
                 }}
-            </div>
         </div>
     </div>
 

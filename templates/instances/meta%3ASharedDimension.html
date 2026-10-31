@@ -35,9 +35,8 @@
          so the table shows ~3x as many rows as there are terms. That is
          accepted here: it keeps every type visible and its own row, and the
          table's local grouping/filtering can collapse by term when wanted. -->
-    <div class="row">
+    <div class="row row-deck row-cards">
         <div class="col-lg">
-            <div class="mb-3">
                 <sparql-async id="dimensionTerms">
                     SELECT ?term ?type ?identifier ?broader ?validFrom WHERE {
                         ?term schema:inDefinedTermSet ?? .
@@ -57,7 +56,6 @@
                     "title" (t "card.terms" "Terms")
                     "icon" "tag")
                 }}
-            </div>
         </div>
     </div>
 
@@ -69,9 +67,8 @@
          answered from sh:in on the term page instead.)
 
          Same column vocabulary as the cube:Cube catalog so the two read alike. -->
-    <div class="row">
+    <div class="row row-deck row-cards">
         <div class="col-lg">
-            <div class="mb-3">
                 <sparql-query id="dimensionCubes">
                     SELECT ?cube ?publisher ?themes ?status ?modified ?superseded WHERE {
                         { SELECT ?cube (SAMPLE(?creatorName) AS ?publisher)
@@ -114,7 +111,6 @@
                     "title" (t "card.usedInCubes" "Used in Cubes")
                     "icon" "box")
                 }}
-            </div>
         </div>
     </div>
 

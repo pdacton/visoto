@@ -15,7 +15,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="countryInstances">
       SELECT ?type ?country ?identifier ?name_de ?name_fr ?name_it ?name_en
       WHERE {
@@ -57,12 +57,16 @@
       <sparql-column var="name_en" label="{{ t "facet.name" "Name" }} (en)" filter></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "countryInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.countries" "Countries")
-        "icon" "circle-dot")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "countryInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.countries" "Countries")
+            "icon" "circle-dot")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

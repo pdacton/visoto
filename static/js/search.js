@@ -41,6 +41,24 @@ document.addEventListener('DOMContentLoaded', function() {
     topbarInput.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') topbarInput.blur();
     });
+
+    // Phones: the field is folded behind a button (tabler_overrides.css); open
+    // lays it over the topbar, and close or leaving an empty field folds it back.
+    const topbar = document.getElementById('topbar');
+    const openBtn = document.querySelector('.topbar-search-open button');
+    const closeBtn = document.querySelector('.topbar-search-close');
+    if (topbar && openBtn && closeBtn) {
+      openBtn.addEventListener('click', function() {
+        topbar.classList.add('vs-search-open');
+        topbarInput.focus();
+      });
+      closeBtn.addEventListener('click', function() {
+        topbar.classList.remove('vs-search-open');
+      });
+      topbarInput.addEventListener('blur', function() {
+        if (!topbarInput.value.trim()) topbar.classList.remove('vs-search-open');
+      });
+    }
   }
 
   // Search page - auto-expand advanced filters if any filter is selected

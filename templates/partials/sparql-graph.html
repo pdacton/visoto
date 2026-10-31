@@ -67,18 +67,18 @@
        (see templates/partials/sparql-table.html). The header carries the title and the
        "maximize" (fullscreen) button; the graph canvas lives in the card body. -->
   <div class="card" id="{{ $id }}-card">
-    <div class="card-header d-flex align-items-center justify-content-between">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
         {{ if $icon }}<i data-lucide="{{ $icon }}" class="icon"></i>{{ end }}
         {{ if $title }}<h3 class="card-title mb-0">{{ $title }}</h3>{{ end }}
       </div>
-      <div class="btn-actions">
-        <a class="btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
+      <div class="card-actions btn-actions">
+        <a class="btn btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
           <i data-lucide="maximize" class="icon"></i>
         </a>
         <!-- Collapse toggle, same Bootstrap markup as the sparqlTable cards. The graph
              only auto-fits at mount, so sparql-graph.js re-fits on shown.bs.collapse. -->
-        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
+        <a class="btn btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
            aria-expanded="true" aria-controls="collapse-{{ $id }}" style="cursor: pointer;">
           <i data-lucide="chevron-up" class="icon"></i>
         </a>

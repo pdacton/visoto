@@ -54,10 +54,10 @@
 
 {{ define "pageContent" }}
 <div>
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Attributes -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="attributes">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
@@ -77,16 +77,20 @@
   <!-- Boundary from geo:hasGeometry; the WKT lives on geo.ld.admin.ch and is
        fetched with a federated query (static/js/sparql-map.js). Hidden when the
        geometry is missing. -->
-  {{ template "sparqlMap" (dict
-        "id" "canton-map"
-        "iri" .ResourceIRI
-        "endpointUrl" .GraphQueryURL
-        "height" "400px") }}
+  <div class="row row-deck row-cards">
+    <div class="col-12">
+      {{ template "sparqlMap" (dict
+            "id" "canton-map"
+            "iri" .ResourceIRI
+            "endpointUrl" .GraphQueryURL
+            "height" "400px") }}
+    </div>
+  </div>
 
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Districts -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="districts">
         SELECT ?district ?identifier (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) (COUNT(DISTINCT ?municipality) AS ?municipalities) WHERE {
           ?? schema:hasPart ?district .
@@ -120,7 +124,7 @@
     </div>
 
     <!-- Municipalities -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="municipalities">
         SELECT ?municipality ?identifier ?district (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) WHERE {
           ?municipality schema:containedInPlace ?? .

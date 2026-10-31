@@ -18,9 +18,8 @@
   {{ template "literals" . }}
 
   <!-- instances: properties defined as rdf:Property -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="rdfPropertyInstances">
           SELECT DISTINCT ?type ?property ?comment ?domain ?range WHERE {
             {
@@ -44,14 +43,12 @@
             "title" (t "card.propertyInstances" "Property Instances")
             "icon" "circle-dot")
         }}
-      </div>
     </div>
   </div>
 
   <!-- subproperty types (OWL specialisations) -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="subclasses">
           SELECT DISTINCT ?subclass ?count WHERE {
             VALUES ?subclass {
@@ -78,12 +75,10 @@
             "icon" "circle-chevron-down"
             "collapsed" false)
         }}
-      </div>
     </div>
 
     <!-- superclasses -->
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="superclasses">
           SELECT DISTINCT ?superclass WHERE {
             BIND (rdf:Property AS ?class)
@@ -99,16 +94,14 @@
             "icon" "circle-chevron-up"
             "collapsed" false)
         }}
-      </div>
     </div>
   </div>
 
   <!-- schema information: domain and range usage -->
-  <div class="row">
+  <div class="row row-deck row-cards">
 
     <!-- properties with domain info -->
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="ontology">
           SELECT DISTINCT ?property ?domain ?range WHERE {
             ?property a rdf:Property .
@@ -124,12 +117,10 @@
             "icon" "circle-dashed"
             "collapsed" true)
         }}
-      </div>
     </div>
 
     <!-- SHACL properties -->
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-query id="shacl">
           SELECT ?subject ?property ?object WHERE {
             BIND (?? AS ?object)
@@ -144,7 +135,6 @@
             "icon" "shapes"
             "collapsed" true)
         }}
-      </div>
     </div>
 
   </div>

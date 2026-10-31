@@ -27,7 +27,7 @@
       ?publication dblp:publishedInStream ?? ; dblp:createdBy ?creator .
     }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "dblpStreamPublicationCount"
         "iri" .ResourceIRI
@@ -42,7 +42,7 @@
 
   {{ template "literals" . }}
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dblpStreamPublications">
       SELECT ?publication ?type ?year WHERE {
         ?publication dblp:publishedInStream ?? .
@@ -60,11 +60,10 @@
         "iri" .ResourceIRI
         "title" (t "card.latestPublications" "Latest Publications")
         "icon" "file-text") }}
-  </div>
+  </div></div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-async id="dblpStreamYears">
           SELECT ?year (COUNT(?publication) AS ?publications) WHERE {
             ?publication dblp:publishedInStream ?? ; dblp:yearOfPublication ?year .
@@ -80,10 +79,8 @@
             "iri" .ResourceIRI
             "title" (t "card.publicationsPerYear" "Publications per Year")
             "icon" "calendar") }}
-      </div>
     </div>
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-async id="dblpStreamAuthors">
           SELECT ?creator (COUNT(?publication) AS ?publications) WHERE {
             ?publication dblp:publishedInStream ?? ; dblp:authoredBy ?creator .
@@ -99,12 +96,11 @@
             "iri" .ResourceIRI
             "title" (t "card.topAuthors" "Top Authors")
             "icon" "users") }}
-      </div>
     </div>
   </div>
 
   <!-- Parent, child, predecessor and successor venues, Wikidata, homepage … -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-query id="dblpStreamLinks">
       SELECT ?property ?link WHERE {
         ?? ?property ?link .
@@ -116,7 +112,7 @@
         "id" "dblpStreamLinks"
         "title" (t "card.links" "Links")
         "icon" "link") }}
-  </div>
+  </div></div>
 
 </div>
 {{ end }}

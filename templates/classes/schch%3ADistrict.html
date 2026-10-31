@@ -12,7 +12,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="districtInstances">
       <!-- A district may carry more than one vl:version (district/111 does). Two
            consequences, both handled here rather than in the GROUP BY:
@@ -52,12 +52,16 @@
       <sparql-column var="validThrough" label="{{ t "facet.validThrough" "Valid through" }}" root="?district" path="vl:version/schema:validThrough" filter="range" type="date"></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "districtInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.districts" "Districts")
-        "icon" "circle-dot")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "districtInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.districts" "Districts")
+            "icon" "circle-dot")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

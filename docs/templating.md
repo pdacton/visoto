@@ -64,6 +64,43 @@ Inside `pageContent`, you compose the page from components (which carry their ow
 
 **Partials** (`sparqlTable`, `sparqlAsyncTable`, `sparqlCube`, `sparqlGrid`, `sparqlTree`, `sparqlLazyTree`, `sparqlFlow`, `sparqlGraph`, `schemaGraph`, `sparqlMetric`) — pass `(dict ...)` with the query result and display options.
 
+### Card layout: Tabler `row-cards` {#card-layout}
+
+Cards are laid out with Tabler's card grid, and **nothing else sets card spacing**:
+
+- Put every card directly in a column of a `<div class="row row-deck row-cards">`.
+  `row-cards` supplies the gutter between cards (1rem, 0.5rem on phones) in both
+  directions; `row-deck` gives side-by-side cards the height of the tallest.
+- A card or partial call never sits inside a margin wrapper (`<div class="mb-3">`),
+  and partials render their card without an outer margin.
+- Stack as many card rows as the page needs; each row is one line of cards.
+  A `.row-cards ~ .row-cards` rule in `tabler_overrides.css` keeps the gutter
+  between stacked rows.
+- One card per column. `row-deck` makes a column a flex row, so two cards in one
+  column sit side by side; a `{{ range }}` of cards ranges over the columns.
+- A column whose card hides itself (a map without geometry, an empty blank-node
+  tree) collapses with it, gutter and all.
+- Non-card content between card rows (a bar of link buttons) goes in a row of its
+  own, `<div class="row row-cards"><div class="col-12">…</div></div>`, so the
+  gutter spaces it too.
+- The `literals`, `relationships`, `dblp*List` and `rico*` components emit their own
+  rows: call them at the top level of `pageContent`, not inside a column.
+
+```html
+<div class="row row-deck row-cards">
+  <div class="col-lg-6">
+    {{ template "sparqlTable" (dict "result" .QueryResults.parts "id" "parts" "title" "Parts") }}
+  </div>
+  <div class="col-lg-6">
+    {{ template "sparqlTable" (dict "result" .QueryResults.links "id" "links" "title" "Links") }}
+  </div>
+</div>
+```
+
+A split layout (`row row-cards vs-split`) is the one exception to "cards in a
+column": its main column (`vs-split-main`) is a container holding card rows of its
+own.
+
 ---
 
 ## Directory Layout
@@ -992,12 +1029,16 @@ Filename: `schema%3APerson.html`. This is an instance template (for resources th
 {{ define "pageContent" }}
   {{ template "literals" . }}
 
-  {{ template "sparqlTable" (dict
-    "result" .QueryResults.colleagues
-    "id" "colleagues"
-    "title" "Colleagues"
-    "icon" "users")
-  }}
+  <div class="row row-deck row-cards">
+    <div class="col-12">
+      {{ template "sparqlTable" (dict
+        "result" .QueryResults.colleagues
+        "id" "colleagues"
+        "title" "Colleagues"
+        "icon" "users")
+      }}
+    </div>
+  </div>
 
   {{ template "relationships" (dict "page" .) }}
 {{ end }}

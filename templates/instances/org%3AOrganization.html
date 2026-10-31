@@ -29,7 +29,7 @@
        which explains each one), minus Publisher, which is this organization.
        Themes and distributions are aggregated per dataset in subqueries scoped
        to this publisher, so neither walks the whole store. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="organizationDatasets">
       SELECT DISTINCT ?dataset ?themes ?issued ?modified ?frequency ?distributions ?structure WHERE {
         ?dataset dct:publisher ?? ; a dcat:Dataset .
@@ -72,9 +72,9 @@
         "title" (t "card.datasets" "Datasets")
         "icon" "database")
     }}
-  </div>
+  </div></div>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="organizationDataServices">
       SELECT ?service ?endpointURL ?modified WHERE {
         ?service dct:publisher ?? ; a dcat:DataService .
@@ -94,9 +94,9 @@
         "title" (t "card.dataServices" "Data Services")
         "icon" "server")
     }}
-  </div>
+  </div></div>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="organizationPublicServices">
       SELECT ?publicService ?modified WHERE {
         ?publicService &lt;http://data.europa.eu/m8g/hasCompetentAuthority&gt; ?? .
@@ -114,13 +114,13 @@
         "title" (t "card.publicServices" "Public Services")
         "icon" "landmark")
     }}
-  </div>
+  </div></div>
 
   <!-- Channels are blank nodes with no title, and their dct:type points into the
        EU com-channel vocabulary (http://data.europa.eu/snb/com-channel/…), which
        is not loaded, so it would render as a bare hash. The identifier and the
        URL are what tell them apart. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="organizationChannels">
       SELECT ?identifier ?url WHERE {
         ?channel &lt;http://data.europa.eu/m8g/ownedBy&gt; ?? .
@@ -139,7 +139,7 @@
         "title" (t "card.channels" "Channels")
         "icon" "radio-tower")
     }}
-  </div>
+  </div></div>
 
   <!-- Collapsed: its incoming card repeats every dataset above (dct:publisher),
        but it is the only place catalogs, concept schemes and versions show up. -->

@@ -45,20 +45,20 @@
 
 {{ define "pageContent" }}
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "sparqlGrid" (dict
         "result" .QueryResults.delivery
         "id" "delivery"
         "title" (t "card.delivery" "Delivery")
         "icon" "truck") }}
-  </div>
+  </div></div>
 
   <!-- Live count of what this delivery produced: 266 on average, 89,045 for
        the largest (Event/16884) — 0.3s either way. -->
   <sparql-async id="deliveredCount">
     SELECT (COUNT(?item) AS ?count) WHERE { ?item rico:resultsOrResultedFrom ?? . }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "deliveredCount"
         "iri" .ResourceIRI
@@ -75,7 +75,7 @@
        authoritatively. Only the few above 20,000 are cut, and the count above
        says by how much. 0.2s for the largest. No ORDER BY: it would sort all
        89k rows before the LIMIT applied. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="deliveredUnits">
       SELECT ?item ?level ?referenceCode ?period WHERE {
         ?item rico:resultsOrResultedFrom ?? .
@@ -96,7 +96,7 @@
         "title" (t "card.deliveredUnits" "Delivered record sets and records")
         "icon" "folder-tree")
     }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" .) }}
 

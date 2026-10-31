@@ -56,10 +56,9 @@
 
 {{ define "pageContent" }}
 
-  <div class="row vs-split">
+  <div class="row row-cards vs-split">
 
     <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
-      <div class="mb-3">
 
         <!-- The same four role queries appear in instances/rico%3ARecord.html and
              both class templates: <sparql-tree-queries> ids are scoped to the
@@ -139,16 +138,19 @@
           </sparql-tree-query>
         </sparql-tree-queries>
 
-        {{ template "sparqlLazyTree" (dict
-            "queryId" "recordSetTree"
-            "iri" .ResourceIRI
-            "ResourceIRI" .ResourceIRI
-            "title" (t "card.hierarchy" "Hierarchy")
-            "icon" "list-tree"
-            "breadcrumb" true
-            "splitToggle" true)
-        }}
-      </div>
+        <div class="row row-deck row-cards">
+          <div class="col-12">
+            {{ template "sparqlLazyTree" (dict
+                "queryId" "recordSetTree"
+                "iri" .ResourceIRI
+                "ResourceIRI" .ResourceIRI
+                "title" (t "card.hierarchy" "Hierarchy")
+                "icon" "list-tree"
+                "breadcrumb" true
+                "splitToggle" true)
+            }}
+          </div>
+        </div>
     </div>
 
     <div class="vs-split-handle" role="separator" tabindex="0"
@@ -167,13 +169,13 @@
 
       {{ template "ricoDigitalCopy" . }}
 
-      <div class="mb-3">
+      <div class="row row-deck row-cards"><div class="col-12">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.period
             "id" "period"
             "title" (t "card.period" "Period")
             "icon" "calendar-range") }}
-      </div>
+      </div></div>
 
       <!-- The units directly below this one — one level; the tree is for the rest.
            ?items counts each row's own children in a subquery, so the table says
@@ -185,7 +187,7 @@
            inline path (no working-set rewrite at this size), so the order reaches
            the table as written, and the rows open in the order the archive keeps
            them until the reader sorts a column. -->
-      <div class="mb-3">
+      <div class="row row-deck row-cards"><div class="col-12">
         <sparql-async id="recordSetContents">
           SELECT ?item ?level ?referenceCode ?period ?items WHERE {
             GRAPH &lt;https://lindas.admin.ch/sfa/ais&gt; {
@@ -216,7 +218,7 @@
             "title" (t "card.contents" "Contents")
             "icon" "folder-tree")
         }}
-      </div>
+      </div></div>
 
       {{ template "ricoSeeAlso" . }}
 

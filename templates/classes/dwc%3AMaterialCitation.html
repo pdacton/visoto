@@ -22,7 +22,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="materialCitationInstances">
       SELECT ?materialCitation ?catalogNumber ?typeStatus ?locality ?recordedBy ?collectionCode
       WHERE {
@@ -54,12 +54,16 @@
       <sparql-column var="locality" filter="text" root="?materialCitation" path="dwc:locality"></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "materialCitationInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.materialCitations" "Material Citations")
-        "icon" "flask")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "materialCitationInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.materialCitations" "Material Citations")
+            "icon" "flask-conical")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

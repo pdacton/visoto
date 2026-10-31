@@ -18,9 +18,8 @@
 <div>
 
   <!-- instances of dcat:Distribution -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="dcatDistributionInstances">
           SELECT ?instance ?identifier ?format ?license WHERE {
             ?instance a ?? .
@@ -43,9 +42,8 @@
             "queryId" "dcatDistributionInstances"
             "iri" .ResourceIRI
             "title" (t "card.distributions" "Distributions")
-            "icon" "file-download")
+            "icon" "file-down")
         }}
-      </div>
     </div>
   </div>
 

@@ -16,9 +16,8 @@
   {{ template "literals" . }}
 
   <!-- Treatments that cite this material -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="citingTreatments">
           SELECT ?treatment ?type WHERE {
             ?treatment (treat:citesMaterialCitation|dwc:relatedResourceID) ?? .
@@ -34,9 +33,8 @@
             "result" .QueryResults.citingTreatments
             "id" "citingTreatments"
             "title" (t "card.citedByTreatments" "Cited by Treatments")
-            "icon" "file-description")
+            "icon" "file-text")
         }}
-      </div>
     </div>
   </div>
 

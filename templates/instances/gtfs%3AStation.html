@@ -49,30 +49,30 @@
   {{ template "literals" . }}
 
   <!-- The stop's own point (WKT and lat/long are both in LINDAS). -->
-  {{ template "sparqlMap" (dict
-        "id" "station-map"
-        "iri" .ResourceIRI
-        "endpointUrl" .GraphQueryURL
-        "height" "400px") }}
+  <div class="row row-deck row-cards">
+    <div class="col-12">
+      {{ template "sparqlMap" (dict
+            "id" "station-map"
+            "iri" .ResourceIRI
+            "endpointUrl" .GraphQueryURL
+            "height" "400px") }}
+    </div>
+  </div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
               "result" .QueryResults.stationRelationships
               "id" "stationRelationships"
               "title" (t "card.relationships" "Relationships")
               "icon" "expand") }}
-      </div>
     </div>
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlTable" (dict
               "result" .QueryResults.connections
               "id" "connections"
               "title" (t "card.tariffConnections" "Tariff connections")
               "icon" "route") }}
-      </div>
     </div>
   </div>
 

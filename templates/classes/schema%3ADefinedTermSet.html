@@ -123,9 +123,8 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         {{ template "sparqlAsyncTable" (dict
             "queryId" "definedTermSetInstances"
             "iri" .ResourceIRI
@@ -133,7 +132,6 @@
             "icon" "library-big"
             "searchProp" "schema:name")
         }}
-      </div>
     </div>
   </div>
 

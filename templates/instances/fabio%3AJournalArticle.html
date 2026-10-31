@@ -10,9 +10,8 @@
   {{ template "literals" . }}
 
   <!-- Treatments published in this article -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="publishedTreatments">
           SELECT ?treatment ?title ?date WHERE {
             ?treatment treat:publishedIn ?? .
@@ -28,9 +27,8 @@
             "result" .QueryResults.publishedTreatments
             "id" "publishedTreatments"
             "title" (t "card.treatmentsPublishedIn" "Treatments Published In")
-            "icon" "file-description")
+            "icon" "file-text")
         }}
-      </div>
     </div>
   </div>
 

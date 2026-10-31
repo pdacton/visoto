@@ -18,9 +18,8 @@
 <div>
 
   <!-- instances of euthority:MappedCode -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="mappedCodeInstances">
           SELECT ?type ?instance ?legacyCode ?source WHERE {
             BIND (?? AS ?class)
@@ -40,7 +39,6 @@
             "title" (t "card.mappedCodes" "Mapped Codes")
             "icon" "code")
         }}
-      </div>
     </div>
   </div>
 

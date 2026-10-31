@@ -18,7 +18,7 @@
     SELECT (COUNT(?s) AS ?count) WHERE { ?s a sh:NodeShape, cube:Constraint . }
   </sparql-async>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "nodeShapeTotal"
         "title" (t "type.shacl.nodeShapes" "Node Shapes")
@@ -42,9 +42,8 @@
        shapes have no page of their own and are left out.
 
        No LIMIT: the server picks inline vs working set by instance count. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
 
         <sparql-async id="nodeShapeCatalog">
           SELECT ?shape ?targetClass ?ontology ?definedBy ?properties ?cubeConstraint WHERE {
@@ -84,7 +83,6 @@
             "title" (t "type.shacl.nodeShapes" "Node Shapes")
             "icon" "shapes")
         }}
-      </div>
     </div>
   </div>
 

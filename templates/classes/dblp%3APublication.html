@@ -28,13 +28,13 @@
 
   {{ template "dblpPublicationList" . }}
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     {{ template "sparqlAsyncTable" (dict
         "queryId" "dblpPublicationTypes"
         "iri" .ResourceIRI
         "title" (t "card.publicationTypes" "Publication Types")
         "icon" "shapes") }}
-  </div>
+  </div></div>
 
 </div>
 {{ end }}

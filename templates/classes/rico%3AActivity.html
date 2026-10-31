@@ -27,7 +27,7 @@
   <sparql-async id="instanceCount">
     SELECT (COUNT(?instance) AS ?count) WHERE { ?instance a ?? . }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "instanceCount"
         "iri" .ResourceIRI
@@ -41,7 +41,7 @@
        The activity type is "Delivery" on every row today; the column is there
        anyway so the reader can see that, rather than having to take it on
        trust, and it will tell other kinds apart if the SFA ever adds them. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="activityInstances">
       SELECT ?instance ?activityType ?deliveryNumber ?beginning ?end WHERE {
         ?instance a ?? .
@@ -64,7 +64,7 @@
         "title" (t "card.allActivities" "All activities")
         "icon" "truck")
     }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" .) }}
 </div>

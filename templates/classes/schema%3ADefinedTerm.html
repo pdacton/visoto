@@ -121,9 +121,8 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <!-- searchProp is essential here: at this size the table is a working set,
              and without a pinned name property the "Search all" rebuild has
              nothing to match on but the IRI string. -->
@@ -135,7 +134,6 @@
             "searchProp" "schema:name"
             "max" 50000)
         }}
-      </div>
     </div>
   </div>
 

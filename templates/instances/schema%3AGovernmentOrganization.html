@@ -110,11 +110,10 @@
        aside), so a Bootstrap column class cannot widen it. Reusing the collapsed
        state also keeps .vs-split-main in place, and with it the container query
        that reflows the relationship cards. -->
-  <div class="row vs-split{{ if not $inTree }} vs-split-collapsed{{ end }}">
+  <div class="row row-cards vs-split{{ if not $inTree }} vs-split-collapsed{{ end }}">
 
     {{ if $inTree }}
     <div class="col-lg-4 vs-split-aside vs-lazy-tree-fill">
-      <div class="mb-3">
 
         <!-- Every role query is scoped to the Staatskalender graph ON PURPOSE.
              schema:GovernmentOrganization has 12,292 instances across six graphs,
@@ -176,16 +175,19 @@
           </sparql-tree-query>
         </sparql-tree-queries>
 
-        {{ template "sparqlLazyTree" (dict
-            "queryId" "organizationTree"
-            "iri" .ResourceIRI
-            "ResourceIRI" .ResourceIRI
-            "title" (t "card.hierarchy" "Hierarchy")
-            "icon" "list-tree"
-            "breadcrumb" true
-            "splitToggle" true)
-        }}
-      </div>
+        <div class="row row-deck row-cards">
+          <div class="col-12">
+            {{ template "sparqlLazyTree" (dict
+                "queryId" "organizationTree"
+                "iri" .ResourceIRI
+                "ResourceIRI" .ResourceIRI
+                "title" (t "card.hierarchy" "Hierarchy")
+                "icon" "list-tree"
+                "breadcrumb" true
+                "splitToggle" true)
+            }}
+          </div>
+        </div>
     </div>
 
     <div class="vs-split-handle" role="separator" tabindex="0"
@@ -209,13 +211,13 @@
 
       {{ template "literals" . }}
 
-      <div class="mb-3">
+      <div class="row row-deck row-cards"><div class="col-12">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.postalAddress
             "id" "postalAddress"
             "title" (t "card.address" "Address")
             "icon" "map-pin") }}
-      </div>
+      </div></div>
 
       <!-- People holding a role in this organization. The Staatskalender models
            this as a two-hop reification rather than a direct link:
@@ -233,7 +235,7 @@
            no English name and the dispLang filter alone leaves the cell blank.
            Falling back to de shows a real job title instead of nothing. -->
 
-      <div class="mb-3">
+      <div class="row row-deck row-cards"><div class="col-12">
         <sparql-async id="organizationMembers">
           SELECT ?person ?givenName ?familyName ?role WHERE {
             ?? schema:member ?roleNode .
@@ -270,7 +272,7 @@
             "title" (t "card.persons" "People")
             "icon" "users")
         }}
-      </div>
+      </div></div>
 
       <!-- The units directly below this one — one level, not the whole subtree,
            which is what the tree beside the page is for. Bundeskanzlei lists its
@@ -299,7 +301,7 @@
            a column. (The partials expose no sort parameter; if a default sort is
            ever wanted it belongs there, as a column declaration alongside
            icon/badge/group, not as an ORDER BY in one template.) -->
-      <div class="mb-3">
+      <div class="row row-deck row-cards"><div class="col-12">
         <sparql-async id="organizationSubUnits">
           SELECT ?organization ?alternateName ?addressLocality ?subUnits WHERE {
             GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
@@ -344,7 +346,7 @@
             "title" (t "card.subOrganizations" "Sub-organizations")
             "icon" "network")
         }}
-      </div>
+      </div></div>
 
     </div>
 

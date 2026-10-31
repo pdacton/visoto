@@ -22,7 +22,7 @@
 
   <!-- instances of this class -->
 
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
 
     <sparql-async id="municipalityInstances">
       SELECT ?type ?municipality ?identifier ?district ?canton ?validFrom ?validThrough (GROUP_CONCAT(?postalCode; separator=", ") AS ?postalCodes)
@@ -92,12 +92,16 @@
                      root="?municipality" path="schema:postalCode" filter="text"></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "municipalityInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.municipalities" "Municipalities")
-        "icon" "circle-dot")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "municipalityInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.municipalities" "Municipalities")
+            "icon" "circle-dot")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

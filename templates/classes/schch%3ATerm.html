@@ -112,9 +112,8 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         {{ template "sparqlAsyncTable" (dict
             "queryId" "termInstances"
             "iri" .ResourceIRI
@@ -123,7 +122,6 @@
             "searchProp" "schema:name"
             "max" 50000)
         }}
-      </div>
     </div>
   </div>
 

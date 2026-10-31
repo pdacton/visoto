@@ -89,41 +89,35 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.termSetIdentity
             "id" "termSetIdentity"
             "title" (t "card.identity" "Identity")
-            "icon" "fingerprint") }}
-      </div>
+            "icon" "fingerprint-pattern") }}
     </div>
 
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.termSetLabels
             "id" "termSetLabels"
             "title" (t "card.labels" "Labels & Languages")
             "icon" "languages") }}
-      </div>
     </div>
   </div>
 
   <!-- The main event: eager and expanded. An empty result auto-collapses itself
        (see the $collapsed fallback in partials/sparql-table.html), so a set with
        no members needs no special-casing here. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         {{ template "sparqlAsyncTable" (dict
             "queryId" "termSetMembers"
             "iri" .ResourceIRI
             "title" (t "card.terms" "Terms")
             "icon" "tag")
         }}
-      </div>
     </div>
   </div>
 

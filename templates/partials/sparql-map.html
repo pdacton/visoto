@@ -45,17 +45,17 @@
 
   <link rel="stylesheet" href="/static/css/map_overrides.css">
 
-  <div class="card mb-3 d-none" id="{{ $id }}-card">
-    <div class="card-header d-flex align-items-center justify-content-between">
+  <div class="card d-none" id="{{ $id }}-card">
+    <div class="card-header d-flex align-items-center justify-content-between flex-wrap gap-2">
       <div class="d-flex align-items-center gap-2">
         <i data-lucide="{{ $icon }}" class="icon"></i>
         <h3 class="card-title mb-0">{{ $title }}</h3>
       </div>
-      <div class="btn-actions">
-        <a class="btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
+      <div class="card-actions btn-actions">
+        <a class="btn btn-action" id="{{ $id }}-maximize" title="{{ t "graph.fullscreen" "Fullscreen" }}" style="cursor: pointer;">
           <i data-lucide="maximize" class="icon"></i>
         </a>
-        <a class="btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
+        <a class="btn btn-action" data-bs-toggle="collapse" data-bs-target="#collapse-{{ $id }}"
            aria-expanded="true" aria-controls="collapse-{{ $id }}" style="cursor: pointer;">
           <i data-lucide="chevron-up" class="icon"></i>
         </a>

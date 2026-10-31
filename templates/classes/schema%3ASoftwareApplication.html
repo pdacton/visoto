@@ -31,7 +31,7 @@
   <sparql-async id="instanceCount">
     SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "instanceCount"
         "iri" .ResourceIRI
@@ -42,9 +42,8 @@
   <!-- Instances of this class. Same query and column declarations as
        classes/default.html — see the long note there on why there is no LIMIT and
        why every column declares filter + path=. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="instances">
           SELECT DISTINCT ?instance ?identifier ?description ?modified WHERE {
             ?instance a ?? .
@@ -73,7 +72,6 @@
             "title" (t "card.instances" "Instances")
             "icon" "circle-dot")
         }}
-      </div>
     </div>
   </div>
 
@@ -136,7 +134,7 @@
     }
   </sparql-query>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <!-- No `iri`: the class node is not itself part of the system map, and
          passing it would add one disconnected box to the middle of the diagram.
          Taller than the instance-page graph (800px vs 600px) because it has
@@ -149,7 +147,7 @@
         "icon" "workflow"
         "hideTypeEdges" true
         "height" "800px") }}
-  </div>
+  </div></div>
 
   {{ template "relationships" (dict "page" .) }}
 

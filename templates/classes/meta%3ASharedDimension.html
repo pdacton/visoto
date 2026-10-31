@@ -27,7 +27,7 @@
     }
   </sparql-async>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "dimTotal"
         "title" (t "card.sharedDimensions" "Shared Dimensions")
@@ -63,9 +63,8 @@
        across all 96 dimensions makes the catalog query far too slow to serve.
        The per-dimension term list lives on the instance page, where a single
        dimension is in scope and the async working-set table can bound it. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
 
         <sparql-async id="dimensionCatalog">
           SELECT ?dimension ?cubes ?identifier ?scaleType ?validFrom WHERE {
@@ -111,7 +110,6 @@
             "title" (t "card.sharedDimensions" "Shared Dimensions")
             "icon" "ruler")
         }}
-      </div>
     </div>
   </div>
 

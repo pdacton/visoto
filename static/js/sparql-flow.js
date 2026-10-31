@@ -327,6 +327,9 @@
   FlowDiagram.prototype.direction = function () {
     var saved = storageGet('flow-direction-' + this.id);
     if (DIRECTIONS.indexOf(saved) !== -1) return saved;
+    // Phones (below Bootstrap's sm) default to top-down: a wide left-to-right
+    // diagram shrinks to unreadable text there. A chosen direction still wins.
+    if (window.matchMedia('(max-width: 575.98px)').matches) return 'TD';
     var initial = this.root.getAttribute('data-sparql-flow-direction');
     return DIRECTIONS.indexOf(initial) !== -1 ? initial : 'LR';
   };

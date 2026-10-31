@@ -32,9 +32,8 @@
          rdf:type triple (cube:Observation alone has 14M) and took ~40s on LINDAS,
          and SPARQL cannot cap a per-group count, so a LIMIT does not make it
          cheaper; the EXISTS stops at the first instance (0.5s for all classes). -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="rdfsClassInstances">
           SELECT ?class
                  (SAMPLE(?super_) AS ?superclass)
@@ -69,7 +68,6 @@
             "title" (t "card.classesFound" "Classes found")
             "icon" "circle-dot")
         }}
-      </div>
     </div>
   </div>
 

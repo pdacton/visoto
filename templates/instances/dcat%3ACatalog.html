@@ -10,9 +10,8 @@
   <!-- datasets in this catalog. Themes are joined per dataset (a quarter
        have several), and the subquery is scoped to this catalog so it never
        walks the whole store. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-query id="datasets">
           SELECT ?type ?dataset ?title ?identifier ?themes WHERE {
             BIND (?? AS ?catalog)
@@ -46,14 +45,12 @@
             "title" (t "card.datasets" "Datasets")
             "icon" "database")
         }}
-      </div>
     </div>
   </div>
 
   <!-- catalog records -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-query id="records">
           SELECT ?type ?record ?identifier ?primaryTopic ?issued ?modified WHERE {
             BIND (?? AS ?catalog)
@@ -75,9 +72,8 @@
             "result" .QueryResults.records
             "id" "records"
             "title" (t "card.catalogRecords" "Catalog Records")
-            "icon" "file-description")
+            "icon" "file-text")
         }}
-      </div>
     </div>
   </div>
 

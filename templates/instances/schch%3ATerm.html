@@ -105,60 +105,50 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.termIdentity
             "id" "termIdentity"
             "title" (t "card.identity" "Identity")
-            "icon" "fingerprint") }}
-      </div>
+            "icon" "fingerprint-pattern") }}
     </div>
 
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.termLabels
             "id" "termLabels"
             "title" (t "card.labels" "Labels & Languages")
             "icon" "languages") }}
-      </div>
     </div>
   </div>
 
   <!-- Full width: term notes are long prose in four languages. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.termDefinition
             "id" "termDefinition"
             "title" (t "card.definition" "Definition & Notes")
             "icon" "book-open") }}
-      </div>
     </div>
   </div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlTable" (dict
             "result" .QueryResults.termDomains
             "id" "termDomains"
             "title" (t "card.subjectDomains" "Subject Domains")
             "icon" "library") }}
-      </div>
     </div>
 
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.termSources
             "id" "termSources"
             "title" (t "card.sources" "Sources")
             "icon" "scroll-text") }}
-      </div>
     </div>
   </div>
 

@@ -15,9 +15,8 @@
   {{ template "literals" . }}
 
   <!-- Taxon concepts that use this name -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-3">
         <sparql-query id="usingConcepts">
           SELECT ?concept ?rank ?authority WHERE {
             ?concept treat:hasTaxonName ?? .
@@ -36,7 +35,6 @@
             "title" (t "card.taxonConcepts" "Taxon Concepts")
             "icon" "bug")
         }}
-      </div>
     </div>
   </div>
 

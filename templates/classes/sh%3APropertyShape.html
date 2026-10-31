@@ -15,7 +15,7 @@
     SELECT (COUNT(?s) AS ?count) WHERE { ?s a sh:PropertyShape . }
   </sparql-async>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "propertyShapeTotal"
         "title" (t "type.shacl.propertyShapes" "Property Shapes")
@@ -31,9 +31,8 @@
        constraint's page.
 
        No LIMIT: the server picks inline vs working set by instance count. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
 
         <sparql-async id="propertyShapeCatalog">
           SELECT ?shape ?path ?name ?datatype ?minCount ?maxCount ?message ?nodeShape WHERE {
@@ -87,7 +86,6 @@
             "title" (t "type.shacl.propertyShapes" "Property Shapes")
             "icon" "list-checks")
         }}
-      </div>
     </div>
   </div>
 

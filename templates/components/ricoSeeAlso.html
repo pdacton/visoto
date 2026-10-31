@@ -42,7 +42,7 @@
 
 {{ define "ricoSeeAlso" }}
 {{ if .QueryResults.ricoSeeAlso.Bindings }}
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-columns for="ricoSeeAlso">
       <sparql-column var="record" label="{{ t "facet.title" "Title" }}" icon></sparql-column>
       <sparql-column var="relation" label="{{ t "facet.relation" "Relation" }}"></sparql-column>
@@ -53,6 +53,6 @@
         "id" "ricoSeeAlso"
         "title" (t "card.seeAlso" "See also")
         "icon" "link") }}
-  </div>
+  </div></div>
 {{ end }}
 {{ end }}

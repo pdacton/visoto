@@ -230,18 +230,22 @@
                 <sparql-column var="graph" label="{{ t "facet.graph" "Graph" }}" filter></sparql-column>
                 <sparql-column var="type" icon filter></sparql-column>
               </sparql-columns>
-              {{ template "sparqlAsyncTable" (dict
-                    "queryId" "resourceTriples"
-                    "iri" .ResourceIRI
-                    "title" (t "card.allTriples" "All Triples")
-                    "icon" "database"
-                    "trigger" "showData") }}
+              <div class="row row-deck row-cards">
+                <div class="col-12">
+                  {{ template "sparqlAsyncTable" (dict
+                        "queryId" "resourceTriples"
+                        "iri" .ResourceIRI
+                        "title" (t "card.allTriples" "All Triples")
+                        "icon" "database"
+                        "trigger" "showData") }}
+                </div>
               <!-- The outgoing blank nodes as a tree, below the table. Loaded on the
                    same reveal (resource-view-toggle.js fires showData on every
                    placeholder in this view); removes itself when there are none.
                    anchor is the jump target of the table's "blank node" badges. -->
-              <div class="mt-3">
-                {{ template "bnodeTree" (dict "iri" .ResourceIRI "trigger" "showData" "anchor" "blank-nodes") }}
+                <div class="col-12">
+                  {{ template "bnodeTree" (dict "iri" .ResourceIRI "trigger" "showData" "anchor" "blank-nodes") }}
+                </div>
               </div>
             </div>
             <!-- Schema view: the informal schema DERIVED from the data around the
@@ -269,8 +273,10 @@
                  templates declare their own sync <sparql-query id="subclasses"> etc.
                  Sync and async ids are separate namespaces and cannot actually collide. -->
             <div id="resource-schema-view" class="d-none">
-              <div class="mb-3">
-                {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "lazy" true) }}
+              <div class="row row-deck row-cards">
+                <div class="col-12">
+                  {{ template "schemaGraph" (dict "iri" .ResourceIRI "endpointUrl" .GraphQueryURL "lazy" true) }}
+                </div>
               </div>
 
               <!-- Sub/superclasses are walked TRANSITIVELY (rdfs:subClassOf+), not one
@@ -427,35 +433,30 @@
                 <sparql-column var="subject" icon></sparql-column>
               </sparql-columns>
 
-              <div class="row">
+              <div class="row row-deck row-cards">
                 <div class="col-lg-6">
-                  <div class="mb-3">
                     {{ template "sparqlAsyncTable" (dict
                           "queryId" "schemaSubclasses"
                           "iri" .ResourceIRI
                           "title" (t "card.subclassesOfThisClass" "Subclasses of this Class")
                           "icon" "circle-chevron-down"
                           "trigger" "showSchema") }}
-                  </div>
                 </div>
                 <div class="col-lg-6">
-                  <div class="mb-3">
                     {{ template "sparqlAsyncTable" (dict
                           "queryId" "schemaSuperclasses"
                           "iri" .ResourceIRI
                           "title" (t "card.superclassesOfThisClass" "Superclasses of this Class")
                           "icon" "circle-chevron-up"
                           "trigger" "showSchema") }}
-                  </div>
                 </div>
               </div>
 
               <!-- Dense triple dumps, so both start collapsed — which also lets the
                    placeholder skip its skeleton body and avoids an expanded-then-
                    collapsed flash as four cards swap in at once. -->
-              <div class="row">
+              <div class="row row-deck row-cards">
                 <div class="col-lg-6">
-                  <div class="mb-3">
                     {{ template "sparqlAsyncTable" (dict
                           "queryId" "schemaOntology"
                           "iri" .ResourceIRI
@@ -463,10 +464,8 @@
                           "icon" "circle-dashed"
                           "collapsed" true
                           "trigger" "showSchema") }}
-                  </div>
                 </div>
                 <div class="col-lg-6">
-                  <div class="mb-3">
                     {{ template "sparqlAsyncTable" (dict
                           "queryId" "schemaShacl"
                           "iri" .ResourceIRI
@@ -474,33 +473,28 @@
                           "icon" "shapes"
                           "collapsed" true
                           "trigger" "showSchema") }}
-                  </div>
                 </div>
               </div>
 
               <!-- The two derived-from-data cards. Both titles say "sampled" because
                    their counts come from the bounded subject set, not the whole class;
                    dropping that word would turn a sample into a claim about the data. -->
-              <div class="row">
+              <div class="row row-deck row-cards">
                 <div class="col-lg-6">
-                  <div class="mb-3">
                     {{ template "sparqlAsyncTable" (dict
                           "queryId" "schemaPropertyProfile"
                           "iri" .ResourceIRI
                           "title" (t "card.propertyProfile" "Properties used by instances (sampled)")
                           "icon" "tags"
                           "trigger" "showSchema") }}
-                  </div>
                 </div>
                 <div class="col-lg-6">
-                  <div class="mb-3">
                     {{ template "sparqlAsyncTable" (dict
                           "queryId" "schemaClassRelations"
                           "iri" .ResourceIRI
                           "title" (t "card.classRelations" "Related classes (sampled)")
                           "icon" "share-2"
                           "trigger" "showSchema") }}
-                  </div>
                 </div>
               </div>
             </div>

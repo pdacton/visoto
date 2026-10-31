@@ -14,13 +14,21 @@
 
 {{ define "pageContent" }}
 
-    {{ template "shapeSummary" (dict "iri" .ResourceIRI) }}
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "shapeSummary" (dict "iri" .ResourceIRI) }}
+      </div>
+    </div>
 
     {{ template "literals" . }}
 
     <!-- Open, not collapsed: a property shape has few blank nodes, and they are
          the part of it worth reading. -->
-    {{ template "bnodeTree" (dict "iri" .ResourceIRI) }}
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "bnodeTree" (dict "iri" .ResourceIRI) }}
+      </div>
+    </div>
 
     <sparql-query id="usedBy">
         SELECT ?nodeShape ?targetClass WHERE {
@@ -33,14 +41,14 @@
         <sparql-column var="targetClass" label="{{ t "type.shacl.targetClass" "Target Class" }}"></sparql-column>
     </sparql-columns>
 
-    <div class="mb-3">
+    <div class="row row-deck row-cards"><div class="col-12">
         {{ template "sparqlTable" (dict
             "result" .QueryResults.usedBy
             "id" "usedBy"
             "title" (t "type.shacl.usedBy" "Used by")
             "icon" "shapes")
         }}
-    </div>
+    </div></div>
 
     {{ template "relationships" (dict "page" .) }}
 

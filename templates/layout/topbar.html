@@ -47,6 +47,18 @@
           </span>
         </div>
       </form>
+      <!-- Phones only: closes the field opened by the button below (static/js/search.js). -->
+      <button type="button" class="btn btn-ghost-secondary btn-icon topbar-search-close" aria-label="{{ t "modal.close" "Close" }}">
+        <i data-lucide="x" style="width: 1.25rem; height: 1.25rem;"></i>
+      </button>
+    </div>
+
+    <!-- Phones only: the field is folded away behind this button, which opens it
+         across the whole topbar (tabler_overrides.css, static/js/search.js). -->
+    <div class="nav-item flex-shrink-0 ms-auto topbar-search-open">
+      <button type="button" class="nav-link" aria-label="{{ t "topbar.searchAria" "Search" }}">
+        <i data-lucide="search" style="width: 1.25rem; height: 1.25rem;"></i>
+      </button>
     </div>
 
     <!-- Theme launcher. Conditional on the lindas tag rather than a slug: the
@@ -192,9 +204,23 @@
       <!-- more menu -->
       <div class="nav-item dropdown">
         <a href="#" class="nav-link" data-bs-toggle="dropdown" data-bs-placement="bottom" aria-label="{{ t "topbar.openMore" "Open more menu" }}" data-bs-original-title="{{ t "topbar.more" "More" }}">
-          <i data-lucide="more-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
+          <i data-lucide="ellipsis-vertical" style="width: 1.25rem; height: 1.25rem;"></i>
         </a>
         <div class="dropdown-menu dropdown-menu-end">
+          {{ if .ResourceIRI }}
+          <!-- Phone-only stand-in for the header's view button group (header.html);
+               static/js/resource-view-toggle.js wires the items to its radios. -->
+          <div class="d-sm-none">
+            <h6 class="dropdown-header">{{ t "header.viewMode" "View mode" }}</h6>
+            <a class="dropdown-item active" href="#" data-view-menu="table"><i data-lucide="table-2" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.page" "Page" }}</a>
+            <a class="dropdown-item" href="#" data-view-menu="graph"><i data-lucide="share-2" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.graph" "Graph" }}</a>
+            <!-- Hidden until static/js/sparql-map.js finds geometry, like its button. -->
+            <a class="dropdown-item d-none" href="#" data-view-menu="map"><i data-lucide="map" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.map" "Map" }}</a>
+            <a class="dropdown-item" href="#" data-view-menu="data"><i data-lucide="database" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.data" "Data" }}</a>
+            <a class="dropdown-item" href="#" data-view-menu="schema"><i data-lucide="shapes" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "view.schema" "Schema" }}</a>
+            <div class="dropdown-divider"></div>
+          </div>
+          {{ end }}
           <a class="dropdown-item" href="/about.html">
             <i data-lucide="info" style="width: 1rem; height: 1rem;" class="me-2"></i>{{ t "footer.about" "About" }}
           </a>
@@ -222,7 +248,7 @@
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="uploadDataModalLabel">
-          <i data-lucide="upload-cloud" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>{{ t "upload.title" "Upload RDF data" }}
+          <i data-lucide="cloud-upload" style="width: 1.25rem; height: 1.25rem;" class="me-2"></i>{{ t "upload.title" "Upload RDF data" }}
         </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t "modal.close" "Close" }}"></button>
       </div>
@@ -261,7 +287,7 @@
           <div class="tab-pane fade show active" id="tab-file" role="tabpanel" aria-labelledby="tab-file-btn">
             <div class="dropzone" id="upload-dropzone">
               <div class="dropzone-body">
-                <i data-lucide="upload-cloud" style="width: 2.5rem; height: 2.5rem;" class="mb-2 text-muted"></i>
+                <i data-lucide="cloud-upload" style="width: 2.5rem; height: 2.5rem;" class="mb-2 text-muted"></i>
                 <p class="mb-1">{{ tHTML "upload.dropzone" "Drag & drop a file here, or <label for=\"upload-file-input\" class=\"text-primary\" style=\"cursor:pointer;\">browse</label>" }}</p>
                 <p class="text-muted small mb-0">{{ t "upload.formats" "Supported formats: .ttl, .nq, .nt, .rdf, .jsonld, .trig" }}</p>
                 <input type="file" id="upload-file-input" accept=".ttl,.nq,.nt,.rdf,.owl,.xml,.jsonld,.trig" class="d-none">
@@ -306,10 +332,10 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">{{ t "modal.close" "Close" }}</button>
         <button type="button" class="btn btn-primary" id="upload-submit-btn">
-          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.submit" "Upload" }}
+          <i data-lucide="cloud-upload" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.submit" "Upload" }}
         </button>
         <button type="button" class="btn btn-primary d-none" id="upload-ontologies-btn">
-          <i data-lucide="upload-cloud" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.loadSelected" "Load Selected" }}
+          <i data-lucide="cloud-upload" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "upload.loadSelected" "Load Selected" }}
         </button>
       </div>
     </div>
@@ -356,10 +382,10 @@
       </div>
       <div class="modal-footer gap-2">
         <button type="button" class="btn btn-danger" id="ng-delete-btn" disabled>
-          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteSelected" "Delete selected" }}
+          <i data-lucide="trash" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteSelected" "Delete selected" }}
         </button>
         <button type="button" class="btn btn-outline-danger" id="ng-delete-default-btn">
-          <i data-lucide="trash-2" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteDefault" "Delete default graph" }}
+          <i data-lucide="trash" style="width: 1rem; height: 1rem;" class="me-1"></i>{{ t "graphs.deleteDefault" "Delete default graph" }}
         </button>
         <div class="ms-auto d-flex gap-2 align-items-center">
           <select class="form-select form-select-sm" id="ng-export-format" style="width: auto;" aria-label="{{ t "graphs.exportFormat" "Export format" }}">

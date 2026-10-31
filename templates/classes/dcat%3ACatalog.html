@@ -8,9 +8,8 @@
   {{ template "literals" . }}
 
   <!-- instances of dcat:Catalog -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <sparql-async id="dcatCatalogInstances">
           SELECT ?type ?instance (COUNT(?dataset) AS ?datasets) ?dctype ?description  WHERE {
             BIND (?? AS ?class)
@@ -34,9 +33,8 @@
             "queryId" "dcatCatalogInstances"
             "iri" .ResourceIRI
             "title" (t "card.catalogs" "Catalogs")
-            "icon" "books")
+            "icon" "library")
         }}
-      </div>
     </div>
   </div>
 

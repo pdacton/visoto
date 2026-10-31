@@ -57,7 +57,7 @@
 
   {{ $graphdb := contains .SearchProvider "graphdb" }}
 
-  <div class="row row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" (or (and $graphdb "graphTriplesGraphDB") "graphTriples")
         "iri" .ResourceIRI
@@ -66,9 +66,8 @@
         "icon" "/static/img/resource/NamedGraph.svg") }}
   </div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-columns for="graphClasses">
           <sparql-column var="class" label="{{ t "type.namedGraph.class" "Class" }}" icon></sparql-column>
           <sparql-column var="instances" label="{{ t "type.namedGraph.instances" "Instances" }}"></sparql-column>
@@ -78,10 +77,8 @@
             "iri" .ResourceIRI
             "title" (t "type.namedGraph.classes" "Classes in this graph")
             "icon" "shapes") }}
-      </div>
     </div>
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ if ge (len (firstValue .QueryResults.graphSize "count")) 8 }}
         <div class="card">
           <div class="card-header d-flex align-items-center gap-2">
@@ -103,7 +100,6 @@
             "title" (t "type.namedGraph.properties" "Properties in this graph")
             "icon" "list-tree") }}
         {{ end }}
-      </div>
     </div>
   </div>
 

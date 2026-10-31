@@ -61,7 +61,7 @@
       ?citation cito:hasCitingEntity ?omid .
     }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "dblpCitedByCount"
         "iri" .ResourceIRI
@@ -78,7 +78,7 @@
        thousand signatures, so the table always loads complete. The roles are
        VALUES rather than a FILTER on ?role, which QLever would apply only after
        joining every typed node (1.5 s instead of 0.13 s). -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dblpSignatures">
       SELECT ?position ?creator ?role WHERE {
         VALUES ?role { dblp:AuthorSignature dblp:EditorSignature }
@@ -98,13 +98,13 @@
         "iri" .ResourceIRI
         "title" (t "card.authorsAndEditors" "Authors and Editors")
         "icon" "users") }}
-  </div>
+  </div></div>
 
   {{ template "literals" . }}
 
   <!-- The records inside this one: the papers of a proceedings volume, the
        chapters of a book. Empty (and collapsed) for an ordinary paper. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dblpParts">
       SELECT ?part ?year WHERE {
         ?part dblp:publishedAsPartOf ?? .
@@ -120,11 +120,11 @@
         "iri" .ResourceIRI
         "title" (t "card.contents" "Contents")
         "icon" "list") }}
-  </div>
+  </div></div>
 
   <!-- Capped at 5000 newest: the most cited dblp records have over 100k
        citations. The "Cited by" metric above carries the full number. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dblpCitedBy">
       SELECT DISTINCT ?citing ?year WHERE {
         ?? dblp:omid ?omid .
@@ -143,9 +143,9 @@
         "iri" .ResourceIRI
         "title" (t "card.citedByInDblp" "Cited by (in dblp)")
         "icon" "quote") }}
-  </div>
+  </div></div>
 
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dblpReferences">
       SELECT DISTINCT ?cited ?year WHERE {
         ?? dblp:omid ?omid .
@@ -163,8 +163,8 @@
         "queryId" "dblpReferences"
         "iri" .ResourceIRI
         "title" (t "card.referencesInDblp" "References (in dblp)")
-        "icon" "book-marked") }}
-  </div>
+        "icon" "book-bookmark") }}
+  </div></div>
 
   <!-- Venue, DOI, Wikidata and the other links. A record's incoming links are
        few (its parts, at most), so the shared component is affordable here. -->

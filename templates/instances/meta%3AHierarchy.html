@@ -27,9 +27,8 @@
          of ONE hierarchy ("?? meta:nextInHierarchy ?level"), which is not a
          class-membership pattern, so BuildWorkingSetQuery cannot rewrite it. The
          bound is tiny — hierarchies declare a handful of levels. -->
-    <div class="row">
+    <div class="row row-deck row-cards">
         <div class="col-lg">
-            <div class="mb-3">
                 <sparql-query id="hierarchyLevels">
                     SELECT ?level ?path ?name WHERE {
                         ?? meta:nextInHierarchy ?level .
@@ -52,7 +51,6 @@
                     "title" (t "card.levels" "Levels")
                     "icon" "list-tree")
                 }}
-            </div>
         </div>
     </div>
 
@@ -70,9 +68,8 @@
          levels are reachable by clicking through to the term itself.
 
          sparqlTree takes flat ?node/?parent pairs and inverts them itself. -->
-    <div class="row">
+    <div class="row row-deck row-cards">
         <div class="col">
-            <div class="mb-3">
                 <sparql-query id="hierarchyTree">
                     SELECT ?node ?parent WHERE {
                         ?? meta:hierarchyRoot ?root ;
@@ -101,7 +98,6 @@
                     "treeExpanded" false
                     "ResourceIRI" .ResourceIRI)
                 }}
-            </div>
         </div>
     </div>
 

@@ -18,7 +18,7 @@
 {{ define "pageContent" }}
 <div>
   <!-- instances of this class -->
-  <div class="mt-0">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="bookInstances">
       SELECT ?book ?title ?creator ?date
       WHERE {
@@ -37,12 +37,16 @@
       <sparql-column var="date" filter></sparql-column>
     </sparql-columns>
 
-    {{ template "sparqlAsyncTable" (dict
-        "queryId" "bookInstances"
-        "iri" .ResourceIRI
-        "title" (t "card.books" "Books")
-        "icon" "book")
-    }}
-  </div>
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "sparqlAsyncTable" (dict
+            "queryId" "bookInstances"
+            "iri" .ResourceIRI
+            "title" (t "card.books" "Books")
+            "icon" "book")
+        }}
+      </div>
+    </div>
+  </div></div>
 </div>
 {{ end }}

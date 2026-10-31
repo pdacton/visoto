@@ -43,10 +43,10 @@
 
 {{ define "pageContent" }}
 <div>
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Attributes -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="attributes">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
@@ -63,10 +63,10 @@
     </div>
 
   </div>
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Cantons -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="cantons">
         SELECT ?type ?canton ?identifier ?validFrom ?districts ?municipalities ?name_de ?name_fr ?name_it ?name_rm ?name_en
         WHERE {

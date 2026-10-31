@@ -174,27 +174,23 @@
 
   <p class="text-secondary">{{ tHTML "type.observation.anObservationIs" "An <strong>Observation</strong> is a single data point of a cube: one combination of key dimensions (which canton, which year) together with the values measured for it. Its labels and units come from the owning cube's shape, not from the observation itself." }}</p>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <!-- Key dimensions first: they answer "what is this a measurement of?",
          which has to be settled before the numbers mean anything. -->
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.keyDimensions
             "id" "keyDimensions"
             "title" (t "card.keyDimensions" "Key Dimensions")
             "icon" "ruler") }}
-      </div>
     </div>
 
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.measures
             "id" "measures"
             "title" (t "card.measures" "Measures")
             "icon" "tag") }}
-      </div>
     </div>
   </div>
 
@@ -205,9 +201,8 @@
        path labels a link from the IRI's last segment and LINDAS observation
        sets are unlabelled IRIs ending in "/observation/" — which renders as the
        useless word "observation". Naming the two links explicitly avoids that. -->
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <div class="card">
           <div class="card-header d-flex align-items-center gap-2">
             <i data-lucide="boxes" class="icon"></i>
@@ -239,17 +234,14 @@
             </div>
           </div>
         </div>
-      </div>
     </div>
 
     <div class="col-lg-6">
-      <div class="mb-3">
         {{ template "sparqlGrid" (dict
             "result" .QueryResults.observationContext
             "id" "observationContext"
             "title" (t "card.otherProperties" "Other Properties")
             "icon" "tags") }}
-      </div>
     </div>
   </div>
 

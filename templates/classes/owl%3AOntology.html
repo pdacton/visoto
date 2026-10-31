@@ -28,7 +28,7 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     <!-- isIRI to match the table below, which drops the blank-node ontology -->
     <sparql-async id="ontologyCount">
       SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE {
@@ -45,9 +45,8 @@
     }}
   </div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg">
-      <div class="mb-3">
         <!-- Terms and imports are counted in their own subqueries so they are not
              multiplied by the description/creator OPTIONALs. Terms are counted the
              way the ontology page's "Defined Terms" table lists them (isDefinedBy,
@@ -121,7 +120,6 @@
             "title" (t "card.ontologies" "Ontologies")
             "icon" "book-open")
         }}
-      </div>
     </div>
   </div>
 

@@ -17,7 +17,7 @@
 <div>
   
   <!-- instances of this class -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="zefixOrganisationInstances">
       SELECT ?organization ?companyUID ?rechtsform ?municipality ?description WHERE {
         ?organization a ?? .
@@ -84,7 +84,7 @@
         "icon" "circle-dot"
         "searchProp" "schema:name")
     }}
-  </div>
+  </div></div>
 
 </div>
 {{ end }}

@@ -15,24 +15,26 @@
 {{ define "pageContent" }}
 <div>
 
-  <div class="mt-3">
-    <sparql-query id="attributes">
-      SELECT ?property ?value WHERE {
-        BIND (?? AS ?s)
-        ?s ?property ?value .
-        FILTER (isLiteral(?value))
-      } LIMIT 1000
-    </sparql-query>
-    {{ template "sparqlGrid" (dict
-          "result" .QueryResults.attributes
-          "id" "attributes"
-          "title" (t "card.attributes" "Attributes")
-          "icon" "tags")
-    }}
+  <sparql-query id="attributes">
+    SELECT ?property ?value WHERE {
+      BIND (?? AS ?s)
+      ?s ?property ?value .
+      FILTER (isLiteral(?value))
+    } LIMIT 1000
+  </sparql-query>
+  <div class="row row-deck row-cards">
+    <div class="col-12">
+      {{ template "sparqlGrid" (dict
+            "result" .QueryResults.attributes
+            "id" "attributes"
+            "title" (t "card.attributes" "Attributes")
+            "icon" "tags")
+      }}
+    </div>
   </div>
 
-  <div class="row">
-    <div class="col-lg mt-3">
+  <div class="row row-deck row-cards">
+    <div class="col-lg">
       <sparql-query id="identifiers">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
@@ -50,10 +52,10 @@
             "result" .QueryResults.identifiers
             "id" "identifiers"
             "title" (t "card.identifiers" "Identifiers")
-            "icon" "fingerprint")
+            "icon" "fingerprint-pattern")
       }}
     </div>
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="address">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)

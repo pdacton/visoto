@@ -18,7 +18,11 @@
 
     <!-- The dimensions in plain language. Collapsed: the Dimensions table below
          is the main view, and a constraint can declare up to 288 dimensions. -->
-    {{ template "shapeSummary" (dict "iri" .ResourceIRI "collapsed" true) }}
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "shapeSummary" (dict "iri" .ResourceIRI "collapsed" true) }}
+      </div>
+    </div>
 
     <!-- The cube's dimensions, one row per sh:property shape.
 
@@ -43,9 +47,8 @@
          that splices a bare SELECT into a group — invalid SPARQL, 400, empty
          table. The bound is small anyway: the largest constraint in LINDAS
          declares 288 dimensions. -->
-    <div class="row">
+    <div class="row row-deck row-cards">
         <div class="col-lg">
-            <div class="mb-3">
                 <sparql-query id="constraintDimensions">
                     SELECT ?dimension ?dimType ?name ?scaleType ?datatype ?unit ?termSet WHERE {
                         { SELECT ?shape ?dimension
@@ -93,20 +96,23 @@
                     "title" (t "card.dimensions" "Dimensions")
                     "icon" "ruler")
                 }}
-            </div>
         </div>
     </div>
 
     <!-- The same dimension shapes in full: sh:in lists, sh:or alternatives and
          nested shapes the flat table above cannot show. Collapsed, because the
          largest constraint declares 288 of them. -->
-    {{ template "bnodeTree" (dict
-        "iri" .ResourceIRI
-        "property" "sh:property"
-        "collapsed" true
-        "title" (t "card.dimensionShapes" "Dimension Shapes")
-        "icon" "ruler")
-    }}
+    <div class="row row-deck row-cards">
+      <div class="col-12">
+        {{ template "bnodeTree" (dict
+            "iri" .ResourceIRI
+            "property" "sh:property"
+            "collapsed" true
+            "title" (t "card.dimensionShapes" "Dimension Shapes")
+            "icon" "ruler")
+        }}
+      </div>
+    </div>
 
     {{ template "relationships" (dict "page" .) }}
 

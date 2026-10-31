@@ -292,7 +292,7 @@
     const configDiv = document.createElement('div');
     configDiv.className = 'alert alert-warning mb-3';
     configDiv.innerHTML = `
-      <h4 class="alert-heading"><i data-lucide="alert-circle" class="me-2"></i>Chat Not Configured</h4>
+      <h4 class="alert-heading"><i data-lucide="circle-alert" class="me-2"></i>Chat Not Configured</h4>
       <p>The AI chat assistant requires a Google Gemini API key to function.</p>
       <hr>
       <p class="mb-2"><strong>To enable the chat:</strong></p>

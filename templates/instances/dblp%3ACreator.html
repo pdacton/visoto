@@ -49,7 +49,7 @@
       ?citation cito:hasCitedEntity ?omid .
     }
   </sparql-async>
-  <div class="row row-deck row-cards mb-3">
+  <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "dblpCreatorPublicationCount"
         "iri" .ResourceIRI
@@ -68,7 +68,7 @@
   </div>
 
   <!-- createdBy covers both authorship and editorship. -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dblpCreatorPublications">
       SELECT ?publication ?type ?year ?venue WHERE {
         ?publication dblp:createdBy ?? .
@@ -88,11 +88,10 @@
         "iri" .ResourceIRI
         "title" (t "card.publications" "Publications")
         "icon" "file-text") }}
-  </div>
+  </div></div>
 
-  <div class="row">
+  <div class="row row-deck row-cards">
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-async id="dblpCoauthors">
           SELECT ?coauthor (COUNT(DISTINCT ?publication) AS ?joint) WHERE {
             ?publication dblp:authoredBy ?? , ?coauthor .
@@ -109,10 +108,8 @@
             "iri" .ResourceIRI
             "title" (t "card.coauthors" "Co-authors")
             "icon" "users") }}
-      </div>
     </div>
     <div class="col-lg-6">
-      <div class="mb-3">
         <sparql-async id="dblpCreatorVenues">
           SELECT ?venue (COUNT(DISTINCT ?publication) AS ?publications) WHERE {
             ?publication dblp:createdBy ?? ; dblp:publishedInStream ?venue .
@@ -128,7 +125,6 @@
             "iri" .ResourceIRI
             "title" (t "card.venues" "Venues")
             "icon" "layers") }}
-      </div>
     </div>
   </div>
 
@@ -136,7 +132,7 @@
        (a free-text string); the typed ones are marked primary or former. The kinds
        are listed in VALUES: an `OPTIONAL { ?node a ?kind FILTER … }` makes QLever
        scan every typed node first (3.3 s instead of 0.16 s). -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-async id="dblpCreatorAffiliations">
       SELECT ?affiliation ?kind WHERE {
         ?? dblp:hasAffiliation ?node .
@@ -153,12 +149,12 @@
         "iri" .ResourceIRI
         "title" (t "card.affiliations" "Affiliations")
         "icon" "briefcase") }}
-  </div>
+  </div></div>
 
   {{ template "literals" . }}
 
   <!-- ORCID, homepage, Wikidata, Wikipedia, linked institutions … -->
-  <div class="mb-3">
+  <div class="row row-deck row-cards"><div class="col-12">
     <sparql-query id="dblpCreatorLinks">
       SELECT ?property ?link WHERE {
         ?? ?property ?link .
@@ -170,7 +166,7 @@
         "id" "dblpCreatorLinks"
         "title" (t "card.links" "Links")
         "icon" "link") }}
-  </div>
+  </div></div>
 
 </div>
 {{ end }}

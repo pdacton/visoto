@@ -45,10 +45,10 @@
 
 {{ define "pageContent" }}
 <div>
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Attributes -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="attributes">
         SELECT ?property ?value WHERE {
           BIND (?? AS ?s)
@@ -68,17 +68,21 @@
   <!-- Districts carry no geometry of their own in LINDAS: the map draws the
        district as its municipalities (schema:hasPart), whose boundaries the
        map fetches from geo.ld.admin.ch. -->
-  {{ template "sparqlMap" (dict
-        "id" "district-map"
-        "iri" .ResourceIRI
-        "endpointUrl" .GraphQueryURL
-        "height" "400px"
-        "via" "schema:hasPart") }}
+  <div class="row row-deck row-cards">
+    <div class="col-12">
+      {{ template "sparqlMap" (dict
+            "id" "district-map"
+            "iri" .ResourceIRI
+            "endpointUrl" .GraphQueryURL
+            "height" "400px"
+            "via" "schema:hasPart") }}
+    </div>
+  </div>
 
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
 
     <!-- Municipalities -->
-    <div class="col-lg mt-3">
+    <div class="col-lg">
       <sparql-query id="municipalities">
         SELECT ?type ?municipality ?identifier (MIN(?vf) AS ?validFrom) (MIN(?vt) AS ?validThrough) (COUNT(DISTINCT ?station) AS ?stations) (COUNT(DISTINCT ?org) AS ?orgs) WHERE {
           ?? schema:hasPart ?municipality .
@@ -125,9 +129,8 @@
   </div>
 
   <!-- Version Flow Diagram -->
-  <div class="row mb-3">
+  <div class="row row-deck row-cards">
     <div class="col">
-      <div class="mb-0">
         <sparql-query id="versionflow">
           SELECT DISTINCT ?from ?predicate ?to ?fromType ?toType ?fromValidFrom ?toValidFrom WHERE {
             # District → version
@@ -173,11 +176,10 @@
               "result" .QueryResults.versionflow
               "id" "versionflow"
               "title" (t "card.versionFlowForDistrict" "Version Flow for District")
-              "icon" "history"
+              "icon" "rotate-ccw-clock"
               "direction" "LR"
               "extraField" "validFrom")
         }}
-      </div>
     </div>
   </div>
 

@@ -370,6 +370,8 @@
       var label = document.querySelector('label[for="resource-view-map"]');
       if (input) input.classList.remove('d-none');
       if (label) label.classList.remove('d-none');
+      var item = document.querySelector('[data-view-menu="map"]');
+      if (item) item.classList.remove('d-none');
     }
 
     // No geometry: a #Map deep link has nothing to show; fall back to the Page view.
