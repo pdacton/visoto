@@ -588,7 +588,9 @@
       if (spec.control === 'none' || !spec.control) return wrap;
 
       var dd = el('span', 'dropdown vs-facet-dd');
-      var btn = el('button', 'btn btn-sm btn-ghost-secondary p-0 px-1 vs-facet-btn',
+      // btn-action matches the card-header ⋯/collapse buttons (light hover fill);
+      // btn-ghost-secondary filled solid grey on hover and hid the icon.
+      var btn = el('button', 'btn btn-action vs-facet-btn',
         { type: 'button', 'aria-expanded': 'false' });
       btn.title = vsTf('js.facet.filterBy', 'Filter by {label}', { label: spec.label });
       // Icon size is set in CSS (.vs-facet-btn svg): lucide.createIcons() below
@@ -599,12 +601,23 @@
       // position:fixed and the menu width live in CSS (.vs-facet-menu); this code
       // only sets top/left, in positionMenu() below.
       var menu = el('div', 'dropdown-menu p-0 vs-facet-menu');
+      // The funnel turns primary while its facet constrains the table (CSS:
+      // .vs-facet-active). Synced on every change and from clearControl, which
+      // resets without firing onChange.
+      function syncActive() {
+        btn.classList.toggle('vs-facet-active', isActive(readSelection(control)));
+      }
       var control = buildControl(spec, {
         id: ctx.facetFor,
         iri: ctx.iri,
         localValues: ctx.localValues,
-        onChange: ctx.onChange
+        onChange: function () {
+          syncActive();
+          if (ctx.onChange) ctx.onChange.apply(this, arguments);
+        }
       });
+      control._syncActive = syncActive;
+      syncActive();
       // Tag the control so the table's liveFacetControls() finds it even while the
       // menu is portaled to <body> (out of the table's DOM subtree).
       control.dataset.facetTable = ctx.tableId;
@@ -726,6 +739,7 @@
     // Blanking the search box does not itself un-hide the rows it filtered out.
     var menu = wrap.querySelector('.vs-select-menu');
     if (menu) filterOptions(menu);
+    if (wrap._syncActive) wrap._syncActive();
   }
 
   // Whether a selection actually constrains anything.
