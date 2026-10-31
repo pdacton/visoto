@@ -3,17 +3,8 @@
 <!-- Raw template data, for debugging. Rendered on every page by design.
      Anything added to TemplateData shows up here verbatim, so keep secrets out
      of it at the source: credentials on config.SparqlEndpoint carry json:"-"
-     for exactly this reason. -->
-<div class="py-3 border-bottom">
-    <a class="d-inline-flex align-items-center text-decoration-none link-secondary small" data-bs-toggle="collapse" href="#rawDataCollapse" role="button" aria-expanded="false" aria-controls="rawDataCollapse">
-        <i data-lucide="chevron-down" style="width: 1rem; height: 1rem;" class="me-2"></i>
-        <span>{{ t "footer.rawData" "Raw data" }}</span>
-    </a>
-    <div class="collapse mt-2" id="rawDataCollapse">
-        <pre class="p-3 rounded border bg-surface-secondary" style="white-space: pre-wrap; word-wrap: break-word;"><code class="language-json">{{ toJSONPretty . }}</code></pre>
-    </div>
-</div>
-
+     for exactly this reason. The toggle is the last footer link; the dump
+     opens below the footer row. -->
 <div class="row align-items-center flex-row-reverse g-2 py-3">
     <div class="col-12 col-lg-auto ms-lg-auto">
         <ul class="list-inline list-inline-dots mb-0">
@@ -21,6 +12,7 @@
             <li class="list-inline-item"><a href="/whatsnew.html" class="link-secondary">{{ t "footer.whatsNew" "What's new" }}</a></li>
             <li class="list-inline-item"><a href="/connectmcp.html" class="link-secondary">{{ t "footer.connectAI" "Connect your AI" }}</a></li>
             <li class="list-inline-item"><a href="/apiDocs.html" class="link-secondary">{{ t "page.apiDocs.title" "API" }}</a></li>
+            <li class="list-inline-item"><a class="link-secondary" data-bs-toggle="collapse" href="#rawDataCollapse" role="button" aria-expanded="false" aria-controls="rawDataCollapse">{{ t "footer.rawData" "Raw data" }}</a></li>
         </ul>
     </div>
     <div class="col-12 col-lg-auto">
@@ -29,5 +21,8 @@
             <li class="list-inline-item text-secondary">{{ t "footer.tagline" "a visual SPARQL browser" }}</li>
         </ul>
     </div>
+</div>
+<div class="collapse pb-3" id="rawDataCollapse">
+    <pre class="p-3 rounded border bg-surface-secondary mb-0" style="white-space: pre-wrap; word-wrap: break-word;"><code class="language-json">{{ toJSONPretty . }}</code></pre>
 </div>
 <!-- End footer.html -->

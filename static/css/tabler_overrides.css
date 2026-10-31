@@ -1188,12 +1188,32 @@ sparql-tree-query { display: none; }
     overflow: hidden;
     white-space: nowrap;
     text-overflow: ellipsis;
-    padding: .1rem .5rem;
+    padding: .05rem .4rem;
     border-radius: var(--tblr-border-radius-pill);
-    background: rgba(15, 23, 42, .55);
-    font-size: .7rem;
-    color: rgba(255, 255, 255, .85);
+    background: rgba(15, 23, 42, .25);
+    font-size: .625rem;
+    color: rgba(255, 255, 255, .6);
     text-decoration: none;
+    opacity: 0;
+    transition: opacity .2s ease-in-out, color .15s ease-in-out, background-color .15s ease-in-out;
+}
+
+/* The attribution appears while the pointer is on the photo (or the link has
+   keyboard focus). Touch screens have no hover, so there it stays visible —
+   the CC licences require the credit to be reachable. */
+.vs-hero:hover .vs-hero-credit,
+.vs-hero-credit:focus-visible {
+    opacity: 1;
+}
+
+@media (hover: none) {
+    .vs-hero-credit { opacity: 1; }
+}
+
+.vs-hero-credit:hover,
+.vs-hero-credit:focus-visible {
+    background: rgba(15, 23, 42, .55);
+    color: rgba(255, 255, 255, .9);
 }
 
 @media (max-width: 575.98px) {
