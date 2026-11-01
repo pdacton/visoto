@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"io/fs"
@@ -15,7 +15,7 @@ import (
 // declaration that is well-formed yet attached to the wrong id, which costs a
 // table its icons silently. These pin a representative table of each kind.
 func TestIconColumnsAreDeclared(t *testing.T) {
-	if err := initAsyncIndex("../../templates"); err != nil {
+	if err := initAsyncIndex("../templates"); err != nil {
 		t.Fatalf("initAsyncIndex(): %v", err)
 	}
 
@@ -55,7 +55,7 @@ func TestIconColumnsAreDeclared(t *testing.T) {
 // container attached to the wrong id leaves the page rendering ungrouped with no
 // error anywhere — the exact silent failure this file exists to catch.
 func TestGroupColumnsAreDeclared(t *testing.T) {
-	if err := initAsyncIndex("../../templates"); err != nil {
+	if err := initAsyncIndex("../templates"); err != nil {
 		t.Fatalf("initAsyncIndex(): %v", err)
 	}
 
@@ -111,7 +111,7 @@ func TestNoRemovedTableParamsRemain(t *testing.T) {
 	// deliberately not matched.
 	banned := regexp.MustCompile(`"(icon|badge)Var"|"groupBy"`)
 
-	err := filepath.WalkDir("../../templates", func(path string, d fs.DirEntry, err error) error {
+	err := filepath.WalkDir("../templates", func(path string, d fs.DirEntry, err error) error {
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".html") {
 			return err
 		}

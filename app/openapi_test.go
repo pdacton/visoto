@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"os"
@@ -11,7 +11,7 @@ import (
 )
 
 // openAPISpec is the hand-written API description served at /apiDocs.html.
-const openAPISpec = "../../static/openapi.yaml"
+const openAPISpec = "../static/openapi.yaml"
 
 // documentedRoute reports whether a registered path belongs in the OpenAPI
 // spec: everything under /api plus the operational routes. HTML pages do not.
@@ -31,11 +31,11 @@ var (
 	anyMethodOK = map[string]bool{"get": true, "post": true}
 )
 
-// registeredRoutes reads the route table from main.go: "METHOD /path" in
+// registeredRoutes reads the route table from server.go: "METHOD /path" in
 // OpenAPI's path syntax. Any expands to the methods MCP clients use.
 func registeredRoutes(t *testing.T) map[string]bool {
 	t.Helper()
-	src, err := os.ReadFile("main.go")
+	src, err := os.ReadFile("server.go")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,6 +114,6 @@ func TestOpenAPICoversRoutes(t *testing.T) {
 		t.Errorf("route %s is not documented in static/openapi.yaml", r)
 	}
 	for _, r := range diff(spec, routes) {
-		t.Errorf("static/openapi.yaml documents %s, which main.go does not register", r)
+		t.Errorf("static/openapi.yaml documents %s, which server.go does not register", r)
 	}
 }

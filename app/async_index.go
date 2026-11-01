@@ -1,4 +1,4 @@
-package main
+package app
 
 // Set-scoped index of the async SPARQL declarations embedded in the templates.
 //

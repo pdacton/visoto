@@ -79,7 +79,9 @@ carries the active endpoint's prefixes (an endpoint may redeclare e.g. `schema:`
 ## Go backend
 
 - Idiomatic Go; prefer methods on structs over standalone functions.
-- Entry point `cmd/visoto/`, everything else under `internal/`.
+- Entry point `cmd/visoto/` is a thin wrapper around `app.Main`; the server
+  (config, router, HTTP handlers) lives in the public `app/` package, everything
+  else under `internal/`.
 - Tests are standard `*_test.go` alongside the code.
 
 ## Data layer

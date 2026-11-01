@@ -72,7 +72,7 @@
 
     // Node icons are NOT suppressed from here: the renderer honours `false` only
     // as a node's own icon property, so each tree sets icon:false per node instead
-    // (cmd/visoto/lazy_tree.go and sparql-tree.js). These entries only decide what
+    // (app/lazy_tree.go and sparql-tree.js). These entries only decide what
     // a node that DOES ask for an icon would get.
     folder: false,
     folderOpen: false,

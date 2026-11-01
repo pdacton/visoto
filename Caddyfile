@@ -159,7 +159,7 @@ visoto.hutzli.org {
 
     # API tier. The fragment routes take BOTH identities from the URL — the
     # endpoint as ?endpoint= and the language as ?lang= (see resolveQueryLang in
-    # cmd/visoto/main.go) — so the response is a complete function of the URL and
+    # app/server.go) — so the response is a complete function of the URL and
     # the origin sends no ETag and no Vary. Those responses carry
     # `public, max-age=21600, s-maxage=21600`, which browsers and Souin both
     # serve from directly: no revalidation round-trip at all.

@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"bufio"
@@ -19,7 +19,7 @@ import (
 func TestLucideIconNamesExist(t *testing.T) {
 	known, version := readLucideNames(t, "testdata/lucide-icons.txt")
 
-	base, err := os.ReadFile("../../templates/layout/base.html")
+	base, err := os.ReadFile("../templates/layout/base.html")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestLucideIconNamesExist(t *testing.T) {
 		return nil
 	}
 
-	for root, ext := range map[string]string{"../../templates": ".html", "../../static/js": ".js"} {
+	for root, ext := range map[string]string{"../templates": ".html", "../static/js": ".js"} {
 		err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() || !strings.HasSuffix(path, ext) {
 				return err

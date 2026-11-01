@@ -55,7 +55,8 @@ For non-resource pages (search, monitoring, home), the lifecycle is simpler: the
 
 | Package | Description |
 |---|---|
-| `cmd/visoto` | Main entry point: config loading, Gin router setup, all HTTP handler functions |
+| `cmd/visoto` | Entry point: calls `app.Main` |
+| `app` | The server (public package): config loading, Gin router setup, all HTTP handler functions |
 | `internal/config` | TOML config parsing; defines `Config` and `SparqlEndpoint` structs |
 | `internal/resource` | IRI normalization, template resolution (5-tier lookup), icon resolution |
 | `internal/parser` | Template file parsing, `<sparql-query>` element extraction, parallel SPARQL pre-execution; defines the `TemplateData` struct |
@@ -108,7 +109,7 @@ user's endpoint choice be cached and served to another. Only uncached entry page
 URL carries no slug.
 
 Both behaviours come from the same `resolveEndpoint(useCookie bool)` middleware in
-`cmd/visoto/main.go`, applied as `epFromURL` or `epFromURLOrCookie` per route.
+`app/server.go`, applied as `epFromURL` or `epFromURLOrCookie` per route.
 
 *`localStorage` (client-side only):*
 

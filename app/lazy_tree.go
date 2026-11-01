@@ -1,4 +1,4 @@
-package main
+package app
 
 // The /api/lazy-tree/:id/:role tier — the JSON backend for the sparqlLazyTree
 // partial.
