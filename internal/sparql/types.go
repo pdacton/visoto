@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"time"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // Binding represents a single SPARQL query result value

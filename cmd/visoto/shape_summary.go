@@ -9,9 +9,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hutzli.org/visoto/internal/bnodetree"
-	"hutzli.org/visoto/internal/shapeprose"
-	"hutzli.org/visoto/internal/templates"
+	"github.com/pdacton/visoto/internal/bnodetree"
+	"github.com/pdacton/visoto/internal/shapeprose"
+	"github.com/pdacton/visoto/internal/templates"
 )
 
 // shapeSummaryDepth is how many levels the summary query fetches: the shape

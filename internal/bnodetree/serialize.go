@@ -7,8 +7,8 @@ import (
 	"sort"
 	"strings"
 
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // The downloads serialize the same deduplicated triples the card shows, so a

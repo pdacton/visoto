@@ -34,7 +34,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/lang"
 )
 
 // cacheableKey marks a response as safe for the shared cache to hold. Handlers

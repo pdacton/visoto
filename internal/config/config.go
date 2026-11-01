@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/BurntSushi/toml"
-	"hutzli.org/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/logger"
 )
 
 // TODO: add validation funtions for config fields (e.g. port range, valid URIs, etc.)

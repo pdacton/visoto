@@ -20,9 +20,9 @@ import (
 	"regexp"
 
 	"github.com/gin-contrib/multitemplate"
-	"hutzli.org/visoto/internal/i18n"
-	"hutzli.org/visoto/internal/lang"
-	"hutzli.org/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/i18n"
+	"github.com/pdacton/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/logger"
 )
 
 // Name returns the registered template name for a page in a given language.

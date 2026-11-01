@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // Well-known IRIs the renderer treats specially. Hard-coded on purpose: the

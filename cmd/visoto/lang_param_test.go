@@ -6,8 +6,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/lang"
 )
 
 // newLangRouter wires resolveQueryLang the way the /api routes do and echoes the

@@ -27,7 +27,7 @@ import (
 
 	_ "modernc.org/sqlite"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 const (

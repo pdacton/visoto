@@ -3,7 +3,7 @@ package parser
 import (
 	"testing"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 func TestExtractQueriesDOM(t *testing.T) {

@@ -21,9 +21,9 @@ import (
 	"sync"
 	"time"
 
-	"hutzli.org/visoto/internal/cache"
-	"hutzli.org/visoto/internal/icon"
-	"hutzli.org/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/cache"
+	"github.com/pdacton/visoto/internal/icon"
+	"github.com/pdacton/visoto/internal/logger"
 )
 
 // typeCache holds IRI → rdf:type IRIs. Keyed by IRI alone (no language), and

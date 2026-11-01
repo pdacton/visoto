@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"hutzli.org/visoto/internal/bnodetree"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/bnodetree"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 var update = flag.Bool("update", false, "rewrite the golden files in testdata")

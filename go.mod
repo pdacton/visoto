@@ -1,4 +1,4 @@
-module hutzli.org/visoto
+module github.com/pdacton/visoto
 
 go 1.27.3
 

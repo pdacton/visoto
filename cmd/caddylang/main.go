@@ -15,7 +15,7 @@ import (
 	"os"
 	"strings"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 func main() {

@@ -12,8 +12,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hutzli.org/visoto/internal/classstats"
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/classstats"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 func TestMetricsHandlerToken(t *testing.T) {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // Provider defines the interface for different full-text search backends

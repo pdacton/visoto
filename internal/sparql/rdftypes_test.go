@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"hutzli.org/visoto/internal/icon"
+	"github.com/pdacton/visoto/internal/icon"
 )
 
 func TestBuildTypeQuery(t *testing.T) {

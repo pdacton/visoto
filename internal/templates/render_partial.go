@@ -16,8 +16,8 @@ import (
 	"fmt"
 	"html/template"
 
-	"hutzli.org/visoto/internal/i18n"
-	"hutzli.org/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/i18n"
+	"github.com/pdacton/visoto/internal/lang"
 )
 
 // sparqlTablePartial is the path to the reusable table partial. It stands alone:

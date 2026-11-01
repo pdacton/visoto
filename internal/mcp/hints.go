@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // buildHints inspects a QueryResult and returns actionable hint strings for the MCP client.

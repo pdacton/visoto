@@ -28,9 +28,9 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/parser"
-	"hutzli.org/visoto/internal/sparql"
-	"hutzli.org/visoto/internal/tree"
+	"github.com/pdacton/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/tree"
 )
 
 // maxFocusDepth bounds the ancestor walk. A hierarchy with a cycle (A broader B

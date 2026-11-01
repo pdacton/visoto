@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // templateIncludeRe matches {{ template "name" ... }} directives in Go template syntax.

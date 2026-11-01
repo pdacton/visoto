@@ -4,7 +4,7 @@ import (
 	"errors"
 	"io"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // ErrNotApplicable is returned by a provider when it cannot handle the given endpoint

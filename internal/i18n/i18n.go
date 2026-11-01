@@ -27,9 +27,9 @@ import (
 
 	"github.com/BurntSushi/toml"
 	goi18n "github.com/nicksnyder/go-i18n/v2/i18n"
+	"github.com/pdacton/visoto/internal/logger"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
-	"hutzli.org/visoto/internal/logger"
 )
 
 // BaseCode is the source language: the catalog that defines the key set and the

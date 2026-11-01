@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // GSPProvider exports named graphs using the Graph Store Protocol (GSP).

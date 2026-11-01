@@ -8,8 +8,8 @@ import (
 	"net/url"
 	"strings"
 
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // GraphDBProvider exports named graphs using the GraphDB REST API.

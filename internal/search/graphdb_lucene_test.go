@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"hutzli.org/visoto/internal/cache"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/cache"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // lindasLabelOptions is the real options JSON returned by LINDAS for the

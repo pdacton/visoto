@@ -14,7 +14,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"hutzli.org/visoto/internal/classstats"
+	"github.com/pdacton/visoto/internal/classstats"
 )
 
 // classStats is the daily class-instance collector (nil when it failed to open).

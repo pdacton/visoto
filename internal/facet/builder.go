@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // DefaultEnumerateLimit caps how many distinct values a select facet enumerates.

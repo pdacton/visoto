@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"hutzli.org/visoto/internal/icon"
-	"hutzli.org/visoto/internal/resource"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/icon"
+	"github.com/pdacton/visoto/internal/resource"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // funcMap defines custom template functions available in all templates

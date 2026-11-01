@@ -3,7 +3,7 @@ package mcp
 import (
 	"testing"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 func classRows(pairs ...string) []map[string]sparql.Binding {

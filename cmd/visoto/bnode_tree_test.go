@@ -10,11 +10,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hutzli.org/visoto/internal/bnodetree"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/i18n"
-	"hutzli.org/visoto/internal/lang"
-	"hutzli.org/visoto/internal/templates"
+	"github.com/pdacton/visoto/internal/bnodetree"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/i18n"
+	"github.com/pdacton/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/templates"
 )
 
 // bnodeStore answers the blank-node query with a property shape holding a name,

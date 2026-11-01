@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"hutzli.org/visoto/internal/facet"
+	"github.com/pdacton/visoto/internal/facet"
 )
 
 func TestFromAttributesNormalizes(t *testing.T) {

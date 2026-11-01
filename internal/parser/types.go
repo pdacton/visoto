@@ -3,8 +3,8 @@ package parser
 import (
 	"strings"
 
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // NamedGraph is a named graph containing the resource (as subject)

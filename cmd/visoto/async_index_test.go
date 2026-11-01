@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/lang"
-	"hutzli.org/visoto/internal/parser"
-	"hutzli.org/visoto/internal/templates"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/templates"
 )
 
 const testTemplatesDir = "../../templates"

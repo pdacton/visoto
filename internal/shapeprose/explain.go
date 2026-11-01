@@ -9,8 +9,8 @@ import (
 	"golang.org/x/text/language"
 	"golang.org/x/text/language/display"
 
-	"hutzli.org/visoto/internal/bnodetree"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/bnodetree"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 const (
