@@ -99,3 +99,23 @@ func (h *Host) Stores() []Store {
 // variant registered for the request's language, for plugin handlers that
 // render one of the core's templates.
 func RenderName(c *gin.Context, templateName string) string { return renderName(c, templateName) }
+
+// TestHost is a Host on a bare router, for testing a plugin against the real
+// route guard and /_auth/check without the rest of the server. stores become
+// the configured endpoints, the first one the default. It replaces the
+// package's configuration and authorizer, so tests that use it must not run in
+// parallel.
+func TestHost(router *gin.Engine, configPath, dataDir string, stores ...Store) *Host {
+	app := config.ApplicationConfig{}
+	for i, s := range stores {
+		app.SparqlEndpoints = append(app.SparqlEndpoints, config.SparqlEndpoint{
+			Slug: s.Slug, Name: s.Name, URL: "http://127.0.0.1:1/" + s.Slug, Default: i == 0,
+		})
+	}
+	cfg = &config.Config{Application: app}
+	authz = access.AllowAll{}
+	var collectors []prometheus.Collector
+	t := newRouteTable(router)
+	t.GET(authCheckPath, access.Public, authCheckHandler(router))
+	return &Host{ConfigPath: configPath, DataDir: dataDir, table: t, collectors: &collectors}
+}
