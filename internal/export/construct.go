@@ -43,7 +43,11 @@ func (c *ConstructProvider) Export(params ExportParams) (io.ReadCloser, error) {
 
 // constructFetch issues a SPARQL CONSTRUCT query for a single named graph.
 func constructFetch(ep *config.SparqlEndpoint, iri, format string) (io.ReadCloser, error) {
-	query := fmt.Sprintf("CONSTRUCT { ?s ?p ?o } WHERE { GRAPH <%s> { ?s ?p ?o } }", iri)
+	term, err := sparql.IRITerm(iri)
+	if err != nil {
+		return nil, err
+	}
+	query := "CONSTRUCT { ?s ?p ?o } WHERE { GRAPH " + term + " { ?s ?p ?o } }"
 	form := url.Values{}
 	form.Set("query", query)
 

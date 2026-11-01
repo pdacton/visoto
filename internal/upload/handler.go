@@ -12,6 +12,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -72,12 +73,48 @@ func validateRemoteURL(rawURL string, allowPrivate bool) error {
 		return fmt.Errorf("cannot resolve host %q: %w", u.Hostname(), err)
 	}
 	for _, ip := range ips {
-		if ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() ||
-			ip.IsLinkLocalMulticast() || ip.IsUnspecified() {
-			return fmt.Errorf("URL host resolves to a private or local address (%s); set allow_private_upload_urls in visoto.config to permit this", ip)
+		if blockedIP(ip) {
+			return privateAddressError(ip)
 		}
 	}
 	return nil
+}
+
+// blockedIP reports whether ip is an address URL-mode upload must not reach.
+func blockedIP(ip net.IP) bool {
+	return ip.IsLoopback() || ip.IsPrivate() || ip.IsLinkLocalUnicast() ||
+		ip.IsLinkLocalMulticast() || ip.IsUnspecified()
+}
+
+func privateAddressError(ip net.IP) error {
+	return fmt.Errorf("URL host resolves to a private or local address (%s); set allow_private_upload_urls in visoto.config to permit this", ip)
+}
+
+// uploadFetchTimeout bounds a URL-mode fetch end to end. The body is read while
+// it streams on to the endpoint, so this also bounds the forwarding: a tarpit
+// URL cannot hold the request open indefinitely.
+const uploadFetchTimeout = 5 * time.Minute
+
+// fetchDialer dials only addresses blockedIP allows. validateRemoteURL resolves
+// the host once for a readable error, but the dial resolves it again, and a
+// rebinding DNS server can answer the two lookups differently; checking the
+// address actually dialed closes that gap, for redirect hops too.
+func fetchDialer(allowPrivate bool) *net.Dialer {
+	d := &net.Dialer{Timeout: 30 * time.Second}
+	if allowPrivate {
+		return d
+	}
+	d.Control = func(_, address string, _ syscall.RawConn) error {
+		host, _, err := net.SplitHostPort(address)
+		if err != nil {
+			return err
+		}
+		if ip := net.ParseIP(host); ip == nil || blockedIP(ip) {
+			return privateAddressError(ip)
+		}
+		return nil
+	}
+	return d
 }
 
 // rdfAccept is the Accept header sent when fetching a remote RDF URL. Without
@@ -93,7 +130,14 @@ func fetchRemoteURL(rawURL string, allowPrivate bool) (*http.Response, error) {
 	if err := validateRemoteURL(rawURL, allowPrivate); err != nil {
 		return nil, err
 	}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// No proxy: through one, the dial check would see the proxy's address, not
+	// the target's.
+	transport.Proxy = nil
+	transport.DialContext = fetchDialer(allowPrivate).DialContext
 	client := &http.Client{
+		Timeout:   uploadFetchTimeout,
+		Transport: transport,
 		CheckRedirect: func(req *http.Request, via []*http.Request) error {
 			if len(via) >= 10 {
 				return errors.New("stopped after 10 redirects")
@@ -261,6 +305,43 @@ func readOnlyError(ep *config.SparqlEndpoint) string {
 	return fmt.Sprintf("%s is read-only in visoto (no write credentials configured); switch to a writable endpoint", ep.Name)
 }
 
+// errUploadTooLarge is returned once an upload body passes the configured cap.
+var errUploadTooLarge = errors.New("upload exceeds max_upload_mb")
+
+// cappedReader fails with errUploadTooLarge instead of truncating: a cut-off RDF
+// document would be stored as if it were complete.
+type cappedReader struct {
+	r        io.Reader
+	left     int64
+	exceeded bool
+}
+
+func (c *cappedReader) Read(p []byte) (int, error) {
+	if c.left < 0 {
+		c.exceeded = true
+		return 0, errUploadTooLarge
+	}
+	if int64(len(p)) > c.left+1 {
+		p = p[:c.left+1]
+	}
+	n, err := c.r.Read(p)
+	c.left -= int64(n)
+	if c.left < 0 {
+		c.exceeded = true
+		return 0, errUploadTooLarge
+	}
+	return n, err
+}
+
+// multipartOverhead is the slack above the file cap allowed for the multipart
+// envelope and the other form fields; the file itself is checked exactly.
+const multipartOverhead = 1 << 20
+
+func tooLargeResponse(c *gin.Context, limit int64) {
+	c.JSON(http.StatusRequestEntityTooLarge, gin.H{"success": false,
+		"error": fmt.Sprintf("upload larger than %d MiB (max_upload_mb)", limit>>20)})
+}
+
 // UploadHandler handles POST /api/upload.
 // Accepts multipart/form-data with:
 //   - file   (mutually exclusive with url) — the RDF file to upload
@@ -271,6 +352,18 @@ func readOnlyError(ep *config.SparqlEndpoint) string {
 func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log := logger.Get()
+
+		limit := cfg.UploadLimit()
+		c.Request.Body = http.MaxBytesReader(c.Writer, c.Request.Body, limit+multipartOverhead)
+		if err := c.Request.ParseMultipartForm(32 << 20); err != nil && !errors.Is(err, http.ErrNotMultipart) {
+			var tooBig *http.MaxBytesError
+			if errors.As(err, &tooBig) {
+				tooLargeResponse(c, limit)
+				return
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "malformed form data"})
+			return
+		}
 
 		endpointSlug := c.PostForm("endpoint")
 		graphURI := normalizeGraphURI(c.PostForm("graphURI"))
@@ -290,6 +383,7 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		var (
 			rdfBody     io.Reader
 			contentType string
+			capped      *cappedReader
 		)
 
 		if remoteURL != "" {
@@ -321,13 +415,22 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 				c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "could not determine RDF content type from URL"})
 				return
 			}
-			rdfBody = resp.Body
+			if resp.ContentLength > limit {
+				tooLargeResponse(c, limit)
+				return
+			}
+			capped = &cappedReader{r: resp.Body, left: limit}
+			rdfBody = capped
 
 		} else {
 			// --- File mode: read uploaded file ---
 			fh, err := c.FormFile("file")
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "no file or URL provided"})
+				return
+			}
+			if fh.Size > limit {
+				tooLargeResponse(c, limit)
 				return
 			}
 			ext := path.Ext(fh.Filename)
@@ -346,6 +449,10 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		}
 
 		if err := sendToEndpoint(ep, graphURI, contentType, rdfBody); err != nil {
+			if capped != nil && capped.exceeded {
+				tooLargeResponse(c, limit)
+				return
+			}
 			log.Error("RDF upload failed", slog.String("error", err.Error()), slog.String("endpoint", ep.URL))
 			c.JSON(http.StatusBadGateway, gin.H{"success": false, "error": err.Error()})
 			return
@@ -491,7 +598,12 @@ func DeleteNamedGraphHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		if graphURI == "default" {
 			updateQuery = "DROP SILENT DEFAULT"
 		} else {
-			updateQuery = fmt.Sprintf("DROP SILENT GRAPH <%s>", graphURI)
+			term, err := sparql.IRITerm(graphURI)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "invalid graph IRI"})
+				return
+			}
+			updateQuery = "DROP SILENT GRAPH " + term
 		}
 
 		log.Debug("deleting named graph via SPARQL Update", slog.String("query", updateQuery), slog.String("endpoint", ep.URL))
@@ -563,6 +675,12 @@ func ExportNamedGraphsHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 		if len(graphIRIs) == 0 {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "at least one graph parameter required"})
 			return
+		}
+		for _, iri := range graphIRIs {
+			if err := sparql.ValidateIRI(iri); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "invalid graph IRI"})
+				return
+			}
 		}
 
 		ext := export.ExtForMIME(format)
