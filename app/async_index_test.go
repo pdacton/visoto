@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"net/http"
@@ -13,7 +13,7 @@ import (
 	"github.com/pdacton/visoto/internal/templates"
 )
 
-const testTemplatesDir = "../../templates"
+const testTemplatesDir = "../templates"
 
 // mustIndex builds the index over the shipped templates. Failing here is the
 // same failure that aborts startup, so every test below doubles as a boot check.

@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"io/fs"
@@ -24,7 +24,7 @@ func TestCardsUseRowCards(t *testing.T) {
 	)
 
 	for _, dir := range []string{"classes", "instances", "components", "layout", "partials"} {
-		err := filepath.WalkDir(filepath.Join("../../templates", dir), func(path string, d fs.DirEntry, err error) error {
+		err := filepath.WalkDir(filepath.Join("../templates", dir), func(path string, d fs.DirEntry, err error) error {
 			if err != nil || d.IsDir() || !strings.HasSuffix(path, ".html") {
 				return err
 			}

@@ -432,7 +432,7 @@ generates a wide query with one `OPTIONAL` per dimension, and renders it through
 
 Parameters: `id`, `iri` (the cube, usually `.ResourceIRI`), `title`, `icon`.
 
-Bounded in `cmd/visoto/cube_table.go` to 15 columns (ordered by `sh:order`) and
+Bounded in `app/cube_table.go` to 15 columns (ordered by `sh:order`) and
 1000 observations, loaded once and paged locally — cubes range from 5 to 288
 dimensions, and the largest observation set holds over 700,000 rows. Loads lazily
 over HTMX, so a page carrying it pays nothing until the fragment arrives.

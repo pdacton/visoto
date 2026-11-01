@@ -125,7 +125,8 @@ layout, partial, page, class and instance template parsed successfully.
 ### Project Structure
 
 ```
-cmd/visoto/        — main entry point
+cmd/visoto/        — main entry point (calls app.Main)
+app/               — the server: config loading, router, HTTP handlers
 internal/
   cache/           — in-process query/label caching
   chat/            — Gemini AI chat handler

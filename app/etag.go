@@ -1,4 +1,4 @@
-package main
+package app
 
 // Response caching: ETag, Vary and Cache-Control for every rendered route.
 //

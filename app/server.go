@@ -1,0 +1,1066 @@
+// Package app is the Visoto server: it loads the configuration, the SPARQL
+// preprocessor and the templates, registers every route and runs the HTTP
+// server. cmd/visoto is a thin wrapper around Main; the commercial edition calls
+// Main with its own plugins.
+package app
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"net/http"
+	"net/url"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/pdacton/visoto/internal/chat"
+	"github.com/pdacton/visoto/internal/classstats"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/graphlayout"
+	"github.com/pdacton/visoto/internal/i18n"
+	"github.com/pdacton/visoto/internal/icon"
+	"github.com/pdacton/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/logger"
+	mcpserver "github.com/pdacton/visoto/internal/mcp"
+	"github.com/pdacton/visoto/internal/monitor"
+	"github.com/pdacton/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/resource"
+	"github.com/pdacton/visoto/internal/search"
+	"github.com/pdacton/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparqlproxy"
+	"github.com/pdacton/visoto/internal/templates"
+	"github.com/pdacton/visoto/internal/upload"
+	"github.com/prometheus/client_golang/prometheus"
+)
+
+// ---- Package-level state ----
+
+var cfg *config.Config
+var mon *monitor.Monitor
+
+// siteLangs is the configured UI language set, built once from visoto.config.
+var siteLangs *lang.Set
+
+// catalogs holds the UI message catalogs, loaded once from ./locales.
+var catalogs *i18n.Catalogs
+
+// Successful, SPARQL-backed responses (metric/table/resource handlers) call
+// markCacheable to declare themselves storable by Caddy's cache module. Those
+// routes resolve their endpoint from the URL only (resolveEndpoint with
+// allowCookie=false) and never emit Set-Cookie, so the response is a pure
+// function of the URL and the negotiated language, and safe for a shared cache.
+// The Cache-Control and Vary values themselves are assembled centrally — see
+// cacheControlFor in etag.go, which explains why the browser is told to
+// revalidate while Souin is still allowed to serve for hours.
+
+// ---- Request helpers ----
+
+// activeEndpointKey is the gin-context key under which resolveEndpoint stores
+// the request's resolved *config.SparqlEndpoint.
+const activeEndpointKey = "activeEndpoint"
+
+// configLanguages converts the configured languages into the form
+// internal/lang takes. The two structs are deliberately separate so the language
+// resolver does not depend on the config loader.
+func configLanguages(in []config.Language) []lang.Language {
+	out := make([]lang.Language, 0, len(in))
+	for _, l := range in {
+		out = append(out, lang.Language{Code: l.Code, Label: l.Label, Name: l.DisplayName()})
+	}
+	return out
+}
+
+// activeLangKey / langViaHeaderKey are the gin-context keys under which
+// resolveLang stores the request's UI language and whether it arrived via the
+// X-Site-Lang header.
+const (
+	activeLangKey    = "activeLang"
+	langViaHeaderKey = "langViaHeader"
+)
+
+// resolveLang resolves the request's UI language once, into the context.
+//
+// Unlike resolveEndpoint there is only one variant: the language is safe to read
+// from a cookie even on routes in the shared Caddy/Souin cache, because in
+// production Caddy normalizes the cookie and Accept-Language into X-Site-Lang
+// *before* the cache and folds that header into the cache key. The cookie branch
+// inside lang.FromRequest therefore only ever runs in dev, where no shared cache
+// exists. See internal/lang.
+func resolveLang() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		code, viaHeader := siteLangs.FromRequest(c.Request)
+		c.Set(activeLangKey, code)
+		c.Set(langViaHeaderKey, viaHeader)
+	}
+}
+
+// activeLang returns the UI language resolved by resolveLang, falling back to
+// the configured default when the middleware has not run (e.g. in tests).
+func activeLang(c *gin.Context) string {
+	if v, ok := c.Get(activeLangKey); ok {
+		if code, ok := v.(string); ok {
+			return code
+		}
+	}
+	return siteLangs.Default()
+}
+
+// renderName maps a logical template name ("pages/home.html") onto the variant
+// registered for this request's language. Every c.HTML call must go through it —
+// the bare name is not registered with the renderer.
+func renderName(c *gin.Context, templateName string) string {
+	return templates.Name(activeLang(c), templateName)
+}
+
+// langViaHeader reports whether the request carried an X-Site-Lang header, i.e.
+// whether a normalizing cache sits in front of us. Decides the Vary header.
+func langViaHeader(c *gin.Context) bool {
+	v, ok := c.Get(langViaHeaderKey)
+	if !ok {
+		return false
+	}
+	b, _ := v.(bool)
+	return b
+}
+
+// resolveEndpoint returns a middleware that resolves the active SPARQL endpoint
+// exactly once per request into the context: ?endpoint=<slug> → (optionally) the
+// selectedEndpoint cookie (also a slug) → config default.
+//
+// allowCookie must be false on routes cached by the shared Caddy/Souin cache
+// (/resource and the /api fragment routes): their cache key is URL-only, so the
+// response must be a pure function of the URL — a cookie-dependent response
+// rendered for one user would be served to everyone. Uncached entry pages
+// (/, static pages, /search, /monitoring) honor the cookie as the user's saved
+// preference; from there the frontend propagates the slug via URLs.
+//
+// The cookie is written by the client only (endpoint-switcher.js); the server
+// never sets it. Stale values — a removed endpoint's slug, or a legacy
+// name-valued cookie — simply match no endpoint and fall through to the default.
+func resolveEndpoint(allowCookie bool) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ep *config.SparqlEndpoint
+		if slug := c.Query("endpoint"); slug != "" {
+			if ep = cfg.Application.GetEndpointBySlug(slug); ep == nil {
+				logger.Get().Warn("unknown endpoint slug in URL", slog.String("slug", slug))
+			}
+		}
+		if ep == nil && allowCookie {
+			if slug, err := c.Cookie("selectedEndpoint"); err == nil && slug != "" {
+				ep = cfg.Application.GetEndpointBySlug(slug)
+			}
+		}
+		if ep == nil {
+			ep = cfg.Application.DefaultEndpoint()
+		}
+		if ep != nil {
+			c.Set(activeEndpointKey, ep)
+		}
+	}
+}
+
+// activeEndpoint returns the endpoint resolved by the resolveEndpoint middleware,
+// or nil when none is configured (bare sparql_endpoint-only configs) or the
+// route has no resolver attached.
+func activeEndpoint(c *gin.Context) *config.SparqlEndpoint {
+	if v, ok := c.Get(activeEndpointKey); ok {
+		if ep, ok := v.(*config.SparqlEndpoint); ok {
+			return ep
+		}
+	}
+	return nil
+}
+
+// activeEndpointURL returns the resolved endpoint's URL, falling back to the
+// scalar sparql_endpoint config value when no endpoint list is configured.
+func activeEndpointURL(c *gin.Context) string {
+	if ep := activeEndpoint(c); ep != nil {
+		return ep.URL
+	}
+	return cfg.Application.SparqlEndpoint
+}
+
+// queryLangKey is the gin-context key under which resolveQueryLang stores the
+// request's SPARQL data language.
+const queryLangKey = "queryLang"
+
+// resolveQueryLang resolves the language the SPARQL data is fetched in for the
+// /api/* fragment routes, from ?lang=<code> alone — never the site-lang cookie,
+// never Accept-Language.
+//
+// This is the language twin of resolveEndpoint(false), and exists for the same
+// reason: these routes sit in the shared Caddy/Souin cache, so the response must
+// be a pure function of the URL. Reading the cookie here would serve one user's
+// language to everyone. The frontend puts the code on the URL instead
+// (activeSiteLang in language-switcher.js), so a language switch produces a
+// different URL rather than a differently-negotiated response — which is also
+// what lets the /api tier drop its ETag entirely (see markURLPure in etag.go).
+//
+// An unknown code warns and falls back to the configured default rather than
+// erroring, mirroring an unknown endpoint slug: a stale link degrades instead of
+// breaking. siteLangs.Clean is the whole validator — it lowercases, strips the
+// region subtag ("de-CH" → "de") and membership-checks against visoto.config —
+// which bounds the cache key space the same way the Caddyfile's unprefixed
+// `request_header X-Site-Lang` bounds it for the header path.
+func resolveQueryLang() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// The routes that take this middleware are exactly the routes whose
+		// response is a complete function of the URL, so it asserts both facts.
+		markURLPure(c)
+
+		// GetQuery, not Query: "" is a configured code (the "no language"
+		// choice), and c.Query cannot tell it from an absent param. The two mean
+		// different things — an absent param is "no opinion, use the default".
+		raw, present := c.GetQuery("lang")
+		if !present {
+			c.Set(queryLangKey, siteLangs.Default())
+			return
+		}
+		code, ok := siteLangs.Clean(raw)
+		if !ok {
+			logger.Get().Warn("unknown lang code in URL", slog.String("lang", raw))
+			code = siteLangs.Default()
+		}
+		c.Set(queryLangKey, code)
+	}
+}
+
+// queryLang returns the SPARQL data language resolved by resolveQueryLang,
+// falling back to the configured default when the middleware has not run.
+//
+// The returned value is a bare code ("de", "fr", or "" for the no-language
+// choice), which the internal/sparql layer accepts wherever it takes an
+// Accept-Language string: a bare code parses as a one-entry preference list.
+// The empty code resolves to "en" there (see topLanguage) — a deliberate neutral
+// for "no language preference", not a bug.
+func queryLang(c *gin.Context) string {
+	if v, ok := c.Get(queryLangKey); ok {
+		if code, ok := v.(string); ok {
+			return code
+		}
+	}
+	return siteLangs.Default()
+}
+
+// stampEndpointData fills the endpoint-related template fields shared by every
+// server-rendered page from the request's resolved endpoint.
+func stampEndpointData(c *gin.Context, data *parser.TemplateData) {
+	data.SparqlEndpoints = cfg.Application.SparqlEndpoints
+	if ep := activeEndpoint(c); ep != nil {
+		data.SelectedEndpointName = ep.Name
+		data.SelectedEndpointSlug = ep.Slug
+		data.EndpointTag = ep.Tag
+		data.SearchProvider = ep.SearchProvider
+	}
+	data.GraphQueryURL = proxyEndpointURL(c)
+	data.EndpointPrefixes = parser.NewPagePrefixes(cfg.PrefixesFor(activeEndpointURL(c)))
+	data.LabelPath = sparql.DefaultLabelPath
+	if path, ok := cfg.RDF.MagicProperties["label"]; ok {
+		data.LabelPath = path
+	}
+}
+
+// proxyEndpointURL is the URL the BROWSER uses for SPARQL — the same-origin
+// /api/sparql route, not the endpoint itself.
+//
+// Graph Explorer queries from the browser, so handing it ep.URL cannot work for
+// an endpoint the browser cannot reach: the local QLever lives on a private
+// Docker network. Routing every browser-side query through Visoto also keeps
+// the upstream host and its credentials server-side. See internal/sparqlproxy.
+func proxyEndpointURL(c *gin.Context) string {
+	ep := activeEndpoint(c)
+	if ep == nil || ep.Slug == "" {
+		// Bare config with no endpoint list; the proxy falls back on its own.
+		return sparqlproxy.Path
+	}
+	return sparqlproxy.Path + "?endpoint=" + url.QueryEscape(ep.Slug)
+}
+
+// endpointTemplateData is stampEndpointData's counterpart for handlers that
+// render with an ad-hoc gin.H instead of parser.TemplateData.
+func endpointTemplateData(c *gin.Context, h gin.H) gin.H {
+	h["SparqlEndpoints"] = cfg.Application.SparqlEndpoints
+	if ep := activeEndpoint(c); ep != nil {
+		h["SelectedEndpointName"] = ep.Name
+		h["SelectedEndpointSlug"] = ep.Slug
+		h["EndpointTag"] = ep.Tag
+		h["SearchProvider"] = ep.SearchProvider
+	}
+	return h
+}
+
+// searchPropParam reads the working-set ?searchProp= (default rdfs:label). A
+// template may pass a CURIE such as "schema:name"; it is expanded with the
+// active endpoint's prefixes so it follows a per-endpoint override, where a
+// hard-coded full IRI would search the wrong namespace.
+func searchPropParam(c *gin.Context) string {
+	prop := c.DefaultQuery("searchProp", "http://www.w3.org/2000/01/rdf-schema#label")
+	return config.ExpandCURIE(prop, cfg.PrefixesFor(activeEndpointURL(c)))
+}
+
+// prepareQueryInputs creates a preprocessor defaulting to the request's resolved endpoint
+func prepareQueryInputs(c *gin.Context) *parser.Preprocessor {
+
+	namedEndpoints := cfg.Application.GetNamedEndpointsMap()
+
+	// Create query inputs for preprocessor
+	return parser.New(sparql.QueryInput{
+		EndpointURL:      activeEndpointURL(c),
+		Timeout:          cfg.GetTimeout(),
+		Prefixes:         cfg.RDF.ParsedPrefixes,
+		NamedEndpoints:   namedEndpoints,
+		MagicProperties:  cfg.RDF.MagicProperties,
+		EndpointPrefixes: cfg.Application.EndpointPrefixesMap(),
+		LabelLanguages:   cfg.Application.LanguageCodes(),
+	})
+}
+
+// parseDuration maps a query param like "1h","24h","7d","30d","3M" to a time.Duration.
+func parseDuration(s string) time.Duration {
+	switch s {
+	case "1h":
+		return 1 * time.Hour
+	case "24h":
+		return 24 * time.Hour
+	case "7d":
+		return 7 * 24 * time.Hour
+	case "30d":
+		return 30 * 24 * time.Hour
+	case "3M":
+		return 90 * 24 * time.Hour
+	default:
+		return 24 * time.Hour
+	}
+}
+
+// ---- Page handlers ----
+
+func staticPageHandler(c *gin.Context) {
+
+	log := logger.Get()
+
+	// Extract page name from URL parameter
+	pageName := c.Param("page")
+
+	// Validate: must end with .html and must be a bare filename — the gin route
+	// (/:page) already rejects extra path segments, but guard against traversal
+	// explicitly so the template path below can never escape templates/pages/.
+	if !strings.HasSuffix(pageName, ".html") ||
+		strings.Contains(pageName, "..") || strings.ContainsAny(pageName, `/\`) {
+		c.String(http.StatusNotFound, "Page not found")
+		return
+	}
+
+	// activeLang, not the raw Accept-Language header: the UI language comes from
+	// the site-lang cookie (resolveLang), and the RDF data must follow the same
+	// choice, so visoto:dispLang resolves to the language the user is reading.
+	acceptLanguage := activeLang(c)
+
+	// Construct template paths
+	templatePath := "templates/pages/" + pageName
+	templateName := "pages/" + pageName
+
+	log.Debug("processing static page request",
+		slog.String("page", pageName),
+		slog.String("templatePath", templatePath),
+		slog.String("templateName", templateName))
+
+	// Check if template file exists
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		log.Debug("template not found", slog.String("path", templatePath))
+		c.String(http.StatusNotFound, "Page not found")
+		return
+	}
+
+	// Create preprocessor with user-selected endpoint
+	preprocessor := prepareQueryInputs(c)
+
+	// Process SPARQL queries in template (WITHOUT IRI substitution, use per-request preprocessor)
+	data, err := preprocessor.ProcessTemplateFile(templatePath, "", acceptLanguage)
+	if err != nil {
+		log.Error("SPARQL processing failed",
+			slog.String("page", pageName),
+			slog.String("error", err.Error()))
+		c.String(http.StatusInternalServerError, "Error processing page: %v", err)
+		return
+	}
+
+	// Add endpoints, active selection, and resolved URL (for client-side views
+	// like Graph Explorer) to template data
+	stampEndpointData(c, &data)
+	data.TemplateName = templateName
+	// Public origin for pages that render absolute URLs (e.g. the MCP URL on /connectmcp.html)
+	data.BaseURL = mcpserver.BaseURLFromRequest(c.Request, cfg.Application.Port)
+
+	log.Debug("rendering static page",
+		slog.String("templateName", templateName),
+		slog.Int("queryResults", len(data.QueryResults)))
+
+	// Render template
+	c.HTML(http.StatusOK, renderName(c, templateName), data)
+}
+
+// legacyResourceRedirectHandler permanently redirects old path-form resource
+// URLs (/resource/<iri>) to the canonical query form (/resource?iri=<iri>).
+// Other query params (e.g. ?endpoint=) are carried over; the browser keeps
+// any #view fragment across the redirect on its own.
+func legacyResourceRedirectHandler(c *gin.Context) {
+	iri := strings.TrimPrefix(c.Param("path"), "/")
+	target := "/resource?iri=" + url.QueryEscape(iri)
+	if raw := c.Request.URL.RawQuery; raw != "" {
+		target += "&" + raw
+	}
+	c.Redirect(http.StatusMovedPermanently, target)
+}
+
+func resourcePageHandler(c *gin.Context) {
+
+	// extract iri from query param
+	iri := c.Query("iri")
+
+	// activeLang, not the raw Accept-Language header: the UI language comes from
+	// the site-lang cookie (resolveLang), and the RDF data must follow the same
+	// choice, so visoto:dispLang resolves to the language the user is reading.
+	language := activeLang(c)
+
+	// log request
+	log := logger.Get()
+	log.Debug("processing resource page request", slog.String("iri", iri))
+
+	// Create preprocessor with user-selected endpoint (inside cookie)
+	preprocessor := prepareQueryInputs(c)
+
+	// The active endpoint's prefixes, so a per-endpoint override (schema: →
+	// https://schema.org/) also governs IRI shortening and template lookup.
+	prefixes := cfg.PrefixesFor(activeEndpointURL(c))
+
+	// create Resource instance
+	r, err := resource.New(iri, prefixes)
+	if err != nil {
+		log.Error("invalid resource IRI", slog.String("iri", iri), slog.String("error", err.Error()))
+		c.Header("Cache-Control", "no-store")
+		c.String(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	// Resolve template based on IRI and RDF types (use per-request preprocessor)
+	if err := r.ResolveTemplate(preprocessor, cfg.RDF.TypePriority, prefixes, cfg.RDF.ParsedPrefixes); err != nil {
+		log.Error("template resolution failed",
+			slog.String("iri", iri),
+			slog.String("error", err.Error()))
+		// Continue with fallback already set by ResolveTemplate
+	}
+
+	// The page title and subtitle are the resource's single best label and
+	// description (internal/sparql/labels.go), resolved alongside the template's
+	// own queries rather than by a title query in every template.
+	var title, subtitle string
+	var heading sync.WaitGroup
+	heading.Add(2)
+	go func() { defer heading.Done(); title = preprocessor.ResolveBest("label", r.IRI, language) }()
+	go func() { defer heading.Done(); subtitle = preprocessor.ResolveBest("description", r.IRI, language) }()
+
+	// TODO: refactor, move into Resource method
+	// extract SPARQL query from template and retrieve data (use per-request preprocessor)
+	r.Data, err = preprocessor.ProcessTemplateFile(r.TemplatePath, r.IRI, language)
+	heading.Wait()
+	if err != nil {
+		c.Header("Cache-Control", "no-store")
+		c.String(http.StatusInternalServerError, "Preprocessing error: %v", err)
+		return
+	}
+
+	// Add endpoints, active selection, and resolved URL (for client-side views
+	// like Graph and Schema) to template data
+	stampEndpointData(c, &r.Data)
+	r.Data.ShortIRI = r.ShortIRI
+	r.Data.Title = title
+	r.Data.Subtitle = subtitle
+	r.Data.TemplateName = r.TemplateName
+	r.Data.TemplateType = r.TemplateType
+
+	// List the named graphs containing this resource (shown in the IRI dropdown)
+	r.FetchNamedGraphs(c.Request.Context(), preprocessor, prefixes)
+
+	markCacheable(c)
+	// native gin template rendering
+	c.HTML(http.StatusOK, renderName(c, r.TemplateName), r.Data)
+}
+
+func searchHandler(c *gin.Context) {
+	// Create preprocessor with user-selected endpoint
+	preprocessor := prepareQueryInputs(c)
+
+	// Resolve FTS provider from the active endpoint config; fall back to "stardog"
+	providerName := "stardog"
+	if ep := activeEndpoint(c); ep != nil && ep.SearchProvider != "" {
+		providerName = ep.SearchProvider
+	}
+	searcher := search.New(preprocessor.SparqlPreprocessor(), providerName, activeEndpointURL(c))
+
+	// Parse search parameters
+	params := search.ParseParams(c)
+
+	// Validate required query parameter
+	if params.Query == "" {
+		c.HTML(http.StatusOK, renderName(c, "pages/search.html"), endpointTemplateData(c, gin.H{
+			"ClassFilters":    search.GetClassFilters(),
+			"PropertyFilters": search.GetPropertyFilters(),
+			"SelectedLimit":   search.DefaultLimit,
+			"Error":           "",
+		}))
+		return
+	}
+
+	// Execute search. activeLang, not the raw Accept-Language header: search hits
+	// carry labels, and those must follow the language picker like the rest of the
+	// page rather than the browser's own preference.
+	result := searcher.Execute(c.Request.Context(), params, activeLang(c))
+
+	// Name the provider that actually produced the rows. The FTS provider often
+	// finds nothing on properties its index does not cover, and the CONTAINS
+	// fallback answers instead; crediting the FTS provider for those rows misleads.
+	providerLabel := result.Provider
+	if result.FallbackUsed {
+		providerLabel += " (fallback: sparql-query)"
+	}
+
+	// Render results
+	c.HTML(http.StatusOK, renderName(c, "pages/search.html"), endpointTemplateData(c, gin.H{
+		"Query":            result.Query,
+		"ClassFilters":     search.GetClassFilters(),
+		"PropertyFilters":  search.GetPropertyFilters(),
+		"SelectedClass":    params.Class,
+		"SelectedProperty": params.Property,
+		"SelectedLimit":    params.Limit,
+		"SearchResults":    result.Results,
+		"Provider":         providerLabel,
+	}))
+}
+
+// metricTrendDays is the window of a metric card's sparkline.
+const metricTrendDays = 30
+
+// metricTrend is the sparkline for a metric card declaring ?class= — the class's
+// daily counts from the class-statistics snapshots — or nil when the card names
+// no class or its endpoint has no statistics. The headline number stays the live
+// count; the curve is the snapshot history behind it.
+func metricTrend(c *gin.Context, endpointURL string) *classstats.Trend {
+	class := c.Query("class")
+	ep := activeEndpoint(c)
+	if class == "" || ep == nil || classStats == nil {
+		return nil
+	}
+	iri := config.ExpandCURIE(class, cfg.PrefixesFor(endpointURL))
+	trend, err := classStats.Trend(ep.Slug, iri, metricTrendDays)
+	if err != nil {
+		logger.Get().Warn("metric trend", slog.String("class", iri), slog.String("endpoint", ep.Slug), slog.Any("error", err))
+		return nil
+	}
+	return trend
+}
+
+// metricHandler serves /api/metric/:id — called by HTMX to lazily load metric counts on the home page.
+// It reads the sparql-async element with the matching id, executes its query, and returns the count.
+func metricHandler(c *gin.Context) {
+	id := c.Param("id")
+	dataLang := queryLang(c)
+
+	query, found := findAsyncQuery(c.Query("src"), id)
+	if !found {
+		c.String(http.StatusNotFound, "0")
+		return
+	}
+
+	// Optional resource scoping, same substitution as asyncTableHandler: lets
+	// instance templates declare per-resource metrics with the ?? placeholder.
+	// The IRI is request input, so it is validated before substitution.
+	if iri := c.Query("iri"); iri != "" {
+		scoped, err := sparql.SubstituteEntity(query, iri)
+		if err != nil {
+			c.Header("Cache-Control", "no-store")
+			c.String(http.StatusBadRequest, "0")
+			return
+		}
+		query = scoped
+	}
+
+	preprocessor := prepareQueryInputs(c)
+	result, err := preprocessor.ExecuteQuery(query, false, dataLang, "")
+
+	count := "0"
+	if err == nil && len(result.Bindings) > 0 {
+		if b, ok := result.Bindings[0]["count"]; ok {
+			count = b.Value
+		}
+	}
+
+	// The response carries the finalized query and endpoint alongside the count so
+	// the card's "Execute on endpoint" action can open it in YASGUI — the same data
+	// the sparqlTable partial gets from its QueryResult. A failed query still gets
+	// them (ExecuteQuery may return early with an empty result), so the action keeps
+	// working on an errored metric, mirroring sparqlTable hanging its own YASGUI
+	// action off the card rather than the rows.
+	finalQuery, endpoint := result.Query, result.Endpoint
+	if endpoint == "" {
+		endpoint = activeEndpointURL(c)
+	}
+	if finalQuery == "" {
+		finalQuery = preprocessor.FinalizeQuery(query, dataLang, endpoint)
+	}
+
+	// dataLang, not activeLang: this route runs langFromURL rather than
+	// resolveLang, so the cookie is never read here and activeLang would always
+	// report the configured default. The rendered fragment's only language-
+	// dependent output is the count's thousands separator, which must follow the
+	// ?lang= the caller asked for — otherwise a German page shows 781,462.
+	html, renderErr := templates.RenderSparqlMetricValue(dataLang, map[string]any{
+		"queryId":  id,
+		"count":    count,
+		"query":    finalQuery,
+		"endpoint": endpoint,
+		"trend":    metricTrend(c, endpoint),
+	})
+	if renderErr != nil {
+		c.Header("Cache-Control", "no-store")
+		c.Header("Content-Type", "text/html")
+		c.String(http.StatusOK, count)
+		return
+	}
+
+	if err != nil {
+		// A transient SPARQL failure must never be cached as if it were a real
+		// (likely wrong) count.
+		c.Header("Cache-Control", "no-store")
+	} else {
+		markCacheable(c)
+	}
+	c.Header("Content-Type", "text/html")
+	c.String(http.StatusOK, string(html))
+}
+
+// asyncTableHandler serves /api/async-table/:id — called by HTMX to lazily load a
+// full SPARQL result table (the sparqlAsyncTable partial). It finds the matching
+// <sparql-async> query, optionally scopes it to a resource IRI (?? -> <iri>),
+// executes it, and returns a rendered sparqlTable HTML fragment.
+//
+// Presentation params are read from the query string so a single generic handler
+// can serve many tables: title, icon, collapsed. The per-column roles are not among
+// them: row icons, badges and the initial grouping are declared with
+// <sparql-column icon|badge|group> and folded in by applyColumnParams.
+func asyncTableHandler(c *gin.Context) {
+	id := c.Param("id")
+	dataLang := queryLang(c)
+
+	query, found := findAsyncQuery(c.Query("src"), id)
+	if !found {
+		c.String(http.StatusNotFound, "unknown async query id")
+		return
+	}
+
+	params := map[string]any{
+		"id":    id,
+		"title": c.Query("title"),
+		"icon":  c.Query("icon"),
+		// facetFor (set for faceted tables) = the base query id; the rendered
+		// sparqlTable fragment uses it to wire header-attached filter controls from
+		// the page's <sparql-column> elements. Empty for ordinary async tables.
+		"facetFor": c.Query("facetFor"),
+		// Non-empty string is truthy in the sparqlTable template's {{ if $collapsed }};
+		// absent param yields "" (falsy). The template may still force-collapse an
+		// empty or errored result regardless of this hint.
+		"collapsed": c.Query("collapsed"),
+		// The language this fragment's data was fetched in, so the second-stage
+		// Tabulator fetches (/api/async-table-data, /api/faceted-table) can carry
+		// it too — those plain fetch()es are not covered by the htmx hook that
+		// adds ?lang= to fragment requests. Set unconditionally: "" is a real
+		// code (the no-language choice), so an absent field would be ambiguous.
+		"lang": dataLang,
+	}
+	// A table that declares its columns says which one carries the icon, the badge
+	// and the grouping there, rather than repeating the variable names here.
+	applyColumnParams(params, c.Query("src"), id)
+
+	// Auto-detect the working-set mode: a class-instance query has a "?key a ??"
+	// membership triple, so its key var is derivable AND we're scoped to a class
+	// IRI. Count the class (cheap, cached) and, above the threshold, render the
+	// working-set shell (Tabulator loads a bounded set from
+	// /api/async-table-data/:id). Everything else — attribute/relationship tables
+	// (BIND(?? AS ?s), no key var) and small classes — renders inline as before.
+	iri := c.Query("iri")
+	keyVar := sparql.DeriveKeyVar(query)
+	preprocessor := prepareQueryInputs(c)
+
+	// Substitute the entity placeholder once, up front, so both the inline path
+	// (which executes it) and the working-set shell (which embeds it for the
+	// "Execute on endpoint" button) use the same full query. Queries without ??
+	// are unaffected. The IRI is request input, so it is validated first — an
+	// unvalidated one could close the <...> term and inject graph patterns.
+	fullQuery := query
+	if iri != "" {
+		scoped, err := sparql.SubstituteEntity(query, iri)
+		if err != nil {
+			c.Header("Cache-Control", "no-store")
+			c.String(http.StatusBadRequest, "invalid iri")
+			return
+		}
+		fullQuery = scoped
+	}
+
+	if keyVar != "" && iri != "" {
+		endpoint := activeEndpointURL(c)
+		ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
+		searchProp := searchPropParam(c)
+		total := cachedInstanceCount(ctx, preprocessor, id, endpoint, iri, keyVar, "", searchProp, dataLang)
+		cancel()
+		if total > defaultMaxWorkingSet {
+			params["workingSet"] = true
+			params["iri"] = iri
+			// The fragment's Tabulator data fetches (/api/async-table-data) must
+			// carry the endpoint slug explicitly so the shared cache keys them per
+			// endpoint. This fragment is itself cached keyed by its own ?endpoint=,
+			// so embedding the slug server-side is self-consistent.
+			if ep := activeEndpoint(c); ep != nil {
+				params["endpointSlug"] = ep.Slug
+			}
+			params["total"] = total
+			params["complete"] = false
+			params["searchProp"] = c.Query("searchProp") // author hint; may be empty
+			params["max"] = c.Query("max")
+			// Embed the full class query (finalized: PREFIXes added, ?? substituted)
+			// so the card's "Execute on endpoint" button opens it in YASGUI, exactly
+			// like an inline table. The working-set data itself is loaded separately
+			// and lazily from /api/async-table-data/:id — this query is NOT executed
+			// here, so query cost stays flat.
+			params["result"] = sparql.QueryResult{
+				Query:    preprocessor.FinalizeQuery(fullQuery, dataLang, endpoint),
+				Endpoint: endpoint,
+			}
+			// Never executes the class query itself, so always cheap and safe to cache.
+			renderTableFragment(c, params, true)
+			return
+		}
+	}
+
+	// Inline path: execute the full query and embed the whole result set.
+	// Types are resolved only when a column will actually render an icon —
+	// applyColumnParams above put the declared variable in params.
+	iconVars, _ := params["iconVars"].(string)
+	result, err := preprocessor.ExecuteQuery(fullQuery, true, dataLang, "", queryOptions(iconVars)...)
+	if err != nil {
+		// Surface the error inside the table card (sparqlTable renders result.Error).
+		result.Error = err.Error()
+	}
+	params["result"] = result
+	renderTableFragment(c, params, err == nil)
+}
+
+// renderTableFragment renders the sparqlTable partial and writes it as an HTML
+// fragment, or a 500 on render failure. cacheable controls whether the caller
+// wants this response cached (false for transient query errors, which must
+// never be served stale for hours).
+func renderTableFragment(c *gin.Context, params map[string]any, cacheable bool) {
+	// queryLang, not activeLang: these fragment routes run langFromURL, so the
+	// cookie is never read and activeLang would always be the default. The
+	// partial's own UI strings ("Showing N rows", the column menu) have to follow
+	// the ?lang= the page asked for.
+	html, err := templates.RenderSparqlTable(queryLang(c), params)
+	if err != nil {
+		c.String(http.StatusInternalServerError, "failed to render table")
+		return
+	}
+	if cacheable {
+		markCacheable(c)
+	} else {
+		c.Header("Cache-Control", "no-store")
+	}
+	c.Header("Content-Type", "text/html")
+	c.String(http.StatusOK, string(html))
+}
+
+// ---- Monitoring handlers ----
+
+func monitoringPageHandler(c *gin.Context) {
+	c.HTML(http.StatusOK, renderName(c, "pages/monitoring.html"), endpointTemplateData(c, gin.H{}))
+}
+
+func monitoringStatusHandler(c *gin.Context) {
+	if mon == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "monitoring not available"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{
+		"enabled":   mon.IsEnabled(),
+		"endpoints": mon.LatestStatus(),
+	})
+}
+
+func monitoringToggleHandler(c *gin.Context) {
+	if mon == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "monitoring not available"})
+		return
+	}
+	mon.SetEnabled(!mon.IsEnabled())
+	c.JSON(http.StatusOK, gin.H{"enabled": mon.IsEnabled()})
+}
+
+func monitoringDataHandler(c *gin.Context) {
+	if mon == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "monitoring not available"})
+		return
+	}
+
+	dur := parseDuration(c.DefaultQuery("range", "24h"))
+	seriesMap, err := mon.QuerySeries(dur)
+	if err != nil {
+		log := logger.Get()
+		log.Error("monitoring data query failed", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+		return
+	}
+
+	// Build series in endpoint config order
+	type point [2]int64 // [unix_ms, duration_ms]
+	type series struct {
+		Name string  `json:"name"`
+		Slug string  `json:"slug"`
+		Data []point `json:"data"`
+	}
+	var out []series
+	for _, ep := range cfg.Application.SparqlEndpoints {
+		metrics := seriesMap[ep.URL]
+		pts := make([]point, 0, len(metrics))
+		for _, m := range metrics {
+			pts = append(pts, point{m.MeasuredAt.UnixMilli(), m.DurationMs})
+		}
+		out = append(out, series{Name: ep.Name, Slug: ep.Slug, Data: pts})
+	}
+	c.JSON(http.StatusOK, gin.H{"series": out})
+}
+
+// ---- Main ----
+
+// Main loads the configuration, initializes every subsystem, registers the routes
+// and runs the server until it fails.
+func Main() {
+
+	// Load configuration
+	var err error
+	cfg, err = config.Load("visoto.config")
+
+	// Initialize logger
+	logger.MustInit(logger.Config{Level: cfg.Logging.Level, Format: cfg.Logging.Format, Output: cfg.Logging.Output})
+
+	log := logger.Get()
+	if err != nil {
+		// A missing config file is survivable — defaults apply. A file that
+		// exists but cannot be read, parsed or env-resolved is not: it starts a
+		// server with no endpoints and, because the PORT override lives at the
+		// end of Load(), silently ignores PORT and binds the configured one.
+		if _, statErr := os.Stat("visoto.config"); statErr == nil {
+			log.Error("config file is present but could not be loaded",
+				slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+		log.Warn("config file not found, using defaults",
+			slog.String("error", err.Error()))
+	} else {
+		log.Info("config loaded successfully",
+			slog.String("port", cfg.GetPort()),
+			slog.String("endpoint", cfg.Application.SparqlEndpoint),
+			slog.Duration("timeout", cfg.GetTimeout()),
+			slog.Int("prefixes", len(cfg.RDF.ParsedPrefixes)),
+			slog.Any("languages", cfg.Application.LanguageCodes()))
+	}
+
+	// Build the UI language set before anything that renders or resolves a
+	// language. Config load already validated its shape.
+	siteLangs = lang.New(configLanguages(cfg.Application.Languages), cfg.Application.DefaultLanguage)
+
+	// Message catalogs must exist before templates are parsed: every template set
+	// is cloned once per language with that language's translation functions.
+	catalogs, err = i18n.Load("./locales", siteLangs.Codes())
+	if err != nil {
+		log.Error("failed to load message catalogs", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	if err := templates.InitPartials(catalogs, siteLangs); err != nil {
+		log.Error("failed to initialize partial templates", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	// Index the templates' <sparql-async>/<sparql-column> declarations per template
+	// set, so /api fragment handlers can resolve an id against the ?src= set that
+	// asked for it. Fails startup on a duplicate id or a facet with no base query,
+	// which the old global scan resolved silently by directory order.
+	if err := initAsyncIndex("./templates"); err != nil {
+		log.Error("failed to index async template queries", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+
+	// Validate Gemini API key
+	if cfg.Application.GeminiAPIKey == "" {
+		log.Warn("Gemini API key not configured - chat feature will not work",
+			slog.String("config_key", "application.gemini_api_key"),
+			slog.String("config_file", "visoto.config"))
+	}
+
+	// Initialize icon cache
+	if err := icon.Init("./static/img/resource", log); err != nil {
+		log.Warn("failed to initialize icon cache",
+			slog.String("error", err.Error()))
+	}
+
+	// Initialize endpoint monitor (data stored in ./data/)
+	mon, err = monitor.New(&cfg.Application, "./data")
+	if err != nil {
+		log.Warn("failed to initialize endpoint monitor",
+			slog.String("error", err.Error()))
+	} else {
+		mon.Start()
+		log.Info("endpoint monitor started",
+			slog.Bool("enabled", mon.IsEnabled()))
+	}
+
+	// Daily class-instance counts for endpoints with class_stats = true.
+	classStats, err = classstats.New(&cfg.Application, "./data")
+	if err != nil {
+		log.Warn("failed to initialize class statistics", slog.String("error", err.Error()))
+		classStats = nil
+	} else {
+		classStats.Start()
+		log.Info("class statistics started", slog.Bool("collecting", classStats.Enabled()))
+	}
+
+	// Shared Graph Explorer layouts. A store that fails to open leaves the
+	// routes answering 503; graph-kit.js then falls back to local layouts.
+	layoutStore, err := graphlayout.New(cfg.Application.GraphLayouts, "./data")
+	if err != nil {
+		log.Warn("failed to initialize shared graph layouts", slog.String("error", err.Error()))
+		layoutStore = nil
+	}
+	layouts := graphlayout.NewAPI(layoutStore, &cfg.Application, log)
+
+	// Build MCP handler (fixed default endpoint, no per-request cookie logic)
+	mcpPreprocessor := sparql.New(sparql.QueryInput{
+		EndpointURL:      cfg.Application.SparqlEndpoint,
+		Timeout:          cfg.GetTimeout(),
+		Prefixes:         cfg.RDF.ParsedPrefixes,
+		NamedEndpoints:   cfg.Application.GetNamedEndpointsMap(),
+		MagicProperties:  cfg.RDF.MagicProperties,
+		EndpointPrefixes: cfg.Application.EndpointPrefixesMap(),
+		LabelLanguages:   cfg.Application.LanguageCodes(),
+	})
+	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor, classStats)
+
+	// Create router
+	router := gin.Default()
+
+	// The UI language applies to every rendered route, so unlike the endpoint
+	// resolver this runs globally rather than per route class. It must precede
+	// etagMiddleware, which stamps the resolved language into the ETag and picks
+	// the Vary header from how that language arrived.
+	router.Use(resolveLang())
+	router.Use(etagMiddleware())
+
+	// Load templates and register with Gin. Every page is registered once per
+	// configured language; handlers name the variant via templates.Name.
+	router.HTMLRender = templates.Load("./templates", catalogs, siteLangs)
+
+	// Define routing rules
+	router.StaticFile("/favicon.ico", "./static/img/favicon.svg")
+	router.StaticFile("/robots.txt", "./static/robots.txt")
+	router.Static("/static", "static")
+	// Endpoint resolution per route class: routes cached by the shared Caddy/Souin
+	// cache must be a pure function of the URL (no cookie); uncached entry pages
+	// honor the selectedEndpoint cookie. See resolveEndpoint.
+	epFromURL := resolveEndpoint(false)
+	epFromURLOrCookie := resolveEndpoint(true)
+	// The /api fragment routes take their language from ?lang= too, which makes
+	// them pure functions of their URL. See resolveQueryLang.
+	langFromURL := resolveQueryLang()
+	router.GET("/", epFromURLOrCookie, func(c *gin.Context) {
+		c.Params = append(c.Params, gin.Param{Key: "page", Value: "home.html"})
+		staticPageHandler(c)
+	})
+	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
+	router.GET("/search", epFromURLOrCookie, searchHandler)
+	mcpURL := fmt.Sprintf("http://localhost:%d/mcp", cfg.Application.Port)
+	router.POST("/api/chat", chat.Handler(&cfg.Application, cfg.Application.GeminiAPIKey, mcpURL))
+	router.POST("/api/upload", upload.UploadHandler(&cfg.Application))
+	// Browser-side SPARQL (Graph Explorer, schema diagram). Deliberately takes
+	// neither epFromURL nor langFromURL, unlike every other /api route: the
+	// response depends on the request BODY, so it is not a function of the URL
+	// and must never be marked cacheable. The handler resolves its own slug
+	// from the URL, which keeps the endpoint cookie provably unread.
+	router.POST(sparqlproxy.Path, sparqlproxy.New(&cfg.Application, cfg.GetTimeout()).Handler())
+	router.GET("/api/named-graphs", upload.NamedGraphsHandler(&cfg.Application))
+	router.DELETE("/api/named-graphs", upload.DeleteNamedGraphHandler(&cfg.Application))
+	router.GET("/api/export-graphs", upload.ExportNamedGraphsHandler(&cfg.Application))
+	router.GET("/api/ontologies", upload.OntologiesHandler(&cfg.Application, cfg.Ontologies))
+	router.GET("/monitoring", epFromURLOrCookie, monitoringPageHandler)
+	router.GET("/api/monitoring/status", monitoringStatusHandler)
+	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
+	router.GET("/api/monitoring/data", monitoringDataHandler)
+	router.GET("/api/class-tree", epFromURL, langFromURL, classTreeHandler)
+	router.GET("/api/class-stats/status", classStatsStatusHandler)
+	router.GET("/api/class-stats/changes", classStatsChangesHandler)
+	router.GET("/api/class-stats/series", classStatsSeriesHandler)
+	var promCollectors []prometheus.Collector
+	if mon != nil {
+		promCollectors = append(promCollectors, mon)
+	}
+	if classStats != nil {
+		promCollectors = append(promCollectors, classStats)
+	}
+	router.GET("/metrics", metricsHandler(cfg.Application.MetricsToken, promCollectors...))
+	router.POST("/api/cache/purge", cachePurgeHandler)
+	router.GET("/api/metric/:id", epFromURL, langFromURL, metricHandler)
+	router.GET("/api/search", epFromURL, langFromURL, searchAPIHandler)
+	router.GET("/api/resource-icon", epFromURL, langFromURL, resourceIconAPIHandler)
+	router.GET("/api/async-table/:id", epFromURL, langFromURL, asyncTableHandler)
+	router.GET("/api/bnode-tree", epFromURL, langFromURL, bnodeTreeHandler)
+	router.GET("/api/shape-summary", epFromURL, langFromURL, shapeSummaryHandler)
+	router.GET("/api/async-table-data/:id", epFromURL, langFromURL, asyncTableDataHandler)
+	// Backs the sparqlCube partial. Unlike the async-table routes it takes no
+	// ?src=/query id: the query is generated from the cube's own SHACL constraint,
+	// so the ?iri= alone determines the response.
+	router.GET("/api/cube-table/:id", epFromURL, langFromURL, cubeTableHandler)
+	router.GET("/api/faceted-table/:id", epFromURL, langFromURL, facetedTableHandler)
+	// The lazy tree's level fetches. One route for every role — see lazy_tree.go.
+	router.GET("/api/lazy-tree/:id/:role", epFromURL, langFromURL, lazyTreeHandler)
+	router.GET("/api/facet-values/:id/:var", epFromURL, langFromURL, facetValuesHandler)
+	// Shared Graph Explorer layouts. Every route takes ?endpoint= from the URL
+	// itself and validates it, never the cookie. Only the by-id read is cached:
+	// a snapshot never changes once stored.
+	router.GET("/api/graph-layouts", layouts.List)
+	router.POST("/api/graph-layouts", layouts.Share)
+	router.PUT("/api/graph-layouts/default", layouts.SetDefault)
+	router.GET("/api/graph-layouts/:id", func(c *gin.Context) {
+		markURLPure(c)
+		if layouts.Get(c) {
+			markCacheable(c)
+		}
+	})
+	router.GET("/resource", epFromURL, resourcePageHandler)
+	router.GET("/resource/*path", legacyResourceRedirectHandler)
+	router.Any("/mcp", gin.WrapH(mcpHandler))
+	router.GET("/health", gin.WrapH(mcpHandler))
+	router.GET("/:page", epFromURLOrCookie, staticPageHandler)
+
+	// Start server with configured port
+	// Bind to 0.0.0.0 to allow connections from outside (required for Docker)
+	log.Info("server starting",
+		slog.String("address", "0.0.0.0"+cfg.GetPort()),
+		slog.String("url", "http://localhost"+cfg.GetPort()),
+		slog.String("mcp", "http://localhost"+cfg.GetPort()+"/mcp"))
+
+	if err := router.Run("0.0.0.0" + cfg.GetPort()); err != nil {
+		log.Error("server failed to start",
+			slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+}

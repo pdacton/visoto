@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"fmt"
@@ -57,7 +57,7 @@ func bnodeStore(empty bool) *httptest.Server {
 func setupBnodeTree(t *testing.T, endpointURL string) *gin.Engine {
 	t.Helper()
 	// InitPartials reads templates/partials/… relative to the repository root.
-	t.Chdir("../..")
+	t.Chdir("..")
 	siteLangs = lang.New(configLanguages(config.DefaultLanguages()), "en")
 	cats, err := i18n.Load("locales", siteLangs.Codes())
 	if err != nil {

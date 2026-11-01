@@ -8,7 +8,7 @@
 // X-Site-Lang request header before the shared cache and folds it into the cache
 // key there, so for pages the frontend's whole job is to write the cookie and
 // reload. That reload is only correct because every page response carries
-// `Cache-Control: max-age=0, must-revalidate` plus an ETag (see cmd/visoto/etag.go):
+// `Cache-Control: max-age=0, must-revalidate` plus an ETag (see app/etag.go):
 // a browser cannot see X-Site-Lang, so `Vary: X-Site-Lang` means nothing to its
 // private cache, and without forced revalidation the reload would happily
 // re-serve the previous language's page.

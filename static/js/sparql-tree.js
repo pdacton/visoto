@@ -49,7 +49,7 @@
         // icon:false suppresses Wunderbaum's per-node folder/document glyph, which
         // would otherwise hold an empty 20px box beside every title. Only the
         // literal false skips the element; "" does not, and an iconMap entry is not
-        // consulted for this. Same as the lazy tree (cmd/visoto/lazy_tree.go).
+        // consulted for this. Same as the lazy tree (app/lazy_tree.go).
         var node = { title: nodeBinding.DisplayText || key, key: key, _iri: key, icon: false };
         for (var varName in binding) {
           if (varName === "node" || varName === "parent") continue;
