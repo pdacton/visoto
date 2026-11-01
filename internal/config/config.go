@@ -262,6 +262,24 @@ var envRefPattern = regexp.MustCompile(`\$\{([A-Za-z_][A-Za-z0-9_]*)\}`)
 // Values are injected verbatim. A secret containing a `"` would produce invalid
 // TOML and surface as a parse error on the next line, which is acceptable for
 // machine-generated tokens.
+// DecodeFile decodes the config file at configPath into v with the same ${VAR}
+// and .env expansion Load applies — for an edition that keeps its own section
+// (e.g. [accounts]) in visoto.config. Keys v does not declare are ignored.
+func DecodeFile(configPath string, v any) error {
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return err
+	}
+	if err := loadDotEnv(filepath.Join(filepath.Dir(configPath), ".env")); err != nil {
+		return fmt.Errorf("failed to read .env: %w", err)
+	}
+	expanded, err := expandEnvRefs(data)
+	if err != nil {
+		return fmt.Errorf("failed to resolve env references in %s: %w", configPath, err)
+	}
+	return toml.Unmarshal(expanded, v)
+}
+
 func expandEnvRefs(data []byte) ([]byte, error) {
 	var missing []string
 

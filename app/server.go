@@ -865,7 +865,7 @@ type routeDeps struct {
 // Plugins run first so the middleware they add applies to every core route.
 func buildRoutes(router *gin.Engine, d routeDeps, plugins []Plugin) (*routeTable, error) {
 	t := newRouteTable(router)
-	host := &Host{ConfigPath: "visoto.config", DataDir: "./data", table: t}
+	host := &Host{ConfigPath: "visoto.config", DataDir: "./data", table: t, collectors: &d.collectors}
 	for _, p := range plugins {
 		if err := p.Init(host); err != nil {
 			return nil, err
