@@ -251,7 +251,9 @@ type bufferingWriter struct {
 }
 
 func (w *bufferingWriter) WriteHeader(status int) {
-	if w.status == 0 {
+	// gin's Render calls WriteHeader(-1) before a renderer that sets its own
+	// status (c.Redirect); recording that would swallow the real code.
+	if status > 0 && w.status == 0 {
 		w.status = status
 	}
 }

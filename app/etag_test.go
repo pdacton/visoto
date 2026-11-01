@@ -314,3 +314,18 @@ func TestETagMatches(t *testing.T) {
 		}
 	}
 }
+
+// c.Redirect behind the middleware keeps its status: gin's Render passes -1
+// first, which must not be taken for the response code.
+func TestETagMiddlewareKeepsRedirectStatus(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	siteLangs = lang.New(configLanguages(config.DefaultLanguages()), "en")
+	r := gin.New()
+	r.Use(resolveLang(), etagMiddleware())
+	r.GET("/go", func(c *gin.Context) { c.Redirect(http.StatusSeeOther, "/there") })
+	rec := httptest.NewRecorder()
+	r.ServeHTTP(rec, httptest.NewRequest("GET", "/go", nil))
+	if rec.Code != http.StatusSeeOther || rec.Header().Get("Location") != "/there" {
+		t.Errorf("redirect = %d %q, want 303 /there", rec.Code, rec.Header().Get("Location"))
+	}
+}
