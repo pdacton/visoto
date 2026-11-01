@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -101,6 +102,15 @@ func Load(dir string, codes []string) (*Catalogs, error) {
 	for _, k := range baseKeys(basePath) {
 		defined[k] = true
 	}
+	baseExt := extensionCatalogs(dir, BaseCode)
+	for _, path := range baseExt {
+		if _, err := bundle.LoadMessageFile(path); err != nil {
+			return nil, fmt.Errorf("load extension catalog %s: %w", path, err)
+		}
+		for _, k := range baseKeys(path) {
+			defined[k] = true
+		}
+	}
 
 	log := logger.Get()
 	for _, code := range codes {
@@ -118,6 +128,14 @@ func Load(dir string, codes []string) (*Catalogs, error) {
 		}
 		for _, k := range baseKeys(path) {
 			defined[k] = true
+		}
+		for _, ext := range extensionCatalogs(dir, code) {
+			if _, err := bundle.LoadMessageFile(ext); err != nil {
+				return nil, fmt.Errorf("load extension catalog %s: %w", ext, err)
+			}
+			for _, k := range baseKeys(ext) {
+				defined[k] = true
+			}
 		}
 	}
 
@@ -139,10 +157,24 @@ func Load(dir string, codes []string) (*Catalogs, error) {
 	}
 
 	c.keys = baseKeys(basePath)
+	for _, path := range baseExt {
+		c.keys = append(c.keys, baseKeys(path)...)
+	}
+	sort.Strings(c.keys)
+	c.keys = slices.Compact(c.keys)
 	log.Info("message catalogs loaded",
 		slog.Int("languages", len(c.localizers)),
 		slog.Int("keys", len(c.keys)))
 	return c, nil
+}
+
+// extensionCatalogs are an edition's own catalogs for code,
+// <dir>/<edition>/<code>.toml, loaded on top of the core's: the commercial
+// edition layers locales/accounts/ over the core's locales/ at build time, the
+// way its templates replace templates/layout/extensions.html.
+func extensionCatalogs(dir, code string) []string {
+	files, _ := filepath.Glob(filepath.Join(dir, "*", code+".toml"))
+	return files
 }
 
 // key mirrors lang.Key without importing it, keeping this package free of a

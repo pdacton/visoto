@@ -99,6 +99,13 @@ fails on any route/spec mismatch.
 Cacheable routes (`/resource`, `/api/*`) must stay pure functions of the URL —
 never read the endpoint cookie in them.
 
+Register routes only through the route table in `app/server.go` (`t.GET(path,
+access.Browse, …)`), never on the router directly: the declared `access.Action`
+puts an authorization guard in front of the handler, and
+`TestEveryRouteDeclaresAccess` fails otherwise. Server-rendered pages must be the
+same for every visitor (they are cached); personal UI belongs in client-side
+code. See "Extension points" in `docs/architecture.md`.
+
 Build resource links with `sparql.ResourceHref` (Go) or `visotoResourceHref`
 (JS), never by hand.
 

@@ -11,6 +11,12 @@
     return (typeof activeEndpointSlug === 'function') ? activeEndpointSlug() : '';
   }
 
+  // The store goes in the URL, not the form: the server authorizes the upload
+  // against ?endpoint= before it reads the body.
+  function uploadURL(slug) {
+    return '/api/upload' + (slug ? '?endpoint=' + encodeURIComponent(slug) : '');
+  }
+
   function timestampPrefix() {
     // Produces e.g. "20260406T142301"
     const now = new Date();
@@ -270,13 +276,12 @@
       setOntologySubmitLoading(true, `${done + 1} / ${total}…`);
 
       const formData = new FormData();
-      formData.append('endpoint', endpoint);
       formData.append('url', url);
       formData.append('graphURI', graph);
       formData.append('label', cb.dataset.label || '');
 
       try {
-        const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+        const resp = await fetch(uploadURL(endpoint), { method: 'POST', body: formData });
         const data = await resp.json();
         if (!data.success) errors.push(`${cb.dataset.url}: ${data.error || 'failed'}`);
       } catch (err) {
@@ -326,7 +331,6 @@
       }
 
       const formData = new FormData();
-      formData.append('endpoint', selectedEndpoint());
       formData.append('graphURI', graphURI);
       formData.append('label', document.getElementById('upload-graph-label')?.value?.trim() || '');
 
@@ -338,7 +342,7 @@
 
       setSubmitLoading(true);
       try {
-        const resp = await fetch('/api/upload', { method: 'POST', body: formData });
+        const resp = await fetch(uploadURL(selectedEndpoint()), { method: 'POST', body: formData });
         const data = await resp.json();
         if (data.success) {
           const note = data.warning ? ` ${data.warning}` : '';

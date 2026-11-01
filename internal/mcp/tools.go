@@ -11,6 +11,8 @@ import (
 	"time"
 
 	goMcp "github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
+	"github.com/pdacton/visoto/internal/access"
 	"github.com/pdacton/visoto/internal/classstats"
 	"github.com/pdacton/visoto/internal/config"
 	"github.com/pdacton/visoto/internal/sparql"
@@ -32,6 +34,7 @@ type toolContext struct {
 	preprocessor *sparql.Preprocessor
 	cfg          *config.Config
 	classStats   *classstats.Collector // nil: no daily class statistics
+	authz        func() access.Authorizer
 }
 
 // visotoLink returns the Visoto resource-page URL for a given IRI. The base URL
@@ -45,6 +48,41 @@ func (tc *toolContext) visotoLink(ctx context.Context, iri, endpointURL string) 
 		link += "&endpoint=" + url.QueryEscape(ep.Slug)
 	}
 	return link
+}
+
+// allowed asks the authorizer in force.
+func (tc *toolContext) allowed(ctx context.Context, r access.Request) bool {
+	if tc.authz == nil {
+		return true
+	}
+	return tc.authz().Authorize(ctx, r)
+}
+
+// storeFor is the slug of the store a tool's endpoint parameter addresses: ""
+// means the preprocessor's own default URL; an endpoint that is not configured
+// at all (a raw URL) yields "".
+func (tc *toolContext) storeFor(endpoint string) string {
+	if endpoint == "" {
+		if ep := tc.cfg.Application.GetEndpointByURL(tc.cfg.Application.SparqlEndpoint); ep != nil {
+			return ep.Slug
+		}
+	}
+	if ep := tc.endpointConfig(endpoint); ep != nil {
+		return ep.Slug
+	}
+	return ""
+}
+
+// guarded refuses a tool call the caller may not make on the store its
+// endpoint parameter addresses, before the tool queries anything.
+func (tc *toolContext) guarded(action access.Action, h server.ToolHandlerFunc) server.ToolHandlerFunc {
+	return func(ctx context.Context, req goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+		r := access.Request{Action: action, Store: tc.storeFor(getStringParam(req, "endpoint")), IRI: getStringParam(req, "iri")}
+		if !tc.allowed(ctx, r) {
+			return goMcp.NewToolResultError("not allowed on this endpoint"), nil
+		}
+		return h(ctx, req)
+	}
 }
 
 // --- helper: execute one query and wrap in toolResult ---
@@ -108,8 +146,9 @@ func getBoolParam(request goMcp.CallToolRequest, name string, defaultVal bool) b
 
 // --- Tool handlers ---
 
-// handleListEndpoints returns all configured SPARQL endpoints.
-func (tc *toolContext) handleListEndpoints(_ context.Context, _ goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
+// handleListEndpoints returns the configured SPARQL endpoints the caller may
+// browse; the others are not even named (UA-48).
+func (tc *toolContext) handleListEndpoints(ctx context.Context, _ goMcp.CallToolRequest) (*goMcp.CallToolResult, error) {
 	type endpointInfo struct {
 		Name    string `json:"name"`
 		URL     string `json:"url"`
@@ -118,6 +157,9 @@ func (tc *toolContext) handleListEndpoints(_ context.Context, _ goMcp.CallToolRe
 
 	endpoints := make([]endpointInfo, 0, len(tc.cfg.Application.SparqlEndpoints))
 	for _, ep := range tc.cfg.Application.SparqlEndpoints {
+		if !tc.allowed(ctx, access.Request{Action: access.Browse, Store: ep.Slug}) {
+			continue
+		}
 		endpoints = append(endpoints, endpointInfo{
 			Name:    ep.Name,
 			URL:     ep.URL,

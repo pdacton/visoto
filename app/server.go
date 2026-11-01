@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/pdacton/visoto/internal/access"
 	"github.com/pdacton/visoto/internal/chat"
 	"github.com/pdacton/visoto/internal/classstats"
 	"github.com/pdacton/visoto/internal/config"
@@ -248,7 +249,7 @@ func queryLang(c *gin.Context) string {
 // stampEndpointData fills the endpoint-related template fields shared by every
 // server-rendered page from the request's resolved endpoint.
 func stampEndpointData(c *gin.Context, data *parser.TemplateData) {
-	data.SparqlEndpoints = cfg.Application.SparqlEndpoints
+	data.SparqlEndpoints, _ = visibleEndpoints(c)
 	if ep := activeEndpoint(c); ep != nil {
 		data.SelectedEndpointName = ep.Name
 		data.SelectedEndpointSlug = ep.Slug
@@ -282,7 +283,7 @@ func proxyEndpointURL(c *gin.Context) string {
 // endpointTemplateData is stampEndpointData's counterpart for handlers that
 // render with an ad-hoc gin.H instead of parser.TemplateData.
 func endpointTemplateData(c *gin.Context, h gin.H) gin.H {
-	h["SparqlEndpoints"] = cfg.Application.SparqlEndpoints
+	h["SparqlEndpoints"], _ = visibleEndpoints(c)
 	if ep := activeEndpoint(c); ep != nil {
 		h["SelectedEndpointName"] = ep.Name
 		h["SelectedEndpointSlug"] = ep.Slug
@@ -792,9 +793,15 @@ func monitoringStatusHandler(c *gin.Context) {
 		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "monitoring not available"})
 		return
 	}
+	endpoints := []monitor.EndpointStatus{}
+	for _, es := range mon.LatestStatus() {
+		if listable(c, es.Slug) {
+			endpoints = append(endpoints, es)
+		}
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"enabled":   mon.IsEnabled(),
-		"endpoints": mon.LatestStatus(),
+		"endpoints": endpoints,
 	})
 }
 
@@ -831,6 +838,9 @@ func monitoringDataHandler(c *gin.Context) {
 	}
 	var out []series
 	for _, ep := range cfg.Application.SparqlEndpoints {
+		if !listable(c, ep.Slug) {
+			continue
+		}
 		metrics := seriesMap[ep.URL]
 		pts := make([]point, 0, len(metrics))
 		for _, m := range metrics {
@@ -841,11 +851,115 @@ func monitoringDataHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"series": out})
 }
 
+// ---- Routes ----
+
+// routeDeps are the long-lived handlers the route table wires in.
+type routeDeps struct {
+	mcp        http.Handler
+	layouts    *graphlayout.API
+	collectors []prometheus.Collector
+}
+
+// buildRoutes lets the plugins initialize, then registers every core route on
+// router through a routeTable, each with the access.Action it needs (UA-98).
+// Plugins run first so the middleware they add applies to every core route.
+func buildRoutes(router *gin.Engine, d routeDeps, plugins []Plugin) (*routeTable, error) {
+	t := newRouteTable(router)
+	host := &Host{ConfigPath: "visoto.config", DataDir: "./data", table: t}
+	for _, p := range plugins {
+		if err := p.Init(host); err != nil {
+			return nil, err
+		}
+	}
+
+	t.staticFile("/favicon.ico", "./static/img/favicon.svg")
+	t.staticFile("/robots.txt", "./static/robots.txt")
+	t.static("/static", "static")
+	// Endpoint resolution per route class: routes cached by the shared Caddy/Souin
+	// cache must be a pure function of the URL (no cookie); uncached entry pages
+	// honor the selectedEndpoint cookie. See resolveEndpoint.
+	epFromURL := resolveEndpoint(false)
+	epFromURLOrCookie := resolveEndpoint(true)
+	// The /api fragment routes take their language from ?lang= too, which makes
+	// them pure functions of their URL. See resolveQueryLang.
+	langFromURL := resolveQueryLang()
+	t.GET("/", access.Browse, epFromURLOrCookie, func(c *gin.Context) {
+		c.Params = append(c.Params, gin.Param{Key: "page", Value: "home.html"})
+		staticPageHandler(c)
+	})
+	t.GET("/ping", access.Public, func(c *gin.Context) { c.String(http.StatusOK, "pong") })
+	t.GET("/search", access.Browse, epFromURLOrCookie, searchHandler)
+	mcpURL := fmt.Sprintf("http://localhost:%d/mcp", cfg.Application.Port)
+	// Chat runs its own queries through MCP on the default endpoint: SPARQL.
+	t.POST("/api/chat", access.SPARQL, chat.Handler(&cfg.Application, cfg.Application.GeminiAPIKey, mcpURL))
+	t.POST("/api/upload", access.Upload, upload.UploadHandler(&cfg.Application))
+	// Browser-side SPARQL (Graph Explorer, schema diagram). Deliberately takes
+	// neither epFromURL nor langFromURL, unlike every other /api route: the
+	// response depends on the request BODY, so it is not a function of the URL
+	// and must never be marked cacheable. The handler resolves its own slug
+	// from the URL, which keeps the endpoint cookie provably unread.
+	t.POST(sparqlproxy.Path, access.SPARQL, sparqlproxy.New(&cfg.Application, cfg.GetTimeout()).Handler())
+	t.GET("/api/named-graphs", access.Browse, upload.NamedGraphsHandler(&cfg.Application))
+	t.DELETE("/api/named-graphs", access.Upload, upload.DeleteNamedGraphHandler(&cfg.Application))
+	// A bulk dump of whole graphs bypasses per-resource restrictions, like SPARQL.
+	t.GET("/api/export-graphs", access.SPARQL, upload.ExportNamedGraphsHandler(&cfg.Application))
+	t.GET("/api/ontologies", access.Public, upload.OntologiesHandler(&cfg.Application, cfg.Ontologies))
+	// Monitoring and class-stats status list every endpoint; the handlers drop
+	// the ones the caller may not browse (UA-48).
+	t.GET("/monitoring", access.Public, epFromURLOrCookie, monitoringPageHandler)
+	t.GET("/api/monitoring/status", access.Public, monitoringStatusHandler)
+	t.POST("/api/monitoring/toggle", access.Admin, monitoringToggleHandler)
+	t.GET("/api/monitoring/data", access.Public, monitoringDataHandler)
+	t.GET("/api/class-tree", access.Browse, epFromURL, langFromURL, classTreeHandler)
+	t.GET("/api/class-stats/status", access.Public, classStatsStatusHandler)
+	t.GET("/api/class-stats/changes", access.Browse, classStatsChangesHandler)
+	t.GET("/api/class-stats/series", access.Browse, classStatsSeriesHandler)
+	// Guarded by metrics_token for the operator's scrape job.
+	t.GET("/metrics", access.Public, metricsHandler(cfg.Application.MetricsToken, d.collectors...))
+	t.POST("/api/cache/purge", access.Admin, cachePurgeHandler)
+	t.GET("/api/metric/:id", access.Browse, epFromURL, langFromURL, metricHandler)
+	t.GET("/api/search", access.Browse, epFromURL, langFromURL, searchAPIHandler)
+	t.GET("/api/resource-icon", access.Browse, epFromURL, langFromURL, resourceIconAPIHandler)
+	t.GET("/api/async-table/:id", access.Browse, epFromURL, langFromURL, asyncTableHandler)
+	t.GET("/api/bnode-tree", access.Browse, epFromURL, langFromURL, bnodeTreeHandler)
+	t.GET("/api/shape-summary", access.Browse, epFromURL, langFromURL, shapeSummaryHandler)
+	t.GET("/api/async-table-data/:id", access.Browse, epFromURL, langFromURL, asyncTableDataHandler)
+	// Backs the sparqlCube partial. Unlike the async-table routes it takes no
+	// ?src=/query id: the query is generated from the cube's own SHACL constraint,
+	// so the ?iri= alone determines the response.
+	t.GET("/api/cube-table/:id", access.Browse, epFromURL, langFromURL, cubeTableHandler)
+	t.GET("/api/faceted-table/:id", access.Browse, epFromURL, langFromURL, facetedTableHandler)
+	// The lazy tree's level fetches. One route for every role — see lazy_tree.go.
+	t.GET("/api/lazy-tree/:id/:role", access.Browse, epFromURL, langFromURL, lazyTreeHandler)
+	t.GET("/api/facet-values/:id/:var", access.Browse, epFromURL, langFromURL, facetValuesHandler)
+	// Shared Graph Explorer layouts. Every route takes ?endpoint= from the URL
+	// itself and validates it, never the cookie. Only the by-id read is cached:
+	// a snapshot never changes once stored. Writing one needs an account once
+	// accounts exist (UA-22).
+	t.GET("/api/graph-layouts", access.Browse, d.layouts.List)
+	t.POST("/api/graph-layouts", access.SignedIn, d.layouts.Share)
+	t.PUT("/api/graph-layouts/default", access.SignedIn, d.layouts.SetDefault)
+	t.GET("/api/graph-layouts/:id", access.Browse, func(c *gin.Context) {
+		markURLPure(c)
+		if d.layouts.Get(c) {
+			markCacheable(c)
+		}
+	})
+	t.GET("/resource", access.Browse, epFromURL, resourcePageHandler)
+	t.GET("/resource/*path", access.Public, legacyResourceRedirectHandler)
+	// MCP decides per tool (internal/mcp), so the HTTP route itself is public.
+	t.Any("/mcp", access.Public, gin.WrapH(d.mcp))
+	t.GET("/health", access.Public, gin.WrapH(d.mcp))
+	t.GET(authCheckPath, access.Public, authCheckHandler(router))
+	t.GET("/:page", access.Browse, epFromURLOrCookie, staticPageHandler)
+	return t, nil
+}
+
 // ---- Main ----
 
 // Main loads the configuration, initializes every subsystem, registers the routes
 // and runs the server until it fails.
-func Main() {
+func Main(plugins ...Plugin) {
 
 	// Load configuration
 	var err error
@@ -954,7 +1068,7 @@ func Main() {
 		EndpointPrefixes: cfg.Application.EndpointPrefixesMap(),
 		LabelLanguages:   cfg.Application.LanguageCodes(),
 	})
-	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor, classStats)
+	mcpHandler := mcpserver.NewServer(cfg, mcpPreprocessor, classStats, func() access.Authorizer { return authz })
 
 	// Create router
 	router := gin.Default()
@@ -970,45 +1084,6 @@ func Main() {
 	// configured language; handlers name the variant via templates.Name.
 	router.HTMLRender = templates.Load("./templates", catalogs, siteLangs)
 
-	// Define routing rules
-	router.StaticFile("/favicon.ico", "./static/img/favicon.svg")
-	router.StaticFile("/robots.txt", "./static/robots.txt")
-	router.Static("/static", "static")
-	// Endpoint resolution per route class: routes cached by the shared Caddy/Souin
-	// cache must be a pure function of the URL (no cookie); uncached entry pages
-	// honor the selectedEndpoint cookie. See resolveEndpoint.
-	epFromURL := resolveEndpoint(false)
-	epFromURLOrCookie := resolveEndpoint(true)
-	// The /api fragment routes take their language from ?lang= too, which makes
-	// them pure functions of their URL. See resolveQueryLang.
-	langFromURL := resolveQueryLang()
-	router.GET("/", epFromURLOrCookie, func(c *gin.Context) {
-		c.Params = append(c.Params, gin.Param{Key: "page", Value: "home.html"})
-		staticPageHandler(c)
-	})
-	router.GET("/ping", func(c *gin.Context) { c.String(http.StatusOK, "pong") })
-	router.GET("/search", epFromURLOrCookie, searchHandler)
-	mcpURL := fmt.Sprintf("http://localhost:%d/mcp", cfg.Application.Port)
-	router.POST("/api/chat", chat.Handler(&cfg.Application, cfg.Application.GeminiAPIKey, mcpURL))
-	router.POST("/api/upload", upload.UploadHandler(&cfg.Application))
-	// Browser-side SPARQL (Graph Explorer, schema diagram). Deliberately takes
-	// neither epFromURL nor langFromURL, unlike every other /api route: the
-	// response depends on the request BODY, so it is not a function of the URL
-	// and must never be marked cacheable. The handler resolves its own slug
-	// from the URL, which keeps the endpoint cookie provably unread.
-	router.POST(sparqlproxy.Path, sparqlproxy.New(&cfg.Application, cfg.GetTimeout()).Handler())
-	router.GET("/api/named-graphs", upload.NamedGraphsHandler(&cfg.Application))
-	router.DELETE("/api/named-graphs", upload.DeleteNamedGraphHandler(&cfg.Application))
-	router.GET("/api/export-graphs", upload.ExportNamedGraphsHandler(&cfg.Application))
-	router.GET("/api/ontologies", upload.OntologiesHandler(&cfg.Application, cfg.Ontologies))
-	router.GET("/monitoring", epFromURLOrCookie, monitoringPageHandler)
-	router.GET("/api/monitoring/status", monitoringStatusHandler)
-	router.POST("/api/monitoring/toggle", monitoringToggleHandler)
-	router.GET("/api/monitoring/data", monitoringDataHandler)
-	router.GET("/api/class-tree", epFromURL, langFromURL, classTreeHandler)
-	router.GET("/api/class-stats/status", classStatsStatusHandler)
-	router.GET("/api/class-stats/changes", classStatsChangesHandler)
-	router.GET("/api/class-stats/series", classStatsSeriesHandler)
 	var promCollectors []prometheus.Collector
 	if mon != nil {
 		promCollectors = append(promCollectors, mon)
@@ -1016,40 +1091,10 @@ func Main() {
 	if classStats != nil {
 		promCollectors = append(promCollectors, classStats)
 	}
-	router.GET("/metrics", metricsHandler(cfg.Application.MetricsToken, promCollectors...))
-	router.POST("/api/cache/purge", cachePurgeHandler)
-	router.GET("/api/metric/:id", epFromURL, langFromURL, metricHandler)
-	router.GET("/api/search", epFromURL, langFromURL, searchAPIHandler)
-	router.GET("/api/resource-icon", epFromURL, langFromURL, resourceIconAPIHandler)
-	router.GET("/api/async-table/:id", epFromURL, langFromURL, asyncTableHandler)
-	router.GET("/api/bnode-tree", epFromURL, langFromURL, bnodeTreeHandler)
-	router.GET("/api/shape-summary", epFromURL, langFromURL, shapeSummaryHandler)
-	router.GET("/api/async-table-data/:id", epFromURL, langFromURL, asyncTableDataHandler)
-	// Backs the sparqlCube partial. Unlike the async-table routes it takes no
-	// ?src=/query id: the query is generated from the cube's own SHACL constraint,
-	// so the ?iri= alone determines the response.
-	router.GET("/api/cube-table/:id", epFromURL, langFromURL, cubeTableHandler)
-	router.GET("/api/faceted-table/:id", epFromURL, langFromURL, facetedTableHandler)
-	// The lazy tree's level fetches. One route for every role — see lazy_tree.go.
-	router.GET("/api/lazy-tree/:id/:role", epFromURL, langFromURL, lazyTreeHandler)
-	router.GET("/api/facet-values/:id/:var", epFromURL, langFromURL, facetValuesHandler)
-	// Shared Graph Explorer layouts. Every route takes ?endpoint= from the URL
-	// itself and validates it, never the cookie. Only the by-id read is cached:
-	// a snapshot never changes once stored.
-	router.GET("/api/graph-layouts", layouts.List)
-	router.POST("/api/graph-layouts", layouts.Share)
-	router.PUT("/api/graph-layouts/default", layouts.SetDefault)
-	router.GET("/api/graph-layouts/:id", func(c *gin.Context) {
-		markURLPure(c)
-		if layouts.Get(c) {
-			markCacheable(c)
-		}
-	})
-	router.GET("/resource", epFromURL, resourcePageHandler)
-	router.GET("/resource/*path", legacyResourceRedirectHandler)
-	router.Any("/mcp", gin.WrapH(mcpHandler))
-	router.GET("/health", gin.WrapH(mcpHandler))
-	router.GET("/:page", epFromURLOrCookie, staticPageHandler)
+	if _, err := buildRoutes(router, routeDeps{mcp: mcpHandler, layouts: layouts, collectors: promCollectors}, plugins); err != nil {
+		log.Error("plugin initialization failed", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
 
 	// Start server with configured port
 	// Bind to 0.0.0.0 to allow connections from outside (required for Docker)

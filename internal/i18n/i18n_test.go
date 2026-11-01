@@ -16,6 +16,9 @@ func writeCatalogs(t *testing.T, files map[string]string, codes []string) *Catal
 	t.Helper()
 	dir := t.TempDir()
 	for name, body := range files {
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(dir, name)), 0755); err != nil {
+			t.Fatal(err)
+		}
 		if err := os.WriteFile(filepath.Join(dir, name), []byte(body), 0644); err != nil {
 			t.Fatalf("write %s: %v", name, err)
 		}
@@ -166,6 +169,26 @@ func TestLoadToleratesMissingTranslation(t *testing.T) {
 	}, []string{"de", "en"})
 	if got := c.translate("de", "a", "", nil); got != "A" {
 		t.Errorf("translate with no de catalog = %q, want %q", got, "A")
+	}
+}
+
+// An edition's catalogs in a subdirectory are merged over the core's, for the
+// base language and the translations alike.
+func TestLoadMergesExtensionCatalogs(t *testing.T) {
+	c := writeCatalogs(t, map[string]string{
+		"en.toml":          "\"core\" = \"Core\"\n",
+		"de.toml":          "\"core\" = \"Kern\"\n",
+		"accounts/en.toml": "\"acct\" = \"Account\"\n",
+		"accounts/de.toml": "\"acct\" = \"Konto\"\n",
+	}, []string{"de", "en"})
+	if got := c.translate("de", "acct", "", nil); got != "Konto" {
+		t.Errorf("de acct = %q, want Konto", got)
+	}
+	if got := c.translate("de", "core", "", nil); got != "Kern" {
+		t.Errorf("de core = %q, want Kern", got)
+	}
+	if got := strings.Join(c.Keys(), ","); got != "acct,core" {
+		t.Errorf("Keys() = %q, want acct,core", got)
 	}
 }
 

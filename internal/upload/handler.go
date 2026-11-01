@@ -348,7 +348,8 @@ func tooLargeResponse(c *gin.Context, limit int64) {
 //   - url    (mutually exclusive with file) — a remote RDF URL the server will fetch
 //   - graphURI — target named graph URI
 //   - label    — optional rdfs:label stored on the graph with its upload time
-//   - endpoint — slug of the SPARQL endpoint (matches visoto.config entry)
+//
+// and ?endpoint= — slug of the SPARQL endpoint (matches visoto.config entry).
 func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		log := logger.Get()
@@ -365,7 +366,9 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 			return
 		}
 
-		endpointSlug := c.PostForm("endpoint")
+		// The store comes from the URL only, where the route's guard read it: a
+		// form field could name a different store than the one authorized.
+		endpointSlug := c.Query("endpoint")
 		graphURI := normalizeGraphURI(c.PostForm("graphURI"))
 		remoteURL := strings.TrimSpace(c.PostForm("url"))
 		label := strings.TrimSpace(c.PostForm("label"))

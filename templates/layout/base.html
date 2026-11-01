@@ -124,6 +124,7 @@
     <link rel="stylesheet" href="/static/css/sidebar_overrides.css">
     <link rel="stylesheet" href="/static/css/chat.css">
     <link rel="stylesheet" href="/static/css/bnode_overrides.css">
+    {{ template "extensionHead" . }}
 
   </head>
 
@@ -588,6 +589,7 @@
 
     <script src="/static/js/faceted-table.js"></script>
 
+    {{ template "extensionScripts" . }}
     {{ block "pageScripts" . }}{{ end }}
 
   </body>

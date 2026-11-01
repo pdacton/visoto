@@ -6,8 +6,6 @@ import (
 	"sort"
 	"strings"
 	"testing"
-
-	"github.com/pdacton/visoto/internal/sparqlproxy"
 )
 
 // openAPISpec is the hand-written API description served at /apiDocs.html.
@@ -24,38 +22,30 @@ func documentedRoute(path string) bool {
 }
 
 var (
-	routeCall   = regexp.MustCompile(`router\.(GET|POST|PUT|PATCH|DELETE|Any)\(("[^"]+"|sparqlproxy\.Path)`)
 	ginParam    = regexp.MustCompile(`:([A-Za-z_]+)`)
 	specPath    = regexp.MustCompile(`(?m)^  (/\S*):\s*$`)
 	specMethod  = regexp.MustCompile(`(?m)^    (get|post|put|patch|delete):\s*$`)
 	anyMethodOK = map[string]bool{"get": true, "post": true}
 )
 
-// registeredRoutes reads the route table from server.go: "METHOD /path" in
-// OpenAPI's path syntax. Any expands to the methods MCP clients use.
+// registeredRoutes reads the route table: "method /path" in OpenAPI's path
+// syntax. Any expands to the methods MCP clients use.
 func registeredRoutes(t *testing.T) map[string]bool {
 	t.Helper()
-	src, err := os.ReadFile("server.go")
-	if err != nil {
-		t.Fatal(err)
-	}
+	_, table := routedServer(t)
 	out := map[string]bool{}
-	for _, m := range routeCall.FindAllStringSubmatch(string(src), -1) {
-		path := strings.Trim(m[2], `"`)
-		if m[2] == "sparqlproxy.Path" {
-			path = sparqlproxy.Path
-		}
-		if !documentedRoute(path) {
+	for _, r := range table.routes {
+		if !documentedRoute(r.path) {
 			continue
 		}
-		path = ginParam.ReplaceAllString(path, "{$1}")
-		if m[1] == "Any" {
+		path := ginParam.ReplaceAllString(r.path, "{$1}")
+		if r.any {
 			for method := range anyMethodOK {
 				out[method+" "+path] = true
 			}
 			continue
 		}
-		out[strings.ToLower(m[1])+" "+path] = true
+		out[strings.ToLower(r.method)+" "+path] = true
 	}
 	return out
 }
@@ -114,6 +104,6 @@ func TestOpenAPICoversRoutes(t *testing.T) {
 		t.Errorf("route %s is not documented in static/openapi.yaml", r)
 	}
 	for _, r := range diff(spec, routes) {
-		t.Errorf("static/openapi.yaml documents %s, which server.go does not register", r)
+		t.Errorf("static/openapi.yaml documents %s, which the route table does not register", r)
 	}
 }

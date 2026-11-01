@@ -93,14 +93,13 @@ func multipartUpload(t *testing.T, size int) *http.Request {
 	t.Helper()
 	var buf bytes.Buffer
 	mw := multipart.NewWriter(&buf)
-	_ = mw.WriteField("endpoint", "store")
 	fw, err := mw.CreateFormFile("file", "data.ttl")
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, _ = fw.Write(bytes.Repeat([]byte("#"), size))
 	_ = mw.Close()
-	req := httptest.NewRequest(http.MethodPost, "/api/upload", &buf)
+	req := httptest.NewRequest(http.MethodPost, "/api/upload?endpoint=store", &buf)
 	req.Header.Set("Content-Type", mw.FormDataContentType())
 	return req
 }
@@ -120,8 +119,8 @@ func TestFileUploadSizeCap(t *testing.T) {
 }
 
 func urlUpload(remote string) *http.Request {
-	form := url.Values{"endpoint": {"store"}, "url": {remote}}
-	req := httptest.NewRequest(http.MethodPost, "/api/upload", strings.NewReader(form.Encode()))
+	form := url.Values{"url": {remote}}
+	req := httptest.NewRequest(http.MethodPost, "/api/upload?endpoint=store", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	return req
 }

@@ -123,7 +123,7 @@ func classStatsStatusHandler(c *gin.Context) {
 	out := []classStatsEndpoint{}
 	for i := range cfg.Application.SparqlEndpoints {
 		ep := &cfg.Application.SparqlEndpoints[i]
-		if !ep.ClassStats {
+		if !ep.ClassStats || !listable(c, ep.Slug) {
 			continue
 		}
 		row := classStatsEndpoint{Slug: ep.Slug, Name: ep.Name}

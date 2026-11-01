@@ -6,6 +6,7 @@ import (
 
 	goMcp "github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
+	"github.com/pdacton/visoto/internal/access"
 	"github.com/pdacton/visoto/internal/classstats"
 	"github.com/pdacton/visoto/internal/config"
 	"github.com/pdacton/visoto/internal/sparql"
@@ -21,12 +22,15 @@ Linking: tool results include visoto_link / <variable>_visoto_link URLs pointing
 
 // NewServer creates and returns a configured MCP HTTP handler.
 // The returned mux handles POST /mcp (MCP streamable HTTP) and GET /health.
-// classStats may be nil (no daily class statistics).
-func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats *classstats.Collector) http.Handler {
+// classStats may be nil (no daily class statistics). authz returns the
+// authorizer in force — a getter, because a plugin installs its own after the
+// server is built; every tool that touches a store asks it (see guarded).
+func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats *classstats.Collector, authz func() access.Authorizer) http.Handler {
 	tc := &toolContext{
 		preprocessor: preprocessor,
 		cfg:          cfg,
 		classStats:   classStats,
+		authz:        authz,
 	}
 
 	mcpServer := server.NewMCPServer(
@@ -66,7 +70,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleCheckEndpoint,
+		tc.guarded(access.Browse, tc.handleCheckEndpoint),
 	)
 
 	// run_sparql_query
@@ -92,7 +96,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleRunSPARQLQuery,
+		tc.guarded(access.SPARQL, tc.handleRunSPARQLQuery),
 	)
 
 	// discover_classes
@@ -117,7 +121,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleDiscoverClasses,
+		tc.guarded(access.Browse, tc.handleDiscoverClasses),
 	)
 
 	// discover_properties
@@ -136,7 +140,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleDiscoverProperties,
+		tc.guarded(access.Browse, tc.handleDiscoverProperties),
 	)
 
 	// get_resource
@@ -154,7 +158,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleGetResource,
+		tc.guarded(access.Browse, tc.handleGetResource),
 	)
 
 	// search_by_label
@@ -183,7 +187,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleSearchByLabel,
+		tc.guarded(access.Browse, tc.handleSearchByLabel),
 	)
 
 	// count_instances
@@ -205,7 +209,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleCountInstances,
+		tc.guarded(access.Browse, tc.handleCountInstances),
 	)
 
 	// class_trends
@@ -238,7 +242,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleClassTrends,
+		tc.guarded(access.Browse, tc.handleClassTrends),
 	)
 
 	// list_named_graphs
@@ -262,7 +266,7 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 			goMcp.WithReadOnlyHintAnnotation(true),
 			goMcp.WithDestructiveHintAnnotation(false),
 		),
-		tc.handleListNamedGraphs,
+		tc.guarded(access.Browse, tc.handleListNamedGraphs),
 	)
 
 	// Build the streamable HTTP transport (POST /mcp). The context func derives

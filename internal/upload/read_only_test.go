@@ -30,9 +30,9 @@ func TestWritesToReadOnlyEndpointAreRefused(t *testing.T) {
 	router.POST("/api/upload", UploadHandler(cfg))
 	router.DELETE("/api/named-graphs", DeleteNamedGraphHandler(cfg))
 
-	form := url.Values{"endpoint": {"public"}, "graphURI": {"urn:x:g"}, "url": {"https://example.org/data.ttl"}}
+	form := url.Values{"graphURI": {"urn:x:g"}, "url": {"https://example.org/data.ttl"}}
 	requests := []*http.Request{
-		httptest.NewRequest(http.MethodPost, "/api/upload", strings.NewReader(form.Encode())),
+		httptest.NewRequest(http.MethodPost, "/api/upload?endpoint=public", strings.NewReader(form.Encode())),
 		httptest.NewRequest(http.MethodDelete, "/api/named-graphs?endpoint=public&graph=urn:x:g", nil),
 	}
 	requests[0].Header.Set("Content-Type", "application/x-www-form-urlencoded")

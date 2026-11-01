@@ -973,6 +973,8 @@ paths:
         loopback address. A URL fetch times out after 5 minutes. The file or
         fetched body may be at most `max_upload_mb` (default 200 MiB).
       operationId: upload
+      parameters:
+        - $ref: "#/components/parameters/endpoint"
       requestBody:
         required: true
         content:
@@ -993,9 +995,6 @@ paths:
                   example: urn:ontology:w3/skos
                 label:
                   type: string
-                endpoint:
-                  type: string
-                  description: Endpoint slug.
       responses:
         "200":
           description: Loaded. `warning` is set when the label could not be stored.

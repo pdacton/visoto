@@ -138,6 +138,29 @@ The URL mode of `/api/upload` refuses to fetch from loopback, private and link-l
 addresses as an SSRF guard. Override with `allow_private_upload_urls` in local test
 environments only.
 
+### Extension points
+
+The open-source build allows every request. The `app` package exposes the seams
+an edition with user accounts plugs into (`app.Main(plugins...)`):
+
+- **Route table.** Every route is registered through `routeTable` with an
+  `access.Action` — `public`, `browse`, `sparql`, `upload`, `admin`,
+  `signed-in` — and gets a guard in front of its handler that asks the
+  `Authorizer` (default: allow all). `TestEveryRouteDeclaresAccess` fails on a
+  route registered any other way.
+- **Shared cache.** A response an anonymous visitor could not get is sent
+  `private, no-store`, so it never enters Souin. Pages the cache may store list
+  only the stores an anonymous visitor may browse; JSON listings are filtered
+  per caller (`visibleEndpoints`, `listable`). MCP tools ask the authorizer for
+  the store their `endpoint` argument names.
+- **`/_auth/check`** answers Caddy's `forward_auth`: it replays the original
+  request through the router in check-only mode (resolvers and guard, no
+  handler) and returns 204 or 403.
+- **Assets.** An edition replaces `templates/layout/extensions.html` (empty
+  `extensionHead` / `extensionTopbar` / `extensionScripts` slots) and adds
+  catalogs under `locales/<edition>/<code>.toml`, which are merged over the
+  core's, by layering its asset directories over the core's at build time.
+
 ## Configuration Flow
 
 ```
