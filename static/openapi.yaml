@@ -943,7 +943,7 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Success" }
         "400":
-          description: Missing `graph` or no endpoint configured.
+          description: Missing or invalid `graph` (not an absolute IRI, or containing characters illegal in an IRI), or no endpoint configured.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Success" }
@@ -970,7 +970,8 @@ paths:
         File extensions: `.ttl`, `.nt`, `.nq`, `.trig`, `.jsonld`, `.rdf`,
         `.owl`, `.xml`. URLs must be http(s) and, unless
         `allow_private_upload_urls` is set, must not resolve to a private or
-        loopback address.
+        loopback address. A URL fetch times out after 5 minutes. The file or
+        fetched body may be at most `max_upload_mb` (default 200 MiB).
       operationId: upload
       requestBody:
         required: true
@@ -1002,12 +1003,17 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Success" }
         "400":
-          description: No file or URL, unsupported extension, or undetectable content type.
+          description: No file or URL, unsupported extension, malformed form, or undetectable content type.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Success" }
         "403":
           description: Endpoint has no write credentials.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Success" }
+        "413":
+          description: File or fetched body larger than `max_upload_mb`; nothing is stored.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Success" }
@@ -1063,7 +1069,7 @@ paths:
             text/turtle:
               schema: { type: string }
         "400":
-          description: No `graph` given.
+          description: No `graph` given, or a `graph` that is not a valid absolute IRI.
           content:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }

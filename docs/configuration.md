@@ -40,6 +40,7 @@ cp visoto.config.example visoto.config
 | `timeout` | integer | `30` | Per-query timeout in seconds for all SPARQL requests. |
 | `gemini_api_key` | string | — | Google Gemini API key. Required only for the AI chat feature at `/api/chat`. The rest of the app works without it. Get a key at [aistudio.google.com](https://aistudio.google.com/app/apikey). |
 | `allow_private_upload_urls` | boolean | `false` | Allows the URL mode of `/api/upload` to fetch from loopback, private and link-local hosts. Off by default as an SSRF guard — enable only in a local test environment where you need to upload from e.g. `http://localhost`. |
+| `max_upload_mb` | integer | `200` | Largest body `/api/upload` accepts, in MiB — the uploaded file or the fetched URL. Larger uploads are rejected with 413, never stored truncated. |
 | `metrics_token` | string | — | Bearer token that guards `GET /metrics` (Prometheus text format, e.g. for a Grafana Cloud scrape job — see `docs/deployment.md`). Without it `/metrics` answers 404. Keep the value in `.env` and reference it as `"${VISOTO_METRICS_TOKEN}"`. |
 | `default_language` | string | `"en"` | Language used when a request expresses no usable preference. Must be one of the codes in `[[application.languages]]`. See [UI languages](#ui-languages). |
 

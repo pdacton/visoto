@@ -66,12 +66,16 @@ func graphdbRepoBase(rawURL string) (string, error) {
 
 // graphdbFetch fetches a single named graph from the GraphDB REST statements endpoint.
 func graphdbFetch(repoBase, iri, format string, ep *config.SparqlEndpoint) (io.ReadCloser, error) {
+	term, err := sparql.IRITerm(iri)
+	if err != nil {
+		return nil, err
+	}
 	u, err := url.Parse(repoBase + "/statements")
 	if err != nil {
 		return nil, err
 	}
 	q := u.Query()
-	q.Set("context", "<"+iri+">")
+	q.Set("context", term)
 	q.Set("infer", "false")
 	u.RawQuery = q.Encode()
 

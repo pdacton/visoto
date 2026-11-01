@@ -12,6 +12,10 @@ timeout = 30 # timeout in seconds
 # you need to upload from e.g. http://localhost.
 # allow_private_upload_urls = false
 
+# Largest /api/upload body in MiB (uploaded file or fetched URL); larger uploads
+# are rejected, never stored truncated.
+# max_upload_mb = 200
+
 # Bearer token that guards GET /metrics (Prometheus text format — e.g. for a
 # Grafana Cloud "Metrics Endpoint" scrape job). Without it /metrics answers 404.
 # Keep the value in .env.

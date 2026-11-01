@@ -55,6 +55,10 @@ type ApplicationConfig struct {
 	// SSRF; enable in dev/test configs that fetch from http://localhost.
 	AllowPrivateUploadURLs bool `toml:"allow_private_upload_urls"`
 
+	// MaxUploadMB caps one /api/upload body — the uploaded file or the fetched
+	// URL — in MiB. Larger uploads are rejected, never truncated. Default 200.
+	MaxUploadMB int `toml:"max_upload_mb"`
+
 	// Languages is the closed set of UI languages the site offers, in the order
 	// the topbar picker lists them, each with the label shown in that picker. An
 	// empty-string code is legal and meaningful: it is the "no language" choice
@@ -431,6 +435,11 @@ func (a *ApplicationConfig) GetNamedEndpointsMap() map[string]string {
 		m[ep.Name] = ep.URL
 	}
 	return m
+}
+
+// UploadLimit is MaxUploadMB in bytes, with its default.
+func (a *ApplicationConfig) UploadLimit() int64 {
+	return int64(orDefault(a.MaxUploadMB, 200)) << 20
 }
 
 // DefaultEndpoint returns the endpoint marked default = true, else the first
