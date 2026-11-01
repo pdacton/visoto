@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/parser"
 )
 
 // endpointsForTest installs a config with the given endpoints and returns a

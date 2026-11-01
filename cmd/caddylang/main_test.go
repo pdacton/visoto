@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // The generated maps must reproduce what the Caddyfile used to list by hand for

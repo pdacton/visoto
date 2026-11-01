@@ -14,7 +14,7 @@ package templates
 // the same template sets. Rather than move the whole indexer down here (or import
 // upward, which is impossible), main registers a lookup function.
 
-import "hutzli.org/visoto/internal/column"
+import "github.com/pdacton/visoto/internal/column"
 
 // columnLookup answers "which columns are declared for this base query id, in
 // this template set". Nil until main registers the real one, in which case every

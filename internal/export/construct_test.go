@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // The providers build the graph term with sparql.IRITerm themselves, so an

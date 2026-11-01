@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"strings"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 const (

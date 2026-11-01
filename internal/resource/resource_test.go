@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 func TestIRIExpansionAndShortening(t *testing.T) {

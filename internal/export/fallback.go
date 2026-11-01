@@ -6,7 +6,7 @@ import (
 	"io"
 	"log/slog"
 
-	"hutzli.org/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/logger"
 )
 
 // ExportWithFallback tries export providers in order until one succeeds.

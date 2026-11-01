@@ -28,11 +28,11 @@ import (
 	"log/slog"
 	"os"
 
-	"hutzli.org/visoto/internal/column"
-	"hutzli.org/visoto/internal/parser"
-	"hutzli.org/visoto/internal/sparql"
-	"hutzli.org/visoto/internal/templates"
-	"hutzli.org/visoto/internal/tree"
+	"github.com/pdacton/visoto/internal/column"
+	"github.com/pdacton/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/templates"
+	"github.com/pdacton/visoto/internal/tree"
 )
 
 // asyncIndex answers "which query does this id mean, for a request that came

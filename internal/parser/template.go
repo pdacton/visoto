@@ -5,8 +5,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pdacton/visoto/internal/sparql"
 	"golang.org/x/net/html"
-	"hutzli.org/visoto/internal/sparql"
 )
 
 // ----- Helper functions for element extraction (DOM parsing) -----

@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // ----- Preprocessor -----

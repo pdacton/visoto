@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // Writes to an endpoint without write credentials are refused before anything

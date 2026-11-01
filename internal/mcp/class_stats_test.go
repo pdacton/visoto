@@ -12,8 +12,8 @@ import (
 
 	goMcp "github.com/mark3labs/mcp-go/mcp"
 
-	"hutzli.org/visoto/internal/classstats"
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/classstats"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 func classStatsToolContext(t *testing.T) *toolContext {

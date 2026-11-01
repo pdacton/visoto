@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 func testStore(t *testing.T, cfg config.GraphLayoutsConfig) *Store {

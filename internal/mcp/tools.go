@@ -11,9 +11,9 @@ import (
 	"time"
 
 	goMcp "github.com/mark3labs/mcp-go/mcp"
-	"hutzli.org/visoto/internal/classstats"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/classstats"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // toolResult is the standard JSON response shape returned by all MCP tools.

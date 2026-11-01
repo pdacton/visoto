@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	"hutzli.org/visoto/internal/facet"
+	"github.com/pdacton/visoto/internal/facet"
 )
 
 // Filter kinds — the "filter" attribute. Absent means the column carries no control

@@ -1,6 +1,6 @@
 package search
 
-import "hutzli.org/visoto/internal/sparql"
+import "github.com/pdacton/visoto/internal/sparql"
 
 // SearchParams represents user input from the search form
 type SearchParams struct {

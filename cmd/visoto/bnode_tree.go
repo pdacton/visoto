@@ -10,9 +10,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hutzli.org/visoto/internal/bnodetree"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/templates"
+	"github.com/pdacton/visoto/internal/bnodetree"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/templates"
 )
 
 // bnodeTreeFormats maps ?format= to the download's content type and extension.

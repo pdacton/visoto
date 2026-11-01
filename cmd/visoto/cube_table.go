@@ -9,8 +9,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hutzli.org/visoto/internal/parser"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // Bounds for the generic cube observation table. Both are deliberate:

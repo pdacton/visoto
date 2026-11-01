@@ -16,10 +16,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/export"
-	"hutzli.org/visoto/internal/logger"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/export"
+	"github.com/pdacton/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // mimeForExtension returns the RDF MIME type for a file extension.

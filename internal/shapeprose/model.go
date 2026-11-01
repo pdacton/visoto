@@ -12,8 +12,8 @@
 package shapeprose
 
 import (
-	"hutzli.org/visoto/internal/bnodetree"
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/bnodetree"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // Options steer the explanation.

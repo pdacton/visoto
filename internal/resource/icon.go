@@ -1,8 +1,8 @@
 package resource
 
 import (
-	"hutzli.org/visoto/internal/icon"
-	"hutzli.org/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/icon"
+	"github.com/pdacton/visoto/internal/parser"
 )
 
 // defaultIcon is what a resource page shows when nothing matches. Unlike a table

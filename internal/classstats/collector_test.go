@@ -14,7 +14,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // fakeEndpoint answers the collector's queries from a table. stats: the

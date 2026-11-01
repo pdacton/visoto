@@ -15,8 +15,8 @@ import (
 	mcpClient "github.com/mark3labs/mcp-go/client"
 	mcpTransport "github.com/mark3labs/mcp-go/client/transport"
 	"github.com/mark3labs/mcp-go/mcp"
-	"hutzli.org/visoto/internal/logger"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 const (

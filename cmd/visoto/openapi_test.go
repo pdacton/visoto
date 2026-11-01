@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"hutzli.org/visoto/internal/sparqlproxy"
+	"github.com/pdacton/visoto/internal/sparqlproxy"
 )
 
 // openAPISpec is the hand-written API description served at /apiDocs.html.

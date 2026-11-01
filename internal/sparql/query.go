@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"hutzli.org/visoto/internal/cache"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/cache"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/logger"
 )
 
 // Preprocessor handles SPARQL query execution

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"hutzli.org/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 func TestExtractDeclaredPrefixes(t *testing.T) {

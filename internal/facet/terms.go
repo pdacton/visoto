@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // This file is the security boundary of faceted search. Facet selection values

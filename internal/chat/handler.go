@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/logger"
 )
 
 // Handler returns a Gin handler function for chat requests.

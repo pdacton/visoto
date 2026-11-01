@@ -6,9 +6,9 @@ import (
 	"strconv"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/cache"
-	"hutzli.org/visoto/internal/logger"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/cache"
+	"github.com/pdacton/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // Searcher orchestrates search operations

@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/lang"
 )
 
 func init() {

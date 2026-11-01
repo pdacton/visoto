@@ -26,8 +26,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/logger"
 )
 
 const (

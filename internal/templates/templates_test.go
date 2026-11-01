@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"hutzli.org/visoto/internal/i18n"
-	"hutzli.org/visoto/internal/lang"
-	"hutzli.org/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/i18n"
+	"github.com/pdacton/visoto/internal/lang"
+	"github.com/pdacton/visoto/internal/parser"
 )
 
 // testCodes mirrors the shipped language set, including the empty "no language"

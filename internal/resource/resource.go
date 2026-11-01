@@ -15,10 +15,10 @@ import (
 	"strings"
 	"time"
 
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/logger"
-	"hutzli.org/visoto/internal/parser"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/logger"
+	"github.com/pdacton/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // Resource represents a RDF resource identified by an IRI

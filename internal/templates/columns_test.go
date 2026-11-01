@@ -3,7 +3,7 @@ package templates
 import (
 	"testing"
 
-	"hutzli.org/visoto/internal/column"
+	"github.com/pdacton/visoto/internal/column"
 )
 
 // The sync sparqlTable path has no handler to fold <sparql-column> declarations

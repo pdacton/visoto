@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hutzli.org/visoto/internal/search"
+	"github.com/pdacton/visoto/internal/search"
 )
 
 // searchAPIMaxLimit caps ?limit= on /api/search: the response feeds a dropdown.

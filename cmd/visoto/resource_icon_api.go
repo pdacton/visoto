@@ -6,9 +6,9 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"hutzli.org/visoto/internal/config"
-	"hutzli.org/visoto/internal/icon"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/icon"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // resourceIconAPIHandler serves GET /api/resource-icon?iri=&endpoint= — the icon

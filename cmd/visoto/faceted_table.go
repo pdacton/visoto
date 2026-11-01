@@ -10,8 +10,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/facet"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/facet"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // facetedResultCap bounds an inline faceted result. Faceting exists to narrow a

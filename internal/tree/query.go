@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strings"
 
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // Query building for the five roles.

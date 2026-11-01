@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"hutzli.org/visoto/internal/parser"
-	"hutzli.org/visoto/internal/sparql"
+	"github.com/pdacton/visoto/internal/parser"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 // defaultMaxWorkingSet is the default cap on rows loaded into a single working
