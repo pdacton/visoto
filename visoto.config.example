@@ -307,6 +307,27 @@ name  = "DCT"
 url   = "http://purl.org/dc/terms/"
 graph = "urn:ontology:dc/terms"
 
+[[ontologies]]
+name  = "SHACL"
+url   = "https://www.w3.org/ns/shacl.ttl"
+graph = "urn:ontology:w3/shacl"
+
+[[ontologies]]
+name  = "cube.link"
+url   = "https://cube.link/"
+graph = "urn:ontology:cube.link/cube"
+
+[[ontologies]]
+name  = "QUDT"
+url   = "https://qudt.org/schema/qudt.ttl"
+graph = "urn:ontology:qudt/schema"
+
+# XSD has no official RDF document; this is the RDF WG's Turtle description.
+[[ontologies]]
+name  = "XSD"
+url   = "https://raw.githubusercontent.com/w3c/rdf-schema/main/ns/rdf-xsd.ttl"
+graph = "urn:ontology:w3/xsd"
+
 # MCP server settings
 # Note: port is unused when MCP is embedded in the main server (default).
 [mcp]
