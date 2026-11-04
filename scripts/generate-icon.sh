@@ -44,7 +44,7 @@ squircle="M0 256C0 51.2 51.2 0 256 0 460.8 0 512 51.2 512 256 512 460.8 460.8 51
 cat > "$out_file" <<EOF
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
 <path d="$squircle" fill="$color" fill-opacity="0.2"/>
-<g transform="translate(52 52) scale(17)" fill="none" stroke="$color" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+<g transform="translate(88 88) scale(14)" fill="none" stroke="$color" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
 <rect width="24" height="24" fill="none" stroke="none"/>
 $inner
 </g>

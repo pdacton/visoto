@@ -5,7 +5,7 @@ description: Generate a Visoto resource icon (tinted squircle + Lucide icon in a
 
 # Icon Generation
 
-Every resource icon is the same mechanical recipe: a squircle background filled with an accent color at 20% opacity, plus a matching [Lucide](https://lucide.dev/icons/) icon drawn as strokes in that same color. Icons are 512×512, with the Lucide artwork in a 408×408 area (52px inset on all sides).
+Every resource icon is the same mechanical recipe: a squircle background filled with an accent color at 20% opacity, plus a matching [Lucide](https://lucide.dev/icons/) icon drawn as strokes in that same color. Icons are 512×512, with the Lucide artwork in a 336×336 area (88px inset on all sides, `scale(14)`) and `stroke-width` 2.4, which matches the line weight of the older Office icons (≈34.5px on 520).
 
 Do not hand-write the SVG — run the generator script from the repo root:
 
