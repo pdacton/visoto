@@ -1,8 +1,8 @@
 {{ define "metaTitle" }}{{ t "page.mobility.metaTitle" "Mobility & Transport" }}{{ end }}
 {{ define "pageTitle" }}{{ t "page.mobility.title" "Mobility & Transport" }}{{ end }}
 {{ define "pageSubtitle" }}{{ t "page.mobility.subtitle" "Where Swiss public transport stops, what it costs to travel between them, and who flies." }}{{ end }}
-{{ define "pageIcon" }}<img src="/static/img/resource/Station.svg" alt="{{ t "page.mobility.mobilityTransport" "Mobility & Transport" }}" width="48" height="48">{{ end }}
-{{ define "metaIcon" }}/static/img/resource/Station.svg{{ end }}
+{{ define "pageIcon" }}<img src="/static/img/resource/gtfs/Station.svg" alt="{{ t "page.mobility.mobilityTransport" "Mobility & Transport" }}" width="48" height="48">{{ end }}
+{{ define "metaIcon" }}/static/img/resource/gtfs/Station.svg{{ end }}
 
 {{ define "pageContent" }}
 
@@ -45,12 +45,12 @@
       "queryId" "mobilityStopCount"
       "title" (t "card.stops" "Stops")
       "href" "/resource?iri=http%3A%2F%2Fvocab.gtfs.org%2Fterms%23Station"
-      "icon" "/static/img/resource/Station.svg") }}
+      "icon" "/static/img/resource/gtfs/Station.svg") }}
   {{ template "sparqlMetric" (dict
       "queryId" "mobilityOperatorCount"
       "title" (t "card.operators" "Operators")
       "href" "/resource?iri=http%3A%2F%2Fschema.org%2FOrganization"
-      "icon" "/static/img/resource/Organization.svg") }}
+      "icon" "/static/img/resource/schema/Organization.svg") }}
   {{ template "sparqlMetric" (dict
       "queryId" "mobilityRelationCount"
       "title" (t "card.pricedRelations" "Priced Relations")
@@ -60,7 +60,7 @@
       "queryId" "mobilityObservationCount"
       "title" (t "card.aviationObservations" "Aviation Observations")
       "href" "/resource?iri=https%3A%2F%2Fcube.link%2FObservation"
-      "icon" "/static/img/resource/Cube.svg") }}
+      "icon" "/static/img/resource/cube/Cube.svg") }}
 </div>
 
 <!-- ============================================================= -->

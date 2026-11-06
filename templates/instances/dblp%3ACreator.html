@@ -54,17 +54,17 @@
         "queryId" "dblpCreatorPublicationCount"
         "iri" .ResourceIRI
         "title" (t "card.publications" "Publications")
-        "icon" "/static/img/resource/Publication.fallback.svg") }}
+        "icon" "/static/img/resource/dblp/Publication.fallback.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "dblpCoauthorCount"
         "iri" .ResourceIRI
         "title" (t "card.coauthors" "Co-authors")
-        "icon" "/static/img/resource/Person.svg") }}
+        "icon" "/static/img/resource/schema/Person.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "dblpCreatorCitationCount"
         "iri" .ResourceIRI
         "title" (t "card.citedBy" "Cited by")
-        "icon" "/static/img/resource/Citation.fallback.svg") }}
+        "icon" "/static/img/resource/cito/Citation.fallback.svg") }}
   </div>
 
   <!-- createdBy covers both authorship and editorship. -->

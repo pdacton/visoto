@@ -32,7 +32,7 @@
         "queryId" "dimTotal"
         "title" (t "card.sharedDimensions" "Shared Dimensions")
         "href" "/resource?iri=meta%3ASharedDimension"
-        "icon" "/static/img/resource/SharedDimension.svg") }}
+        "icon" "/static/img/resource/cube/SharedDimension.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "dimUsed"
         "title" (t "card.dimensionsInUse" "Dimensions in Use")
@@ -42,12 +42,12 @@
         "queryId" "dimCubes"
         "title" (t "card.cubesUsingThem" "Cubes Using Them")
         "href" "/resource?iri=https%3A%2F%2Fcube.link%2FCube"
-        "icon" "/static/img/resource/Cube.svg") }}
+        "icon" "/static/img/resource/cube/Cube.svg") }}
     {{ template "sparqlMetric" (dict
         "queryId" "dimTerms"
         "title" (t "card.sharedDimensionTerms" "Shared Dimension Terms")
         "href" "/resource?iri=https%3A%2F%2Fcube-creator.zazuko.com%2Fshared-dimensions%2Fvocab%23SharedDimensionTerm"
-        "icon" "/static/img/resource/SharedDimensionTerm.svg") }}
+        "icon" "/static/img/resource/shdim/SharedDimensionTerm.svg") }}
   </div>
 
   <!-- Catalog: one row per shared dimension.

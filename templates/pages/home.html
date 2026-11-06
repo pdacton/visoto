@@ -114,7 +114,7 @@
     <div class="col-sm-6 col-lg-4">
       <div class="card h-100">
         <div class="card-body d-flex flex-column">
-          <img src="/static/img/resource/Article.svg" class="mb-3" width="48" height="48" alt="">
+          <img src="/static/img/resource/dblp/Article.svg" class="mb-3" width="48" height="48" alt="">
           <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.dblpClassic" "A classic paper" }}</h3>
           <p class="text-secondary mt-auto">{{ tHTML "page.home.dblpClassicText" "In 1978 <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Fpid%2Fl%2FLeslieLamport\">Leslie Lamport</a> showed how to order events without a shared clock. See who still cites <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Frec%2Fjournals%2Fcacm%2FLamport78\">Time, Clocks, and the Ordering of Events in a Distributed System</a> today." }}</p>
         </div>
@@ -125,7 +125,7 @@
     <div class="col-sm-6 col-lg-4">
       <div class="card h-100">
         <div class="card-body d-flex flex-column">
-          <img src="/static/img/resource/Person.svg" class="mb-3" width="48" height="48" alt="">
+          <img src="/static/img/resource/schema/Person.svg" class="mb-3" width="48" height="48" alt="">
           <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.dblpWirth" "Computer science in Switzerland" }}</h3>
           <p class="text-secondary mt-auto">{{ tHTML "page.home.dblpWirthText" "Follow <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Fpid%2Fw%2FNiklausWirth\">Niklaus Wirth</a>, creator of Pascal and Oberon, through his publications and co-authors, or browse the researchers affiliated with <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Finst%2F1%2F339\">ETH Zurich</a>." }}</p>
         </div>
@@ -136,7 +136,7 @@
     <div class="col-sm-6 col-lg-4">
       <div class="card h-100">
         <div class="card-body d-flex flex-column">
-          <img src="/static/img/resource/Journal.svg" class="mb-3" width="48" height="48" alt="">
+          <img src="/static/img/resource/dblp/Journal.svg" class="mb-3" width="48" height="48" alt="">
           <h3 class="card-title fs-3 fw-bold mb-2">{{ t "page.home.dblpVenues" "Conferences and journals" }}</h3>
           <p class="text-secondary mt-auto">{{ tHTML "page.home.dblpVenuesText" "Every paper belongs to a venue. Compare the <a href=\"/resource?iri=dblp:Conference\">conferences</a> and <a href=\"/resource?iri=dblp:Journal\">journals</a>, or watch preprints pile up year by year in <a href=\"/resource?iri=https%3A%2F%2Fdblp.org%2Fstreams%2Fjournals%2Fcorr\">CoRR</a>, the arXiv section for computer science." }}</p>
         </div>
@@ -150,44 +150,44 @@
     <sparql-async id="dblpHomePublicationCount">
       SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Publication . }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dblpHomePublicationCount" "title" (t "card.publications" "Publications") "href" "/resource?iri=dblp:Publication" "icon" "/static/img/resource/Publication.fallback.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomePublicationCount" "title" (t "card.publications" "Publications") "href" "/resource?iri=dblp:Publication" "icon" "/static/img/resource/dblp/Publication.fallback.svg") }}
 
     <sparql-async id="dblpHomePersonCount">
       SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Person . }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dblpHomePersonCount" "title" (t "card.persons" "Persons") "href" "/resource?iri=dblp:Person" "icon" "/static/img/resource/Person.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomePersonCount" "title" (t "card.persons" "Persons") "href" "/resource?iri=dblp:Person" "icon" "/static/img/resource/schema/Person.svg") }}
 
     <sparql-async id="dblpHomeStreamCount">
       SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Stream . }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dblpHomeStreamCount" "title" (t "card.venues" "Venues") "href" "/resource?iri=dblp:Stream" "icon" "/static/img/resource/Stream.fallback.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeStreamCount" "title" (t "card.venues" "Venues") "href" "/resource?iri=dblp:Stream" "icon" "/static/img/resource/dblp/Stream.fallback.svg") }}
 
     <sparql-async id="dblpHomeInstitutionCount">
       SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Institution . }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInstitutionCount" "title" (t "card.institutions" "Institutions") "href" "/resource?iri=dblp:Institution" "icon" "/static/img/resource/Institution.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInstitutionCount" "title" (t "card.institutions" "Institutions") "href" "/resource?iri=dblp:Institution" "icon" "/static/img/resource/dblp/Institution.svg") }}
   </div>
   <div class="row row-deck row-cards mb-3">
     <sparql-async id="dblpHomeArticleCount">
       SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Article . }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dblpHomeArticleCount" "title" (t "nav.dblpArticles" "Journal Articles") "href" "/resource?iri=dblp:Article" "icon" "/static/img/resource/Article.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeArticleCount" "title" (t "nav.dblpArticles" "Journal Articles") "href" "/resource?iri=dblp:Article" "icon" "/static/img/resource/dblp/Article.svg") }}
 
     <sparql-async id="dblpHomeInproceedingsCount">
       SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Inproceedings . }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInproceedingsCount" "title" (t "nav.dblpInproceedings" "Conference Papers") "href" "/resource?iri=dblp:Inproceedings" "icon" "/static/img/resource/Inproceedings.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInproceedingsCount" "title" (t "nav.dblpInproceedings" "Conference Papers") "href" "/resource?iri=dblp:Inproceedings" "icon" "/static/img/resource/dblp/Inproceedings.svg") }}
 
     <sparql-async id="dblpHomeInformalCount">
       SELECT (COUNT(?x) AS ?count) WHERE { ?x a dblp:Informal . }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInformalCount" "title" (t "nav.dblpInformal" "Preprints & Informal") "href" "/resource?iri=dblp:Informal" "icon" "/static/img/resource/Informal.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeInformalCount" "title" (t "nav.dblpInformal" "Preprints & Informal") "href" "/resource?iri=dblp:Informal" "icon" "/static/img/resource/dblp/Informal.svg") }}
 
     <!-- OpenCitations links between works, inside dblp or not. -->
     <sparql-async id="dblpHomeCitationCount">
       SELECT (COUNT(?x) AS ?count) WHERE { ?x a cito:Citation . }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dblpHomeCitationCount" "title" (t "card.citations" "Citations") "href" "/resource?iri=cito:Citation" "icon" "/static/img/resource/Citation.fallback.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dblpHomeCitationCount" "title" (t "card.citations" "Citations") "href" "/resource?iri=cito:Citation" "icon" "/static/img/resource/cito/Citation.fallback.svg") }}
   </div>
 
   <!-- The 25 largest venues; the count over all 8.7M publications takes 0.5 s. -->
@@ -219,7 +219,7 @@
         { ?class a rdfs:Class }
       }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "classCount" "title" (t "card.classes" "Classes") "href" "/resource?iri=owl:Class" "icon" "/static/img/resource/Class.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "classCount" "title" (t "card.classes" "Classes") "href" "/resource?iri=owl:Class" "icon" "/static/img/resource/owl/Class.svg") }}
 
     <!-- properties card -->
     <sparql-async id="tripleCount">
@@ -227,7 +227,7 @@
         ?s ?p ?o .
       }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "tripleCount" "title" (t "card.properties" "Properties") "href" "/resource?iri=rdf:Property" "icon" "/static/img/resource/Property.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "tripleCount" "title" (t "card.properties" "Properties") "href" "/resource?iri=rdf:Property" "icon" "/static/img/resource/rdf/Property.svg") }}
 
     <!-- concept schemes card -->
     <sparql-async id="conceptSchemeCount">
@@ -235,7 +235,7 @@
         ?scheme a skos:ConceptScheme .
       }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "conceptSchemeCount" "class" "skos:ConceptScheme" "title" (t "card.conceptSchemes" "Concept Schemes") "href" "/resource?iri=skos:ConceptScheme" "icon" "/static/img/resource/ConceptScheme.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "conceptSchemeCount" "class" "skos:ConceptScheme" "title" (t "card.conceptSchemes" "Concept Schemes") "href" "/resource?iri=skos:ConceptScheme" "icon" "/static/img/resource/skos/ConceptScheme.svg") }}
 
     <!-- concepts card -->
     <sparql-async id="conceptCount">
@@ -243,7 +243,7 @@
         ?concept a skos:Concept .
       }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "conceptCount" "class" "skos:Concept" "title" (t "card.concepts" "Concepts") "href" "/resource?iri=skos:Concept" "icon" "/static/img/resource/Concept.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "conceptCount" "class" "skos:Concept" "title" (t "card.concepts" "Concepts") "href" "/resource?iri=skos:Concept" "icon" "/static/img/resource/skos/Concept.svg") }}
 
   </div>
 
@@ -258,7 +258,7 @@
           ?cube a cube:Cube .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "cubeCountStadtzuerich" "class" "cube:Cube" "title" (t "card.cubes" "Cubes") "href" "/resource?iri=cube:Cube" "icon" "/static/img/resource/Cube.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "cubeCountStadtzuerich" "class" "cube:Cube" "title" (t "card.cubes" "Cubes") "href" "/resource?iri=cube:Cube" "icon" "/static/img/resource/cube/Cube.svg") }}
 
       <!-- observation sets card -->
       <sparql-async id="observationSetCountStadtzuerich">
@@ -266,7 +266,7 @@
           ?set a cube:ObservationSet .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "observationSetCountStadtzuerich" "class" "cube:ObservationSet" "title" (t "card.observationSets" "Observation Sets") "href" "/resource?iri=cube:ObservationSet" "icon" "/static/img/resource/ObservationSet.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "observationSetCountStadtzuerich" "class" "cube:ObservationSet" "title" (t "card.observationSets" "Observation Sets") "href" "/resource?iri=cube:ObservationSet" "icon" "/static/img/resource/cube/ObservationSet.svg") }}
 
       <!-- key dimensions card -->
       <sparql-async id="keyDimensionCountStadtzuerich">
@@ -274,7 +274,7 @@
           ?dim a cube:KeyDimension .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "keyDimensionCountStadtzuerich" "class" "cube:KeyDimension" "title" (t "card.keyDimensions" "Key Dimensions") "href" "/resource?iri=cube:KeyDimension" "icon" "/static/img/resource/KeyDimension.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "keyDimensionCountStadtzuerich" "class" "cube:KeyDimension" "title" (t "card.keyDimensions" "Key Dimensions") "href" "/resource?iri=cube:KeyDimension" "icon" "/static/img/resource/cube/KeyDimension.svg") }}
 
       <!-- measure dimensions card -->
       <sparql-async id="measureDimensionCountStadtzuerich">
@@ -282,7 +282,7 @@
           ?dim a cube:MeasureDimension .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "measureDimensionCountStadtzuerich" "class" "cube:MeasureDimension" "title" (t "card.measureDimensions" "Measure Dimensions") "href" "/resource?iri=cube:MeasureDimension" "icon" "/static/img/resource/MeasureDimension.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "measureDimensionCountStadtzuerich" "class" "cube:MeasureDimension" "title" (t "card.measureDimensions" "Measure Dimensions") "href" "/resource?iri=cube:MeasureDimension" "icon" "/static/img/resource/cube/MeasureDimension.svg") }}
 
     </div>
     <div class="row row-deck row-cards mb-3">
@@ -293,7 +293,7 @@
           ?termSet a schema2:DefinedTermSet .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "termSetCountStadtzuerich" "class" "schema2:DefinedTermSet" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "termSetCountStadtzuerich" "class" "schema2:DefinedTermSet" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/schema/DefinedTermSet.fallback.svg") }}
 
       <!-- defined terms card -->
       <sparql-async id="termCountStadtzuerich">
@@ -301,7 +301,7 @@
           ?term a schema2:DefinedTerm .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "termCountStadtzuerich" "class" "schema2:DefinedTerm" "title" (t "card.definedTerms" "Defined Terms") "href" "/resource?iri=schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "termCountStadtzuerich" "class" "schema2:DefinedTerm" "title" (t "card.definedTerms" "Defined Terms") "href" "/resource?iri=schema:DefinedTerm" "icon" "/static/img/resource/schema/DefinedTerm.fallback.svg") }}
 
       <!-- places card -->
       <sparql-async id="placeCount">
@@ -309,7 +309,7 @@
           ?place a schema2:Place .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "placeCount" "class" "schema2:Place" "title" (t "card.places" "Places") "href" "/resource?iri=schema:Place" "icon" "/static/img/resource/Place.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "placeCount" "class" "schema2:Place" "title" (t "card.places" "Places") "href" "/resource?iri=schema:Place" "icon" "/static/img/resource/rico/Place.svg") }}
 
     </div>
   {{ end }}
@@ -323,7 +323,7 @@
           ?collection a schch:TerminologyCollection .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "terminologyCollectionCount" "class" "schch:TerminologyCollection" "title" (t "card.terminologyCollections" "Terminology Collections") "href" "/resource?iri=schch:TerminologyCollection" "icon" "/static/img/resource/TerminologyCollection.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "terminologyCollectionCount" "class" "schch:TerminologyCollection" "title" (t "card.terminologyCollections" "Terminology Collections") "href" "/resource?iri=schch:TerminologyCollection" "icon" "/static/img/resource/schch/TerminologyCollection.svg") }}
 
       <!-- defined term sets card -->
       <sparql-async id="termSetCountLindas">
@@ -331,7 +331,7 @@
           ?termSet a schema:DefinedTermSet .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "termSetCountLindas" "class" "schema:DefinedTermSet" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/DefinedTermSet.fallback.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "termSetCountLindas" "class" "schema:DefinedTermSet" "title" (t "card.definedTermSets" "Defined Term Sets") "href" "/resource?iri=schema:DefinedTermSet" "icon" "/static/img/resource/schema/DefinedTermSet.fallback.svg") }}
 
       <!-- defined terms card -->
       <sparql-async id="termCountLindas">
@@ -339,7 +339,7 @@
           ?term a schema:DefinedTerm .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "termCountLindas" "class" "schema:DefinedTerm" "title" (t "card.definedTerms" "Defined Terms") "href" "/resource?iri=schema:DefinedTerm" "icon" "/static/img/resource/DefinedTerm.fallback.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "termCountLindas" "class" "schema:DefinedTerm" "title" (t "card.definedTerms" "Defined Terms") "href" "/resource?iri=schema:DefinedTerm" "icon" "/static/img/resource/schema/DefinedTerm.fallback.svg") }}
 
     </div>
   {{ end }}
@@ -354,7 +354,7 @@
       }
     </sparql-async>
     {{ if ne .EndpointTag "lindas" }}
-    {{ template "sparqlMetric" (dict "queryId" "dcatCatalogCount" "class" "dcat:Catalog" "title" (t "card.catalogs" "Catalogs") "href" "/resource?iri=dcat:Catalog" "icon" "/static/img/resource/Catalog.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dcatCatalogCount" "class" "dcat:Catalog" "title" (t "card.catalogs" "Catalogs") "href" "/resource?iri=dcat:Catalog" "icon" "/static/img/resource/dcat/Catalog.svg") }}
     {{ end }}
 
     <!-- dcat datasets card -->
@@ -363,7 +363,7 @@
         ?dataset a dcat:Dataset .
       }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dcatDatasetCount" "class" "dcat:Dataset" "title" (t "card.datasets" "Datasets") "href" "/resource?iri=dcat:Dataset" "icon" "/static/img/resource/Dataset.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dcatDatasetCount" "class" "dcat:Dataset" "title" (t "card.datasets" "Datasets") "href" "/resource?iri=dcat:Dataset" "icon" "/static/img/resource/dcat/Dataset.svg") }}
 
     <!-- dcat distributions card -->
     <sparql-async id="dcatDistributionCount">
@@ -371,7 +371,7 @@
         ?distribution a dcat:Distribution .
       }
     </sparql-async>
-    {{ template "sparqlMetric" (dict "queryId" "dcatDistributionCount" "class" "dcat:Distribution" "title" (t "card.distributions" "Distributions") "href" "/resource?iri=dcat:Distribution" "icon" "/static/img/resource/Distribution.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dcatDistributionCount" "class" "dcat:Distribution" "title" (t "card.distributions" "Distributions") "href" "/resource?iri=dcat:Distribution" "icon" "/static/img/resource/dcat/Distribution.svg") }}
 
     <!-- dcat data services card -->
     <sparql-async id="dcatDataServiceCount">
@@ -380,7 +380,7 @@
       }
     </sparql-async>
     {{ if ne .EndpointTag "lindas" }}
-    {{ template "sparqlMetric" (dict "queryId" "dcatDataServiceCount" "class" "dcat:DataService" "title" (t "card.dataServices" "Data Services") "href" "/resource?iri=dcat:DataService" "icon" "/static/img/resource/DataService.svg") }}
+    {{ template "sparqlMetric" (dict "queryId" "dcatDataServiceCount" "class" "dcat:DataService" "title" (t "card.dataServices" "Data Services") "href" "/resource?iri=dcat:DataService" "icon" "/static/img/resource/dcat/DataService.svg") }}
     {{ end }}
 
   </div>
@@ -395,7 +395,7 @@
           ?cube a cube:Cube .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "cubeCountLindas" "class" "cube:Cube" "title" (t "card.cubes" "Cubes") "href" "/resource?iri=cube:Cube" "icon" "/static/img/resource/Cube.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "cubeCountLindas" "class" "cube:Cube" "title" (t "card.cubes" "Cubes") "href" "/resource?iri=cube:Cube" "icon" "/static/img/resource/cube/Cube.svg") }}
 
       <!-- observation sets card -->
       <sparql-async id="observationSetCountLindas">
@@ -403,7 +403,7 @@
           ?set a cube:ObservationSet .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "observationSetCountLindas" "class" "cube:ObservationSet" "title" (t "card.observationSets" "Observation Sets") "href" "/resource?iri=cube:ObservationSet" "icon" "/static/img/resource/ObservationSet.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "observationSetCountLindas" "class" "cube:ObservationSet" "title" (t "card.observationSets" "Observation Sets") "href" "/resource?iri=cube:ObservationSet" "icon" "/static/img/resource/cube/ObservationSet.svg") }}
 
       <!-- observations card -->
       <sparql-async id="observationCount">
@@ -419,7 +419,7 @@
           ?dim a meta:SharedDimension .
         }
       </sparql-async>
-      {{ template "sparqlMetric" (dict "queryId" "sharedDimensionCount" "class" "meta:SharedDimension" "title" (t "card.sharedDimensions" "Shared Dimensions") "href" "/resource?iri=meta:SharedDimension" "icon" "/static/img/resource/SharedDimension.svg") }}
+      {{ template "sparqlMetric" (dict "queryId" "sharedDimensionCount" "class" "meta:SharedDimension" "title" (t "card.sharedDimensions" "Shared Dimensions") "href" "/resource?iri=meta:SharedDimension" "icon" "/static/img/resource/cube/SharedDimension.svg") }}
 
     </div>
   {{ end }}

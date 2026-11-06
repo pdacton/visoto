@@ -1022,10 +1022,15 @@ func Main(plugins ...Plugin) {
 			slog.String("config_file", "visoto.config"))
 	}
 
-	// Initialize icon cache
-	if err := icon.Init("./static/img/resource", log); err != nil {
-		log.Warn("failed to initialize icon cache",
-			slog.String("error", err.Error()))
+	// Initialize icon cache. Namespace subfolders resolve against the global
+	// [rdf] prefixes; an icon folder naming an undeclared prefix fails startup.
+	iconNamespaces := make(map[string]string, len(cfg.RDF.ParsedPrefixes))
+	for _, p := range cfg.RDF.ParsedPrefixes {
+		iconNamespaces[p.Name] = strings.Trim(p.URI, "<>")
+	}
+	if err := icon.Init("./static/img/resource", iconNamespaces, log); err != nil {
+		log.Error("failed to initialize icon cache", slog.String("error", err.Error()))
+		os.Exit(1)
 	}
 
 	// Initialize endpoint monitor (data stored in ./data/)

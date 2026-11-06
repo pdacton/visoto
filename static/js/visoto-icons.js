@@ -10,10 +10,12 @@
   against the full name map the -available-icons island carries.
 
   Keep the rules in step with internal/icon/icon.go:
-    - a resource's own local name wins over any of its types
+    - a resource's own IRI wins over any of its types
     - across several types, ANY exact match beats ANY .fallback match
       (a LINDAS resource routinely carries a generic class alongside a specific
       one, often listed first)
+    - within each step, a namespaced icon (rdf/Property.svg, keyed by full IRI
+      and CURIE) beats a root icon (Property.svg, keyed by local name)
 */
 (function () {
   'use strict';
@@ -35,27 +37,40 @@
     return iri;
   }
 
-  // available is the -available-icons island: bare names for real icons,
-  // "<name>.fallback" for the weaker ones. Returns '' when nothing matches, so
-  // each caller applies its own default.
+  function decode(iri) {
+    try { return decodeURIComponent(iri); } catch (e) { return iri; }
+  }
+
+  // Mirror of icon.lookup: the namespaced key (IRI or CURIE) first, then the
+  // bare local name. suffix is '' or '.fallback'. Returns a path or ''.
+  function lookup(iri, suffix, available) {
+    if (!iri) return '';
+    var rel = available[decode(iri) + suffix];
+    if (!rel) {
+      var name = localName(iri);
+      if (name) rel = available[name + suffix];
+    }
+    return rel ? BASE + rel : '';
+  }
+
+  // available is the -available-icons island (icon.Names): lookup key -> file
+  // path relative to BASE; fallback keys carry a ".fallback" suffix. Returns ''
+  // when nothing matches, so each caller applies its own default.
   function resolve(iri, types, available) {
     if (!available) return '';
     types = types || [];
 
-    var name = localName(iri);
-    if (name) {
-      if (available[name]) return BASE + name + '.svg';
-      if (available[name + '.fallback']) return BASE + name + '.fallback.svg';
-    }
+    var url = lookup(iri, '', available) || lookup(iri, '.fallback', available);
+    if (url) return url;
 
-    var i, n;
+    var i;
     for (i = 0; i < types.length; i++) {
-      n = localName(types[i]);
-      if (n && available[n]) return BASE + n + '.svg';
+      url = lookup(types[i], '', available);
+      if (url) return url;
     }
     for (i = 0; i < types.length; i++) {
-      n = localName(types[i]);
-      if (n && available[n + '.fallback']) return BASE + n + '.fallback.svg';
+      url = lookup(types[i], '.fallback', available);
+      if (url) return url;
     }
     return '';
   }

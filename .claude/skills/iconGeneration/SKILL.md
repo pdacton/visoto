@@ -22,6 +22,8 @@ Example:
 
 The script fetches the Lucide icon from unpkg (`lucide-static`), so the icon name must exist on https://lucide.dev/icons/. Pick the Lucide icon whose meaning best matches the class; prefer simple, recognizable glyphs.
 
+If the class belongs to a namespace with a configured prefix, move the result into that prefix's folder (`static/img/resource/<prefix>/Bicycle.svg`) so it matches only that namespace; see `static/img/resource/README.md`. Search the subfolders too when looking for related icons.
+
 ## Choosing the color
 
 Before picking a color, check `static/img/resource/` for semantically related existing icons and match their color. The established palette:

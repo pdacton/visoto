@@ -164,7 +164,10 @@ def namespace_ids(elem, prefix):
 
 
 def build(icon_dir, out_path, limit, columns, gap, names=None):
-    files = sorted(icon_dir.glob("*.svg"), key=lambda p: p.name.lower())
+    # Root icons plus one level of namespace folders (rdf/Property.svg); folders
+    # starting with "_" (this sheet's own _sheet/) are not icon folders.
+    files = [*icon_dir.glob("*.svg"), *(f for f in icon_dir.glob("*/*.svg") if not f.parent.name.startswith("_"))]
+    files = sorted(files, key=lambda p: (p.parent != icon_dir, p.relative_to(icon_dir).as_posix().lower()))
     if names:
         wanted = {n.lower() for n in names}
         files = [f for f in files if f.stem.lower() in wanted or f.name.lower() in wanted]
@@ -226,7 +229,8 @@ def build(icon_dir, out_path, limit, columns, gap, names=None):
 
     placed = []
     for index, path in enumerate(files):
-        name = path.name[: -len(".svg")]
+        # "rdf/Property" -> "rdf-Property": the same name exists in several folders.
+        name = path.relative_to(icon_dir).as_posix()[: -len(".svg")].replace("/", "-")
         try:
             src = ET.parse(path).getroot()
         except ET.ParseError as exc:

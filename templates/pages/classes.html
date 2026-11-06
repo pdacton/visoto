@@ -14,7 +14,7 @@
       ?class a rdfs:Class .
     }
   </sparql-async>
-  {{ template "sparqlMetric" (dict "queryId" "rdfClassCount" "title" (t "card.rdfsClass" "rdfs:Class") "href" "/resource?iri=rdfs:Class" "icon" "/static/img/resource/Class.svg") }}
+  {{ template "sparqlMetric" (dict "queryId" "rdfClassCount" "title" (t "card.rdfsClass" "rdfs:Class") "href" "/resource?iri=rdfs:Class" "icon" "/static/img/resource/owl/Class.svg") }}
 
   <!-- owl:Class count -->
   <sparql-async id="owlClassCount">
@@ -22,7 +22,7 @@
       ?class a owl:Class .
     }
   </sparql-async>
-  {{ template "sparqlMetric" (dict "queryId" "owlClassCount" "title" (t "card.owlClass" "owl:Class") "href" "/resource?iri=owl:Class" "icon" "/static/img/resource/Class.svg") }}
+  {{ template "sparqlMetric" (dict "queryId" "owlClassCount" "title" (t "card.owlClass" "owl:Class") "href" "/resource?iri=owl:Class" "icon" "/static/img/resource/owl/Class.svg") }}
 
   <!-- implicit classes: used as rdf:type target but not declared as rdfs:Class or owl:Class -->
   <sparql-async id="implicitClassCount">

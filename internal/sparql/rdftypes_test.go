@@ -55,7 +55,7 @@ func withIcons(t *testing.T, files ...string) {
 			t.Fatalf("write fixture %s: %v", name, err)
 		}
 	}
-	if err := icon.Init(dir, nil); err != nil {
+	if err := icon.Init(dir, nil, nil); err != nil {
 		t.Fatalf("icon.Init: %v", err)
 	}
 }

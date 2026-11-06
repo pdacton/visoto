@@ -9,17 +9,35 @@ import (
 // withIcons points the package cache at a temp directory holding the named
 // files, so the tests state their own fixtures instead of depending on whatever
 // happens to be in static/img/resource.
+//
+// A name with a slash ("rdf/Property.svg") lands in a namespace subfolder,
+// resolved against testNamespaces.
 func withIcons(t *testing.T, files ...string) {
+	t.Helper()
+	dir := writeIcons(t, files...)
+	if err := Init(dir, testNamespaces, nil); err != nil {
+		t.Fatalf("Init(%s): %v", dir, err)
+	}
+}
+
+var testNamespaces = map[string]string{
+	"rdf":    "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+	"schema": "http://schema.org/",
+}
+
+func writeIcons(t *testing.T, files ...string) string {
 	t.Helper()
 	dir := t.TempDir()
 	for _, name := range files {
-		if err := os.WriteFile(filepath.Join(dir, name), []byte("<svg/>"), 0o600); err != nil {
+		path := filepath.Join(dir, filepath.FromSlash(name))
+		if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+			t.Fatalf("mkdir for %s: %v", name, err)
+		}
+		if err := os.WriteFile(path, []byte("<svg/>"), 0o600); err != nil {
 			t.Fatalf("write fixture %s: %v", name, err)
 		}
 	}
-	if err := Init(dir, nil); err != nil {
-		t.Fatalf("Init(%s): %v", dir, err)
-	}
+	return dir
 }
 
 func TestLocalName(t *testing.T) {
@@ -145,19 +163,18 @@ func TestResolveMisses(t *testing.T) {
 }
 
 // TestNames checks the shape the JS islands depend on: bare names for real
-// icons, a ".fallback" suffix for the weaker ones, so appending ".svg" rebuilds
-// the file name in both cases.
+// icons, a ".fallback" suffix for the weaker ones, each mapped to its file.
 func TestNames(t *testing.T) {
 	withIcons(t, "Canton.svg", "DefinedTerm.fallback.svg", "notanicon.txt")
 
 	names := Names()
-	if !names["Canton"] {
-		t.Error("Names() missing \"Canton\"")
+	if names["Canton"] != "Canton.svg" {
+		t.Errorf("Names()[Canton] = %q, want Canton.svg", names["Canton"])
 	}
-	if !names["DefinedTerm.fallback"] {
-		t.Error("Names() missing \"DefinedTerm.fallback\"")
+	if names["DefinedTerm.fallback"] != "DefinedTerm.fallback.svg" {
+		t.Errorf("Names()[DefinedTerm.fallback] = %q", names["DefinedTerm.fallback"])
 	}
-	if names["DefinedTerm"] {
+	if _, ok := names["DefinedTerm"]; ok {
 		t.Error("Names() has bare \"DefinedTerm\"; only the .fallback form exists")
 	}
 	if len(names) != 2 {
@@ -176,5 +193,80 @@ func TestInitReplaces(t *testing.T) {
 	}
 	if got := Resolve("https://schema.ld.admin.ch/Municipality", nil); got == "" {
 		t.Error("Resolve(Municipality) = \"\" after Init with it")
+	}
+}
+
+// TestResolveNamespaced is issue #45: the same local name in two ontologies gets
+// two icons. The namespaced one serves its namespace in IRI, CURIE and
+// percent-encoded form; every other namespace still gets the root icon.
+func TestResolveNamespaced(t *testing.T) {
+	withIcons(t, "Property.svg", "rdf/Property.svg")
+
+	rdfProp := BasePath + "rdf/Property.svg"
+	tests := []struct {
+		iri  string
+		want string
+	}{
+		{"http://www.w3.org/1999/02/22-rdf-syntax-ns#Property", rdfProp},
+		{"rdf:Property", rdfProp},
+		{"rdf%3AProperty", rdfProp},
+		{"http://schema.org/Property", BasePath + "Property.svg"},
+		{"https://example.org/onto/Property", BasePath + "Property.svg"},
+	}
+	for _, tt := range tests {
+		if got := Resolve(tt.iri, nil); got != tt.want {
+			t.Errorf("Resolve(%q) = %q, want %q", tt.iri, got, tt.want)
+		}
+	}
+	if got := Resolve("https://example.org/p/1", []string{"rdf:Property"}); got != rdfProp {
+		t.Errorf("Resolve(typed rdf:Property) = %q, want %q", got, rdfProp)
+	}
+}
+
+// TestResolveNamespacedKeepsFallbackOrder: a namespace match beats a root match,
+// but a namespaced FALLBACK must not beat a root EXACT icon — fallback means
+// "generic", wherever the file lives.
+func TestResolveNamespacedKeepsFallbackOrder(t *testing.T) {
+	withIcons(t, "Canton.svg", "schema/DefinedTerm.fallback.svg")
+
+	types := []string{"http://schema.org/DefinedTerm", "https://schema.ld.admin.ch/Canton"}
+	if got, want := Resolve("https://ld.admin.ch/canton/1", types), BasePath+"Canton.svg"; got != want {
+		t.Errorf("Resolve() = %q, want the root exact match %q", got, want)
+	}
+	if got, want := Resolve("https://example.org/t/1", types[:1]), BasePath+"schema/DefinedTerm.fallback.svg"; got != want {
+		t.Errorf("Resolve() = %q, want %q", got, want)
+	}
+}
+
+// TestNamesNamespaced: namespaced icons reach the JS islands under both the full
+// IRI and the CURIE, with their folder in the path.
+func TestNamesNamespaced(t *testing.T) {
+	withIcons(t, "rdf/Property.svg", "schema/DefinedTerm.fallback.svg")
+
+	names := Names()
+	want := map[string]string{
+		"http://www.w3.org/1999/02/22-rdf-syntax-ns#Property": "rdf/Property.svg",
+		"rdf:Property":                           "rdf/Property.svg",
+		"http://schema.org/DefinedTerm.fallback": "schema/DefinedTerm.fallback.svg",
+		"schema:DefinedTerm.fallback":            "schema/DefinedTerm.fallback.svg",
+	}
+	for k, v := range want {
+		if names[k] != v {
+			t.Errorf("Names()[%q] = %q, want %q", k, names[k], v)
+		}
+	}
+	if _, ok := names["Property"]; ok {
+		t.Error("a namespaced icon must not register a bare local name")
+	}
+}
+
+// TestInitUnknownFolder: a folder naming an undeclared prefix is a startup
+// error, not an icon set that silently never matches. "_" folders are skipped.
+func TestInitUnknownFolder(t *testing.T) {
+	if err := Init(writeIcons(t, "_sheet/icon-sheet.svg", "Canton.svg"), testNamespaces, nil); err != nil {
+		t.Errorf("Init with a _ folder: %v", err)
+	}
+	if err := Init(writeIcons(t, "nope/Thing.svg"), testNamespaces, nil); err == nil {
+		t.Error("Init with an undeclared prefix folder succeeded, want an error")
 	}
 }

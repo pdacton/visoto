@@ -20,7 +20,7 @@
 
 {{ define "pageIcon" }}
   {{ $icon := resourceIcon . }}
-  {{ if contains $icon "default.svg" }}{{ $icon = "/static/img/resource/Property.svg" }}{{ end }}
+  {{ if contains $icon "default.svg" }}{{ $icon = "/static/img/resource/rdf/Property.svg" }}{{ end }}
   <img src="{{ $icon }}" alt="{{ t "header.pageIconAlt" "Page icon" }}" width="48" height="48">
 {{ end }}
 
@@ -104,7 +104,7 @@
         "queryId" (or (and $graphdb "propertyUsageGraphDB") "propertyUsage")
         "iri" .ResourceIRI
         "title" (t "type.property.usage" "Triples using this property")
-        "icon" "/static/img/resource/Property.svg") }}
+        "icon" "/static/img/resource/rdf/Property.svg") }}
   </div>
 
   <div class="row row-deck row-cards">
