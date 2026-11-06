@@ -144,8 +144,18 @@ CONSTRUCT {
       { VALUES ?propertyType { rdf:Property owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty } ?m a ?propertyType . }
       UNION { ?m rdfs:domain|rdfs:range ?declared . }
     }
-    OPTIONAL { ?m rdfs:domain/(owl:unionOf/rdf:rest*/rdf:first)? ?d . FILTER (isIRI(?d)) }
-    OPTIONAL { ?m rdfs:range/(owl:unionOf/rdf:rest*/rdf:first)? ?r . FILTER (isIRI(?r)) }
+    OPTIONAL {
+      ?m rdfs:domain ?domain .
+      OPTIONAL { SELECT ?domain ?domainMember WHERE { { SELECT ?domain ?domainCell WHERE { ?domain owl:unionOf/rdf:rest* ?domainCell . } } ?domainCell rdf:first ?domainMember . } }
+      BIND (COALESCE(?domainMember, ?domain) AS ?d)
+      FILTER (isIRI(?d))
+    }
+    OPTIONAL {
+      ?m rdfs:range ?range .
+      OPTIONAL { SELECT ?range ?rangeMember WHERE { { SELECT ?range ?rangeCell WHERE { ?range owl:unionOf/rdf:rest* ?rangeCell . } } ?rangeCell rdf:first ?rangeMember . } }
+      BIND (COALESCE(?rangeMember, ?range) AS ?r)
+      FILTER (isIRI(?r))
+    }
     BIND (?m AS ?p)
     BIND ("rdfs" AS ?source)
     BIND (<urn:visoto:Use> AS ?use)
@@ -159,7 +169,9 @@ CONSTRUCT {
     BIND (<urn:visoto:Use> AS ?use)
   } UNION {
     %[1]s
-    ?m (rdfs:domain|rdfs:range|rdfs:subClassOf|schema:domainIncludes|schema:rangeIncludes)/(owl:unionOf/rdf:rest*/rdf:first)? ?known .
+    ?m rdfs:domain|rdfs:range|rdfs:subClassOf|schema:domainIncludes|schema:rangeIncludes ?end .
+    OPTIONAL { SELECT ?end ?endMember WHERE { { SELECT ?end ?endCell WHERE { ?end owl:unionOf/rdf:rest* ?endCell . } } ?endCell rdf:first ?endMember . } }
+    BIND (COALESCE(?endMember, ?end) AS ?known)
     FILTER (isIRI(?known))
     FILTER EXISTS {
       ?? owl:imports+ ?imp .
@@ -167,7 +179,9 @@ CONSTRUCT {
     }
   } UNION {
     %[1]s
-    ?m (rdfs:range|schema:rangeIncludes)/(owl:unionOf/rdf:rest*/rdf:first)? ?datatype .
+    ?m rdfs:range|schema:rangeIncludes ?end .
+    OPTIONAL { SELECT ?end ?endMember WHERE { { SELECT ?end ?endCell WHERE { ?end owl:unionOf/rdf:rest* ?endCell . } } ?endCell rdf:first ?endMember . } }
+    BIND (COALESCE(?endMember, ?end) AS ?datatype)
     ?datatype a rdfs:Datatype .
   } UNION {
     %[1]s
@@ -176,7 +190,9 @@ CONSTRUCT {
       ?m a ?kind .
       BIND (?m AS ?node)
     } UNION {
-      ?m (rdfs:domain|rdfs:range|rdfs:subClassOf|schema:domainIncludes|schema:rangeIncludes)/(owl:unionOf/rdf:rest*/rdf:first)? ?node .
+      ?m rdfs:domain|rdfs:range|rdfs:subClassOf|schema:domainIncludes|schema:rangeIncludes ?end .
+      OPTIONAL { SELECT ?end ?endMember WHERE { { SELECT ?end ?endCell WHERE { ?end owl:unionOf/rdf:rest* ?endCell . } } ?endCell rdf:first ?endMember . } }
+      BIND (COALESCE(?endMember, ?end) AS ?node)
       FILTER (isIRI(?node))
     }
     VALUES ?labelPredicate { rdfs:label skos:prefLabel schema:name dct:title dc:title rico:title rico:name }
@@ -222,7 +238,7 @@ CONSTRUCT {
 } WHERE {
   {
     %[1]s
-    ?m owl:oneOf/rdf:rest*/rdf:first ?value .
+    { SELECT ?m ?value WHERE { { SELECT ?m ?valueCell WHERE { ?m owl:oneOf/rdf:rest* ?valueCell . } } ?valueCell rdf:first ?value . } }
     BIND (?m AS ?enumerated)
     OPTIONAL {
       VALUES ?labelPredicate { rdfs:label skos:prefLabel schema:name dct:title dc:title rico:title rico:name }
@@ -235,7 +251,9 @@ CONSTRUCT {
     ?restriction owl:onProperty ?p .
     FILTER (isIRI(?p))
     OPTIONAL {
-      ?restriction (owl:allValuesFrom|owl:someValuesFrom|owl:onClass|owl:onDataRange)/(owl:unionOf/rdf:rest*/rdf:first)? ?r .
+      ?restriction owl:allValuesFrom|owl:someValuesFrom|owl:onClass|owl:onDataRange ?end .
+      OPTIONAL { SELECT ?end ?endMember WHERE { { SELECT ?end ?endCell WHERE { ?end owl:unionOf/rdf:rest* ?endCell . } } ?endCell rdf:first ?endMember . } }
+      BIND (COALESCE(?endMember, ?end) AS ?r)
       FILTER (isIRI(?r))
     }
     OPTIONAL { ?restriction owl:someValuesFrom ?some . }
@@ -255,7 +273,9 @@ CONSTRUCT {
   } UNION {
     %[1]s
     ?m rdfs:subClassOf/owl:onProperty ?p .
-    ?p rdfs:range/(owl:unionOf/rdf:rest*/rdf:first)? ?r .
+    ?p rdfs:range ?end .
+    OPTIONAL { SELECT ?end ?endMember WHERE { { SELECT ?end ?endCell WHERE { ?end owl:unionOf/rdf:rest* ?endCell . } } ?endCell rdf:first ?endMember . } }
+    BIND (COALESCE(?endMember, ?end) AS ?r)
     FILTER (isIRI(?p) && isIRI(?r))
     BIND ("rdfs" AS ?source)
     BIND (<urn:visoto:Use> AS ?use)
@@ -266,7 +286,9 @@ CONSTRUCT {
     ?node ?labelPredicate ?label .
   } UNION {
     %[1]s
-    ?m rdfs:subClassOf/(owl:allValuesFrom|owl:someValuesFrom|owl:onClass|owl:onDataRange|(owl:onProperty/rdfs:range))/(owl:unionOf/rdf:rest*/rdf:first)? ?end .
+    ?m rdfs:subClassOf/(owl:allValuesFrom|owl:someValuesFrom|owl:onClass|owl:onDataRange|(owl:onProperty/rdfs:range)) ?directEnd .
+    OPTIONAL { SELECT ?directEnd ?endMember WHERE { { SELECT ?directEnd ?endCell WHERE { ?directEnd owl:unionOf/rdf:rest* ?endCell . } } ?endCell rdf:first ?endMember . } }
+    BIND (COALESCE(?endMember, ?directEnd) AS ?end)
     FILTER (isIRI(?end))
     BIND (IF(EXISTS {
         ?? owl:imports+ ?imp .
@@ -307,6 +329,45 @@ CONSTRUCT {
         ?shape a sh:NodeShape .
       }
     }` $members }}
+  <!-- $alternatives binds ?alternative to the property shape ?ps itself, its
+       sh:or / sh:xone members, the sh:node of either, and that node's sh:or /
+       sh:xone members: what the property path
+       `((sh:or|sh:xone)/rdf:rest*/rdf:first)?/(sh:node/(…)?)?` would reach.
+
+       LIST WALKS (every query on this page) all take one shape:
+         { SELECT ?owner ?member WHERE {
+             { SELECT ?owner ?cell WHERE { ?owner sh:in/rdf:rest* ?cell . } }
+             ?cell rdf:first ?member . } }
+       The head-to-cell walk is alone in the inner subselect, rdf:first outside
+       it. Any other form (`p/rdf:rest*/rdf:first`, a `(…)?` around it, the
+       triples inline next to other patterns) lets QLever start the transitive
+       path from the unbound side, either every node in the store (the
+       zero-length step) or every rdf:first cell walking backwards (quadratic
+       in list length). With a few thousand sh:in lists in the store that ran
+       the endpoint out of memory (HTTP 500) or into its timeout. -->
+  {{ $alternatives := `{
+      { ?anyShape sh:property ?ps . BIND (?ps AS ?alternative) }
+      UNION
+      { SELECT ?ps ?alternative WHERE { { SELECT ?ps ?altCell WHERE { ?ps (sh:or|sh:xone)/rdf:rest* ?altCell . } } ?altCell rdf:first ?alternative . } }
+      UNION
+      { ?anyShape sh:property ?ps . ?ps sh:node ?alternative . }
+      UNION
+      {
+        { SELECT ?ps ?altMember WHERE { { SELECT ?ps ?altCell WHERE { ?ps (sh:or|sh:xone)/rdf:rest* ?altCell . } } ?altCell rdf:first ?altMember . } }
+        ?altMember sh:node ?alternative .
+      }
+      UNION
+      {
+        ?anyShape sh:property ?ps . ?ps sh:node ?altNode .
+        { SELECT ?altNode ?alternative WHERE { { SELECT ?altNode ?nodeCell WHERE { ?altNode (sh:or|sh:xone)/rdf:rest* ?nodeCell . } } ?nodeCell rdf:first ?alternative . } }
+      }
+      UNION
+      {
+        { SELECT ?ps ?altMember WHERE { { SELECT ?ps ?altCell WHERE { ?ps (sh:or|sh:xone)/rdf:rest* ?altCell . } } ?altCell rdf:first ?altMember . } }
+        ?altMember sh:node ?altNode .
+        { SELECT ?altNode ?alternative WHERE { { SELECT ?altNode ?nodeCell WHERE { ?altNode (sh:or|sh:xone)/rdf:rest* ?nodeCell . } } ?nodeCell rdf:first ?alternative . } }
+      }
+    }` }}
   {{ $shacl := printf `PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 PREFIX owl:  <http://www.w3.org/2002/07/owl#>
@@ -349,7 +410,7 @@ CONSTRUCT {
     FILTER NOT EXISTS { ?ps sh:severity ?severity . FILTER (?severity != sh:Violation) }
     FILTER NOT EXISTS { ?ps sh:deactivated true . }
     OPTIONAL {
-      ?ps ((sh:or|sh:xone)/rdf:rest*/rdf:first)?/(sh:node/((sh:or|sh:xone)/rdf:rest*/rdf:first)?)? ?alternative .
+      %[2]s
       { ?alternative sh:class|sh:datatype|sh:targetClass ?r . }
       UNION
       { ?alternative sh:nodeKind sh:Literal . BIND (rdfs:Literal AS ?r) }
@@ -357,7 +418,7 @@ CONSTRUCT {
     }
     OPTIONAL { ?ps sh:minCount ?min . }
     OPTIONAL { ?ps sh:maxCount ?max . }
-    OPTIONAL { ?ps sh:in/rdf:rest*/rdf:first ?value . }
+    OPTIONAL { SELECT ?ps ?value WHERE { { SELECT ?ps ?valueCell WHERE { ?ps sh:in/rdf:rest* ?valueCell . } } ?valueCell rdf:first ?value . } }
     BIND ("shacl" AS ?source)
     BIND (<urn:visoto:Use> AS ?use)
   } UNION {
@@ -368,7 +429,9 @@ CONSTRUCT {
   } UNION {
     %[1]s
     ?shape sh:property/sh:path ?p .
-    ?p (rdfs:range|schema:rangeIncludes)/(owl:unionOf/rdf:rest*/rdf:first)? ?r .
+    ?p rdfs:range|schema:rangeIncludes ?end .
+    OPTIONAL { SELECT ?end ?endMember WHERE { { SELECT ?end ?endCell WHERE { ?end owl:unionOf/rdf:rest* ?endCell . } } ?endCell rdf:first ?endMember . } }
+    BIND (COALESCE(?endMember, ?end) AS ?r)
     FILTER (isIRI(?p) && isIRI(?r))
     BIND ("rdfs" AS ?source)
     BIND (<urn:visoto:Use> AS ?use)
@@ -390,9 +453,11 @@ CONSTRUCT {
       ?shape sh:targetClass ?end .
     } UNION {
       ?shape sh:property ?ps .
-      ?ps ((sh:or|sh:xone)/rdf:rest*/rdf:first)?/(sh:node/((sh:or|sh:xone)/rdf:rest*/rdf:first)?)?/(sh:class|sh:datatype|sh:targetClass) ?end .
+      %[2]s
+      ?alternative sh:class|sh:datatype|sh:targetClass ?end .
     } UNION {
-      ?shape sh:property/sh:in/rdf:rest*/rdf:first ?end .
+      ?shape sh:property ?ps .
+      { SELECT ?ps ?end WHERE { { SELECT ?ps ?endCell WHERE { ?ps sh:in/rdf:rest* ?endCell . } } ?endCell rdf:first ?end . } }
     }
     FILTER (isIRI(?end))
     BIND (IF(EXISTS {
@@ -406,7 +471,7 @@ CONSTRUCT {
     }
     BIND (?end AS ?node)
   }
-}` $shapes }}
+}` $shapes $alternatives }}
 
   {{ template "literals" . }}
 
