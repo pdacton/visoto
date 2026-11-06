@@ -1,8 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-<path d="M0 256C0 51.2 51.2 0 256 0 460.8 0 512 51.2 512 256 512 460.8 460.8 512 256 512 51.2 512 0 460.8 0 256" fill="#9E1B32" fill-opacity="0.2"/>
-<path transform="scale(0.98462) translate(52 52)" d="M208 52C332.8 52 364 83.2 364 208 364 332.8 332.8 364 208 364 83.2 364 52 332.8 52 208 52 83.2 83.2 52 208 52" fill="none" stroke="#9E1B32" stroke-width="34.6667" stroke-linecap="round" stroke-linejoin="round"/>
-<circle cx="384" cy="384" r="64" fill="#92D050" stroke="#9E1B32" stroke-width="18.2"/>
-<g transform="translate(345.6 345.6) scale(3.2)" fill="none" stroke="#9E1B32" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round">
-   <path d="M13 13.74a2 2 0 0 1-2 0L2.5 8.87a1 1 0 0 1 0-1.74L11 2.26a2 2 0 0 1 2 0l8.5 4.87a1 1 0 0 1 0 1.74z" />   <path d="m20 14.285 1.5.845a1 1 0 0 1 0 1.74L13 21.74a2 2 0 0 1-2 0l-8.5-4.87a1 1 0 0 1 0-1.74l1.5-.845" /> 
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+<rect width="1024" height="1024" fill="none"/>
+<path d="M0 512C0 102.4 102.4 0 512 0 921.6 0 1024 102.4 1024 512 1024 921.6 921.6 1024 512 1024 102.4 1024 0 921.6 0 512Z" fill="#9E1B32" fill-opacity="0.2"/>
+<defs><mask id="badge-gap" maskUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><rect width="1024" height="1024" fill="#fff"/><g transform="translate(616 616) scale(12)" fill="none" stroke="#000" stroke-width="11.67" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+<path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+<path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+</g></mask></defs>
+<g mask="url(#badge-gap)"><g transform="translate(112.00 112.00) scale(33.3333)" fill="none" color="#9E1B32" stroke="#9E1B32" stroke-width="1.92" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9-9-1.8-9-9 1.8-9 9-9" />
+</g></g>
+<g transform="translate(616 616) scale(12)" fill="none" color="#9E1B32" stroke="#9E1B32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+<path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+<path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
 </g>
 </svg>
