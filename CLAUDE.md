@@ -136,6 +136,13 @@ It queries from the browser through the `/api/sparql` proxy (see Data layer),
 which accepts only SELECT/ASK/CONSTRUCT/DESCRIBE. Queries stay POST: a GET puts the whole query in the URL and long link queries
 blow past the ~8 KB limit, silently losing every edge.
 
+## RDF tooling (Python)
+
+`rdflib` and `pyshacl` live in a persistent venv at `~/.venvs/rdf` (system pip
+is PEP 668-locked, no sudo). Call it directly, no activation needed:
+`~/.venvs/rdf/bin/python -I -c "import rdflib; ..."` to parse or inspect Turtle,
+`~/.venvs/rdf/bin/pyshacl -s shapes.ttl data.ttl` to validate.
+
 ## Debugging
 
 Playwright MCP is configured in `.mcp.json` (gitignored); start the server
