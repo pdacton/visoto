@@ -271,6 +271,14 @@
         window.confirm(vsTf('js.graph.confirmAdd', 'Add {n} nodes to the diagram?', { n: n }));
     }, function (ids) { kit.placeNew(ids); });
 
+    // --- Connections menu: direction subheaders --------------------------------
+    // ontodia_overrides.css groups the menu's rows into incoming and outgoing
+    // and draws a subheader above each group from these two variables; CSS
+    // cannot translate, so the words come from here. Set once on the canvas
+    // container, which GE's dialogs live in and never replace.
+    kit.container.style.setProperty('--vs-conn-incoming', JSON.stringify(vsT('js.graph.incoming', 'Incoming')));
+    kit.container.style.setProperty('--vs-conn-outgoing', JSON.stringify(vsT('js.graph.outgoing', 'Outgoing')));
+
     // --- GE's side panels (Classes / Instances left, Connections right) ---------
     // GE collapses them only through a small round chevron on their inner edge.
     // Each panel gets one panel-left/right toggle in its place (the chevrons are

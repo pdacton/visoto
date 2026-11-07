@@ -391,8 +391,8 @@
 .linkInToolBox__filter-button {
   background-image: none;
   background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.354 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l1.218-1.348'/%3E%3Cpath d='M16 6h6'/%3E%3Cpath d='M19 3v6'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.354 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l1.218-1.348'/%3E%3Cpath d='M16 6h6'/%3E%3Cpath d='M19 3v6'/%3E%3C/svg%3E");
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.354 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l1.218-1.348'/%3E%3Cpath d='M16 6h6'/%3E%3Cpath d='M19 3v6'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.75' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.354 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l1.218-1.348'/%3E%3Cpath d='M16 6h6'/%3E%3Cpath d='M19 3v6'/%3E%3C/svg%3E");
   -webkit-mask-size: contain;
   mask-size: contain;
   -webkit-mask-repeat: no-repeat;
@@ -673,8 +673,8 @@
 
 /* Outer dialog frame — the library draws a near-black 1px border, square
  * corners and a dark-tinted shadow. Retint to a Tabler card frame.
- * NOTE: no overflow:hidden here — the "Connections" title label is positioned
- * ~10px above the dialog's top edge and would get clipped. */
+ * The title label is a card header inside the frame now (see CONNECTIONS MENU
+ * below); still no overflow:hidden, GE's resize handles sit on the edge. */
 .graph-explorer-dialog {
   border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
   border-radius: var(--tblr-border-radius) !important;
@@ -699,29 +699,6 @@
   outline-offset: -1px !important;
 }
 
-/* Connection rows — subtle Tabler separators and hover */
-.link-in-popup-menu {
-  border-radius: var(--tblr-border-radius) !important;
-  transition: background-color 0.12s ease-in-out;
-}
-
-.link-in-popup-menu:hover {
-  background-color: var(--tblr-bg-surface-secondary) !important;
-}
-
-/* Count badges — Tabler badge look (pill, muted surface) */
-.graph-explorer-badge.link-in-popup-menu__count {
-  background-color: var(--tblr-bg-surface-tertiary) !important;
-  color: var(--tblr-secondary) !important;
-  border-radius: 999px !important;
-  font-weight: 600 !important;
-}
-
-/* Separator line between "All" and the individual links */
-.graph-explorer-connections-menu_links-list__hr {
-  border: 0 !important;
-  border-top: var(--tblr-border-width) solid var(--tblr-border-color) !important;
-}
 
 /* Panel backgrounds - use surface color in all themes */
 .graph-explorer-class-tree,
@@ -734,6 +711,805 @@
 .graph-explorer-accordion-item__header {
   background-color: var(--tblr-bg-surface-tertiary) !important;
   border-top-left-radius: 6px !important;
+}
+/* Panel headers (CLASSES, INSTANCES, CONNECTIONS) and the connections menu's
+   INCOMING / OUTGOING share Tabler's .subheader type. */
+.graph-explorer-accordion-item__header {
+  font-size: 0.75rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  letter-spacing: 0.04em;
+  line-height: 1rem;
+  color: var(--tblr-secondary);
+}
+
+/* ===== CONNECTIONS PANEL (right sidebar) — Tabler look =========================
+ * GE markup: .link-types-toolbox > __heading (search input, __switch-all button
+ * group + "Switch all") and __rest > h4.links-heading ("Connected to <span>")
+ * + ul.connected-links > li.linkInToolBox (btn-group, .link-title, an unnamed
+ * div holding .graph-explorer-badge, .linkInToolBox__filter-button).
+ * Selectors are deliberately specific (and !important where GE or the dark
+ * block below would win) so one set of Tabler tokens serves both themes.
+ */
+.link-types-toolbox .link-types-toolbox__heading {
+  padding: 12px;
+}
+/* Search: a leading search icon, as Tabler's .input-icon. Border, radius and
+   focus ring come from the shared .graph-explorer-form-control rule above. */
+.link-types-toolbox .search-input.graph-explorer-form-control {
+  padding-left: 2.25rem !important;
+  font-size: 0.875rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ba9be' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: 0.75rem center !important;
+  background-size: 1rem 1rem !important;
+}
+.link-types-toolbox .search-input.graph-explorer-form-control::placeholder {
+  color: var(--tblr-secondary);
+}
+/* "Switch all": the same segmented control as the rows, with a muted label,
+   its buttons in the same column as theirs. */
+.link-types-toolbox .link-types-toolbox__switch-all {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+  font-size: 0.8125rem;
+  color: var(--tblr-secondary);
+}
+
+/* Direction switch: one compact Tabler segmented group per row — ghost icon
+   buttons, the active one primary on its light tint. */
+.link-types-toolbox .graph-explorer-btn-group {
+  display: inline-flex;
+  flex-shrink: 0;
+  float: none !important;
+  margin: 0 !important;
+  border: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  overflow: hidden;
+  background: transparent !important;
+}
+.link-types-toolbox .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  margin: 0;
+  font-size: 13px;
+  color: var(--tblr-secondary) !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 0;
+  box-shadow: none;
+  cursor: pointer;
+}
+.link-types-toolbox .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default + .graph-explorer-btn {
+  border-left: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+}
+.link-types-toolbox .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default:hover {
+  color: var(--tblr-body-color) !important;
+  background-color: var(--tblr-bg-surface-secondary) !important;
+}
+.link-types-toolbox .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default.active {
+  color: var(--tblr-primary) !important;
+  background-color: var(--tblr-primary-lt) !important;
+}
+
+.link-types-toolbox .link-types-toolbox__rest {
+  border-top: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+}
+/* "Connected to" in small muted text, the entity as a Tabler light badge. */
+.link-types-toolbox .links-heading {
+  margin: 12px 12px 8px !important;
+  font-size: 0.8125rem;
+  font-weight: var(--tblr-font-weight-normal, 400);
+  line-height: 1.5rem;
+  color: var(--tblr-secondary);
+}
+.link-types-toolbox .links-heading span {
+  display: inline-block;
+  padding: 0 0.5rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1.5rem;
+  color: var(--tblr-primary);
+  background: var(--tblr-primary-lt);
+  border: 0;
+  border-radius: var(--tblr-border-radius);
+}
+
+/* Rows: a plain list like the Classes panel — no boxes or dividers; the row
+   height and hover tint carry it. The list uses the panel's full width: no
+   scrollbar gutter unless it scrolls, and the filter icon takes the count's
+   place on hover instead of a column of its own. */
+.link-types-toolbox .graph-explorer-scrollable {
+  overflow-y: auto;
+}
+.link-types-toolbox .connected-links .linkInToolBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  margin: 0;
+  padding: 4px 12px;
+  font-size: 0.875rem;
+  color: var(--tblr-body-color) !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+.link-types-toolbox .connected-links .linkInToolBox::before,
+.link-types-toolbox .connected-links .linkInToolBox::after {
+  display: none; /* GE's .clearfix: nothing floats, and they'd be flex items */
+}
+.link-types-toolbox .connected-links .linkInToolBox:hover {
+  background-color: var(--tblr-bg-surface-secondary) !important;
+}
+.link-types-toolbox .connected-links .linkInToolBox .link-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.875rem;
+  color: var(--tblr-body-color) !important;
+}
+/* The count's wrapper div keeps its width; the label is cut instead. */
+.link-types-toolbox .connected-links .linkInToolBox > div:not(.link-title) {
+  flex-shrink: 0;
+}
+.link-types-toolbox .connected-links .linkInToolBox .graph-explorer-badge {
+  display: inline-block !important;
+  margin: 0;
+  white-space: nowrap !important;
+  padding: 0.25em 0.5em;
+  font-size: 0.75rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1;
+  color: var(--tblr-secondary) !important;
+  background-color: var(--tblr-secondary-lt) !important;
+  border: 0;
+  border-radius: var(--tblr-border-radius);
+}
+/* Filter: muted 16px icon over the count's place at the row's right edge,
+   shown on row hover while the count steps aside. Touch screens have no hover:
+   there it sits after the count, always visible. */
+.link-types-toolbox .connected-links .linkInToolBox__filter-button {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  float: none;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0;
+  color: var(--tblr-secondary);
+  opacity: 0;
+}
+.link-types-toolbox .connected-links .linkInToolBox:hover .linkInToolBox__filter-button,
+.link-types-toolbox .connected-links .linkInToolBox__filter-button:focus-visible {
+  opacity: 1;
+}
+.link-types-toolbox .connected-links .linkInToolBox:hover > div:not(.link-title):not(.linkInToolBox__filter-button) {
+  visibility: hidden;
+}
+.link-types-toolbox .connected-links .linkInToolBox__filter-button:hover {
+  color: var(--tblr-primary);
+}
+@media (hover: none) {
+  .link-types-toolbox .connected-links .linkInToolBox__filter-button {
+    position: static;
+    flex-shrink: 0;
+    margin: 0;
+    opacity: 1;
+  }
+  .link-types-toolbox .connected-links .linkInToolBox:hover > div:not(.link-title):not(.linkInToolBox__filter-button) {
+    visibility: visible;
+  }
+}
+
+/* ===== CLASSES / INSTANCES PANELS (left sidebar) — Tabler look =================
+ * Same language as the Connections panel above: 12px gutters, plain rows with
+ * a hover tint, counts as Tabler light badges at the right edge, labels on one
+ * line (ellipsis; the panel can be widened). GE markup:
+ *   .graph-explorer-class-tree > __filter (input.search-input) + __tree >
+ *     .graph-explorer-class-leaf > __row (__toggle [img when it has children],
+ *     a.__body (__icon-container, __label, __count.graph-explorer-badge))
+ *     + __children (only while expanded)
+ *   .graph-explorer-instances-search > __criteria (__criterions, __text-criteria
+ *     .graph-explorer-input-group) + __rest > ul.graph-explorer-search-results >
+ *     li.graph-explorer-list-element-view (inline type colour) > __label
+ */
+.graph-explorer-class-tree .graph-explorer-class-tree__filter {
+  margin: 12px 0;
+}
+.graph-explorer-class-tree .graph-explorer-class-tree__filter-group {
+  margin: 0 12px;
+}
+/* Classes filter: leading search icon, like the Connections search. */
+.graph-explorer-class-tree .search-input.graph-explorer-form-control {
+  padding-left: 2.25rem !important;
+  font-size: 0.875rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ba9be' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: 0.75rem center !important;
+  background-size: 1rem 1rem !important;
+}
+.graph-explorer-class-tree .graph-explorer-class-tree__tree {
+  padding: 4px 0;
+  border-top: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf {
+  margin: 0;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__children {
+  margin-left: 16px;
+}
+/* The row carries hover and selection across the full width. */
+.graph-explorer-class-tree .graph-explorer-class-leaf__row {
+  min-height: 32px;
+  padding: 0 12px 0 4px;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__row:hover {
+  background-color: var(--tblr-bg-surface-secondary);
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__row:has(.graph-explorer-class-leaf__body--selected) {
+  background-color: var(--tblr-primary-lt);
+}
+/* Expand toggle: a narrow column with a chevron that turns when open. Leaves
+   keep the (empty) column, so icons line up. */
+.graph-explorer-class-tree .graph-explorer-class-leaf__toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  color: var(--tblr-secondary);
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__toggle-icon {
+  display: none;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__toggle:not(:empty)::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 0.15s ease-in-out;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf:has(> .graph-explorer-class-leaf__children) > .graph-explorer-class-leaf__row .graph-explorer-class-leaf__toggle::before {
+  transform: rotate(90deg);
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__toggle:hover:not(:empty) {
+  color: var(--tblr-body-color);
+  background: transparent;
+}
+.graph-explorer-class-tree a.graph-explorer-class-leaf__body,
+.graph-explorer-class-tree a.graph-explorer-class-leaf__body:hover {
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: 8px;
+  padding: 0 0 0 4px;
+  font-size: 0.875rem;
+  text-decoration: none !important;
+  background: transparent !important;
+  border: 0 !important;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__icon-container {
+  flex-shrink: 0;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__label {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--tblr-body-color) !important;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__body--selected .graph-explorer-class-leaf__label {
+  color: var(--tblr-primary) !important;
+}
+.graph-explorer-class-tree .graph-explorer-class-leaf__count.graph-explorer-badge {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0.25em 0.5em;
+  font-size: 0.75rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1;
+  color: var(--tblr-secondary) !important;
+  background-color: var(--tblr-secondary-lt) !important;
+  border: 0;
+  border-radius: var(--tblr-border-radius);
+}
+
+/* Instances: criteria as Tabler light badges, the text search and its button
+   as one input group. */
+.graph-explorer-instances-search .graph-explorer-instances-search__criteria {
+  margin: 12px 0;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterions {
+  padding: 0 12px;
+  font-size: 0.8125rem;
+  color: var(--tblr-secondary);
+}
+/* One line of text with inline badges (GE mixes text nodes and spans, so no
+   flex: each text bit would become its own column); the remove button floats
+   right. */
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion {
+  display: block;
+  line-height: 1.75rem;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion::after {
+  content: "";
+  display: block;
+  clear: both;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-remove {
+  float: right;
+  margin: 2px 0 0 8px;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__link-direction {
+  height: 1rem;
+  vertical-align: -0.2em;
+  opacity: 0.6;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-remove .graph-explorer-btn.graph-explorer-btn-default {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  color: var(--tblr-secondary) !important;
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-remove .graph-explorer-btn.graph-explorer-btn-default:hover {
+  color: var(--tblr-body-color) !important;
+  background: var(--tblr-bg-surface-secondary) !important;
+}
+/* fa-times is the "hide links" icon elsewhere (Connections); here it removes. */
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-remove .fa-times {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-class,
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-element,
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-link-type {
+  display: inline;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1.5rem;
+  word-wrap: normal;
+  border: 0;
+  border-radius: var(--tblr-border-radius);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-class {
+  color: var(--tblr-primary);
+  background: var(--tblr-primary-lt);
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-element {
+  color: var(--tblr-orange);
+  background: var(--tblr-orange-lt);
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__criterion-link-type {
+  color: var(--tblr-green);
+  background: var(--tblr-green-lt);
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__text-criteria {
+  margin: 0 12px;
+}
+/* Tabler-native, as the other two searches: .input-icon (search icon on the
+   left) plus .input-group-flat for the submit — GE's instance search runs on
+   submit, not while typing, so the button stays, but inside the field's border
+   with an Enter icon. One focus ring around the whole group. */
+.graph-explorer-instances-search .graph-explorer-input-group .graph-explorer-form-control {
+  padding-left: 2.25rem !important;
+  font-size: 0.875rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ba9be' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: 0.75rem center !important;
+  background-size: 1rem 1rem !important;
+  border-right: 0 !important;
+  border-top-right-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+}
+.graph-explorer-instances-search .graph-explorer-input-group-btn > .graph-explorer-btn.graph-explorer-btn-default {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  margin-left: 0;
+  padding: 0;
+  font-size: 1rem;
+  color: var(--tblr-secondary) !important;
+  background-color: var(--tblr-bg-forms) !important;
+  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+  border-left: 0 !important;
+  border-radius: 0 var(--tblr-border-radius) var(--tblr-border-radius) 0 !important;
+  box-shadow: none;
+}
+.graph-explorer-instances-search .graph-explorer-input-group-btn > .graph-explorer-btn.graph-explorer-btn-default:hover {
+  color: var(--tblr-primary) !important;
+}
+.graph-explorer-instances-search .graph-explorer-input-group-btn .fa-search {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 10 4 15 9 20'/%3E%3Cpath d='M20 4v7a4 4 0 0 1-4 4H4'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 10 4 15 9 20'/%3E%3Cpath d='M20 4v7a4 4 0 0 1-4 4H4'/%3E%3C/svg%3E");
+}
+.graph-explorer-instances-search .graph-explorer-input-group {
+  border-radius: var(--tblr-border-radius);
+}
+.graph-explorer-instances-search .graph-explorer-input-group:focus-within {
+  outline: var(--tblr-focus-ring-width) solid var(--tblr-focus-ring-color);
+}
+.graph-explorer-instances-search .graph-explorer-input-group:focus-within .graph-explorer-form-control,
+.graph-explorer-instances-search .graph-explorer-input-group:focus-within .graph-explorer-input-group-btn > .graph-explorer-btn.graph-explorer-btn-default {
+  border-color: color-mix(in oklab, var(--tblr-white) 50%, var(--tblr-primary)) !important;
+}
+.graph-explorer-instances-search .graph-explorer-input-group .graph-explorer-form-control:focus {
+  outline: 0 !important;
+}
+/* Results (Instances panel and the connections menu's Objects view): plain
+   rows like the class tree; the type colour GE paints on each item stays as a
+   slim bar on its left. Labels in the body font, one line. GE marks a selected
+   item only by an inline tinted label background (white when unselected), so
+   the white one becomes the surface and any other the Tabler selection tint. */
+.graph-explorer-instances-search .graph-explorer-instances-search__rest {
+  padding: 4px 0 0;
+  border-top: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+}
+/* The type-colour bar echoes the node's accent strip: 6px with the node's
+   rounded left corners, one tab per row (2px apart, so the corners show).
+   Items already on the canvas (GE's --disabled) keep a full-strength bar and
+   grey only their text, so the colour stays readable. */
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view {
+  margin: 0 0 2px;
+  padding: 0 0 0 6px;
+  border-radius: var(--tblr-border-radius) 0 0 var(--tblr-border-radius);
+  box-shadow: none;
+  overflow: hidden;
+}
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view--disabled {
+  opacity: 1;
+}
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view--disabled .graph-explorer-list-element-view__label {
+  color: var(--tblr-disabled-color, var(--tblr-secondary));
+}
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view:hover {
+  box-shadow: none;
+}
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view__label {
+  min-height: 0;
+  padding: 6px 12px 6px 6px; /* 32px rows; 6px + the 6px bar = the 12px gutter */
+  font-family: var(--tblr-body-font-family, inherit);
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  overflow-wrap: normal;
+  color: var(--tblr-body-color);
+  border-radius: 0;
+}
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view__label[style*="255, 255, 255"] {
+  background: var(--tblr-bg-surface) !important;
+}
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view:not(.graph-explorer-list-element-view--disabled):hover .graph-explorer-list-element-view__label[style*="255, 255, 255"] {
+  background: var(--tblr-bg-surface-secondary) !important;
+}
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view__label:not([style*="255, 255, 255"]) {
+  color: var(--tblr-primary);
+  /* the tint is translucent: over the surface, not GE's type colour behind */
+  background: linear-gradient(var(--tblr-primary-lt), var(--tblr-primary-lt)), var(--tblr-bg-surface) !important;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__rest-end {
+  margin: 8px 12px 12px;
+}
+
+/* Thin scrollbars in both side panels. */
+.graph-explorer-accordion .graph-explorer-scrollable {
+  scrollbar-width: thin;
+  scrollbar-color: var(--tblr-border-color-dark, #c4c9d1) transparent;
+}
+
+/* ===== CONNECTIONS MENU (node halo dialog) — Tabler card ======================
+ * The dialog becomes a Tabler card: the title label (GE floats it on the top
+ * border) is the card header, the close button sits inside it like
+ * .btn-close. Rows, counts, search and results reuse the sidebars' look.
+ * GE markup: .graph-explorer-dialog > __close-button + .graph-explorer-
+ * connections-menu > __title-label, [_bread-crumbs], _search-line, then either
+ * ul._links-list > li.link-in-popup-menu (_direction > __in|out-direction,
+ * __link-title, __count badge, __filter-button, __navigate-button) or
+ * _objects-panel (__select-all label>checkbox, _objects-list > results,
+ * _bottom-panel: __count-label + __add-button).
+ */
+.graph-explorer-dialog {
+  background-color: var(--tblr-bg-surface) !important;
+  box-shadow: var(--tblr-shadow-dropdown, var(--tblr-box-shadow)) !important;
+}
+.graph-explorer-dialog .graph-explorer-dialog__close-button {
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+  width: 16px;
+  height: 16px;
+  color: var(--tblr-body-color);
+  opacity: 0.5;
+  transition: opacity 0.15s ease-in-out;
+}
+.graph-explorer-dialog .graph-explorer-dialog__close-button:hover,
+.graph-explorer-dialog .graph-explorer-dialog__close-button:focus-visible {
+  opacity: 0.85;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu__title-label {
+  position: static;
+  display: block;
+  max-width: none;
+  margin: 0;
+  padding: 0.75rem 2.75rem 0.75rem 12px;
+  font-size: 1rem;
+  font-weight: var(--tblr-font-weight-bold, 600);
+  line-height: 1.5rem;
+  color: var(--tblr-body-color) !important;
+  background: transparent !important;
+  border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: 0;
+}
+/* Breadcrumb, as Tabler's .breadcrumb: small, muted, the link in primary. */
+.graph-explorer-connections-menu .graph-explorer-connections-menu_bread-crumbs {
+  height: auto;
+  min-height: 0;
+  padding: 8px 12px 0;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+  white-space: nowrap;
+  color: var(--tblr-secondary);
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu__link {
+  color: var(--tblr-primary);
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_search-line {
+  padding: 12px;
+}
+.graph-explorer-connections-menu .search-input.graph-explorer-form-control {
+  padding-left: 2.25rem !important;
+  font-size: 0.875rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239ba9be' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: 0.75rem center !important;
+  background-size: 1rem 1rem !important;
+}
+
+/* Connections list: plain rows like the sidebars. */
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 0;
+  border-top: var(--tblr-border-width) solid var(--tblr-border-color);
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list > * {
+  flex-shrink: 0;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list__hr {
+  margin: 4px 0;
+  border: 0;
+  border-top: var(--tblr-border-width) solid var(--tblr-border-color);
+  opacity: 1;
+}
+/* Grouped by direction: "All" (and its divider) first, then the incoming
+   rows under their subheader, then the outgoing ones — visual order only,
+   GE's alphabetical order holds within each group. The list's ::before and
+   ::after are the two subheaders (Tabler .subheader); their words come
+   translated from graph-tools.js (--vs-conn-incoming/outgoing). */
+.graph-explorer-connections-menu .link-in-popup-menu:has(.link-in-popup-menu_direction__in-direction) {
+  order: 2;
+}
+.graph-explorer-connections-menu .link-in-popup-menu:has(.link-in-popup-menu_direction__out-direction) {
+  order: 4;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list::before,
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list::after {
+  display: block;
+  padding: 12px 12px 4px;
+  font-size: 0.75rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tblr-secondary);
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list:has(.link-in-popup-menu_direction__in-direction)::before {
+  content: var(--vs-conn-incoming, "Incoming");
+  order: 1;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list:has(.link-in-popup-menu_direction__out-direction)::after {
+  content: var(--vs-conn-outgoing, "Outgoing");
+  order: 3;
+}
+/* Direction icons: both point right, as a flow — ↘ in (green), ↗ out (blue). */
+.graph-explorer-connections-menu .link-in-popup-menu_direction__in-direction {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 7 10 10'/%3E%3Cpath d='M17 7v10H7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 7 10 10'/%3E%3Cpath d='M17 7v10H7'/%3E%3C/svg%3E");
+}
+.graph-explorer-connections-menu .link-in-popup-menu_direction__out-direction {
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7h10v10'/%3E%3Cpath d='M7 17 17 7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7h10v10'/%3E%3Cpath d='M7 17 17 7'/%3E%3C/svg%3E");
+}
+.graph-explorer-connections-menu .link-in-popup-menu {
+  position: relative;
+  gap: 8px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 12px;
+  font-size: 0.875rem;
+  color: var(--tblr-body-color);
+  background: transparent !important;
+  border-radius: 0;
+  cursor: pointer;
+}
+.graph-explorer-connections-menu .link-in-popup-menu:hover {
+  background-color: var(--tblr-bg-surface-secondary) !important;
+}
+.graph-explorer-connections-menu .link-in-popup-menu_direction {
+  min-height: 0;
+  padding: 0;
+  background: transparent !important;
+}
+.graph-explorer-connections-menu .link-in-popup-menu_direction__in-direction,
+.graph-explorer-connections-menu .link-in-popup-menu_direction__out-direction {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  opacity: 1;
+}
+.graph-explorer-connections-menu .link-in-popup-menu__link-title {
+  margin: 0;
+  min-width: 0;
+}
+.graph-explorer-connections-menu .graph-explorer-badge.link-in-popup-menu__count {
+  margin: 0;
+  padding: 0.25em 0.5em;
+  font-size: 0.75rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1;
+  color: var(--tblr-secondary) !important;
+  background-color: var(--tblr-secondary-lt) !important;
+  border: 0;
+  border-radius: var(--tblr-border-radius);
+}
+/* The filter icon takes the count's place on hover (as in the Connections
+   panel); the chevron (navigate) always shows. */
+.graph-explorer-connections-menu .link-in-popup-menu__filter-button {
+  position: absolute;
+  top: 50%;
+  right: 36px;
+  width: 16px;
+  height: 16px;
+  margin: -8px 0 0;
+  color: var(--tblr-secondary);
+  opacity: 0;
+}
+.graph-explorer-connections-menu .link-in-popup-menu:hover .link-in-popup-menu__filter-button {
+  opacity: 1;
+}
+.graph-explorer-connections-menu .link-in-popup-menu:hover .link-in-popup-menu__count {
+  visibility: hidden;
+}
+.graph-explorer-connections-menu .link-in-popup-menu__filter-button:hover,
+.graph-explorer-connections-menu .link-in-popup-menu__navigate-button:hover {
+  color: var(--tblr-primary);
+}
+.graph-explorer-connections-menu .link-in-popup-menu__navigate-button {
+  flex-shrink: 0;
+  width: 16px;
+  min-width: 16px;
+  height: 16px;
+  margin: 0;
+  color: var(--tblr-secondary);
+  opacity: 1;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m9 18 6-6-6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+@media (hover: none) {
+  .graph-explorer-connections-menu .link-in-popup-menu__filter-button {
+    position: static;
+    margin: 0;
+    opacity: 1;
+  }
+  .graph-explorer-connections-menu .link-in-popup-menu:hover .link-in-popup-menu__count {
+    visibility: visible;
+  }
+}
+
+/* Objects view */
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel {
+  padding: 0 12px 12px;
+}
+/* "Select All" as Tabler's .form-check. */
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel__select-all {
+  margin-bottom: 8px;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel__select-all label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--tblr-body-color);
+  cursor: pointer;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel__select-all input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  background-color: var(--tblr-bg-forms);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 0.75rem;
+  border: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius-sm, 4px);
+  box-shadow: var(--tblr-shadow-input);
+  cursor: pointer;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel__select-all input[type="checkbox"]:checked {
+  background-color: var(--tblr-primary);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M4 8.5l3 3l5-6'/%3E%3C/svg%3E");
+  border-color: var(--tblr-primary);
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel__select-all input[type="checkbox"]:focus-visible {
+  outline: var(--tblr-focus-ring-width) solid var(--tblr-focus-ring-color);
+}
+/* The list keeps a frame (it scrolls on its own), as a Tabler card list. */
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel_objects-list {
+  margin-bottom: 8px;
+  padding: 0;
+  overflow-y: auto;
+  border: var(--tblr-border-width) solid var(--tblr-border-color);
+  border-radius: var(--tblr-border-radius);
+  scrollbar-width: thin;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel_bottom-panel {
+  align-items: center;
+  height: auto;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel_bottom-panel__count-label {
+  height: auto;
+  margin: 0;
+  padding: 0;
+  font-size: 0.8125rem;
+  font-weight: var(--tblr-font-weight-normal, 400);
+  color: var(--tblr-secondary);
+}
+/* "Add all" as a small Tabler primary button. */
+.graph-explorer-connections-menu .graph-explorer-btn.graph-explorer-btn-primary.graph-explorer-connections-menu_objects-panel_bottom-panel__add-button {
+  height: auto;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1.25rem;
+  color: var(--tblr-primary-fg, #fff) !important;
+  background-color: var(--tblr-primary) !important;
+  border: var(--tblr-border-width) solid var(--tblr-primary) !important;
+  border-radius: var(--tblr-border-radius);
+  box-shadow: var(--tblr-shadow-input);
+}
+.graph-explorer-connections-menu .graph-explorer-btn.graph-explorer-btn-primary.graph-explorer-connections-menu_objects-panel_bottom-panel__add-button:hover {
+  background-color: color-mix(in srgb, var(--tblr-primary) 90%, #000) !important;
+}
+.graph-explorer-connections-menu .graph-explorer-btn.graph-explorer-btn-primary.graph-explorer-connections-menu_objects-panel_bottom-panel__add-button:disabled {
+  opacity: 0.4;
 }
 
 /* ===== DARK MODE SUPPORT ===== */
@@ -827,23 +1603,6 @@
     color: var(--tblr-body-color) !important;
   }
 
-  /* Connection list items with alternating backgrounds */
-  .link-in-popup-menu {
-    background-color: var(--tblr-bg-surface-secondary) !important;
-    color: var(--tblr-body-color) !important;
-  }
-
-  .link-in-popup-menu:nth-child(even) {
-    background-color: var(--tblr-bg-surface-tertiary) !important;
-  }
-
-  .link-in-popup-menu:hover {
-    background-color: var(--tblr-bg-surface-dark) !important;
-  }
-
-  .link-in-popup-menu_direction {
-    background-color: var(--tblr-bg-surface-dark) !important;
-  }
 
   /* Progress bar in connections */
   .graph-explorer-progress-bar {
@@ -1112,9 +1871,16 @@
   z-index: 102;
   width: 32px;
   height: 32px;
-  background: var(--tblr-bg-surface, #fff);
-  border: 1px solid var(--tblr-border-color, #e6e7e9);
   border-radius: 50%;
+}
+/* Colours, border and shadow are Tabler's .btn. Its hover tint is translucent,
+   which over the canvas lets the grid and edges show through: lay it over the
+   solid surface instead. Same for the fullscreen exit button. */
+.graph-sidebar-toggle:hover,
+.graph-sidebar-toggle:focus-visible,
+.graph-exit-fullscreen:hover,
+.graph-exit-fullscreen:focus-visible {
+  background: linear-gradient(var(--tblr-btn-hover-bg), var(--tblr-btn-hover-bg)), var(--tblr-btn-bg);
 }
 .graph-explorer-accordion-item__handle-btn {
   display: none !important;
