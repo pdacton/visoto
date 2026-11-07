@@ -576,6 +576,9 @@
   --ge-canvas: var(--tblr-bg-surface-secondary);
   /* Zoomed out, the dots merge into a flat tint, so keep them as light as GE's. */
   --ge-canvas-dot: var(--tblr-border-color);
+  /* GE's stack starts with "Inter", which the page never loads: it showed only
+   * where Inter is installed locally. Tabler's stack, so the graph matches. */
+  --ge-font-sans: var(--tblr-font-sans-serif);
 }
 
 /* Panel headers */
@@ -1380,6 +1383,27 @@
   border-top: var(--tblr-border-width) solid var(--tblr-border-color);
   opacity: 1;
 }
+/* Status text ("Loading...", "No available nodes", an error): GE draws it as a
+   bold x-large label in fixed #cbcbcb, the Objects view's also in a grey inset
+   box. Small muted text instead — the progress bar above already shows the
+   loading. An error reads in danger. */
+.graph-explorer-connections-menu .graph-explorer-connections-menu__loading,
+.graph-explorer-connections-menu .graph-explorer-connections-menu__error,
+.graph-explorer-connections-menu .graph-explorer-connections-menu__loading-objects,
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list__loading {
+  margin: 0;
+  padding: 24px 12px;
+  font-size: 0.875rem;
+  font-weight: var(--tblr-font-weight-normal, 400);
+  color: var(--tblr-secondary);
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+.graph-explorer-connections-menu .graph-explorer-connections-menu__error {
+  color: var(--tblr-danger);
+}
+
 /* Grouped by direction: "All" (and its divider) first, then the incoming
    rows under their subheader, then the outgoing ones — visual order only,
    GE's alphabetical order holds within each group. The list's ::before and
