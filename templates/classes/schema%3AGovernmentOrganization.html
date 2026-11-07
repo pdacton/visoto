@@ -78,12 +78,15 @@
           }
         </sparql-tree-query>
         <sparql-tree-query role="search">
-          SELECT ?node ?label WHERE {
+          SELECT DISTINCT ?node ?label WHERE {
             GRAPH &lt;https://lindas.admin.ch/fch/staatskalender&gt; {
               ?node a schema:GovernmentOrganization .
-              ?node schema:name ?label .
-              FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*"))
-              FILTER (CONTAINS(LCASE(STR(?label)), LCASE(STR(?__token__))))
+              # Match the term in ANY language: the tree falls back to the German name
+              # when no display-language one exists, so a dispLang-only match would miss
+              # exactly what the user sees (issue #38). ?label is only the display label.
+              ?node schema:name ?anyName .
+              FILTER (CONTAINS(LCASE(STR(?anyName)), LCASE(STR(?__token__))))
+              OPTIONAL { ?node schema:name ?label . FILTER (langMatches(lang(?label), visoto:dispLang) || !langMatches(lang(?label), "*")) }
             }
           } ORDER BY ?label
         </sparql-tree-query>

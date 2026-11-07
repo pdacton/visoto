@@ -401,8 +401,15 @@
       });
     }
 
+    // Every keystroke past the debounce starts a search, and responses arrive in
+    // any order — the 500-hit "Sta" can land after "Statistik". Each search takes a
+    // ticket; a response (or a reveal step) whose ticket is no longer current is
+    // dropped, so only the latest term ever touches the tree.
+    var searchSeq = 0;
+
     function runSearch(term) {
       if (!tree) return;
+      var ticket = ++searchSeq;
       if (!term) {
         tree.clearFilter();
         setStatus('');
@@ -422,6 +429,7 @@
       setStatus(escapeHTML(vsT('js.lazyTree.searching', 'Searching…')));
 
       fetchRole('search', { q: term }).then(function (env) {
+        if (ticket !== searchSeq) return;   // superseded by a newer term
         if (env.error) {
           // No search role declared, or the query failed: fall back to the local
           // filter rather than leaving the box inert.
@@ -440,9 +448,10 @@
         if (flat) {
           showFlatHits(hits, env);
         } else {
-          revealHits(hits, env);
+          revealHits(hits, env, term, ticket);
         }
       }).catch(function (err) {
+        if (ticket !== searchSeq) return;
         console.error('sparqlLazyTree: search failed', err);
         setStatus(escapeHTML(vsT('js.lazyTree.searchFailed', 'The search failed.')), 'error');
       });
@@ -470,7 +479,7 @@
     // the first MAX_REVEALED are revealed, and the status line says so rather than
     // letting the tree look as though it found fewer matches than it did. Users who
     // want to see all of them switch to the flat list, which costs nothing extra.
-    function revealHits(hits, env) {
+    function revealHits(hits, env, term, ticket) {
       var keys = hits.map(function (h) { return h.key; });
       var revealing = Math.min(keys.length, MAX_REVEALED);
       setStatus(escapeHTML(
@@ -486,6 +495,7 @@
         return fetchRole('focus', { node: key }).catch(function () { return null; });
       });
       Promise.all(walks).then(function (results) {
+        if (ticket !== searchSeq) return;
         results = results.filter(function (f) { return f && !f.error && f.levels; });
         results.forEach(function (focus) {
           for (var parentKey in focus.levels) {
@@ -505,16 +515,47 @@
         };
         withoutRemembering(function () {
           return step(0).then(function () {
+            if (ticket !== searchSeq) return;
             placeUnloadedHits(hits, chains);
             // Filter on the hit KEYS, not the typed term: the search matches any
             // label (Switzerland), the tree shows the display-language one (Schweiz),
             // so a text filter would hide the very node that was found.
+            //
+            // A predicate filter gets no highlight from Wunderbaum (it only marks up
+            // titles for a string filter), so mark the term where the shown title
+            // contains it. Wunderbaum clears titleWithHighlight before each filter
+            // pass, so setting it inside the predicate is what sticks.
             var hitKeys = {};
             chains.forEach(function (chain) { if (chain.length) hitKeys[chain[chain.length - 1]] = true; });
-            tree.filterNodes(function (node) { return !!hitKeys[node.key]; });
+            tree.filterNodes(function (node) {
+              if (!hitKeys[node.key]) return false;
+              var marked = highlightTitle(node.title, term);
+              if (marked) node.titleWithHighlight = marked;
+              return true;
+            });
           });
         });
       });
+    }
+
+    // The title HTML-escaped with each case-insensitive occurrence of term wrapped
+    // in <mark>, or null when the shown title does not contain it (the hit matched a
+    // name in another language).
+    function highlightTitle(title, term) {
+      var t = String(title == null ? '' : title);
+      var needle = String(term || '').toLowerCase();
+      if (!needle) return null;
+      var hay = t.toLowerCase();
+      var at = hay.indexOf(needle);
+      if (at < 0) return null;
+      var out = '';
+      var from = 0;
+      while (at >= 0) {
+        out += escapeHTML(t.slice(from, at)) + '<mark>' + escapeHTML(t.slice(at, at + needle.length)) + '</mark>';
+        from = at + needle.length;
+        at = hay.indexOf(needle, from);
+      }
+      return out + escapeHTML(t.slice(from));
     }
 
     // A hit can sit beyond its level's page — Switzerland is root #270-something
