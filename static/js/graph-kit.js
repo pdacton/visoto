@@ -340,6 +340,8 @@
       kit.commands.history.events.on('historyChanged', updateHistoryButtons);
       kit.commands.history.events.on('historyChanged', scheduleAutosave);
       wireToolbar();
+      // Touch first: its capture listener must see a finger before selection's.
+      if (window.VisotoGraphTouch) window.VisotoGraphTouch.install(kit);
       if (window.VisotoGraphSelection) window.VisotoGraphSelection.install(kit);
       if (window.VisotoGraphTools) window.VisotoGraphTools.install(kit);
       if (window.VisotoGraphFilter) window.VisotoGraphFilter.install(kit);

@@ -1768,7 +1768,7 @@
 "page.graphHelp.moveTitle" = "Muoversi"
 "page.graphHelp.move1" = "In modalità Seleziona (riquadro tratteggiato, predefinita) trascinare su un'area vuota disegna un riquadro di selezione; in modalità Sposta (mano) muove la vista. Maiusc+trascina disegna un riquadro e trascinare con il tasto destro muove la vista in entrambe le modalità."
 "page.graphHelp.move2" = "Ingrandisci con i pulsanti + e − o Ctrl+rotellina. Adatta mostra l'intero diagramma o la selezione, se presente. Il pulsante nell'intestazione della scheda apre il grafo a schermo intero."
-"page.graphHelp.move3" = "Sugli schermi tattili usa la modalità Seleziona per trascinare nodi e disegnare riquadri; in modalità Sposta un dito scorre l'area."
+"page.graphHelp.touch" = "Sugli schermi tattili un dito trascina un nodo e un tocco lo seleziona. Due dita spostano e ingrandiscono il diagramma; un dito su un'area vuota scorre la pagina. A schermo intero un dito sposta l'area, e una pressione lunga seguita da un trascinamento disegna un riquadro di selezione."
 "page.graphHelp.selectTitle" = "Selezionare"
 "page.graphHelp.select1" = "Fai clic su un nodo per selezionarlo; Maiusc+clic aggiunge o toglie un nodo. Ctrl+A seleziona tutto, Esc annulla la selezione."
 "page.graphHelp.select2" = "Finché ci sono nodi selezionati, una barra in basso offre: aggiungi tutti i vicini, seleziona i vicini, disponi la selezione, fissa, allinea e distribuisci, mantieni solo questi e rimuovi. Trascinare un nodo selezionato sposta tutta la selezione."

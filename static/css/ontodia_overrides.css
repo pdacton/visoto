@@ -1227,16 +1227,30 @@
   background: color-mix(in srgb, var(--tblr-primary, #066fd1) 8%, transparent);
 }
 /* The plain arrow stays on the canvas in either mode, as in Miro; a closed hand
-   while a right-drag pans (graph-selection.js).
-   Select mode: no browser panning by touch, so a finger draws boxes and drags
-   nodes instead (GL-40). */
+   while a right-drag pans (graph-selection.js). */
 .graph-explorer-paper-area__area {
   cursor: default;
 }
 .graph-explorer-paper-area__area.graph-panning {
   cursor: grabbing;
 }
-.graph-select-mode .graph-explorer-paper-area {
+/* Touch (GH #19, graph-touch.js). Nodes keep every finger (dragged by
+   graph-selection.js). Embedded, the browser may only scroll with one finger,
+   never pinch-zoom the page; GE's scroller is overflow:hidden (it pans in
+   code), so that finger scrolls the PAGE and the graph never traps it — two
+   fingers pan and zoom the canvas.
+   Fullscreen takes every finger: one pans, two pinch. touch-action is set on
+   the scroller as well as its wrapper, as browsers differ in whether a
+   scroller's ancestors count. */
+.graph-explorer-paper-area [data-element-id] {
+  touch-action: none;
+}
+.graph-explorer-paper-area,
+.graph-explorer-paper-area__area {
+  touch-action: pan-x pan-y;
+}
+.graph-maximized .graph-explorer-paper-area,
+.graph-maximized .graph-explorer-paper-area__area {
   touch-action: none;
 }
 

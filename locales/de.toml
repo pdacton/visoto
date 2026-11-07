@@ -1769,7 +1769,7 @@
 "page.graphHelp.moveTitle" = "Bewegen"
 "page.graphHelp.move1" = "Im Auswahl-Modus (gestrichelter Rahmen, Standard) zeichnet Ziehen auf leerer Fläche einen Auswahlrahmen; im Verschieben-Modus (Hand) bewegt es die Ansicht. Umschalt+Ziehen zeichnet einen Rahmen und Ziehen mit der rechten Maustaste bewegt die Ansicht in beiden Modi."
 "page.graphHelp.move2" = "Zoomen mit den Tasten + und − oder Strg+Mausrad. Einpassen zeigt das ganze Diagramm oder die Auswahl, falls vorhanden. Die Schaltfläche im Kartenkopf öffnet den Graphen im Vollbild."
-"page.graphHelp.move3" = "Auf Touchscreens im Auswahl-Modus Knoten ziehen und Rahmen zeichnen; im Verschieben-Modus scrollt ein Finger die Fläche."
+"page.graphHelp.touch" = "Auf Touchscreens zieht ein Finger einen Knoten, ein Tippen wählt ihn aus. Zwei Finger verschieben und zoomen das Diagramm; ein Finger auf freier Fläche scrollt die Seite. Im Vollbild verschiebt ein Finger die Fläche, und langes Drücken mit anschliessendem Ziehen zeichnet einen Auswahlrahmen."
 "page.graphHelp.selectTitle" = "Auswählen"
 "page.graphHelp.select1" = "Knoten anklicken, um ihn auszuwählen; Umschalt+Klick fügt einen Knoten hinzu oder entfernt ihn. Strg+A wählt alles aus, Esc hebt die Auswahl auf."
 "page.graphHelp.select2" = "Solange Knoten ausgewählt sind, bietet eine Leiste unten: alle Nachbarn hinzufügen, Nachbarn auswählen, Auswahl anordnen, fixieren, ausrichten und verteilen, nur diese behalten und entfernen. Ziehen eines ausgewählten Knotens verschiebt die ganze Auswahl."

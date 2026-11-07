@@ -1768,7 +1768,7 @@
 "page.graphHelp.moveTitle" = "Se déplacer"
 "page.graphHelp.move1" = "En mode Sélection (cadre pointillé, par défaut), glisser sur une zone vide trace un cadre de sélection ; en mode Déplacer (main), cela déplace la vue. Maj+glisser trace un cadre et glisser avec le bouton droit déplace la vue dans les deux modes."
 "page.graphHelp.move2" = "Zoomez avec les boutons + et − ou Ctrl+molette. Ajuster montre tout le diagramme, ou la sélection s'il y en a une. Le bouton dans l'en-tête de la carte ouvre le graphe en plein écran."
-"page.graphHelp.move3" = "Sur écran tactile, utilisez le mode Sélection pour déplacer des nœuds et tracer des cadres ; en mode Déplacer, un doigt fait défiler la zone."
+"page.graphHelp.touch" = "Sur écran tactile, un doigt déplace un nœud et un toucher le sélectionne. Deux doigts déplacent et zooment le diagramme ; un doigt sur une zone vide fait défiler la page. En plein écran, un doigt déplace la zone, et un appui long suivi d'un glissement trace un cadre de sélection."
 "page.graphHelp.selectTitle" = "Sélectionner"
 "page.graphHelp.select1" = "Cliquez sur un nœud pour le sélectionner ; Maj+clic ajoute ou retire un nœud. Ctrl+A sélectionne tout, Échap efface la sélection."
 "page.graphHelp.select2" = "Tant que des nœuds sont sélectionnés, une barre en bas propose : ajouter tous leurs voisins, sélectionner leurs voisins, disposer la sélection, épingler, aligner et répartir, ne garder que ceux-ci et retirer. Déplacer un nœud sélectionné déplace toute la sélection."

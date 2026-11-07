@@ -387,6 +387,18 @@
         return workspace._getPaperArea().pageToPaperCoords(pageX, pageY);
       },
       fitRect: function (rect) { workspace.zoomToFitRect(rect); },
+      // Touch gestures (graph-touch.js, GH #19). zoomAt keeps the paper point
+      // under page (x, y) where it is; panBy moves the content by screen px.
+      getScale: function () { return workspace._getPaperArea().getScale(); },
+      zoomAt: function (scale, pageX, pageY) {
+        var pa = workspace._getPaperArea();
+        pa.setScale(scale, { pivot: pa.pageToPaperCoords(pageX, pageY) });
+      },
+      panBy: function (dx, dy) {
+        var area = workspace._getPaperArea().area;
+        area.scrollLeft -= dx;
+        area.scrollTop -= dy;
+      },
       // Opens a history batch whose undo step restores every position as it
       // is NOW; the caller moves elements (movePositions) and stores it.
       startGeometryBatch: function (title) {

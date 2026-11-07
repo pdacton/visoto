@@ -8,7 +8,7 @@
   GE 2.1 selects one cell per click, ignores modifier clicks and has no box
   selection, multi-selection marking or group drag (GE-UPSTREAM: B3). So:
 
-  - Box selection and touch dragging use a CAPTURE-phase pointerdown listener
+  - Box selection and touch dragging of nodes use a CAPTURE-phase pointerdown listener
     on the canvas container. preventDefault() on pointerdown suppresses the
     compatibility mouse events GE listens to, so GE neither pans nor drags.
   - A drag on empty canvas draws a box in Select mode (the default) and is
@@ -327,13 +327,14 @@
         window.addEventListener('pointerup', function () { pin([eid], false); }, { once: true });
         return;
       }
-      if (host && ev.pointerType === 'touch' && mode === 'select') {
+      if (host && ev.pointerType === 'touch') { // touch ignores Select/Pan mode (GH #19)
         touchDrag(ev, host.getAttribute('data-element-id'));
         return;
       }
       var emptyPaper = t.closest('.graph-explorer-paper-area') &&
         !t.closest('[data-element-id], .graph-explorer-link, .graph-explorer-paper-area__widgets');
-      if (emptyPaper && (mode === 'select' || ev.shiftKey)) boxSelect(ev);
+      // A finger on empty canvas is graph-touch.js's (GH #19).
+      if (emptyPaper && ev.pointerType !== 'touch' && (mode === 'select' || ev.shiftKey)) boxSelect(ev);
     }, true);
 
     // The browser menu would open on the press (Linux) or end every pan.
@@ -364,6 +365,8 @@
     }
 
     // GL-5: a drag on empty canvas draws a box that replaces the selection.
+    // graph-touch.js starts one after a long press in fullscreen.
+    kit.boxSelect = boxSelect;
     function boxSelect(ev) {
       ev.preventDefault();
       ev.stopPropagation();
@@ -401,8 +404,7 @@
       window.addEventListener('pointercancel', up);
     }
 
-    // Touch has no mouse events for GE to drag with: in Select mode a finger
-    // drags the node (or the selection it belongs to), and a tap toggles it.
+    // Touch has no mouse events for GE to drag with: a finger drags the node (or the selection it belongs to), and a tap toggles it.
     function touchDrag(ev, eid) {
       ev.preventDefault();
       ev.stopPropagation();
@@ -413,6 +415,9 @@
       var startPaper = c.pageToPaper(ev.pageX, ev.pageY);
       var startPage = { x: ev.pageX, y: ev.pageY };
       var batch = null;
+      // A second finger turns the drag into a pinch (graph-touch.js): keep
+      // what was moved, but no tap toggle.
+      kit.cancelTouchDrag = function () { end(false); };
       function move(e) {
         if (!batch) {
           if (Math.abs(e.pageX - startPage.x) < DRAG_THRESHOLD && Math.abs(e.pageY - startPage.y) < DRAG_THRESHOLD) return;
@@ -425,14 +430,16 @@
         });
         c.movePositions(moves);
       }
-      function up() {
+      function up(e) { end(e.type === 'pointerup'); }
+      function end(tap) {
         window.removeEventListener('pointermove', move);
         window.removeEventListener('pointerup', up);
         window.removeEventListener('pointercancel', up);
+        kit.cancelTouchDrag = null;
         if (batch) {
           pin(group, true);
           batch.store();
-        } else {
+        } else if (tap) {
           select(toggle(c.selectedIds(), eid));
         }
       }
