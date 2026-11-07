@@ -35,20 +35,18 @@
   var EXPAND_LIMIT = 100;      // neighbours fetched per node for Expand all
   var CONFIRM_ADDITIONS = 20;  // GL-15
 
-  var BADGE = 24;              // px, check and pin badges (paper coordinates)
-  // Lucide "check" and "pin" as data URIs; the pin is drawn in `stroke`.
-  var CHECK_ICON = "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E\")";
+  // The pin: a small muted glyph inside the node's top-right corner (paper
+  // coordinates). Selection has no badge; the frame alone marks it.
+  var PIN = 16;                // px, the pin's box
+  var PIN_INSET = 6;           // px from the card's top and right edges
+  // Lucide "pin" as a data URI, drawn in `stroke`.
   function pinIcon(stroke) {
     return "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='" + encodeURIComponent(stroke) +
       "' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 17v5'/%3E%3Cpath d='M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z'/%3E%3C/svg%3E\")";
   }
-  // GL-58: pin and ring share one grey so the badge stays quiet; on hover
-  // both darken like a Tabler ghost-secondary button. Hex, because a data-URI
-  // stroke cannot read a CSS variable.
-  var PIN_GREY = '#9ba3af';
-  var PIN_GREY_HOVER = '#49566c';
-  var PIN_ICON = pinIcon(PIN_GREY);
-  var PIN_ICON_HOVER = pinIcon(PIN_GREY_HOVER);
+  // GL-58: used as a mask, so the pin takes Tabler's muted colour and darkens
+  // to the body colour on hover — theme tokens, right in light and dark.
+  var PIN_ICON = pinIcon('#000');
 
   // GL-57: hover neighbourhood on/off, one setting for every graph in this
   // browser; off by default.
@@ -147,7 +145,8 @@
     style.setAttribute('data-graph-decor', id);
     document.head.appendChild(style);
     var scope = '#' + CSS.escape(id + '-root');
-    // The node of the resource this page shows, ringed in white below any
+    // The node of the resource this page shows, ringed in the surface colour
+    // (white in light mode, the card grey in dark) below any
     // selection frame and the halo (which renders in a layer above).
     var pageIri = new URLSearchParams(window.location.search).get('iri');
     var pageEid = null;
@@ -159,7 +158,7 @@
         // Ring plus a drop shadow in Visoto orange (#E97132, the logo's) that
         // lifts it off the flat canvas; a
         // selection outline (3px offset) paints over the ring's outer edge.
-        rules.push(scope + ' [data-element-id=' + quote(pageEid) + '] .graph-explorer-standard-template{box-shadow:0 0 0 4px #fff,0 0 0 5px var(--tblr-border-color,#dadfe5),0 8px 24px rgba(233,113,50,.45);border-radius:var(--tblr-border-radius,6px)}');
+        rules.push(scope + ' [data-element-id=' + quote(pageEid) + '] .graph-explorer-standard-template{box-shadow:0 0 0 4px var(--tblr-bg-surface,#fff),0 0 0 5px var(--tblr-border-color,#dadfe5),0 8px 24px rgba(233,113,50,.45);border-radius:var(--tblr-border-radius,6px)}');
       }
       Object.keys(colors).forEach(function (eid) {
         var host = scope + ' [data-element-id=' + quote(eid) + ']';
@@ -171,21 +170,18 @@
         // GL-59: the frame follows the card's corners (outline traces
         // border-radius, grown by the offset).
         rules.push(host + ' .graph-explorer-standard-template{outline:2px solid var(--tblr-primary,#066fd1);outline-offset:3px;border-radius:var(--tblr-border-radius,6px)}');
-        rules.push(host + ' .graph-explorer-standard-template::before{content:"";position:absolute;left:-' + (BADGE / 2 + 3) + 'px;top:-' + (BADGE / 2 + 3) +
-          'px;width:' + BADGE + 'px;height:' + BADGE + 'px;border-radius:50%;background:var(--tblr-primary,#066fd1) ' + CHECK_ICON +
-          ' center/15px no-repeat;z-index:2;pointer-events:none}');
       });
       Object.keys(pinned).forEach(function (eid) {
         if (!pinned[eid]) return;
         var host = scope + ' [data-element-id=' + quote(eid) + ']';
-        // GL-58: turned 30° like a pin stuck into a pinboard.
-        rules.push(host + '::before{content:"";position:absolute;right:-' + (BADGE / 2) + 'px;top:-' + (BADGE / 2) + 'px;width:' + BADGE +
-          'px;height:' + BADGE + 'px;border-radius:50%;background:#fff ' + PIN_ICON +
-          ' center/15px no-repeat;border:1px solid ' + PIN_GREY + ';transform:rotate(30deg);z-index:3;cursor:pointer;' +
-          'transition:background-color .15s,border-color .15s}');
+        // GL-58: turned 30° like a pin stuck into a pinboard; inside the card's
+        // corner, and the type line stops short of it.
+        rules.push(host + '::before{content:"";position:absolute;right:' + PIN_INSET + 'px;top:' + PIN_INSET + 'px;width:' + PIN +
+          'px;height:' + PIN + 'px;background-color:var(--tblr-secondary,#9ba3af);-webkit-mask:' + PIN_ICON + ' center/14px no-repeat;mask:' + PIN_ICON +
+          ' center/14px no-repeat;transform:rotate(30deg);z-index:3;cursor:pointer;transition:background-color .15s}');
+        rules.push(host + ' .graph-explorer-standard-template__type{padding-right:' + (PIN + PIN_INSET) + 'px}');
       });
-      rules.push(scope + ' [data-element-id][data-pin-hover]::before{background-color:var(--tblr-bg-surface-secondary,#f6f8fb);background-image:' +
-        PIN_ICON_HOVER + ';border-color:' + PIN_GREY_HOVER + '}');
+      rules.push(scope + ' [data-element-id][data-pin-hover]::before{background-color:var(--tblr-body-color,#49566c)}');
       style.textContent = rules.join('\n');
     }
 
@@ -304,9 +300,11 @@
       var r = host.getBoundingClientRect();
       var tmpl = host.querySelector('.graph-explorer-standard-template');
       var scale = tmpl && tmpl.offsetWidth ? tmpl.getBoundingClientRect().width / tmpl.offsetWidth : 1;
-      var half = (BADGE / 2 + 2) * scale;
+      var half = (PIN / 2 + 2) * scale;
+      var cx = r.right - (PIN_INSET + PIN / 2) * scale;
+      var cy = r.top + (PIN_INSET + PIN / 2) * scale;
       return pinned[host.getAttribute('data-element-id')] &&
-        Math.abs(ev.clientX - r.right) <= half && Math.abs(ev.clientY - r.top) <= half;
+        Math.abs(ev.clientX - cx) <= half && Math.abs(ev.clientY - cy) <= half;
     }
 
     container.addEventListener('pointerdown', function (ev) {

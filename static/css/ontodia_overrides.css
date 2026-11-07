@@ -16,138 +16,53 @@
   display: none !important;
 }
 
-/* HALO (selection overlay with buttons) */
-/* No ring of its own: the selection frame and check badge come from
- * graph-selection.js (GL-7, GL-59), and a second, translucent ring here drew a
- * double frame. The halo stays transparent so it only carries the buttons. */
+/* ===== NODE MENU (GE's halo) — a Tabler toolbar ================================
+ * graph-tools.js puts a .graph-halo-bar into GE's halo: the same Tabler
+ * btn-sm btn-ghost-secondary btn-icon buttons and .vr dividers as the canvas
+ * toolbar, on the same floating surface, centred 8px above the node. Its
+ * buttons click GE's own halo buttons, which stay in the DOM but hidden.
+ * No ring on the halo itself: the selection frame comes from
+ * graph-selection.js (GL-7, GL-59). */
 .graph-explorer-halo {
   border: none !important;
   background-color: transparent !important;
   box-shadow: none !important;
   outline: none !important;
 }
-
-/* Miro-style white BAR behind the top button row. Drawn as a ::before pseudo
- * so it renders BEHIND the halo's real button children (which paint after it)
- * with no z-index needed — the buttons sit on top of the bar automatically.
- * Anchored at left:50% + translateX(-50%) to match the fixed-width button
- * cluster above, so it stays centered under the buttons on ANY node width.
- * Width = cluster span (5 icons at 28px spacing ≈ 132px outer) + padding. */
-.graph-explorer-halo::before {
-  content: "";
+.graph-explorer-halo > [class^="graph-explorer-halo__"] {
+  display: none !important;
+}
+.graph-halo-bar {
   position: absolute;
-  top: -37px;
+  bottom: calc(100% + 8px);
   left: 50%;
   transform: translateX(-50%);
-  width: 148px;
-  height: 34px;
+  width: max-content;
+  pointer-events: auto;
+}
+.graph-toolbar,
+.graph-selectionbar,
+.graph-halo-bar {
   background: var(--tblr-bg-surface, #fff);
-  border: var(--tblr-border-width) solid var(--tblr-border-color);
-  border-radius: var(--tblr-border-radius);
-  box-shadow: var(--tblr-box-shadow, 0 2px 8px rgba(0, 0, 0, 0.15));
+  border: 1px solid var(--tblr-border-color, #e6e7e9);
+  border-radius: var(--tblr-border-radius-lg, 8px);
+  box-shadow: var(--tblr-box-shadow-dropdown, 0 4px 16px rgba(0,0,0,.08));
 }
-
-/* ===== HALO BUTTON LAYOUT — fixed-width cluster centered above the node =====
- * The library docks each halo button to a compass point via absolute
- * top/right/bottom/left offsets (buttons are 20x20px). We override those to
- * line all five up in a single row above the top edge.
- *
- * IMPORTANT: the cluster is a FIXED-px group centered on the node midpoint,
- * NOT distributed across the node width. Every button anchors at left:50% and
- * is offset by a fixed px amount via translateX(calc(-50% ± N)). This keeps
- * the row a constant ~92px wide regardless of node width, so the white pill
- * (::before, also anchored at left:50% with a fixed width) always lines up
- * under the buttons — on narrow AND wide nodes alike. (An earlier version
- * spread the buttons at left:10/30/50/70/90%, which drifted the fixed pill
- * off-center on wide nodes.)
- *
- * SIZING = Tabler COMPACT scheme: bare 20px icons (Tabler .icon glyph size),
- * NO 40px hit-box padding. Spacing = 28px between centers (20px icon + 8px
- * Tabler .btn-list gap). Buttons sit at top:-30px (lifted 4px off the node).
- *
- * Order (left -> right): follow, expand, navigate(search), add-to-filter, remove.
- * Reorder by swapping the ± offsets. */
-.graph-explorer-halo__folow,
-.graph-explorer-halo__navigate,
-.graph-explorer-halo__expand,
-.graph-explorer-halo__add-to-filter,
-.graph-explorer-halo__remove {
-  top: -30px !important;
-  bottom: auto !important;
-  right: auto !important;
-  left: 50% !important;
-  margin-top: 0 !important;
-  margin-left: 0 !important;
-  width: 20px !important;
-  height: 20px !important;
-  /* Standard Tabler action-icon color. The Lucide-masked icons below use
-   * background-color:currentColor, so setting `color` here tints all of them
-   * uniformly (grey #6b7280) instead of the library's original blue glyphs. */
-  color: var(--tblr-secondary) !important;
+.graph-halo-bar .vr {
+  align-self: stretch;
+  margin-block: .35rem;
 }
-
-.graph-explorer-halo__folow         { transform: translateX(calc(-50% - 56px)) !important; }
-.graph-explorer-halo__expand        { transform: translateX(calc(-50% - 28px)) !important; }
-.graph-explorer-halo__navigate      { transform: translateX(-50%) !important; }
-.graph-explorer-halo__add-to-filter { transform: translateX(calc(-50% + 28px)) !important; }
-.graph-explorer-halo__remove        { transform: translateX(calc(-50% + 56px)) !important; }
-
-/* Tabler .btn-action hover, both halves: the glyph darkens to --tblr-body-color
- * AND gains a --tblr-active-bg pill, matching the canvas toolbar buttons.
- *
- * The pill needs the glyph mask to live on ::after rather than on the button
- * itself (see the icon rules further down). A mask clips everything the element
- * renders, pseudo-elements included, so while the button carried the mask any
- * background on it was clipped to the glyph outline and no pill was possible.
- * With the mask moved to ::after, the button is a plain 20px box again and can
- * paint the pill behind its own icon.
- *
- * Also drops the library's opacity:.5→1 fade so hover reads as a crisp change. */
-.graph-explorer-halo__folow,
-.graph-explorer-halo__navigate,
-.graph-explorer-halo__expand,
-.graph-explorer-halo__add-to-filter,
-.graph-explorer-halo__remove {
-  opacity: 1 !important;
-  transition: color 0.15s ease-in-out !important;
+/* Expand properties: panel-top-open while collapsed (GE's --open), panel-top-close
+   while expanded (--closed). */
+.graph-explorer-halo:has(.graph-explorer-halo__expand--closed) .graph-halo-expand-open,
+.graph-explorer-halo:not(:has(.graph-explorer-halo__expand--closed)) .graph-halo-expand-close {
+  display: none;
 }
-
-.graph-explorer-halo__folow:hover,
-.graph-explorer-halo__navigate:hover,
-.graph-explorer-halo__expand:hover,
-.graph-explorer-halo__add-to-filter:hover,
-.graph-explorer-halo__remove:hover {
-  color: var(--tblr-body-color) !important;
-}
-
-/* The hover pill, drawn as a ::before backing layer so it is a REAL rounded
- * box like the toolbar buttons' background — an `outline` was tried first and
- * its corners do not round the same way, which made the halo pill read as a
- * squarer shape than the toolbar's despite both using --tblr-active-bg.
- *
- * inset:-4px inflates the 20px glyph box to Tabler's ~28px action size without
- * touching layout (the element stays 20px, so the fixed ±28px cluster offsets
- * and the 148px ::before bar still line up). It renders behind the ::after
- * glyph because ::before paints first among the element's own layers. */
-.graph-explorer-halo__folow::before,
-.graph-explorer-halo__navigate::before,
-.graph-explorer-halo__expand::before,
-.graph-explorer-halo__add-to-filter::before,
-.graph-explorer-halo__remove::before {
-  content: "";
-  position: absolute;
-  inset: -4px;
-  border-radius: var(--tblr-border-radius);
-  background: transparent;
-  transition: background-color 0.15s ease-in-out;
-}
-
-.graph-explorer-halo__folow:hover::before,
-.graph-explorer-halo__navigate:hover::before,
-.graph-explorer-halo__expand:hover::before,
-.graph-explorer-halo__add-to-filter:hover::before,
-.graph-explorer-halo__remove:hover::before {
-  background: var(--tblr-active-bg);
+/* Remove is destructive: Tabler danger on hover. */
+.graph-halo-bar .btn[data-halo="remove"] {
+  --tblr-btn-hover-bg: var(--tblr-danger);
+  --tblr-btn-hover-border-color: var(--tblr-danger);
+  --tblr-btn-active-bg: var(--tblr-danger);
 }
 
 /* Replace Font Awesome icons with Lucide icons using mask-image */
@@ -265,95 +180,6 @@
   mask-position: center;
 }
 
-.graph-explorer-halo__remove {
-  background-image: none;
-  background-color: transparent;
-}
-
-.graph-explorer-halo__remove::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 6 6 18'/%3E%3Cpath d='m6 6 12 12'/%3E%3C/svg%3E");
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-}
-
-
-.graph-explorer-halo__navigate {
-  background-image: none;
-  background-color: transparent;
-}
-
-.graph-explorer-halo__navigate::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 15 6 6'/%3E%3Cpath d='m15 9 6-6'/%3E%3Cpath d='M21 16v5h-5'/%3E%3Cpath d='M21 8V3h-5'/%3E%3Cpath d='M3 16v5h5'/%3E%3Cpath d='m3 21 6-6'/%3E%3Cpath d='M3 8V3h5'/%3E%3Cpath d='M9 9 3 3'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m15 15 6 6'/%3E%3Cpath d='m15 9 6-6'/%3E%3Cpath d='M21 16v5h-5'/%3E%3Cpath d='M21 8V3h-5'/%3E%3Cpath d='M3 16v5h5'/%3E%3Cpath d='m3 21 6-6'/%3E%3Cpath d='M3 8V3h5'/%3E%3Cpath d='M9 9 3 3'/%3E%3C/svg%3E");
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-}
-
-
-/* __folow = "Jump to resource" — Lucide external-link. Converted to a
- * currentColor mask (was the library's own background-image) so it takes the
- * shared Tabler-secondary color like the other halo icons. */
-.graph-explorer-halo__folow {
-  background-image: none;
-  background-color: transparent;
-}
-
-.graph-explorer-halo__folow::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M10 14 21 3'/%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 3h6v6'/%3E%3Cpath d='M10 14 21 3'/%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'/%3E%3C/svg%3E");
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-}
-
-
-/* __expand = "reveal additional properties" — Lucide chevrons-down. Same
- * currentColor-mask conversion so it shares the Tabler-secondary color. */
-.graph-explorer-halo__expand {
-  background-image: none;
-  background-color: transparent;
-}
-
-.graph-explorer-halo__expand::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 6 5 5 5-5'/%3E%3Cpath d='m7 13 5 5 5-5'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 6 5 5 5-5'/%3E%3Cpath d='m7 13 5 5 5-5'/%3E%3C/svg%3E");
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-}
-
-
 .link-in-popup-menu__filter-button {
   background-image: none;
   background-color: currentColor;
@@ -366,27 +192,6 @@
   -webkit-mask-position: center;
   mask-position: center;
 }
-
-.graph-explorer-halo__add-to-filter {
-  background-image: none;
-  background-color: transparent;
-}
-
-.graph-explorer-halo__add-to-filter::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-color: currentColor;
-  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.354 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l1.218-1.348'/%3E%3Cpath d='M16 6h6'/%3E%3Cpath d='M19 3v6'/%3E%3C/svg%3E");
-  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M13.354 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14v6a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341l1.218-1.348'/%3E%3Cpath d='M16 6h6'/%3E%3Cpath d='M19 3v6'/%3E%3C/svg%3E");
-  -webkit-mask-size: contain;
-  mask-size: contain;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-}
-
 
 .linkInToolBox__filter-button {
   background-image: none;
@@ -622,10 +427,60 @@
   border-radius: 0 var(--tblr-border-radius) var(--tblr-border-radius) 0 !important;
 }
 
+/* The type line above the label: Tabler's muted text (GE: fixed #999). */
+.graph-explorer-standard-template__type-value {
+  color: var(--tblr-secondary) !important;
+}
+
 /* Expanded properties dropdown box — the library sets an inline border-color
  * in the node's accent hue; override to Tabler grey to match the node box. */
 .graph-explorer-standard-template__dropdown {
   border-color: var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius) !important; /* the node's 6px, not GE's 8px */
+}
+/* Its surface and text from Tabler tokens, so the card follows the theme: GE
+ * paints it with its own --ge-surface (white, GE has no dark theme) while the
+ * text inherits Tabler's light dark-mode colour — light grey on white. The IRI
+ * caption takes Tabler's muted colour (GE's #b6b6b6 is too faint in light too). */
+.graph-explorer-standard-template__dropdown {
+  color: var(--tblr-body-color);
+  background-color: var(--tblr-bg-surface) !important;
+  box-shadow: var(--tblr-box-shadow-sm) !important;
+}
+.graph-explorer-standard-template__iri-key,
+.graph-explorer-standard-template__iri-value {
+  color: var(--tblr-secondary);
+}
+.graph-explorer-standard-template__iri-value a {
+  color: inherit;
+}
+/* The property list as a key/value list: 14px like the panels, a 40/60
+ * split (GE's 50/50 broke short values mid-word), values wrapping only between
+ * words, a little air between rows, and a thin scrollbar only when the list
+ * outgrows its 200px cap (GE forces one on). Keys stay on one line with GE's
+ * ellipsis. */
+.graph-explorer-standard-template__properties {
+  overflow-y: auto;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+}
+.graph-explorer-standard-template__propertites-row {
+  padding: 2px 0;
+}
+.graph-explorer-standard-template__properties-key {
+  width: 40%;
+  padding-right: 8px;
+  color: var(--tblr-secondary);
+  white-space: nowrap;
+}
+.graph-explorer-standard-template__properties-values {
+  width: 60%;
+}
+.graph-explorer-standard-template__properties-value {
+  padding-right: 4px;
+  color: var(--tblr-body-color);
+  word-break: normal;
+  overflow-wrap: break-word;
 }
 
 /* Expanded panel photo — GE repeats data.image full-width above the IRI. Our
@@ -677,7 +532,8 @@
  * below); still no overflow:hidden, GE's resize handles sit on the edge. */
 .graph-explorer-dialog {
   border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
-  border-radius: var(--tblr-border-radius) !important;
+  /* A floating surface like the toolbar, node menu and selection bar: 8px. */
+  border-radius: var(--tblr-border-radius-lg, 8px) !important;
   box-shadow: var(--tblr-box-shadow) !important;
 }
 
@@ -707,6 +563,13 @@
   background-color: var(--tblr-bg-surface) !important;
 }
 
+/* GE's own border token (panel edges, header rules, …) is a fixed light
+ * #e5e9f0 that glares in dark mode; take Tabler's, which follows the theme.
+ * :root raises it over GE's injected .graph-explorer rule. */
+:root .graph-explorer {
+  --ge-border: var(--tblr-border-color);
+}
+
 /* Panel headers */
 .graph-explorer-accordion-item__header {
   background-color: var(--tblr-bg-surface-tertiary) !important;
@@ -720,6 +583,53 @@
   letter-spacing: 0.04em;
   line-height: 1rem;
   color: var(--tblr-secondary);
+}
+
+/* ===== LOADING INDICATOR — Tabler's thin indeterminate progress ===============
+ * GE's bar (every panel and the connections menu: .graph-explorer-progress-bar
+ * > __bar) is a 20px striped accent bar, its height set inline: 20px while
+ * --loading or --error, 0 otherwise. It becomes Tabler's
+ *   .progress.progress-sm > .progress-bar.progress-bar-indeterminate
+ * a 4px track with two primary segments sliding across, on Tabler's own
+ * progress-indeterminate keyframes (tabler.css). An error shows as a full
+ * danger bar. Tokens only, so light and dark both hold.
+ */
+.graph-explorer-progress-bar {
+  background-color: var(--tblr-bg-surface-tertiary);
+}
+.graph-explorer-progress-bar--loading,
+.graph-explorer-progress-bar--error {
+  height: 0.25rem !important;
+}
+.graph-explorer-progress-bar .graph-explorer-progress-bar__bar {
+  position: relative;
+  overflow: hidden;
+  background: none !important;
+  animation: none;
+  transition: none;
+}
+.graph-explorer-progress-bar--loading .graph-explorer-progress-bar__bar::before,
+.graph-explorer-progress-bar--loading .graph-explorer-progress-bar__bar::after {
+  content: "";
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  bottom: 0;
+  background-color: var(--tblr-primary);
+  animation: progress-indeterminate 1.5s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+  will-change: inset-inline-start, inset-inline-end;
+}
+.graph-explorer-progress-bar--loading .graph-explorer-progress-bar__bar::after {
+  animation-delay: 0.75s;
+}
+.graph-explorer-progress-bar--error .graph-explorer-progress-bar__bar {
+  background: var(--tblr-danger) !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .graph-explorer-progress-bar--loading .graph-explorer-progress-bar__bar::before,
+  .graph-explorer-progress-bar--loading .graph-explorer-progress-bar__bar::after {
+    animation-duration: 3s;
+  }
 }
 
 /* ===== CONNECTIONS PANEL (right sidebar) — Tabler look =========================
@@ -795,6 +705,35 @@
 .link-types-toolbox .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default.active {
   color: var(--tblr-primary) !important;
   background-color: var(--tblr-primary-lt) !important;
+}
+
+/* In the rows the group collapses to ONE ghost icon button showing the current
+   state; a click cycles labels → lines only → hidden (graph-tools.js). Grey
+   by default, so only the rows someone changed stand out: blue for lines
+   only, red for hidden. "Switch all" above keeps the full segmented group. */
+.link-types-toolbox .connected-links .graph-explorer-btn-group {
+  border: 0 !important;
+}
+.link-types-toolbox .connected-links .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default:not(.active) {
+  display: none;
+}
+.link-types-toolbox .connected-links .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default.active {
+  width: 20px;
+  height: 20px;
+  color: var(--tblr-secondary) !important;
+  background-color: transparent !important;
+  border: 0 !important;
+  border-radius: var(--tblr-border-radius);
+}
+.link-types-toolbox .connected-links .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default.active:hover {
+  color: var(--tblr-body-color) !important;
+  background-color: var(--tblr-active-bg) !important;
+}
+.link-types-toolbox .connected-links .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default.active#withoutLabels {
+  color: var(--tblr-primary) !important;
+}
+.link-types-toolbox .connected-links .graph-explorer-btn-group > .graph-explorer-btn.graph-explorer-btn-default.active#invisible {
+  color: var(--tblr-danger) !important;
 }
 
 .link-types-toolbox .link-types-toolbox__rest {
@@ -1180,6 +1119,17 @@
 :is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view--disabled {
   opacity: 1;
 }
+/* The element's icon before its label, 18px like the class tree; set per row
+   as --vs-list-icon by graph-tools.js (rows without one show no icon). */
+:is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view[style*="--vs-list-icon"] .graph-explorer-list-element-view__label::before {
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+  vertical-align: -4px;
+  background: var(--vs-list-icon) center / contain no-repeat;
+}
 :is(.graph-explorer-instances-search, .graph-explorer-connections-menu) .graph-explorer-list-element-view--disabled .graph-explorer-list-element-view__label {
   color: var(--tblr-disabled-color, var(--tblr-secondary));
 }
@@ -1213,9 +1163,43 @@
 .graph-explorer-instances-search .graph-explorer-instances-search__rest-end {
   margin: 8px 12px 12px;
 }
+/* "Show more": a secondary action, so Tabler's default .btn (surface, border)
+   at full width and .btn-sm size, not GE's filled accent button. */
+.graph-explorer-instances-search .graph-explorer-btn.graph-explorer-btn-primary.graph-explorer-instances-search__load-more {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  height: auto;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1.25rem;
+  color: var(--tblr-body-color) !important;
+  background-color: var(--tblr-bg-surface) !important;
+  border: var(--tblr-border-width) solid var(--tblr-border-color) !important;
+  border-radius: var(--tblr-border-radius);
+  box-shadow: var(--tblr-shadow-input);
+}
+.graph-explorer-instances-search .graph-explorer-btn.graph-explorer-btn-primary.graph-explorer-instances-search__load-more:hover {
+  background: linear-gradient(var(--tblr-hover-bg), var(--tblr-hover-bg)), var(--tblr-bg-surface) !important;
+  border-color: var(--tblr-border-active-color, var(--tblr-border-color)) !important;
+}
+.graph-explorer-instances-search .graph-explorer-instances-search__load-more .fa {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  color: var(--tblr-secondary);
+}
 
-/* Thin scrollbars in both side panels. */
-.graph-explorer-accordion .graph-explorer-scrollable {
+/* One thin scrollbar for every scrolling area of a graph: both side panels,
+   the connections menu, node property cards, the toolbar's dropdowns and
+   docked panels, the list view, and its dialogs (.graph-modal, which sit just
+   outside the frame). */
+.graph-frame,
+.graph-frame *,
+.graph-modal,
+.graph-modal * {
   scrollbar-width: thin;
   scrollbar-color: var(--tblr-border-color-dark, #c4c9d1) transparent;
 }
@@ -1236,8 +1220,8 @@
   box-shadow: var(--tblr-shadow-dropdown, var(--tblr-box-shadow)) !important;
 }
 .graph-explorer-dialog .graph-explorer-dialog__close-button {
-  top: 14px;
-  right: 14px;
+  top: 11.5px;
+  right: 12px;
   z-index: 1;
   width: 16px;
   height: 16px;
@@ -1254,14 +1238,18 @@
   display: block;
   max-width: none;
   margin: 0;
-  padding: 0.75rem 2.75rem 0.75rem 12px;
-  font-size: 1rem;
-  font-weight: var(--tblr-font-weight-bold, 600);
-  line-height: 1.5rem;
-  color: var(--tblr-body-color) !important;
-  background: transparent !important;
+  /* The sidebar panel headers' look (CLASSES, INSTANCES, CONNECTIONS):
+     Tabler .subheader type on the tertiary surface, 39px tall. */
+  padding: 11px 2.75rem 11px 12px;
+  font-size: 0.75rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  line-height: 1rem;
+  color: var(--tblr-secondary) !important;
+  background: var(--tblr-bg-surface-tertiary) !important;
   border-bottom: var(--tblr-border-width) solid var(--tblr-border-color);
-  border-radius: 0;
+  border-radius: calc(var(--tblr-border-radius-lg, 8px) - 1px) calc(var(--tblr-border-radius-lg, 8px) - 1px) 0 0;
 }
 /* Breadcrumb, as Tabler's .breadcrumb: small, muted, the link in primary. */
 .graph-explorer-connections-menu .graph-explorer-connections-menu_bread-crumbs {
@@ -1478,7 +1466,6 @@
   overflow-y: auto;
   border: var(--tblr-border-width) solid var(--tblr-border-color);
   border-radius: var(--tblr-border-radius);
-  scrollbar-width: thin;
 }
 .graph-explorer-connections-menu .graph-explorer-connections-menu_objects-panel_bottom-panel {
   align-items: center;
@@ -1517,9 +1504,19 @@
 [data-bs-theme="dark"] {
   /* Main canvas background - paper area where graph is drawn */
   .graph-explorer-paper-area,
-  .graph-explorer-paper-area__area,
-  .graph-explorer-paper {
+  .graph-explorer-paper-area__area {
     background-color: var(--tblr-bg-surface) !important;
+  }
+  /* The paper sits over the dot grid; filled, it hid the grid in a block
+   * the size of the diagram. Transparent, as GE leaves it in light mode. */
+  .graph-explorer-paper {
+    background-color: transparent !important;
+  }
+
+  /* Canvas dot grid: GE's --ge-canvas-dot is light-mode #dbe2ee, bright dots
+   * on the dark canvas. A faint step above the surface instead. */
+  .graph-explorer-paper-area__area {
+    --ge-canvas-dot: color-mix(in srgb, var(--tblr-body-color) 12%, var(--tblr-bg-surface));
   }
 
   /* Main workspace container */
@@ -1571,7 +1568,6 @@
   /* Panel headers */
   .graph-explorer-accordion-item__header {
     background-color: var(--tblr-bg-surface-tertiary) !important;
-    color: var(--tblr-body-color) !important;
     border-color: var(--tblr-border-color) !important;
   }
 
@@ -1598,20 +1594,6 @@
     color: var(--tblr-body-color) !important;
   }
 
-  .graph-explorer-connections-menu__title-label {
-    background-color: transparent !important;
-    color: var(--tblr-body-color) !important;
-  }
-
-
-  /* Progress bar in connections */
-  .graph-explorer-progress-bar {
-    background-color: var(--tblr-bg-surface-secondary) !important;
-  }
-
-  .graph-explorer-progress-bar__bar {
-    background-color: var(--tblr-primary) !important;
-  }
 
   /* Links panel - right sidebar connections list */
   .graph-explorer-scrollable {
@@ -1688,14 +1670,42 @@
     color: var(--tblr-primary-fg) !important;
   }
 
-  /* Element nodes on canvas - override inline background color only;
-   * radius/border-width/shadow come from the shared theme-agnostic rule above. */
-  .graph-explorer-standard-template__main {
-    background-color: var(--tblr-bg-surface-secondary) !important;
+  /* Element nodes: __main keeps GE's inline accent colour, which shows as the
+   * coloured strip on the left (the body covers the rest), as in light mode. */
+
+  /* Links. sparql-graph.js / schema-graph.js draw them in light-mode hex (SVG
+   * presentation attributes cannot take var()): near-white lines and white
+   * label pills, which glare on the dark canvas. CSS outranks presentation
+   * attributes; the label's inline style needs !important. Lines and arrow
+   * heads take Tabler's dark border grey, labels sit on the surface. */
+  .graph-explorer-link__connection {
+    stroke: var(--tblr-border-color);
+  }
+  .graph-explorer-paper-area marker path {
+    fill: var(--tblr-border-color);
+    stroke: var(--tblr-border-color);
+  }
+  .graph-explorer-paper-area marker path[fill="#ffffff"] {
+    fill: var(--tblr-bg-surface); /* the hollow UML generalization triangle */
+  }
+  .graph-explorer-link__labels rect {
+    fill: var(--tblr-bg-surface) !important;
+  }
+  .graph-explorer-link__labels text {
+    fill: var(--tblr-secondary) !important;
   }
 
-  .graph-explorer-standard-template__body {
-    background-color: var(--tblr-bg-surface) !important;
+  /* Node bodies a dark grey, a step lighter than the canvas; a class from
+   * another vocabulary on the ontology diagram (vs-ExternalClass, see the
+   * marker rules above) goes the other way, to near-black. The expanded
+   * attribute box takes the same colour as its node. */
+  .graph-explorer-standard-template__body,
+  .graph-explorer-standard-template__dropdown {
+    background-color: color-mix(in srgb, var(--tblr-body-color) 8%, var(--tblr-bg-surface)) !important;
+  }
+  .graph-explorer-standard-template:has(img[src$="#vs-ExternalClass"]) .graph-explorer-standard-template__body,
+  .graph-explorer-standard-template:has(img[src$="#vs-ExternalClass"]) .graph-explorer-standard-template__dropdown {
+    background-color: color-mix(in srgb, #000 45%, var(--tblr-bg-surface)) !important;
   }
 
   .graph-explorer-standard-template__body-content {
@@ -1703,15 +1713,14 @@
   }
 
   /* Element text content - light text for dark mode */
-  .graph-explorer-standard-template__label,
-  .graph-explorer-standard-template__type-value {
+  .graph-explorer-standard-template__label {
     color: var(--tblr-body-color) !important;
   }
 
-  /* Element thumbnail/icon - keep accent color */
+  /* Icon box: transparent, so only the icon's own rounded tile shows (a
+   * filled box drew square corners around it). */
   .graph-explorer-standard-template__thumbnail {
-    /* Keep the original accent color but adjust for dark mode */
-    background-color: var(--tblr-bg-surface-tertiary) !important;
+    background-color: transparent !important;
   }
 
   /* Tooltips and popovers */
@@ -1735,13 +1744,6 @@
     border-color: var(--tblr-border-color) !important;
   }
 
-  /* Accordion handle - separator line between panels */
-  .graph-explorer-accordion-item__handle,
-  .graph-explorer-accordion-item__handle-horizontal,
-  .graph-explorer-accordion-item__handle-vertical {
-    background-color: var(--tblr-border-color) !important;
-  }
-
   /* Accordion handle buttons */
   .graph-explorer-accordion-item__handle-btn {
     background-color: var(--tblr-bg-surface-secondary) !important;
@@ -1750,22 +1752,6 @@
 
   .graph-explorer-accordion-item__handle-btn:hover {
     background-color: var(--tblr-bg-surface-tertiary) !important;
-  }
-
-  /* Scrollbars (webkit browsers) */
-  .graph-explorer-class-tree::-webkit-scrollbar,
-  .graph-explorer-instances::-webkit-scrollbar {
-    background-color: var(--tblr-bg-surface-secondary);
-  }
-
-  .graph-explorer-class-tree::-webkit-scrollbar-thumb,
-  .graph-explorer-instances::-webkit-scrollbar-thumb {
-    background-color: var(--tblr-border-color-dark);
-  }
-
-  .graph-explorer-class-tree::-webkit-scrollbar-thumb:hover,
-  .graph-explorer-instances::-webkit-scrollbar-thumb:hover {
-    background-color: var(--tblr-muted);
   }
 
   /* Dropdown menus */
@@ -1895,10 +1881,6 @@
   z-index: 101;
   max-width: calc(var(--graph-free, 100%) - 1.5rem);
   width: max-content;
-  background: var(--tblr-bg-surface, #fff);
-  border: 1px solid var(--tblr-border-color, #e6e7e9);
-  border-radius: var(--tblr-border-radius-lg, 8px);
-  box-shadow: var(--tblr-box-shadow-dropdown, 0 4px 16px rgba(0,0,0,.08));
 }
 .graph-toolbar .vr {
   align-self: stretch;
@@ -1944,10 +1926,6 @@
   z-index: 101;
   max-width: calc(var(--graph-free, 100%) - 1.5rem);
   width: max-content;
-  background: var(--tblr-bg-surface, #fff);
-  border: 1px solid var(--tblr-border-color, #e6e7e9);
-  border-radius: var(--tblr-border-radius-lg, 8px);
-  box-shadow: var(--tblr-box-shadow-dropdown, 0 4px 16px rgba(0,0,0,.08));
 }
 .graph-selectionbar[hidden] {
   display: none !important;
@@ -2072,6 +2050,7 @@
 
 /* GL-41: a visible focus ring on every graph control, whatever the theme. */
 .graph-toolbar .btn:focus-visible,
+.graph-halo-bar .btn:focus-visible,
 .graph-selectionbar .btn:focus-visible,
 .graph-options .btn:focus-visible {
   outline: 2px solid var(--tblr-primary, #066fd1);
@@ -2080,6 +2059,7 @@
 /* GL-40: 44 px hit targets on touch screens. */
 @media (pointer: coarse) {
   .graph-toolbar .btn,
+  .graph-halo-bar .btn,
   .graph-selectionbar .btn,
   .graph-options .btn {
     min-width: 44px;

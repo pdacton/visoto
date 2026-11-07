@@ -118,7 +118,7 @@
     <!-- GL-48: property cards of the selection, else of every node. -->
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="details"
             aria-label="{{ t "graph.details" "Details: show or hide property cards" }}" title="{{ t "graph.details" "Details: show or hide property cards" }}">
-      <i data-lucide="list-collapse" class="icon"></i>
+      <i data-lucide="panel-top-open" class="icon"></i>
     </button>
     <!-- GL-39: the canvas as tables of nodes and edges (graph-list.js). -->
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="list-view" aria-pressed="false"
@@ -251,7 +251,7 @@
   {{ $id := .id }}
   <div id="{{ $id }}-selectionbar" class="graph-selectionbar d-flex flex-wrap align-items-center justify-content-center gap-1 px-2 py-1"
        role="toolbar" aria-label="{{ t "graph.selectionTools" "Selection tools" }}" hidden>
-    <span class="small fw-medium px-1" data-graph-selection-count aria-live="polite"></span>
+    <span class="fs-5 text-secondary px-1" data-graph-selection-count aria-live="polite"></span>
     <div class="vr mx-1"></div>
     <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="expand-all"
             aria-label="{{ t "graph.expandAll" "Expand all: add every neighbour" }}" title="{{ t "graph.expandAll" "Expand all: add every neighbour" }}">
@@ -357,7 +357,7 @@
 -->
 {{ define "graphDiagramsModal" }}
   {{ $id := .id }}
-  <div class="modal fade" id="{{ $id }}-diagrams" tabindex="-1" aria-labelledby="{{ $id }}-diagrams-title" aria-hidden="true">
+  <div class="modal fade graph-modal" id="{{ $id }}-diagrams" tabindex="-1" aria-labelledby="{{ $id }}-diagrams-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">
@@ -387,7 +387,7 @@
 -->
 {{ define "graphSharedModal" }}
   {{ $id := .id }}
-  <div class="modal fade" id="{{ $id }}-shared" tabindex="-1" aria-labelledby="{{ $id }}-shared-title" aria-hidden="true">
+  <div class="modal fade graph-modal" id="{{ $id }}-shared" tabindex="-1" aria-labelledby="{{ $id }}-shared-title" aria-hidden="true">
     <div class="modal-dialog modal-dialog-scrollable">
       <div class="modal-content">
         <div class="modal-header">

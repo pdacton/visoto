@@ -204,6 +204,9 @@
         };
         // Endpoint errors surface as an inline message with Retry (GL-45).
         kit.guardProvider(dataProvider);
+        // Icons for GE's result lists, by the node's own rule: the resource's own
+        // icon (data.image, see elementInfo above), else its types' icon.
+        kit.recordListIcons(dataProvider, listIcon);
 
         // Construct mode: the CONSTRUCT is the first picture, this provider the
         // endpoint behind it (instances, further connections).
@@ -434,6 +437,8 @@
         var MEM = window.VisotoMemoryGraph;
         var model = workspace.getModel();
         var provider = MEM.makeHybridProvider(store, live);
+        // The store answers filter() for its own nodes before the endpoint does.
+        kit.recordListIcons(provider, listIcon);
         kit.boot({
           provider: function () { return provider; },
           fingerprint: window.VisotoGraphStore.fingerprint(Object.keys(store.elements)),
@@ -492,6 +497,13 @@
           url = ICONS.resolve('', [OWL_CLASS], AVAILABLE_ICONS);
         }
         return { icon: url || '/static/img/resource/defaultClass.svg' };
+      }
+
+      // The icon a node shows, for an element GE lists in a result row (see
+      // kit.recordListIcons): own-IRI icon first (what elementInfo stamps as
+      // data.image), else what typeStyleResolver gives the node's thumbnail.
+      function listIcon(iri, types) {
+        return ICONS.resolve(iri, [], AVAILABLE_ICONS) || typeStyleResolver(types).icon;
       }
 
       // No element template override: icons ride on data.image (see above), which

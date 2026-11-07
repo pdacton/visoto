@@ -284,6 +284,32 @@
     var PROVIDER_METHODS = ['linkTypes', 'classInfo', 'propertyInfo', 'linkTypesInfo',
       'elementInfo', 'linksInfo', 'linkTypesOf', 'linkElements', 'filter'];
     var failed = [];
+    // --- Icons in GE's result lists (Instances panel, connections-menu Objects) --
+    // GE's list rows carry only a type colour. kit.listIcons maps an element IRI
+    // to the icon its node would show: recordListIcons() fills it from the
+    // provider's filter() results — the very data those rows are rendered from,
+    // so the types cost no extra query — and graph-tools.js paints it on each
+    // row as GE renders it. Wrap AFTER guardProvider, so a retried request
+    // still records. Entries are a few bytes and an IRI's icon never changes,
+    // so the map is never pruned.
+    kit.listIcons = new Map();
+    kit.recordListIcons = function (provider, iconFor) {
+      var inner = provider.filter;
+      if (typeof inner !== 'function') return;
+      provider.filter = function () {
+        return inner.apply(provider, arguments).then(function (dict) {
+          if (dict) {
+            Object.keys(dict).forEach(function (iri) {
+              if (kit.listIcons.has(iri)) return;
+              var url = iconFor(iri, (dict[iri] && dict[iri].types) || []);
+              if (url) kit.listIcons.set(iri, url);
+            });
+          }
+          return dict;
+        });
+      };
+    };
+
     kit.guardProvider = function (provider) {
       PROVIDER_METHODS.forEach(function (name) {
         var inner = provider[name];
