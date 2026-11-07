@@ -187,13 +187,25 @@
     ge.renderTo(ge.Workspace, container, Object.assign({ hideToolbar: true }, props));
   }
 
+  // The Connections menu lists every predicate this query returns. GE's stock
+  // version keeps predicates whose only values are literals (rdfs:label,
+  // schema:description, …); its count query then filters to IRIs, so they
+  // showed up as badge-less "connections". Keep only predicates that reach an
+  // IRI. ?outObject is unbound in the incoming branches, and a subject is never
+  // a literal, so only outgoing values need the check.
+  var LINK_TYPES_OF_QUERY =
+    'SELECT DISTINCT ?link WHERE {\n' +
+    '  ${linkConfigurations}\n' +
+    '  FILTER(!BOUND(?outObject) || isIRI(?outObject))\n' +
+    '}';
+
   // A SparqlDataProvider over OWLStatsSettings, with `settings` merged on top.
   // POST, never GET: see the comment at the call site in sparql-graph.js.
   function sparqlProvider(endpointUrl, settings) {
     var ge = GE();
     var provider = new ge.SparqlDataProvider(
       { endpointUrl: endpointUrl, acceptBlankNodes: false, queryMethod: ge.SparqlQueryMethod.POST },
-      Object.assign({}, ge.OWLStatsSettings, settings)
+      Object.assign({}, ge.OWLStatsSettings, { linkTypesOfQuery: LINK_TYPES_OF_QUERY }, settings)
     );
     // acceptBlankNodes:false keeps blank nodes off the canvas but not out of
     // rdf:type values: GE then asks classInfo for ids like `b0_genid-…` inside
