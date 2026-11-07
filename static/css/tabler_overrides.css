@@ -1367,3 +1367,11 @@ sparql-tree-query { display: none; }
 .vs-swatch-empty {
     background: var(--tblr-border-color);
 }
+
+/* Feedback modal: the attached page context is a Markdown list — keep its line
+   breaks but wrap long URLs (Tabler's <pre> is dark and nowrap). */
+.vs-feedback-context {
+  white-space: pre-wrap;
+  max-height: 10rem;
+  overflow-y: auto;
+}

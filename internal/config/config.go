@@ -81,6 +81,12 @@ type ApplicationConfig struct {
 	// endpoint is never open by accident. json:"-" like the endpoint secrets.
 	MetricsToken string `toml:"metrics_token" json:"-"`
 
+	// FeedbackURL is the GitHub "new issue" URL the topbar feedback button hands
+	// off to, e.g. https://github.com/pdacton/visoto/issues/new?template=feedback.yml.
+	// The browser appends the title and page context as query parameters. Empty
+	// (or not https) hides the button.
+	FeedbackURL string `toml:"feedback_url"`
+
 	// GraphLayouts configures the server-side shared Graph Explorer layouts
 	// (internal/graphlayout).
 	GraphLayouts GraphLayoutsConfig `toml:"graph_layouts"`

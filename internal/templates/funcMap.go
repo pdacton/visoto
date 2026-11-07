@@ -38,6 +38,21 @@ var funcMap = template.FuncMap{
 	"columnGroupVar":   columnGroupVar,
 	"concatSeparators": sparql.ConcatSeparators, // GROUP_CONCAT columns the table may split per value
 	"contains":         strings.Contains,        // {{ if contains .SearchProvider "graphdb" }}
+	"feedbackURL":      func() string { return feedbackURL },
+}
+
+// feedbackURL is the topbar feedback button's GitHub new-issue URL; "" hides
+// the button. Set once at startup through SetFeedbackURL.
+var feedbackURL string
+
+// SetFeedbackURL installs the feedback_url config value. Only an https URL is
+// accepted — it lands in a data attribute the browser opens — anything else
+// leaves the button hidden. Call before any request is served.
+func SetFeedbackURL(raw string) {
+	feedbackURL = ""
+	if strings.HasPrefix(raw, "https://") {
+		feedbackURL = raw
+	}
 }
 
 // defaultTemplateSet is the parse-time placeholder for {{ templateSet }}. Load

@@ -2146,6 +2146,22 @@
 "facet.city" = "Ort"
 "facet.state" = "Region"
 
+# Feedback button and modal (topbar.html)
+"feedback.button" = "Feedback senden"
+"feedback.title" = "Feedback senden"
+"feedback.kind" = "Art"
+"feedback.kind.bug" = "Fehler"
+"feedback.kind.idea" = "Idee"
+"feedback.kind.question" = "Frage"
+"feedback.titleLabel" = "Titel"
+"feedback.titlePlaceholder" = "Eine kurze Zusammenfassung"
+"feedback.descriptionLabel" = "Beschreibung"
+"feedback.descriptionPlaceholder" = "Was ist passiert, was haben Sie erwartet, oder was wünschen Sie sich?"
+"feedback.contextLabel" = "Wird automatisch angefügt"
+"feedback.publicNotice" = "Damit öffnen Sie ein neues Issue auf GitHub, wo Sie es prüfen und absenden. Issues sind öffentlich und erfordern ein GitHub-Konto – bitte geben Sie keine persönlichen oder vertraulichen Informationen an."
+"feedback.cancel" = "Abbrechen"
+"feedback.submit" = "Weiter auf GitHub"
+
 ["bnode.count"]
 one = "{{.Count}} leerer Knoten"
 other = "{{.Count}} leere Knoten"

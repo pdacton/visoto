@@ -2145,6 +2145,22 @@
 "facet.city" = "Ville"
 "facet.state" = "Région"
 
+# Feedback button and modal (topbar.html)
+"feedback.button" = "Envoyer un commentaire"
+"feedback.title" = "Envoyer un commentaire"
+"feedback.kind" = "Type"
+"feedback.kind.bug" = "Bogue"
+"feedback.kind.idea" = "Idée"
+"feedback.kind.question" = "Question"
+"feedback.titleLabel" = "Titre"
+"feedback.titlePlaceholder" = "Un bref résumé"
+"feedback.descriptionLabel" = "Description"
+"feedback.descriptionPlaceholder" = "Que s'est-il passé, à quoi vous attendiez-vous, ou que souhaiteriez-vous voir ?"
+"feedback.contextLabel" = "Joint automatiquement"
+"feedback.publicNotice" = "Cela ouvre une nouvelle issue sur GitHub, où vous la relisez et la soumettez. Les issues sont publiques et nécessitent un compte GitHub – n'y indiquez aucune information personnelle ou confidentielle."
+"feedback.cancel" = "Annuler"
+"feedback.submit" = "Continuer sur GitHub"
+
 ["bnode.count"]
 one = "{{.Count}} nœud anonyme"
 other = "{{.Count}} nœuds anonymes"

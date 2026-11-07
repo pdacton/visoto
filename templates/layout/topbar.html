@@ -161,6 +161,15 @@
           <i data-lucide="bot" class="icon"></i>
         </a>
       </div>
+      <!-- feedback button: opens #feedbackModal, which hands off to a prefilled
+           GitHub issue (static/js/feedback.js). Hidden when feedback_url is unset. -->
+      {{ if feedbackURL }}
+      <div class="nav-item">
+        <a href="#" class="nav-link" data-bs-toggle="modal" data-bs-target="#feedbackModal" title="{{ t "feedback.button" "Send feedback" }}" aria-label="{{ t "feedback.button" "Send feedback" }}">
+          <i data-lucide="message-square-heart" class="icon"></i>
+        </a>
+      </div>
+      {{ end }}
       {{ template "extensionTopbar" . }}
       <!-- settings menu -->
       <div class="nav-item dropdown">
@@ -343,6 +352,59 @@
   </div>
 </div>
 <!-- Upload Data Modal end -->
+
+<!-- Feedback Modal. The form only composes the issue: "Continue on GitHub"
+     opens the feedback_url new-issue page prefilled, and the visitor submits it
+     there. The page context is filled in by static/js/feedback.js at open time —
+     never server-side, because this markup is cached for every visitor. -->
+{{ with feedbackURL }}
+<div class="modal modal-blur fade" id="feedbackModal" tabindex="-1" role="dialog" aria-labelledby="feedbackModalLabel" aria-hidden="true" data-feedback data-feedback-url="{{ . }}">
+  <div class="modal-dialog modal-dialog-centered" role="document">
+    <form class="modal-content" data-feedback-form novalidate>
+      <div class="modal-header">
+        <h5 class="modal-title" id="feedbackModalLabel">
+          <i data-lucide="message-square-heart" class="icon me-2"></i>{{ t "feedback.title" "Send feedback" }}
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="{{ t "modal.close" "Close" }}"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <div class="form-label">{{ t "feedback.kind" "Type" }}</div>
+          <div class="btn-group w-100" role="group" aria-label="{{ t "feedback.kind" "Type" }}">
+            <input type="radio" class="btn-check" name="feedback-kind" id="feedback-kind-question" value="Question" autocomplete="off">
+            <label class="btn" for="feedback-kind-question"><i data-lucide="circle-question-mark" class="icon me-1"></i>{{ t "feedback.kind.question" "Question" }}</label>
+            <input type="radio" class="btn-check" name="feedback-kind" id="feedback-kind-idea" value="Idea" autocomplete="off">
+            <label class="btn" for="feedback-kind-idea"><i data-lucide="lightbulb" class="icon me-1"></i>{{ t "feedback.kind.idea" "Idea" }}</label>
+            <input type="radio" class="btn-check" name="feedback-kind" id="feedback-kind-bug" value="Bug" autocomplete="off" checked>
+            <label class="btn" for="feedback-kind-bug"><i data-lucide="bug" class="icon me-1"></i>{{ t "feedback.kind.bug" "Bug" }}</label>
+          </div>
+        </div>
+        <div class="mb-3">
+          <label for="feedback-title" class="form-label required">{{ t "feedback.titleLabel" "Title" }}</label>
+          <input type="text" class="form-control" id="feedback-title" maxlength="120" required autocomplete="off" placeholder="{{ t "feedback.titlePlaceholder" "A short summary" }}">
+        </div>
+        <div class="mb-3">
+          <label for="feedback-description" class="form-label">{{ t "feedback.descriptionLabel" "Description" }}</label>
+          <textarea class="form-control" id="feedback-description" rows="5" maxlength="3000" placeholder="{{ t "feedback.descriptionPlaceholder" "What happened, what did you expect, or what would you like to see?" }}"></textarea>
+        </div>
+        <div class="mb-3">
+          <div class="form-label">{{ t "feedback.contextLabel" "Attached automatically" }}</div>
+          <pre class="vs-feedback-context small mb-0 p-2 rounded border bg-body-tertiary text-body text-break" data-feedback-context></pre>
+        </div>
+        <div class="alert alert-info mb-0" role="note">
+          {{ t "feedback.publicNotice" "This opens a new issue on GitHub, where you review and submit it. Issues are public and need a GitHub account — please don't include personal or confidential information." }}
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-link link-secondary" data-bs-dismiss="modal">{{ t "feedback.cancel" "Cancel" }}</button>
+        <button type="submit" class="btn btn-primary ms-auto" data-feedback-submit disabled>
+          <i data-lucide="external-link" class="icon me-1"></i>{{ t "feedback.submit" "Continue on GitHub" }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{{ end }}
 
 <!-- Named Graphs Modal -->
 <div class="modal modal-blur fade" id="namedGraphsModal" tabindex="-1" role="dialog" aria-labelledby="namedGraphsModalLabel" aria-hidden="true">

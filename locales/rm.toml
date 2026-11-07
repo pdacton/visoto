@@ -440,6 +440,22 @@
 "facet.city" = "Citad"
 "facet.state" = "Regiun"
 
+# Feedback button and modal (topbar.html)
+"feedback.button" = "Trametter in feedback"
+"feedback.title" = "Trametter in feedback"
+"feedback.kind" = "Tip"
+"feedback.kind.bug" = "Errur"
+"feedback.kind.idea" = "Idea"
+"feedback.kind.question" = "Dumonda"
+"feedback.titleLabel" = "Titel"
+"feedback.titlePlaceholder" = "In curt resumaziun"
+"feedback.descriptionLabel" = "Descripziun"
+"feedback.descriptionPlaceholder" = "Tge è capità, tge has ti spetgà u tge vulessas ti vesair?"
+"feedback.contextLabel" = "Vegn agiuntà automaticamain"
+"feedback.publicNotice" = "Quai avra ina nova issue sin GitHub, nua che ti la controlleschas e la trametts. Issues èn publics e dovran in conto da GitHub – per plaschair na endatescha naginas infurmaziuns persunalas u confidenzialas."
+"feedback.cancel" = "Interrumper"
+"feedback.submit" = "Cuntinuar sin GitHub"
+
 ["bnode.count"]
 one = "{{.Count}} nuv vid"
 other = "{{.Count}} nuvs vids"

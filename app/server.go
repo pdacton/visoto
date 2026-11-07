@@ -1112,6 +1112,7 @@ func Main(plugins ...Plugin) {
 
 	// Load templates and register with Gin. Every page is registered once per
 	// configured language; handlers name the variant via templates.Name.
+	templates.SetFeedbackURL(cfg.Application.FeedbackURL)
 	router.HTMLRender = templates.Load("./templates", catalogs, siteLangs)
 
 	var promCollectors []prometheus.Collector

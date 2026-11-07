@@ -20,6 +20,8 @@ timeout = 30 # timeout in seconds
 # Grafana Cloud "Metrics Endpoint" scrape job). Without it /metrics answers 404.
 # Keep the value in .env.
 # metrics_token = "${VISOTO_METRICS_TOKEN}"
+# Topbar feedback button: opens a prefilled GitHub issue. Unset = no button.
+# feedback_url = "https://github.com/pdacton/visoto/issues/new?template=feedback.yml"
 
 # API key for the Gemini-backed chat feature. Optional — the app starts without
 # it and only the chat is disabled. Get one from:
