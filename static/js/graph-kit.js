@@ -310,6 +310,30 @@
       };
     };
 
+    // --- Link directions per element (Connections panel) ----------------------
+    // GE's Connections panel lists the selected element's link types with one
+    // summed count; the provider's linkTypesOf answer it is built from also
+    // splits that count by direction. kit.linkCounts keeps the latest answer
+    // per element IRI ({ typeId: { in, out } }) so graph-tools.js can mark
+    // each row's directions without a second query. Wrap AFTER guardProvider,
+    // like recordListIcons. One small entry per element whose connections GE
+    // asked for; never pruned.
+    kit.linkCounts = new Map();
+    kit.recordLinkCounts = function (provider) {
+      var inner = provider.linkTypesOf;
+      if (typeof inner !== 'function') return;
+      provider.linkTypesOf = function (params) {
+        return inner.apply(provider, arguments).then(function (counts) {
+          if (params && params.elementId && Array.isArray(counts)) {
+            var byType = {};
+            counts.forEach(function (t) { byType[t.id] = { in: t.inCount || 0, out: t.outCount || 0 }; });
+            kit.linkCounts.set(params.elementId, byType);
+          }
+          return counts;
+        });
+      };
+    };
+
     kit.guardProvider = function (provider) {
       PROVIDER_METHODS.forEach(function (name) {
         var inner = provider[name];

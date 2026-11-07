@@ -568,6 +568,14 @@
  * :root raises it over GE's injected .graph-explorer rule. */
 :root .graph-explorer {
   --ge-border: var(--tblr-border-color);
+  /* GE's backdrop tokens are a blue-tinted slate (#f1f5f9 frame and collapsed
+   * sidebars, #fbfcfe canvas, #dbe2ee dots); Tabler 1.6's grays are neutral. */
+  --ge-bg: var(--tblr-bg-surface-secondary);
+  --ge-surface-2: var(--tblr-bg-surface-secondary);
+  --ge-surface-3: var(--tblr-gray-100);
+  --ge-canvas: var(--tblr-bg-surface-secondary);
+  /* Zoomed out, the dots merge into a flat tint, so keep them as light as GE's. */
+  --ge-canvas-dot: var(--tblr-border-color);
 }
 
 /* Panel headers */
@@ -783,6 +791,76 @@
 .link-types-toolbox .connected-links .linkInToolBox::after {
   display: none; /* GE's .clearfix: nothing floats, and they'd be flex items */
 }
+/* Model section: ontology/shape predicates (rows graph-tools.js tags
+   data-vs-model) below the business ones, under a "Model" subheader drawn
+   from the list's ::after (the menu's subheader type). */
+.link-types-toolbox .connected-links {
+  display: flex;
+  flex-direction: column;
+}
+.link-types-toolbox .connected-links > .linkInToolBox[data-vs-model] {
+  order: 3;
+}
+.link-types-toolbox .connected-links > .linkInToolBox[data-vs-model="top"] {
+  order: 2; /* rdf:type and rdfs:subClassOf open the section */
+}
+.link-types-toolbox .connected-links:has(> .linkInToolBox[data-vs-model])::after {
+  content: var(--vs-conn-model, "Model");
+  order: 1;
+  display: block;
+  padding: 12px 12px 4px;
+  font-size: 0.75rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tblr-secondary);
+}
+/* Directions, as in the connections menu: two arrow columns leading the
+   row — ↘ incoming (success), ↗ outgoing (info) — drawn by the
+   row's own ::before/::after (GE's clearfix, unused in a flex row) from
+   data-vs-in / data-vs-out (graph-tools.js). A column stays as an empty
+   16px slot where the type has no link in that direction, so titles align;
+   lists without direction data (no single selection) draw no columns. */
+.link-types-toolbox .connected-links:has(.linkInToolBox[data-vs-in], .linkInToolBox[data-vs-out]) .linkInToolBox::before,
+.link-types-toolbox .connected-links:has(.linkInToolBox[data-vs-in], .linkInToolBox[data-vs-out]) .linkInToolBox::after {
+  content: "";
+  display: block;
+  order: 0;
+  flex: 0 0 16px;
+  width: 16px;
+  height: 16px;
+}
+.link-types-toolbox .connected-links .linkInToolBox::after {
+  margin-left: -4px; /* the pair reads as one cell */
+}
+.link-types-toolbox .connected-links .linkInToolBox[data-vs-in]::before,
+.link-types-toolbox .connected-links .linkInToolBox[data-vs-out]::after {
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+/* What the row says first (arrows, title, count), then what it does: the
+   visibility toggle closes the row, as the chevron does in the menu. */
+.link-types-toolbox .connected-links .linkInToolBox > .graph-explorer-btn-group {
+  order: 2;
+}
+.link-types-toolbox .connected-links .linkInToolBox > :not(.graph-explorer-btn-group) {
+  order: 1;
+}
+.link-types-toolbox .connected-links .linkInToolBox[data-vs-in]::before {
+  background-color: var(--tblr-success);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 7 10 10'/%3E%3Cpath d='M17 7v10H7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 7 10 10'/%3E%3Cpath d='M17 7v10H7'/%3E%3C/svg%3E");
+}
+.link-types-toolbox .connected-links .linkInToolBox[data-vs-out]::after {
+  background-color: var(--tblr-info);
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7h10v10'/%3E%3Cpath d='M7 17 17 7'/%3E%3C/svg%3E");
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 7h10v10'/%3E%3Cpath d='M7 17 17 7'/%3E%3C/svg%3E");
+}
 .link-types-toolbox .connected-links .linkInToolBox:hover {
   background-color: var(--tblr-bg-surface-secondary) !important;
 }
@@ -795,9 +873,19 @@
   font-size: 0.875rem;
   color: var(--tblr-body-color) !important;
 }
-/* The count's wrapper div keeps its width; the label is cut instead. */
+/* The count's wrapper div keeps its width; the label is cut instead. A flex
+   box, so the badge centres on the row instead of sitting on a text baseline
+   (1px low). */
 .link-types-toolbox .connected-links .linkInToolBox > div:not(.link-title) {
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+/* "Links with labels" draws in the top of its box (the T above the arrow
+   spans y 3-16 of 24), so it reads high next to the count; drop it to its
+   optical centre. The other two states are centred glyphs. */
+.link-types-toolbox .connected-links .graph-explorer-btn.active .fa-text-width {
+  transform: translateY(1.5px);
 }
 .link-types-toolbox .connected-links .linkInToolBox .graph-explorer-badge {
   display: inline-block !important;
@@ -812,13 +900,13 @@
   border: 0;
   border-radius: var(--tblr-border-radius);
 }
-/* Filter: muted 16px icon over the count's place at the row's right edge,
+/* Filter: muted 16px icon over the count's place, left of the toggle,
    shown on row hover while the count steps aside. Touch screens have no hover:
    there it sits after the count, always visible. */
 .link-types-toolbox .connected-links .linkInToolBox__filter-button {
   position: absolute;
   top: 50%;
-  right: 12px;
+  right: 40px; /* over the count: row padding 12 + toggle 20 + gap 8 */
   float: none;
   width: 16px;
   height: 16px;
@@ -1314,13 +1402,50 @@
   text-transform: uppercase;
   color: var(--tblr-secondary);
 }
-.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list:has(.link-in-popup-menu_direction__in-direction)::before {
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list:has(.link-in-popup-menu:not([data-vs-model]) .link-in-popup-menu_direction__in-direction)::before {
   content: var(--vs-conn-incoming, "Incoming");
   order: 1;
 }
-.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list:has(.link-in-popup-menu_direction__out-direction)::after {
+.graph-explorer-connections-menu .graph-explorer-connections-menu_links-list:has(.link-in-popup-menu:not([data-vs-model]) .link-in-popup-menu_direction__out-direction)::after {
   content: var(--vs-conn-outgoing, "Outgoing");
   order: 3;
+}
+/* Model section: ontology/shape predicates (rows graph-tools.js tags
+   data-vs-model) last, incoming then outgoing, each keeping its arrow. The
+   "Model" subheader hangs above the first of them (data-vs-model-head), in
+   the room its top margin leaves — the list's own pseudo-elements are taken. */
+.graph-explorer-connections-menu .link-in-popup-menu[data-vs-model]:has(.link-in-popup-menu_direction__in-direction) {
+  order: 7;
+}
+.graph-explorer-connections-menu .link-in-popup-menu[data-vs-model]:has(.link-in-popup-menu_direction__out-direction) {
+  order: 8;
+}
+/* rdf:type and rdfs:subClassOf (data-vs-model="top") open the section. */
+.graph-explorer-connections-menu .link-in-popup-menu[data-vs-model="top"]:has(.link-in-popup-menu_direction__in-direction) {
+  order: 5;
+}
+.graph-explorer-connections-menu .link-in-popup-menu[data-vs-model="top"]:has(.link-in-popup-menu_direction__out-direction) {
+  order: 6;
+}
+.graph-explorer-connections-menu .link-in-popup-menu[data-vs-model-head] {
+  margin-top: 32px;
+  overflow: visible; /* GE's rows clip; the title keeps its own ellipsis */
+}
+.graph-explorer-connections-menu .link-in-popup-menu[data-vs-model-head]::before {
+  content: var(--vs-conn-model, "Model");
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  right: 0;
+  padding: 12px 12px 4px;
+  font-size: 0.75rem;
+  font-weight: var(--tblr-font-weight-medium, 500);
+  line-height: 1rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--tblr-secondary);
+  cursor: default;
+  pointer-events: none;
 }
 /* Direction icons: both point right, as a flow — ↘ in (green), ↗ out (blue). */
 .graph-explorer-connections-menu .link-in-popup-menu_direction__in-direction {

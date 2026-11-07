@@ -1658,6 +1658,7 @@
 "js.graph.propertyCount" = "{n}/{total} · {links} collegamenti"
 "js.graph.outgoing" = "In uscita"
 "js.graph.incoming" = "In entrata"
+"js.graph.modelLinks" = "Modello"
 "js.graph.linksWithLabels" = "Collegamenti con etichette"
 "js.graph.linksOnly" = "Solo collegamenti"
 "js.graph.linksHidden" = "Collegamenti nascosti"

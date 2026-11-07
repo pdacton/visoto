@@ -125,6 +125,7 @@
 "js.graph.propertyCount" = "{n}/{total} · {links} links"
 "js.graph.outgoing" = "Outgoing"
 "js.graph.incoming" = "Incoming"
+"js.graph.modelLinks" = "Model"
 "js.graph.linksWithLabels" = "Links with labels"
 "js.graph.linksOnly" = "Links only"
 "js.graph.linksHidden" = "Links hidden"

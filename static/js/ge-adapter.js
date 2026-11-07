@@ -718,6 +718,10 @@
           .filter(function (item) { return item instanceof Element; })
           .map(function (el) { return el.id; });
       },
+      iriOf: function (id) {
+        var el = model.getElement(id);
+        return el ? el.iri : null;
+      },
       elementIdByIri: function (iri) {
         var found = iri && model.elements.find(function (el) { return el.iri === iri; });
         return found ? found.id : null;

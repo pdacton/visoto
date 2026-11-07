@@ -278,6 +278,75 @@
     // container, which GE's dialogs live in and never replace.
     kit.container.style.setProperty('--vs-conn-incoming', JSON.stringify(vsT('js.graph.incoming', 'Incoming')));
     kit.container.style.setProperty('--vs-conn-outgoing', JSON.stringify(vsT('js.graph.outgoing', 'Outgoing')));
+    kit.container.style.setProperty('--vs-conn-model', JSON.stringify(vsT('js.graph.modelLinks', 'Model')));
+
+    // --- Connections menu + panel: model predicates in their own section ------
+    // Ontology and shape predicates (type, subClassOf, domain, targetClass, …)
+    // are split off from the business connections: each row whose predicate
+    // (GE's data-linktypeid) lies in one of these namespaces gets
+    // data-vs-model, and ontodia_overrides.css moves it below the others under
+    // a "Model" subheader. In the menu that subheader hangs off the first model
+    // row in visual order (see menuRank), marked data-vs-model-head;
+    // the panel draws it from its list's ::after. Attributes, not DOM moves:
+    // React keeps owning the rows, and a re-rendered row is tagged again.
+    // Whole namespaces, plus single terms from vocabularies that are mostly
+    // business data (schema.org's own domain/range declarations).
+    function expandAll(curies) {
+      return curies.map(function (c) { return window.VisotoPrefixes.fromPage().expand(c); })
+        .filter(function (iri) { return iri.indexOf('//') > 0; }); // undeclared prefixes stay CURIEs
+    }
+    var MODEL_NS = expandAll(['rdf:', 'rdfs:', 'owl:', 'sh:']);
+    var MODEL_TERMS = expandAll(['schema:domainIncludes', 'schema:rangeIncludes']);
+    // Typing and the class hierarchy open the section: data-vs-model="top".
+    var MODEL_TOP = expandAll(['rdf:type', 'rdfs:subClassOf']);
+    var CONN_ROW = '.link-in-popup-menu[data-linktypeid], .linkInToolBox[data-linktypeid]';
+    function modelKind(row) {
+      var id = row.getAttribute('data-linktypeid');
+      if (MODEL_TOP.indexOf(id) >= 0) return 'top';
+      return MODEL_TERMS.indexOf(id) >= 0 ||
+        MODEL_NS.some(function (ns) { return id.indexOf(ns) === 0; }) ? '' : null;
+    }
+    function setAttr(el, name, value) { // null removes
+      if (value === null) { if (el.hasAttribute(name)) el.removeAttribute(name); }
+      else if (el.getAttribute(name) !== value) el.setAttribute(name, value);
+    }
+    // A menu row's place in the model section, as ontodia_overrides.css orders
+    // it: top rows first, incoming before outgoing within each part.
+    function menuRank(r) {
+      return (r.getAttribute('data-vs-model') === 'top' ? 0 : 2) +
+        (r.querySelector('.link-in-popup-menu_direction__in-direction') ? 0 : 1);
+    }
+    var modelPending = false;
+    function tagModelRows() {
+      modelPending = false;
+      kit.container.querySelectorAll(CONN_ROW).forEach(function (row) {
+        setAttr(row, 'data-vs-model', modelKind(row));
+      });
+      kit.container.querySelectorAll('.graph-explorer-connections-menu_links-list').forEach(function (list) {
+        var rows = list.querySelectorAll('.link-in-popup-menu[data-vs-model]');
+        var head = null;
+        rows.forEach(function (r) { if (!head || menuRank(r) < menuRank(head)) head = r; });
+        rows.forEach(function (r) { setAttr(r, 'data-vs-model-head', r === head ? '' : null); });
+      });
+      tagPanelDirections();
+    }
+    // Connections panel: data-vs-in / data-vs-out on each row whose type the
+    // selected element has in that direction, from kit.linkCounts (kit.js
+    // recordLinkCounts). The panel follows GE's single selection; with none,
+    // or several, or counts not in yet, rows stay untagged and show no arrows.
+    function tagPanelDirections() {
+      var ids = c.selectedIds();
+      var counts = ids.length === 1 ? kit.linkCounts.get(c.iriOf(ids[0])) : null;
+      kit.container.querySelectorAll('.link-types-toolbox .linkInToolBox[data-linktypeid]').forEach(function (row) {
+        var n = counts && counts[row.getAttribute('data-linktypeid')];
+        setAttr(row, 'data-vs-in', n && n.in ? '' : null);
+        setAttr(row, 'data-vs-out', n && n.out ? '' : null);
+      });
+    }
+    new MutationObserver(function () {
+      if (!modelPending) { modelPending = true; requestAnimationFrame(tagModelRows); }
+    }).observe(kit.container,
+      { subtree: true, childList: true, attributes: true, attributeFilter: ['data-linktypeid'] });
 
     // --- Connections panel: one cycling visibility button per row ---------------
     // GE renders three buttons per row (allVisible, withoutLabels, invisible);

@@ -207,6 +207,7 @@
         // Icons for GE's result lists, by the node's own rule: the resource's own
         // icon (data.image, see elementInfo above), else its types' icon.
         kit.recordListIcons(dataProvider, listIcon);
+        kit.recordLinkCounts(dataProvider);
 
         // Construct mode: the CONSTRUCT is the first picture, this provider the
         // endpoint behind it (instances, further connections).
@@ -439,6 +440,7 @@
         var provider = MEM.makeHybridProvider(store, live);
         // The store answers filter() for its own nodes before the endpoint does.
         kit.recordListIcons(provider, listIcon);
+        kit.recordLinkCounts(provider);
         kit.boot({
           provider: function () { return provider; },
           fingerprint: window.VisotoGraphStore.fingerprint(Object.keys(store.elements)),
