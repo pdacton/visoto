@@ -58,11 +58,11 @@
 .graph-explorer-halo:not(:has(.graph-explorer-halo__expand--closed)) .graph-halo-expand-close {
   display: none;
 }
-/* Remove is destructive: Tabler danger on hover. */
-.graph-halo-bar .btn[data-halo="remove"] {
-  --tblr-btn-hover-bg: var(--tblr-danger);
-  --tblr-btn-hover-border-color: var(--tblr-danger);
-  --tblr-btn-active-bg: var(--tblr-danger);
+/* Remove is destructive: Tabler danger on hover, on its light tint. */
+.graph-halo-bar .btn-action[data-halo="remove"]:hover,
+.graph-selectionbar .btn-action[data-graph-action="remove"]:hover {
+  color: var(--tblr-danger);
+  background: var(--tblr-danger-lt);
 }
 
 /* Replace Font Awesome icons with Lucide icons using mask-image */
@@ -2046,6 +2046,28 @@
 }
 .graph-help-menu dd {
   margin-bottom: .25rem;
+}
+
+/* The bars' buttons are Tabler .btn-action (light hover tint). Tabler styles
+   only its .show state as active; a pressed toggle (pointer mode, hover
+   focus, pin, …: .active / aria-pressed) takes that same look. */
+.graph-toolbar .btn-action.active,
+.graph-selectionbar .btn-action.active,
+.graph-toolbar .btn-action[aria-pressed="true"],
+.graph-selectionbar .btn-action[aria-pressed="true"] {
+  color: var(--tblr-primary);
+  background: var(--tblr-active-bg);
+  border-color: transparent;
+}
+
+/* .btn-action is made for icon-only buttons and pulls its icon out by the
+   padding; the text dropdowns (Layout, language, save) get Tabler's regular
+   .btn icon spacing and their dropdown caret back. */
+.graph-toolbar .btn-action.dropdown-toggle .icon {
+  margin: 0 calc(var(--tblr-btn-padding-x) / 2) 0 calc(var(--tblr-btn-padding-x) / -4);
+}
+.graph-toolbar .btn-action.dropdown-toggle::after {
+  content: ""; /* .btn-action drops the dropdown caret; these menus keep it */
 }
 
 /* GL-41: a visible focus ring on every graph control, whatever the theme. */

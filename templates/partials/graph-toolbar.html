@@ -19,7 +19,7 @@
 
     <!-- GL-47: search by label or paste an IRI; results filled by graph-tools.js. -->
     <div class="dropdown" data-graph-add>
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+      <button type="button" class="btn btn-sm btn-action btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
               aria-expanded="false" aria-label="{{ t "graph.addResource" "Add resource" }}" title="{{ t "graph.addResource" "Add resource" }}">
         <i data-lucide="plus" class="icon"></i>
       </button>
@@ -33,7 +33,7 @@
 
     <!-- GL-32: highlight and zoom to nodes on the canvas; Enter selects them. -->
     <div class="dropdown" data-graph-find>
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+      <button type="button" class="btn btn-sm btn-action btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
               aria-expanded="false" aria-label="{{ t "graph.find" "Find on canvas" }}" title="{{ t "graph.find" "Find on canvas" }}">
         <i data-lucide="search" class="icon"></i>
       </button>
@@ -46,7 +46,7 @@
     </div>
 
     <div class="dropdown">
-      <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
+      <button type="button" class="btn btn-sm btn-action dropdown-toggle px-2" data-bs-toggle="dropdown"
               aria-expanded="false" title="{{ t "graph.layoutMenu" "Layout" }}">
         <i data-lucide="network" class="icon"></i>
         <span class="d-none d-sm-inline">{{ t "graph.layoutMenu" "Layout" }}</span>
@@ -77,11 +77,11 @@
          Shift+drag draws a box and a right-drag pans in either mode;
          graph-selection.js keeps aria-pressed in step. -->
     <div class="btn-group" role="group" aria-label="{{ t "graph.pointerMode" "Pointer mode" }}">
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-mode="pan" aria-pressed="false"
+      <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-mode="pan" aria-pressed="false"
               aria-label="{{ t "graph.modePan" "Pan: drag moves the canvas" }}" title="{{ t "graph.modePan" "Pan: drag moves the canvas" }}">
         <i data-lucide="hand" class="icon"></i>
       </button>
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon active" data-graph-mode="select" aria-pressed="true"
+      <button type="button" class="btn btn-sm btn-action btn-icon active" data-graph-mode="select" aria-pressed="true"
               aria-label="{{ t "graph.modeSelect" "Select: drag draws a selection box" }}" title="{{ t "graph.modeSelect" "Select: drag draws a selection box" }}">
         <i data-lucide="square-dashed-mouse-pointer" class="icon"></i>
       </button>
@@ -89,26 +89,26 @@
 
     <div class="vr mx-1"></div>
 
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon disabled" data-graph-action="undo" disabled
+    <button type="button" class="btn btn-sm btn-action btn-icon disabled" data-graph-action="undo" disabled
             aria-disabled="true" aria-label="{{ t "graph.undo" "Undo" }}" title="{{ t "graph.undo" "Undo" }}">
       <i data-lucide="undo-2" class="icon"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon disabled" data-graph-action="redo" disabled
+    <button type="button" class="btn btn-sm btn-action btn-icon disabled" data-graph-action="redo" disabled
             aria-disabled="true" aria-label="{{ t "graph.redo" "Redo" }}" title="{{ t "graph.redo" "Redo" }}">
       <i data-lucide="redo-2" class="icon"></i>
     </button>
 
     <div class="vr mx-1"></div>
 
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="zoom-in"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="zoom-in"
             aria-label="{{ t "graph.zoomIn" "Zoom in" }}" title="{{ t "graph.zoomIn" "Zoom in" }}">
       <i data-lucide="zoom-in" class="icon"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="zoom-out"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="zoom-out"
             aria-label="{{ t "graph.zoomOut" "Zoom out" }}" title="{{ t "graph.zoomOut" "Zoom out" }}">
       <i data-lucide="zoom-out" class="icon"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="fit"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="fit"
             aria-label="{{ t "graph.fit" "Fit to view" }}" title="{{ t "graph.fit" "Fit to view" }}">
       <i data-lucide="scan" class="icon"></i>
     </button>
@@ -116,23 +116,23 @@
     <div class="vr mx-1"></div>
 
     <!-- GL-48: property cards of the selection, else of every node. -->
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="details"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="details"
             aria-label="{{ t "graph.details" "Details: show or hide property cards" }}" title="{{ t "graph.details" "Details: show or hide property cards" }}">
       <i data-lucide="panel-top-open" class="icon"></i>
     </button>
     <!-- GL-39: the canvas as tables of nodes and edges (graph-list.js). -->
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="list-view" aria-pressed="false"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="list-view" aria-pressed="false"
             aria-label="{{ t "graph.listView" "List view" }}" title="{{ t "graph.listView" "List view" }}">
       <i data-lucide="table" class="icon"></i>
     </button>
     <!-- GL-10, 49, 52: classes and namespaces on the canvas, with hide/show. -->
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="filter" aria-pressed="false"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="filter" aria-pressed="false"
             aria-label="{{ t "graph.filter" "Classes and namespaces" }}" title="{{ t "graph.filter" "Classes and namespaces" }}">
       <i data-lucide="layers" class="icon"></i>
     </button>
     <!-- GL-57: fade what is not linked to the hovered node. Off by default,
          remembered per browser; graph-selection.js keeps aria-pressed in step. -->
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="hover-focus" aria-pressed="false"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="hover-focus" aria-pressed="false"
             aria-label="{{ t "graph.hoverFocus" "Highlight neighbours on hover" }}" title="{{ t "graph.hoverFocus" "Highlight neighbours on hover" }}">
       <i data-lucide="focus" class="icon"></i>
     </button>
@@ -141,7 +141,7 @@
 
     <div class="d-flex align-items-center gap-1">
       <div class="dropdown">
-        <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
+        <button type="button" class="btn btn-sm btn-action dropdown-toggle px-2" data-bs-toggle="dropdown"
                 aria-expanded="false" aria-label="{{ t "graph.labelLanguage" "Label language" }}"
                 title="{{ t "graph.labelLanguage" "Label language" }}">
           <span data-graph-lang-current></span>
@@ -155,7 +155,7 @@
       </div>
 
       <div class="dropdown">
-        <button type="button" class="btn btn-sm btn-ghost-secondary dropdown-toggle" data-bs-toggle="dropdown"
+        <button type="button" class="btn btn-sm btn-action dropdown-toggle px-2" data-bs-toggle="dropdown"
                 aria-expanded="false" aria-label="{{ t "graph.saveExport" "Save / Export" }}" title="{{ t "graph.saveExport" "Save / Export" }}">
           <i data-lucide="save" class="icon"></i>
         </button>
@@ -200,7 +200,7 @@
 
       <!-- GL-53: shortcuts and the guide page. -->
       <div class="dropdown">
-        <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" aria-expanded="false"
+        <button type="button" class="btn btn-sm btn-action btn-icon" data-bs-toggle="dropdown" aria-expanded="false"
                 aria-label="{{ t "graph.help" "Help and shortcuts" }}" title="{{ t "graph.help" "Help and shortcuts" }}">
           <i data-lucide="circle-question-mark" class="icon"></i>
         </button>
@@ -222,7 +222,7 @@
 
       <!-- More: rarely used and destructive actions, out of the main row. -->
       <div class="dropdown">
-        <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown"
+        <button type="button" class="btn btn-sm btn-action btn-icon" data-bs-toggle="dropdown"
                 aria-expanded="false" aria-label="{{ t "graph.more" "More actions" }}" title="{{ t "graph.more" "More actions" }}">
           <i data-lucide="ellipsis" class="icon"></i>
         </button>
@@ -253,13 +253,13 @@
        role="toolbar" aria-label="{{ t "graph.selectionTools" "Selection tools" }}" hidden>
     <span class="fs-5 text-secondary px-1" data-graph-selection-count aria-live="polite"></span>
     <div class="vr mx-1"></div>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="expand-all"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="expand-all"
             aria-label="{{ t "graph.expandAll" "Expand all: add every neighbour" }}" title="{{ t "graph.expandAll" "Expand all: add every neighbour" }}">
       <i data-lucide="git-branch-plus" class="icon"></i>
     </button>
     <!-- GL-60: expand one property on every selected node; list filled by graph-selection.js. -->
     <div class="dropup" data-graph-expand-property>
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+      <button type="button" class="btn btn-sm btn-action btn-icon" data-bs-toggle="dropdown" data-bs-auto-close="outside"
               aria-expanded="false" aria-label="{{ t "graph.expandProperty" "Expand by property" }}" title="{{ t "graph.expandProperty" "Expand by property" }}">
         <i data-lucide="list-tree" class="icon"></i>
       </button>
@@ -270,20 +270,20 @@
         <div data-graph-expand-property-list aria-live="polite"></div>
       </div>
     </div>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="select-neighbours"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="select-neighbours"
             aria-label="{{ t "graph.selectNeighbours" "Select neighbours" }}" title="{{ t "graph.selectNeighbours" "Select neighbours" }}">
       <i data-lucide="waypoints" class="icon"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="layout-selection" data-graph-needs-two
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="layout-selection" data-graph-needs-two
             aria-label="{{ t "graph.layoutSelection" "Lay out selection" }}" title="{{ t "graph.layoutSelection" "Lay out selection" }}">
       <i data-lucide="layout-dashboard" class="icon"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="pin-toggle" aria-pressed="false"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="pin-toggle" aria-pressed="false"
             aria-label="{{ t "graph.pin" "Pin" }}" title="{{ t "graph.pin" "Pin" }}">
       <i data-lucide="pin" class="icon"></i>
     </button>
     <div class="dropup">
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown"
+      <button type="button" class="btn btn-sm btn-action btn-icon" data-bs-toggle="dropdown"
               aria-expanded="false" aria-label="{{ t "graph.color" "Node colour" }}" title="{{ t "graph.color" "Node colour" }}">
         <i data-lucide="palette" class="icon"></i>
       </button>
@@ -312,7 +312,7 @@
       </div>
     </div>
     <div class="dropup">
-      <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-bs-toggle="dropdown" data-graph-needs-two
+      <button type="button" class="btn btn-sm btn-action btn-icon" data-bs-toggle="dropdown" data-graph-needs-two
               aria-expanded="false" aria-label="{{ t "graph.align" "Align and distribute" }}" title="{{ t "graph.align" "Align and distribute" }}">
         <i data-lucide="align-start-vertical" class="icon"></i>
       </button>
@@ -332,16 +332,16 @@
       </div>
     </div>
     <div class="vr mx-1"></div>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="keep-only"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="keep-only"
             aria-label="{{ t "graph.keepOnly" "Keep only these" }}" title="{{ t "graph.keepOnly" "Keep only these" }}">
       <i data-lucide="funnel" class="icon"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-ghost-danger btn-icon" data-graph-action="remove"
+    <button type="button" class="btn btn-sm btn-action btn-icon text-danger" data-graph-action="remove"
             aria-label="{{ t "graph.removeSelected" "Remove from diagram" }}" title="{{ t "graph.removeSelected" "Remove from diagram" }}">
       <i data-lucide="trash" class="icon"></i>
     </button>
     <div class="vr mx-1"></div>
-    <button type="button" class="btn btn-sm btn-ghost-secondary btn-icon" data-graph-action="clear-selection"
+    <button type="button" class="btn btn-sm btn-action btn-icon" data-graph-action="clear-selection"
             aria-label="{{ t "graph.clearSelection" "Clear selection (Esc)" }}" title="{{ t "graph.clearSelection" "Clear selection (Esc)" }}">
       <i data-lucide="x" class="icon"></i>
     </button>

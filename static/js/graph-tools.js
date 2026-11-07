@@ -316,7 +316,7 @@
 
     // --- Node menu: GE's halo buttons as a Tabler toolbar -----------------------
     // Each halo GE renders gets a .graph-halo-bar child with the canvas
-    // toolbar's buttons (btn-sm btn-ghost-secondary btn-icon, .vr dividers);
+    // toolbar's buttons (btn-sm btn-action btn-icon, .vr dividers);
     // a click presses GE's own halo button, hidden in ontodia_overrides.css,
     // so GE keeps the behaviour. Groups: what changes the canvas (connections,
     // expand properties) | what opens elsewhere (find connected, resource
@@ -337,7 +337,7 @@
         if (!ge) return;
         var btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'btn btn-sm btn-ghost-secondary btn-icon';
+        btn.className = 'btn btn-sm btn-action btn-icon';
         btn.dataset.halo = item[0];
         btn.title = ge.title;
         btn.setAttribute('aria-label', ge.title);
