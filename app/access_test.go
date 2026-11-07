@@ -233,3 +233,13 @@ func TestOpenSourceDefaultAllowsAll(t *testing.T) {
 		t.Errorf("listing without plugins hides a store: %s", rec.Body.String())
 	}
 }
+
+// Static files must be revalidated, or a browser keeps running stale JS/CSS
+// after an edit (Caddy sets its own max-age in production).
+func TestStaticRevalidates(t *testing.T) {
+	router, _ := routedServer(t, testPlugin{})
+	w := serveAs(router, "GET", "/static/js/graph-kit.js", "")
+	if got := w.Header().Get("Cache-Control"); got != "no-cache" {
+		t.Errorf("Cache-Control = %q, want no-cache", got)
+	}
+}

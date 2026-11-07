@@ -64,8 +64,12 @@ func (t *routeTable) Any(path string, action access.Action, h ...gin.HandlerFunc
 }
 
 // static serves a directory; the routes it adds (GET and HEAD) are public.
+// Files carry Cache-Control: no-cache, so a browser revalidates them on every
+// load (a cheap 304 via Last-Modified) instead of heuristically reusing an old
+// copy after an edit. In production Caddy replaces the header with its own
+// max-age for /static/* (Caddyfile).
 func (t *routeTable) static(prefix, dir string) {
-	group := t.router.Group(prefix, guard(access.Public))
+	group := t.router.Group(prefix, guard(access.Public), revalidate)
 	group.Static("/", dir)
 	t.routes = append(t.routes,
 		route{method: http.MethodGet, path: prefix + "/*filepath", action: access.Public},
@@ -78,6 +82,12 @@ func (t *routeTable) staticFile(path, file string) {
 	t.routes = append(t.routes,
 		route{method: http.MethodGet, path: path, action: access.Public},
 		route{method: http.MethodHead, path: path, action: access.Public})
+}
+
+// revalidate marks a static response as reusable only after revalidation.
+func revalidate(c *gin.Context) {
+	c.Header("Cache-Control", "no-cache")
+	c.Next()
 }
 
 func withGuard(action access.Action, handlers []gin.HandlerFunc) []gin.HandlerFunc {
