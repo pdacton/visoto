@@ -1637,6 +1637,8 @@
 "graph.alignBottom" = "Unten ausrichten"
 "graph.distributeH" = "Horizontal verteilen"
 "graph.distributeV" = "Vertikal verteilen"
+"graph.stackH" = "Horizontal stapeln, fester Abstand"
+"graph.stackV" = "Vertikal stapeln, fester Abstand"
 "graph.keepOnly" = "Nur diese behalten"
 "graph.removeSelected" = "Aus dem Diagramm entfernen"
 "graph.clearSelection" = "Auswahl aufheben (Esc)"

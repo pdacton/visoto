@@ -184,6 +184,24 @@ test('align left / middle and distribute horizontally', () => {
   assert.deepEqual([dist.a.x, dist.c.x, dist.b.x], [10, 175, 300]);
 });
 
+test('stack keeps a fixed gap where distribute would overlap', () => {
+  // Three 60px-tall boxes between y=0 and y=100: distribute-v can only give
+  // them -40px gaps; stack-v starts at the first and spaces them 40px apart.
+  const nodes = [
+    node('a', { x: 0, y: 0, width: 100, height: 60 }),
+    node('b', { x: 30, y: 100, width: 100, height: 60 }),
+    node('c', { x: 10, y: 50, width: 100, height: 60 }),
+  ];
+  const dist = L.align(nodes, 'distribute-v');
+  assert.ok(dist.c.y < dist.a.y + 60, 'distribute-v overlaps here');
+  const v = L.align(nodes, 'stack-v');
+  assert.deepEqual([v.a.y, v.c.y, v.b.y], [0, 100, 200]);
+  assert.deepEqual([v.a.x, v.b.x, v.c.x], [0, 30, 10], 'stack-v keeps x');
+  const h = L.align(nodes, 'stack-h'); // order by centre x: a(50) c(60) b(80)
+  assert.deepEqual([h.a.x, h.c.x, h.b.x], [0, 140, 280]);
+  assert.equal(h.b.y, 100, 'stack-h keeps y');
+});
+
 test('align needs two nodes', () => {
   assert.deepEqual(L.align([node('a')], 'left'), {});
 });

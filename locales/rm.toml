@@ -145,6 +145,8 @@
 "graph.alignBottom" = "Orientar giudim"
 "graph.distributeH" = "Distribuir orizontalmain"
 "graph.distributeV" = "Distribuir verticalmain"
+"graph.stackH" = "Empilar orizontalmain, distanza fixa"
+"graph.stackV" = "Empilar verticalmain, distanza fixa"
 "graph.keepOnly" = "Mantegnair mo quests"
 "graph.removeSelected" = "Allontanar dal diagram"
 "graph.clearSelection" = "Annullar la selecziun (Esc)"

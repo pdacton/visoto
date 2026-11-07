@@ -1636,6 +1636,8 @@
 "graph.alignBottom" = "Allinea in basso"
 "graph.distributeH" = "Distribuisci orizzontalmente"
 "graph.distributeV" = "Distribuisci verticalmente"
+"graph.stackH" = "Impila orizzontalmente, spaziatura fissa"
+"graph.stackV" = "Impila verticalmente, spaziatura fissa"
 "graph.keepOnly" = "Mantieni solo questi"
 "graph.removeSelected" = "Rimuovi dal diagramma"
 "graph.clearSelection" = "Annulla la selezione (Esc)"

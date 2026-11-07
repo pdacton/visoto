@@ -1636,6 +1636,8 @@
 "graph.alignBottom" = "Aligner en bas"
 "graph.distributeH" = "Répartir horizontalement"
 "graph.distributeV" = "Répartir verticalement"
+"graph.stackH" = "Empiler horizontalement, espacement fixe"
+"graph.stackV" = "Empiler verticalement, espacement fixe"
 "graph.keepOnly" = "Ne garder que ceux-ci"
 "graph.removeSelected" = "Retirer du diagramme"
 "graph.clearSelection" = "Effacer la sélection (Échap)"

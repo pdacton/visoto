@@ -235,8 +235,7 @@
         if (kit.fitSelection) kit.fitSelection();
         return;
       }
-      // Start at the middle of the view, then place it among its neighbours
-      // with every other node fixed (GL-14).
+      // Lands in the middle of the view, selected (GL-14, GH #42).
       var r = kit.container.getBoundingClientRect();
       var p = c.pageToPaper(r.left + r.width / 2 + window.scrollX, r.top + r.height / 2 + window.scrollY);
       var added;
@@ -275,8 +274,8 @@
     // --- GE's side panels (Classes / Instances left, Connections right) ---------
     // GE collapses them only through a small round chevron on their inner edge.
     // Each panel gets one panel-left/right toggle in its place (the chevrons are
-    // hidden in ontodia_overrides.css, the toggle clicks them): in the panel's
-    // outer top corner while open, in the canvas corner while closed. The
+    // hidden in ontodia_overrides.css, the toggle clicks them), in the chevron's
+    // place on the panel's inner edge, open or closed. The
     // panels' widths are published as --graph-inset-left/right on the stage, so
     // the floating toolbar, selection bar and docked panels sit between them
     // instead of over their headers (ontodia_overrides.css). Our buttons live in
@@ -317,16 +316,11 @@
         var btn = toggles[side] || toggle(side);
         btn._handle = handle;
         setToggle(btn, side, open);
-        if (side === 'left') {
-          btn.style.top = (r.top - s.top + 4) + 'px';
-          btn.style.left = (open ? r.right - s.left - 36 : r.left - s.left + 4) + 'px';
-          return;
-        }
-        // The fullscreen exit button owns the viewport's top-right corner: the
-        // right toggle then sits just left of it, in the same row.
-        var beside = kit.card && kit.card.classList.contains('graph-maximized') ? 52 : 0;
-        btn.style.top = (r.top - s.top + (beside ? 16 : 4)) + 'px';
-        btn.style.left = (r.right - s.left - 36 - beside) + 'px';
+        // Where GE's own chevron sat: straddling the panel's inner edge, at
+        // half its height, so it never collides with the panel or canvas
+        // corner buttons (GH #47).
+        btn.style.top = (r.top - s.top + r.height / 2 - 16) + 'px';
+        btn.style.left = ((side === 'left' ? r.right : r.left) - s.left - 16) + 'px';
       });
       stage.style.setProperty('--graph-inset-left', insets.left + 'px');
       stage.style.setProperty('--graph-inset-right', insets.right + 'px');

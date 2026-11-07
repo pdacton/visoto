@@ -557,17 +557,19 @@
             !window.confirm(vsTf('js.graph.confirmAdd', 'Add {n} nodes to the diagram?', { n: items.length }))) {
           return;
         }
-        // New nodes start on a ring around the node they came from, then are
-        // placed by a Network pass with every existing node fixed (GL-14).
+        // New nodes stay on a ring around the node they came from (GL-14, GH
+        // #42: no layout pass). The ring grows with the count, so ~200px of
+        // arc per node keeps neighbours from overlapping.
         var byFrom = {};
         items.forEach(function (item) { (byFrom[item.from] = byFrom[item.from] || []).push(item); });
         Object.keys(byFrom).forEach(function (from) {
           var src = c.box(from);
           var list = byFrom[from];
+          var radius = Math.max(300, (list.length * 200) / (2 * Math.PI));
           list.forEach(function (item, i) {
             var a = (2 * Math.PI * i) / list.length;
-            item.x = src.x + src.width / 2 + 300 * Math.cos(a) - 90;
-            item.y = src.y + src.height / 2 + 300 * Math.sin(a) - 30;
+            item.x = src.x + src.width / 2 + radius * Math.cos(a) - 90;
+            item.y = src.y + src.height / 2 + radius * Math.sin(a) - 30;
           });
         });
         var added;

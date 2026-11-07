@@ -398,13 +398,32 @@
   // --- Align / distribute (GL-51) ---------------------------------------------
   // mode: left | center | right | top | middle | bottom  (align to the
   // selection's bounding box), or distribute-h | distribute-v (first and last
-  // stay, equal gaps between the boxes in between). Returns { id: {x, y} }.
-  var ALIGN_MODES = ['left', 'center', 'right', 'top', 'middle', 'bottom', 'distribute-h', 'distribute-v'];
+  // stay, equal gaps between the boxes in between), or stack-h | stack-v
+  // (first stays, a fixed STACK_GAP between consecutive boxes, so they never
+  // overlap however little room the first and last left; GH #43).
+  // Returns { id: {x, y} }.
+  var ALIGN_MODES = ['left', 'center', 'right', 'top', 'middle', 'bottom',
+    'distribute-h', 'distribute-v', 'stack-h', 'stack-v'];
+  var STACK_GAP = 40;
 
   function align(nodes, mode) {
     var pos = {};
     if (nodes.length < 2) return pos;
     var b = bounds(nodes);
+    if (mode === 'stack-h' || mode === 'stack-v') {
+      var across = mode === 'stack-h';
+      var order = nodes.slice().sort(function (p, q) {
+        return across ? (p.x + sizeOf(p).width / 2) - (q.x + sizeOf(q).width / 2)
+                      : (p.y + sizeOf(p).height / 2) - (q.y + sizeOf(q).height / 2);
+      });
+      var next = across ? order[0].x : order[0].y;
+      order.forEach(function (n) {
+        var s = sizeOf(n);
+        pos[n.id] = across ? { x: next, y: n.y } : { x: n.x, y: next };
+        next += (across ? s.width : s.height) + STACK_GAP;
+      });
+      return pos;
+    }
     if (mode === 'distribute-h' || mode === 'distribute-v') {
       var horizontal = mode === 'distribute-h';
       var sorted = nodes.slice().sort(function (p, q) {

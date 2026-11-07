@@ -434,24 +434,15 @@
       });
     };
 
-    // GL-14: places newly added nodes (ids) with every other node fixed, by a
-    // Network pass, and selects them. Not an undo step of its own: the batch that added the
-    // nodes removes them on undo, and re-adds them where they end up.
+    // GL-14: selects newly added nodes (ids) where they were put: on a ring
+    // around their source, or where GE's connections menu placed them. No
+    // layout pass (GH #42) — they are already selected, so arranging them by
+    // hand or with a layout command is one step.
     kit.placeNew = function (ids) {
       var c = kit.commands;
       if (!c || !ids.length) return Promise.resolve();
-      var fresh = {};
-      ids.forEach(function (i) { fresh[i] = true; });
-      var graph = c.layoutGraph();
-      graph.nodes.forEach(function (n) { n.fixed = !fresh[n.id]; });
-      return window.VisotoLayout.layout(graph, { algorithm: 'network' }, { force: c.force, elk: loadElk })
-        .then(function (positions) {
-          var moves = {};
-          ids.forEach(function (i) { if (positions[i]) moves[i] = positions[i]; });
-          c.movePositions(moves);
-          // Selected, so the next step (lay out, colour, remove) is one click.
-          c.setSelection(ids);
-        });
+      c.setSelection(ids);
+      return Promise.resolve();
     };
 
     function layoutName(algorithm) {
