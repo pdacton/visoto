@@ -10,18 +10,8 @@
   'use strict';
 
   function initCard(card) {
-    var copy = card.querySelector('[data-shape-copy]');
-    var body = card.querySelector('[data-shape-text]');
-    if (copy && body) {
-      copy.addEventListener('click', function (e) {
-        e.preventDefault();
-        var title = copy.getAttribute('title');
-        navigator.clipboard.writeText(body.innerText.trim())
-          .then(function () { copy.setAttribute('title', copy.getAttribute('data-label-done')); })
-          .catch(function () { copy.setAttribute('title', copy.getAttribute('data-label-failed')); })
-          .then(function () { setTimeout(function () { copy.setAttribute('title', title); }, 1500); });
-      });
-    }
+    // The copy button is a Tabler Clipboard component (data-bs-toggle /
+    // data-bs-target in the markup), picked up after the swap by page-init.js.
     if (window.lucide) lucide.createIcons({ nodes: [card] });
   }
 

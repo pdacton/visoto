@@ -1362,3 +1362,8 @@ sparql-tree-query { display: none; }
     --tblr-icon-size: 1.375rem;
     stroke-width: 1.75;
 }
+
+/* Legend swatch for an empty Tabler .tracking-block (monitoring uptime bars). */
+.vs-swatch-empty {
+    background: var(--tblr-border-color);
+}

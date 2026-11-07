@@ -429,9 +429,10 @@ html .tabulator .tabulator-footer .tabulator-paginator .tabulator-page-size {
 }
 
 html .tabulator .tabulator-footer .tabulator-paginator .tabulator-page-size:focus {
-    border-color: var(--tblr-primary);
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(var(--tblr-primary-rgb), 0.25);
+    /* Tabler 1.6 focus ring (outline, not box-shadow), as on .form-control:focus */
+    border-color: color-mix(in oklab, var(--tblr-white) 50%, var(--tblr-primary));
+    outline: var(--tblr-focus-ring-width) solid var(--tblr-focus-ring-color);
+    outline-offset: -1px;
 }
 
 /* Page buttons: Tabler .page-link — borderless, 2rem square, body colour */
@@ -461,8 +462,8 @@ html .tabulator .tabulator-footer .tabulator-paginator .tabulator-page:not(:disa
 }
 
 html .tabulator .tabulator-footer .tabulator-paginator .tabulator-page:focus-visible {
-    outline: 0;
-    box-shadow: 0 0 0 0.25rem rgba(var(--tblr-primary-rgb), 0.25);
+    outline: var(--tblr-focus-ring-width) solid var(--tblr-focus-ring-color);
+    outline-offset: var(--tblr-focus-ring-offset);
 }
 
 /* Active page: Tabler's filled primary */

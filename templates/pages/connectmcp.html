@@ -26,8 +26,9 @@
       <div class="card-body">
         <div class="input-group">
           <input type="text" class="form-control font-monospace" id="mcp-url" value="{{ .BaseURL }}/mcp" readonly>
-          <button class="btn btn-primary mcp-copy-btn" type="button" data-copy="{{ .BaseURL }}/mcp" title="{{ t "page.connect.copyMCPURL" "Copy MCP URL" }}">
-            <i data-lucide="copy" aria-hidden="true"></i>&nbsp;<span class="mcp-copy-label">{{ t "page.connect.copy" "Copy" }}</span>
+          <button class="btn btn-primary" type="button" data-bs-toggle="clipboard" data-bs-target="#mcp-url" title="{{ t "page.connect.copyMCPURL" "Copy MCP URL" }}">
+            <span class="clipboard-label"><i data-lucide="copy" aria-hidden="true"></i>&nbsp;{{ t "page.connect.copy" "Copy" }}</span>
+            <span class="clipboard-feedback" hidden><i data-lucide="check" aria-hidden="true"></i>&nbsp;{{ t "page.connect.copied" "Copied" }}</span>
           </button>
         </div>
         <small class="text-muted">{{ t "page.connect.transportStreamableHTTPReadOnly" "Transport: streamable HTTP · read-only · no authentication or API key required." }}</small>
@@ -127,17 +128,3 @@
 
 {{ end }}
 
-{{ define "pageScripts" }}
-<script>
-document.addEventListener('click', e => {
-  const btn = e.target.closest('.mcp-copy-btn');
-  if (!btn) return;
-  navigator.clipboard.writeText(btn.dataset.copy).then(() => {
-    const label = btn.querySelector('.mcp-copy-label');
-    if (!label) return;
-    label.textContent = 'Copied!';
-    setTimeout(() => { label.textContent = 'Copy'; }, 1500);
-  });
-});
-</script>
-{{ end }}

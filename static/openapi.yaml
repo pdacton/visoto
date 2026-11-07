@@ -1156,6 +1156,30 @@ paths:
         "500": { $ref: "#/components/responses/JSONError" }
         "503": { $ref: "#/components/responses/MonitoringUnavailable" }
 
+  /api/monitoring/uptime:
+    get:
+      tags: [Monitoring]
+      summary: Get daily probe counts
+      description: >-
+        One entry per UTC day for the last 30 days (the retention), oldest
+        first, for every monitored endpoint. Days without probes have
+        `probes: 0`.
+      operationId: monitoringUptime
+      responses:
+        "200":
+          description: Daily counts per monitored endpoint, in config order.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days: { type: integer }
+                  endpoints:
+                    type: array
+                    items: { $ref: "#/components/schemas/EndpointUptime" }
+        "500": { $ref: "#/components/responses/JSONError" }
+        "503": { $ref: "#/components/responses/MonitoringUnavailable" }
+
   /api/chat:
     post:
       tags: [Chat]
@@ -1600,6 +1624,20 @@ components:
             minItems: 2
             maxItems: 2
             items: { type: integer }
+
+    EndpointUptime:
+      type: object
+      properties:
+        name: { type: string }
+        slug: { type: string }
+        days:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string, format: date }
+              probes: { type: integer }
+              ok: { type: integer }
 
     ClassStatsEndpoint:
       type: object

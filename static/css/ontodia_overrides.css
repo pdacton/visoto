@@ -434,13 +434,13 @@
  * hover strokes it translucent grey via
  *   .graph-explorer-link:hover .graph-explorer-link__wrap { stroke: rgba(140,140,140,.44) }
  * We override just that stroke to match the node selection ring
- * (rgba(var(--tblr-primary-rgb), 0.5)). Theme-agnostic — dark mode inherits it.
+ * (translucent --tblr-primary). Theme-agnostic — dark mode inherits it.
  * The arrow line/head themselves stay the light grey set by the linkTemplateResolver.
  * stroke-width narrows the VISIBLE hover band from the library's 12px to 8px.
  * We scope the width to :hover only so the resting hit-area stays the full 12px —
  * `__wrap` doubles as the click target, so shrinking it always narrows clickability. */
 .graph-explorer-link:hover .graph-explorer-link__wrap {
-  stroke: rgba(var(--tblr-primary-rgb), 0.44) !important;
+  stroke: color-mix(in oklab, var(--tblr-primary) 44%, transparent) !important;
   stroke-width: 8px !important;
 }
 
@@ -693,9 +693,10 @@
 }
 
 .graph-explorer-form-control:focus {
-  border-color: var(--tblr-primary) !important;
-  box-shadow: 0 0 0 0.25rem rgba(var(--tblr-primary-rgb), 0.25) !important;
-  outline: 0 !important;
+  border-color: color-mix(in oklab, var(--tblr-white) 50%, var(--tblr-primary)) !important;
+  box-shadow: none !important;
+  outline: var(--tblr-focus-ring-width) solid var(--tblr-focus-ring-color) !important;
+  outline-offset: -1px !important;
 }
 
 /* Connection rows — subtle Tabler separators and hover */

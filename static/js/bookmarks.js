@@ -347,9 +347,9 @@
 
     // The dropdown link points at the raw resource IRI; fall back to a copy button.
     var iriLink = wrapper.querySelector('.iri-dropdown a[href]');
-    var copyBtn = wrapper.querySelector('[data-copy]');
+    var copyBtn = wrapper.querySelector('[data-bs-toggle="clipboard"][data-bs-text]');
     var iri = iriLink ? iriLink.getAttribute('href')
-            : copyBtn ? copyBtn.getAttribute('data-copy')
+            : copyBtn ? copyBtn.getAttribute('data-bs-text')
             : null;
     if (!iri) return;
 

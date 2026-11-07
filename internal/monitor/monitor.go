@@ -174,6 +174,80 @@ func (m *Monitor) QuerySeries(since time.Duration) (map[string][]Metric, error) 
 	return result, rows.Err()
 }
 
+// DayUptime counts one endpoint's probes on one UTC calendar day.
+type DayUptime struct {
+	Date   string `json:"date"` // YYYY-MM-DD, UTC
+	Probes int    `json:"probes"`
+	OK     int    `json:"ok"`
+}
+
+// EndpointUptime is the daily probe record of one monitored endpoint.
+type EndpointUptime struct {
+	Name string      `json:"name"`
+	Slug string      `json:"slug"`
+	Days []DayUptime `json:"days"` // oldest first, one per day, gaps as Probes 0
+}
+
+// DailyUptime returns, for every monitored endpoint in config order, one entry
+// per UTC day for the `days` days ending on now's day. A day without probes
+// (monitoring off, or older than the retention) is present with Probes 0, so
+// every endpoint carries the same dense run of days.
+func (m *Monitor) DailyUptime(days int, now time.Time) ([]EndpointUptime, error) {
+	if days < 1 {
+		days = 1
+	}
+	today := now.UTC().Truncate(24 * time.Hour)
+	first := today.AddDate(0, 0, -(days - 1))
+
+	rows, err := m.db.Query(
+		`SELECT endpoint, date(measured_at, 'unixepoch') AS day,
+		        COUNT(*), SUM(status = 'ok')
+		 FROM endpoint_metrics
+		 WHERE measured_at >= ?
+		 GROUP BY endpoint, day`,
+		first.Unix(),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	counts := make(map[string]map[string]DayUptime) // endpoint URL → day → counts
+	for rows.Next() {
+		var ep, day string
+		var d DayUptime
+		if err := rows.Scan(&ep, &day, &d.Probes, &d.OK); err != nil {
+			return nil, err
+		}
+		d.Date = day
+		if counts[ep] == nil {
+			counts[ep] = make(map[string]DayUptime)
+		}
+		counts[ep][day] = d
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	out := make([]EndpointUptime, 0, len(m.cfg.SparqlEndpoints))
+	for _, ep := range m.cfg.SparqlEndpoints {
+		if !ep.Monitor {
+			continue
+		}
+		eu := EndpointUptime{Name: ep.Name, Slug: ep.Slug, Days: make([]DayUptime, 0, days)}
+		for d := first; !d.After(today); d = d.AddDate(0, 0, 1) {
+			key := d.Format(time.DateOnly)
+			du, ok := counts[ep.URL][key]
+			if !ok {
+				du = DayUptime{Date: key}
+			}
+			eu.Days = append(eu.Days, du)
+		}
+		out = append(out, eu)
+	}
+	return out, nil
+}
+
 // ----- internal helpers -----
 
 func (m *Monitor) runProber() {

@@ -34,6 +34,24 @@
   </div>
 </div>
 
+<!-- Daily uptime bars (Tabler .tracking). Behaviour: static/js/uptime-monitor.js. -->
+<div class="card mt-3" data-uptime>
+  <div class="card-header">
+    <h3 class="card-title">{{ t "page.monitoring.uptimeTitle" "Uptime, last 30 days" }}</h3>
+  </div>
+  <div class="card-body">
+    <div data-uptime-rows>
+      <p class="text-secondary mb-0">{{ t "page.monitoring.loading2" "Loading…" }}</p>
+    </div>
+    <div class="d-flex flex-wrap gap-3 small text-secondary mt-2">
+      <span class="d-inline-flex align-items-center gap-1"><span class="badge badge-empty bg-success"></span>{{ t "page.monitoring.uptimeAllOk" "all probes ok" }}</span>
+      <span class="d-inline-flex align-items-center gap-1"><span class="badge badge-empty bg-warning"></span>{{ t "page.monitoring.uptimeSomeFailed" "some failed (≥ 95 % ok)" }}</span>
+      <span class="d-inline-flex align-items-center gap-1"><span class="badge badge-empty bg-danger"></span>{{ t "page.monitoring.uptimeMostFailed" "below 95 % ok" }}</span>
+      <span class="d-inline-flex align-items-center gap-1"><span class="badge badge-empty vs-swatch-empty"></span>{{ t "page.monitoring.uptimeNoData" "no probes" }}</span>
+    </div>
+  </div>
+</div>
+
 <!-- Status table -->
 <div class="card mt-3">
   <div class="card-header">
@@ -99,4 +117,5 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js" integrity="sha384-cVMg8E3QFwTvGCDuK+ET4PD341jF3W8nO1auiXfuZNQkzbUUiBGLsIQUE+b1mxws" crossorigin="anonymous"></script>
 <script src="/static/js/monitoring.js"></script>
 <script src="/static/js/class-stats-monitor.js"></script>
+<script src="/static/js/uptime-monitor.js"></script>
 {{ end }}

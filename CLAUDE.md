@@ -65,7 +65,7 @@ from the URL only.
 
 ### Frontend
 
-Tabler 1.5 (Bootstrap 5) + Tabulator 6.5 + HTMX 2 + Lucide, loaded via CDN in
+Tabler 1.6 (Bootstrap 5) + Tabulator 6.5 + HTMX 2 + Lucide, loaded via CDN in
 `templates/layout/base.html`. Use Bootstrap/Tabler classes rather than custom
 CSS; overrides go in `static/css/*_overrides.css`.
 

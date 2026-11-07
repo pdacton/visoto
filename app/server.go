@@ -851,6 +851,30 @@ func monitoringDataHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"series": out})
 }
 
+// uptimeDays is the span of the monitoring page's uptime bars; it matches the
+// monitor's 30-day retention, so every bar can hold data.
+const uptimeDays = 30
+
+func monitoringUptimeHandler(c *gin.Context) {
+	if mon == nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "monitoring not available"})
+		return
+	}
+	all, err := mon.DailyUptime(uptimeDays, time.Now())
+	if err != nil {
+		logger.Get().Error("monitoring uptime query failed", slog.String("error", err.Error()))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "query failed"})
+		return
+	}
+	endpoints := []monitor.EndpointUptime{}
+	for _, eu := range all {
+		if listable(c, eu.Slug) {
+			endpoints = append(endpoints, eu)
+		}
+	}
+	c.JSON(http.StatusOK, gin.H{"days": uptimeDays, "endpoints": endpoints})
+}
+
 // ---- Routes ----
 
 // routeDeps are the long-lived handlers the route table wires in.
@@ -910,6 +934,7 @@ func buildRoutes(router *gin.Engine, d routeDeps, plugins []Plugin) (*routeTable
 	t.GET("/api/monitoring/status", access.Public, monitoringStatusHandler)
 	t.POST("/api/monitoring/toggle", access.Admin, monitoringToggleHandler)
 	t.GET("/api/monitoring/data", access.Public, monitoringDataHandler)
+	t.GET("/api/monitoring/uptime", access.Public, monitoringUptimeHandler)
 	t.GET("/api/class-tree", access.Browse, epFromURL, langFromURL, classTreeHandler)
 	t.GET("/api/class-stats/status", access.Public, classStatsStatusHandler)
 	t.GET("/api/class-stats/changes", access.Browse, classStatsChangesHandler)

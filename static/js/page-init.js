@@ -60,11 +60,19 @@
     window.addEventListener('scroll', syncTopbar, { passive: true });
   }
 
-  // --- "Copy IRI" buttons (was inline in layout/header.html) ---------------
-  // Delegated from the document, so it covers buttons that arrive later in
-  // HTMX-swapped fragments as well as those present at load.
-  document.addEventListener('click', function (e) {
-    var btn = e.target.closest('.iri-copy-btn');
-    if (btn) navigator.clipboard.writeText(btn.dataset.copy);
+  // --- Copy buttons in HTMX-swapped fragments --------------------------------
+  // Copy buttons are Tabler Clipboard components (data-bs-toggle="clipboard").
+  // tabler.js initializes them once, when it loads, so a button that arrives
+  // later in an HTMX swap would be dead; this picks those up.
+  // htmx:load (not afterSwap) fires on each inserted node, so an outerHTML swap
+  // is covered too.
+  document.addEventListener('htmx:load', function (e) {
+    var Clipboard = window.tabler && window.tabler.Clipboard;
+    var root = e.target;
+    if (!Clipboard || !root || !root.querySelectorAll) return;
+    var sel = '[data-bs-toggle="clipboard"]';
+    var els = Array.prototype.slice.call(root.querySelectorAll(sel));
+    if (root.matches && root.matches(sel)) els.push(root);
+    els.forEach(function (el) { Clipboard.getOrCreateInstance(el); });
   });
 })();

@@ -69,8 +69,9 @@
         {{ if and .ShortIRI (ne .ShortIRI .ResourceIRI) }}
         <div class="d-flex align-items-center px-3 py-1 gap-2">
           <code class="text-muted small">{{ .ShortIRI }}</code>
-          <button class="btn btn-sm btn-ghost-secondary ms-auto iri-copy-btn" data-copy="{{ .ShortIRI }}" title="{{ t "header.copyShortIri" "Copy short IRI" }}">
-            <i data-lucide="copy" style="width:0.85em;"></i>
+          <button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" data-bs-toggle="clipboard" data-bs-text="{{ .ShortIRI }}" title="{{ t "header.copyShortIri" "Copy short IRI" }}">
+            <span class="clipboard-label"><i data-lucide="copy" style="width:0.85em;"></i></span>
+            <span class="clipboard-feedback" hidden><i data-lucide="check" class="text-success" style="width:0.85em;"></i><span class="visually-hidden">{{ t "header.copied" "Copied" }}</span></span>
           </button>
         </div>
         {{ end }}
@@ -78,8 +79,9 @@
           <a href="{{ .ResourceIRI }}" target="_blank" class="small">
             <code>{{ .ResourceIRI }}</code>
           </a>
-          <button class="btn btn-sm btn-ghost-secondary ms-auto iri-copy-btn" data-copy="{{ .ResourceIRI }}" title="{{ t "header.copyIri" "Copy IRI" }}">
-            <i data-lucide="copy" style="width:0.85em;"></i>
+          <button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" data-bs-toggle="clipboard" data-bs-text="{{ .ResourceIRI }}" title="{{ t "header.copyIri" "Copy IRI" }}">
+            <span class="clipboard-label"><i data-lucide="copy" style="width:0.85em;"></i></span>
+            <span class="clipboard-feedback" hidden><i data-lucide="check" class="text-success" style="width:0.85em;"></i><span class="visually-hidden">{{ t "header.copied" "Copied" }}</span></span>
           </button>
         </div>
         {{ if .NamedGraphs }}
@@ -88,8 +90,9 @@
         {{ range .NamedGraphs }}
         <div class="d-flex align-items-center px-3 py-1 gap-2">
           <code class="text-muted small">{{ .Short }}</code>
-          <button class="btn btn-sm btn-ghost-secondary ms-auto iri-copy-btn" data-copy="{{ .IRI }}" title="{{ t "header.copyGraphIri" "Copy graph IRI" }}">
-            <i data-lucide="copy" style="width:0.85em;"></i>
+          <button type="button" class="btn btn-sm btn-ghost-secondary ms-auto" data-bs-toggle="clipboard" data-bs-text="{{ .IRI }}" title="{{ t "header.copyGraphIri" "Copy graph IRI" }}">
+            <span class="clipboard-label"><i data-lucide="copy" style="width:0.85em;"></i></span>
+            <span class="clipboard-feedback" hidden><i data-lucide="check" class="text-success" style="width:0.85em;"></i><span class="visually-hidden">{{ t "header.copied" "Copied" }}</span></span>
           </button>
         </div>
         {{ end }}
@@ -97,7 +100,9 @@
       </div>
       {{ end }}
     </div>
-    <!-- The .iri-copy-btn click handler lives in static/js/page-init.js -->
+    <!-- Copy buttons are Tabler Clipboard components (data-bs-toggle="clipboard");
+         the label/feedback spans wrap the Lucide <i> so the swap survives
+         lucide.createIcons replacing it. -->
     <p class="text-uppercase small mb-0">{{ block "pageClasses" . }}{{ end }}</p>
   </div>
   <!-- mb-0: .page-body's own top margin already separates the header from the content. -->

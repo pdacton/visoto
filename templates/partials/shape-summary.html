@@ -66,16 +66,16 @@
       </div>
       <div class="card-actions btn-actions">
         {{ if .summary }}
-        <a class="btn btn-action" href="#" data-shape-copy title="{{ t "shape.copyText" "Copy as text" }}"
-           data-label-done="{{ t "shape.copied" "Copied" }}" data-label-failed="{{ t "shape.copyFailed" "Copy failed" }}">
-          <i data-lucide="copy" class="icon"></i>
+        <a class="btn btn-action" href="#" data-bs-toggle="clipboard" data-bs-target="#{{ $id }}-text" title="{{ t "shape.copyText" "Copy as text" }}">
+          <span class="clipboard-label"><i data-lucide="copy" class="icon"></i></span>
+          <span class="clipboard-feedback" hidden><i data-lucide="check" class="icon text-success"></i><span class="visually-hidden">{{ t "shape.copied" "Copied" }}</span></span>
         </a>
         {{ end }}
         </div>
     </div>
 
     <div class="collapse{{ if not .collapsed }} show{{ end }}" id="{{ $id }}-body">
-      <div class="card-body vs-ss" data-shape-text>
+      <div class="card-body vs-ss" id="{{ $id }}-text">
         {{ with .error }}<div class="alert alert-danger mb-0">{{ . }}</div>{{ end }}
         {{ with .summary }}
           {{ if .Cut }}
