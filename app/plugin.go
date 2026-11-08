@@ -1,10 +1,12 @@
 package app
 
 import (
+	"context"
 	"log/slog"
 
 	"github.com/gin-gonic/gin"
 	"github.com/pdacton/visoto/internal/access"
+	"github.com/pdacton/visoto/internal/chat"
 	"github.com/pdacton/visoto/internal/config"
 	"github.com/pdacton/visoto/internal/logger"
 	"github.com/prometheus/client_golang/prometheus"
@@ -84,6 +86,21 @@ func (h *Host) Handle(method, path string, action Action, handlers ...gin.Handle
 // SetAuthorizer replaces the allow-all default. An Authorizer that also
 // implements Denier answers refused requests itself.
 func (h *Host) SetAuthorizer(a Authorizer) { authz = a }
+
+// ChatCredentials is an AI provider key a caller brings for the chat
+// (UA-50); Provider is "anthropic".
+type ChatCredentials = chat.Credentials
+
+// SetChatCredentials lets a plugin supply the caller's own AI key: when f
+// returns an Anthropic key for the request's context, the chat answers with
+// Claude on that key instead of the instance's Gemini key. f must never log
+// or return a key to the browser.
+func (h *Host) SetChatCredentials(f func(ctx context.Context) (ChatCredentials, bool)) {
+	chatCredentials = f
+}
+
+// chatCredentials is the plugin's key lookup, nil in the open-source build.
+var chatCredentials chat.CredentialsFunc
 
 // Stores lists the configured endpoints.
 func (h *Host) Stores() []Store {

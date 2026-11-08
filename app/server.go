@@ -915,7 +915,7 @@ func buildRoutes(router *gin.Engine, d routeDeps, plugins []Plugin) (*routeTable
 	t.GET("/search", access.Browse, epFromURLOrCookie, searchHandler)
 	mcpURL := fmt.Sprintf("http://localhost:%d/mcp", cfg.Application.Port)
 	// Chat runs its own queries through MCP on the default endpoint: SPARQL.
-	t.POST("/api/chat", access.SPARQL, chat.Handler(&cfg.Application, cfg.Application.GeminiAPIKey, mcpURL))
+	t.POST("/api/chat", access.SPARQL, chat.Handler(&cfg.Application, cfg.Application.GeminiAPIKey, mcpURL, func() chat.CredentialsFunc { return chatCredentials }))
 	t.POST("/api/upload", access.Upload, upload.UploadHandler(&cfg.Application))
 	// Browser-side SPARQL (Graph Explorer, schema diagram). Deliberately takes
 	// neither epFromURL nor langFromURL, unlike every other /api route: the
