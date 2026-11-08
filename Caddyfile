@@ -110,6 +110,11 @@ visoto.hutzli.org {
     import site-lang.caddy
     request_header X-Site-Lang {site_lang}
 
+    # Extension seam: an edition mounts its own site-level directives into
+    # /etc/caddy/ext/ (e.g. via a docker-compose.override.yml). The open-source
+    # build mounts nothing, and Caddy only warns about a glob matching no files.
+    import ext/*.caddy
+
     # Compress responses (zstd preferred, gzip fallback). Ordered inside `cache`
     # via the global `order cache before encode`, so Souin stores the compressed
     # body. Caddy's encode skips already-small and already-compressed payloads
