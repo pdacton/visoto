@@ -300,3 +300,11 @@ visoto.hutzli.org {
         Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com https://getbootstrap.com; style-src 'self' 'unsafe-inline' blob: https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com; font-src 'self' https://cdn.jsdelivr.net; img-src 'self' data: https:; media-src 'self' https://media.zem.ch; connect-src 'self' https://cdn.jsdelivr.net https://unpkg.com https://cdnjs.cloudflare.com"
     }
 }
+
+# Alias host: one canonical origin. Sign-in (the OAuth callback and the
+# accounts edition's public_url), the host-bound session cookie and the cache
+# keys are all tied to visoto.hutzli.org, so the alias redirects rather than
+# serving a second copy of the site.
+visoto.hutzli.com {
+    redir https://visoto.hutzli.org{uri} permanent
+}
