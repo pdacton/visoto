@@ -18,11 +18,13 @@ import (
 // fakeAnthropic answers /v1/messages: a tool call first, then text.
 type fakeAnthropic struct {
 	*httptest.Server
-	mu     sync.Mutex
-	bodies []map[string]any
-	keys   []string
-	betas  []string
-	status int
+	mu        sync.Mutex
+	bodies    []map[string]any
+	keys      []string
+	betas     []string
+	status    int
+	failFirst int
+	failed    bool
 }
 
 func newFakeAnthropic(t *testing.T) *fakeAnthropic {
@@ -33,10 +35,15 @@ func newFakeAnthropic(t *testing.T) *fakeAnthropic {
 		_ = json.Unmarshal(raw, &body)
 		f.mu.Lock()
 		f.bodies = append(f.bodies, body)
-		f.keys = append(f.keys, r.Header.Get("Authorization"))
+		f.keys = append(f.keys, r.Header.Get("X-Api-Key")+"|"+r.Header.Get("Anthropic-Version")+"|"+r.Header.Get("Authorization"))
 		f.betas = append(f.betas, r.Header.Get("Anthropic-Beta"))
-		n := len(f.bodies)
 		status := f.status
+		if f.failFirst != 0 {
+			status, f.failFirst = f.failFirst, 0
+			f.bodies = f.bodies[:0] // the retried request is logged again
+			f.failed = true
+		}
+		n := len(f.bodies)
 		f.mu.Unlock()
 		w.Header().Set("Content-Type", "application/json")
 		if status != 0 {
@@ -46,7 +53,7 @@ func newFakeAnthropic(t *testing.T) *fakeAnthropic {
 		}
 		if n == 1 {
 			_, _ = io.WriteString(w, `{"id":"m1","type":"message","role":"assistant","model":"claude-opus-5-5",
-				"content":[{"type":"tool_use","id":"tu1","name":"list_prefixes","input":{}}],
+				"content":[{"type":"thinking","thinking":"","signature":"sig-123"},{"type":"tool_use","id":"tu1","name":"list_prefixes","input":{}}],
 				"stop_reason":"tool_use","usage":{"input_tokens":1,"output_tokens":1}}`)
 			return
 		}
@@ -55,14 +62,14 @@ func newFakeAnthropic(t *testing.T) *fakeAnthropic {
 			"stop_reason":"end_turn","usage":{"input_tokens":1,"output_tokens":1}}`)
 	}))
 	t.Cleanup(f.Close)
+	old := anthropicBaseURL
 	anthropicBaseURL = f.URL
-	t.Cleanup(func() { anthropicBaseURL = "" })
+	t.Cleanup(func() { anthropicBaseURL = old })
 	return f
 }
 
 func TestCallAnthropicRunsTheToolLoop(t *testing.T) {
 	f := newFakeAnthropic(t)
-	t.Setenv("ANTHROPIC_API_KEY", "sk-server-must-not-be-used")
 	req := ChatRequest{Message: "What prefixes?", History: []Message{{Role: "user", Content: "hi"}, {Role: "assistant", Content: "hello"}}}
 	// No MCP server listens here: the tool result is an error the model sees.
 	out, err := CallAnthropic(context.Background(), "sk-test", "http://127.0.0.1:1/mcp", req)
@@ -76,7 +83,7 @@ func TestCallAnthropicRunsTheToolLoop(t *testing.T) {
 		t.Fatalf("%d requests, want 2", len(f.bodies))
 	}
 	first := f.bodies[0]
-	if first["model"] != "claude-opus-5-5" || first["fallbacks"] != "default" || f.keys[0] != "Bearer sk-test" ||
+	if first["model"] != "claude-opus-5-5" || first["fallbacks"] != "default" || f.keys[0] != "sk-test|2023-06-01|" ||
 		!strings.Contains(f.betas[0], "server-side-fallback-2026-07-01") {
 		t.Errorf("first request: model=%v fallbacks=%v key=%q beta=%q", first["model"], first["fallbacks"], f.keys[0], f.betas[0])
 	}
@@ -93,8 +100,21 @@ func TestCallAnthropicRunsTheToolLoop(t *testing.T) {
 	if last["role"] != "user" || block["type"] != "tool_result" || block["tool_use_id"] != "tu1" || block["is_error"] != true {
 		t.Errorf("tool result turn = %v", last)
 	}
-	if prev := msgs[len(msgs)-2].(map[string]any); prev["role"] != "assistant" {
-		t.Errorf("assistant turn not kept: %v", prev)
+	prev := msgs[len(msgs)-2].(map[string]any)
+	thinking := prev["content"].([]any)[0].(map[string]any)
+	if prev["role"] != "assistant" || thinking["type"] != "thinking" || thinking["signature"] != "sig-123" {
+		t.Errorf("assistant turn not passed back unchanged: %v", prev)
+	}
+}
+
+func TestCallAnthropicRetriesOnceOnServerError(t *testing.T) {
+	f := newFakeAnthropic(t)
+	f.failFirst = http.StatusInternalServerError
+	if _, err := CallAnthropic(context.Background(), "sk", "http://127.0.0.1:1/mcp", ChatRequest{Message: "x"}); err != nil {
+		t.Fatalf("after one 500: %v", err)
+	}
+	if !f.failed || len(f.bodies) != 2 { // after the 500: tool_use, text
+		t.Errorf("failed=%v, %d requests after it, want 2", f.failed, len(f.bodies))
 	}
 }
 

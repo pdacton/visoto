@@ -159,9 +159,10 @@ an edition with user accounts plugs into (`app.Main(plugins...)`):
 - **Chat credentials.** `Host.SetChatCredentials` lets an edition hand the chat
   a caller's own AI key: when it returns an Anthropic key for the request, the
   chat answers with Claude (`claude-opus-5-5`, `internal/chat/anthropic.go`) on
-  that key instead of the instance's Gemini key. The SDK client is built with
-  `WithoutEnvironmentDefaults`, so a server-side `ANTHROPIC_*` variable is
-  never used in its place.
+  that key instead of the instance's Gemini key. That file is a small client
+  over the Messages API, not the official SDK, whose generated package needs
+  ~2.3 GB of RAM to compile and stalled image builds on the production host.
+  It sends only the caller's key.
 - **Assets.** An edition replaces `templates/layout/extensions.html` (empty
   `extensionHead` / `extensionTopbar` / `extensionScripts` slots) and adds
   catalogs under `locales/<edition>/<code>.toml`, which are merged over the
