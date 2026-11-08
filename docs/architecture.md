@@ -156,6 +156,12 @@ an edition with user accounts plugs into (`app.Main(plugins...)`):
 - **`/_auth/check`** answers Caddy's `forward_auth`: it replays the original
   request through the router in check-only mode (resolvers and guard, no
   handler) and returns 204 or 403.
+- **Chat credentials.** `Host.SetChatCredentials` lets an edition hand the chat
+  a caller's own AI key: when it returns an Anthropic key for the request, the
+  chat answers with Claude (`claude-opus-5-5`, `internal/chat/anthropic.go`) on
+  that key instead of the instance's Gemini key. The SDK client is built with
+  `WithoutEnvironmentDefaults`, so a server-side `ANTHROPIC_*` variable is
+  never used in its place.
 - **Assets.** An edition replaces `templates/layout/extensions.html` (empty
   `extensionHead` / `extensionTopbar` / `extensionScripts` slots) and adds
   catalogs under `locales/<edition>/<code>.toml`, which are merged over the

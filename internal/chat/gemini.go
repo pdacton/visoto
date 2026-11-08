@@ -29,17 +29,13 @@ const (
 // CallGemini sends a request to the Gemini API with MCP tool support and returns the formatted response.
 func CallGemini(apiKey, mcpURL string, req ChatRequest) (string, error) {
 	// 1. Format SPARQL data as JSON for context
-	buffer := new(bytes.Buffer)
-	encoder := json.NewEncoder(buffer)
-	encoder.SetEscapeHTML(false)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(req.Data); err != nil {
-		return "", fmt.Errorf("failed to marshal data: %w", err)
+	dataJSON, err := marshalData(req.Data)
+	if err != nil {
+		return "", err
 	}
-	dataJSON := bytes.TrimRight(buffer.Bytes(), "\n")
 
 	// 2. Build system prompt and contents
-	systemPrompt := buildSystemPrompt(req.AcceptLanguage, req.endpointName, string(dataJSON))
+	systemPrompt := buildSystemPrompt(req.AcceptLanguage, req.endpointName, dataJSON)
 	contents := buildContents(systemPrompt, req.History, req.Message)
 	tools := buildMCPToolDeclarations()
 
@@ -54,6 +50,18 @@ func CallGemini(apiKey, mcpURL string, req ChatRequest) (string, error) {
 	response = transformIRIsToLinks(response)
 
 	return response, nil
+}
+
+// marshalData formats the pre-fetched resource data for the system prompt.
+func marshalData(data map[string]interface{}) (string, error) {
+	buffer := new(bytes.Buffer)
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(data); err != nil {
+		return "", fmt.Errorf("failed to marshal data: %w", err)
+	}
+	return string(bytes.TrimRight(buffer.Bytes(), "\n")), nil
 }
 
 // buildSystemPrompt creates the system prompt with instructions and pre-fetched data.
