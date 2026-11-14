@@ -2,6 +2,11 @@ package mcp
 
 // Pre-built SPARQL query templates used by MCP tools.
 // Prefix injection is handled automatically by the sparql.Preprocessor.
+//
+// Every %s takes a finished SPARQL term, never raw tool input: an IRI as
+// iriArg / sparql.IRITerm renders it ("<…>"), a string as sparql.StringLiteral
+// renders it (quoted and escaped). A tool argument is whatever the calling
+// model was talked into sending, so nothing is spliced unvalidated.
 
 const queryDiscoverClasses = `
 SELECT ?type (COUNT(?s) AS ?count)
@@ -21,7 +26,7 @@ LIMIT %d
 
 const queryGetResource = `
 SELECT ?p ?o
-WHERE { <%s> ?p ?o }
+WHERE { %s ?p ?o }
 ORDER BY ?p
 `
 
@@ -29,7 +34,7 @@ const querySearchByLabel = `
 SELECT DISTINCT ?s ?label ?type
 WHERE {
   ?s rdfs:label|skos:prefLabel ?label .
-  FILTER(CONTAINS(LCASE(STR(?label)), LCASE("%s")))
+  FILTER(CONTAINS(LCASE(STR(?label)), LCASE(%s)))
   OPTIONAL { ?s a ?type }
 }
 LIMIT %d
@@ -39,8 +44,8 @@ const querySearchByLabelWithType = `
 SELECT DISTINCT ?s ?label
 WHERE {
   ?s rdfs:label|skos:prefLabel ?label .
-  FILTER(CONTAINS(LCASE(STR(?label)), LCASE("%s")))
-  ?s a <%s> .
+  FILTER(CONTAINS(LCASE(STR(?label)), LCASE(%s)))
+  ?s a %s .
 }
 LIMIT %d
 `
@@ -55,7 +60,7 @@ LIMIT 100
 
 const queryCountInstancesForClass = `
 SELECT (COUNT(?s) AS ?count)
-WHERE { ?s a <%s> }
+WHERE { ?s a %s }
 `
 
 const queryCheckEndpoint = `ASK {}`
@@ -85,13 +90,13 @@ LIMIT %d
 const queryGraphTripleCountGraphDB = `
 SELECT (COUNT(*) AS ?triples)
 FROM <http://www.ontotext.com/owlim/system#statistics>
-WHERE { GRAPH <%s> { ?s ?p ?o } }
+WHERE { GRAPH %s { ?s ?p ?o } }
 `
 
 // Graph-scoped variant of queryDiscoverClasses (<1s even on huge graphs).
 const queryDiscoverClassesInGraph = `
 SELECT ?type (COUNT(?s) AS ?count)
-WHERE { GRAPH <%s> { ?s a ?type } }
+WHERE { GRAPH %s { ?s a ?type } }
 GROUP BY ?type
 ORDER BY DESC(?count)
 LIMIT %d

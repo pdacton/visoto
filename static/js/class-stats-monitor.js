@@ -28,10 +28,8 @@
   }
 
   function resourceLink(iri, slug) {
-    var u = new URL(window.visotoResourceHref ? window.visotoResourceHref(iri) : '/resource?iri=' + encodeURIComponent(iri), location.origin);
-    u.searchParams.set('endpoint', slug);
     var a = el('a', null, shortName(iri));
-    a.href = u.pathname + u.search;
+    a.href = window.visotoResourceHref(iri, slug);
     a.title = iri;
     return a;
   }

@@ -37,19 +37,16 @@ var bnodeTreeFormats = map[string]struct{ mime, ext string }{
 func bnodeTreeHandler(c *gin.Context) {
 	endpoint := activeEndpointURL(c)
 	prefixes := cfg.PrefixesFor(endpoint)
-	req := bnodetree.Request{
-		IRI:      strings.TrimSpace(c.Query("iri")),
-		Property: expandParam(c.Query("property"), prefixes),
-		Via:      expandParam(c.Query("via"), prefixes),
-	}
+	// The IRIs are request input spliced into the query. NewRequest validates
+	// them, so a crafted one cannot close the <...> term and inject graph patterns.
+	req, reqErr := bnodetree.NewRequest(strings.TrimSpace(c.Query("iri")),
+		expandParam(c.Query("property"), prefixes), expandParam(c.Query("via"), prefixes))
 	format := c.Query("format")
 	if _, ok := bnodeTreeFormats[format]; format != "" && !ok {
 		c.String(http.StatusBadRequest, "unknown format")
 		return
 	}
-	// The IRIs are request input spliced into the query: validated first, so a
-	// crafted one cannot close the <...> term and inject graph patterns.
-	if err := req.Validate(); err != nil {
+	if reqErr != nil {
 		c.Header("Cache-Control", "no-store")
 		c.String(http.StatusBadRequest, "invalid iri, property or via")
 		return
@@ -73,7 +70,7 @@ func bnodeTreeHandler(c *gin.Context) {
 		if full, deepErr := preprocessor.ExecuteQueryWithContext(ctx, deep, true, dataLang, ""); deepErr == nil {
 			query, result = deep, full
 		} else {
-			slog.Warn("blank-node tree: full query failed, showing probe depth", "iri", req.IRI, "error", deepErr)
+			slog.Warn("blank-node tree: full query failed, showing probe depth", "iri", req.IRI.String(), "error", deepErr)
 			cut = bnodetree.ProbeDepth
 		}
 	}

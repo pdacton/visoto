@@ -25,6 +25,7 @@ import (
 
 type Resource struct {
 	IRI          string              // IRI of the resource
+	iri          sparql.IRI          // IRI, validated: what the queries below splice
 	ShortIRI     string              // short IRI with prefix
 	TemplateName string              // template file associated with the resource
 	TemplatePath string              // full path to the template file
@@ -57,7 +58,8 @@ func New(iri string, prefixes []config.Prefix) (*Resource, error) {
 	if _, err := url.ParseRequestURI(fullIRI); err != nil {
 		return nil, fmt.Errorf("incorrect resource iri: %v", fullIRI)
 	}
-	if err := sparql.ValidateIRI(fullIRI); err != nil {
+	validated, err := sparql.ParseIRI(fullIRI)
+	if err != nil {
 		return nil, fmt.Errorf("incorrect resource iri: %w", err)
 	}
 
@@ -69,6 +71,7 @@ func New(iri string, prefixes []config.Prefix) (*Resource, error) {
 
 	return &Resource{
 		IRI:      fullIRI,
+		iri:      validated,
 		ShortIRI: shortIRI,
 		Data: parser.TemplateData{
 			QueryResults: make(map[string]sparql.QueryResult),
@@ -80,10 +83,7 @@ func New(iri string, prefixes []config.Prefix) (*Resource, error) {
 // contain r.IRI as subject, queried on the request's selected endpoint.
 // Failures are logged and leave the list empty — the page renders without the section.
 func (r *Resource) FetchNamedGraphs(ctx context.Context, preprocessor *parser.Preprocessor, prefixes []config.Prefix) {
-	query, ok := namedGraphsQuery(r.IRI)
-	if !ok {
-		return
-	}
+	query := namedGraphsQuery(r.iri)
 
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -108,13 +108,9 @@ func (r *Resource) FetchNamedGraphs(ctx context.Context, preprocessor *parser.Pr
 	}
 }
 
-// namedGraphsQuery builds the graph-membership query for an IRI. It returns
-// ok=false when the IRI cannot be safely interpolated into <...>.
-func namedGraphsQuery(iri string) (string, bool) {
-	if iri == "" || strings.ContainsAny(iri, "<>\" \t\n\r") {
-		return "", false
-	}
-	return fmt.Sprintf("SELECT DISTINCT ?g WHERE { GRAPH ?g { <%s> ?p ?o } } LIMIT 50", iri), true
+// namedGraphsQuery builds the graph-membership query for an IRI.
+func namedGraphsQuery(iri sparql.IRI) string {
+	return fmt.Sprintf("SELECT DISTINCT ?g WHERE { GRAPH ?g { %s ?p ?o } } LIMIT 50", iri.Term())
 }
 
 // ResolveTemplate determines the appropriate template for this resource
@@ -175,7 +171,7 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 
 	// 3. Query for RDF types and check for instance templates
 	var types []string
-	if t, err := preprocessor.QueryTypes(r.IRI); err != nil {
+	if t, err := preprocessor.QueryTypes(r.iri); err != nil {
 		log.Warn("failed to query RDF types, using fallback template", slog.String("iri", r.IRI), slog.String("error", err.Error()))
 	} else {
 		types = t
@@ -208,7 +204,7 @@ func (r *Resource) ResolveTemplate(preprocessor *parser.Preprocessor, typePriori
 			break
 		}
 	}
-	role, err := preprocessor.QueryRole(r.IRI, isClass)
+	role, err := preprocessor.QueryRole(r.iri, isClass)
 	if err != nil {
 		log.Warn("role detection incomplete", slog.String("iri", r.IRI), slog.String("error", err.Error()))
 	}

@@ -32,9 +32,10 @@ func shapeSummaryHandler(c *gin.Context) {
 	endpoint := activeEndpointURL(c)
 	prefixes := cfg.PrefixesFor(endpoint)
 	iri := strings.TrimSpace(c.Query("iri"))
-	req := bnodetree.Request{IRI: iri, RootTriples: true, WithProperties: true}
-	// The IRI is spliced into the query: validated first.
-	if err := req.Validate(); err != nil {
+	// The IRI is spliced into the query: NewRequest validates it.
+	req, err := bnodetree.NewRequest(iri, "", "")
+	req.RootTriples, req.WithProperties = true, true
+	if err != nil {
 		c.Header("Cache-Control", "no-store")
 		c.String(http.StatusBadRequest, "invalid iri")
 		return

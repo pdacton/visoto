@@ -197,7 +197,12 @@ func buildBestQuery(iris, props, languages []string) string {
 	var values strings.Builder
 	values.WriteString("VALUES ?iri { ")
 	for _, iri := range iris {
-		fmt.Fprintf(&values, "<%s> ", iri)
+		// The IRIs come from result bindings. One that is not a legal IRIREF
+		// cannot be written as a term; it is left out and simply stays
+		// unresolved.
+		if term, err := IRITerm(iri); err == nil {
+			values.WriteString(term + " ")
+		}
 	}
 	values.WriteString("}")
 

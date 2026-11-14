@@ -26,6 +26,10 @@ import (
 	"github.com/pdacton/visoto/internal/sparql"
 )
 
+// luceneConnectorTerm is the GraphDB Lucene connector predicate namespace, as
+// the bracketed term a PREFIX declaration takes.
+var luceneConnectorTerm = sparql.MustIRI(luceneConnectorNS).Term()
+
 const (
 	// luceneConnectorNS is the GraphDB Lucene connector predicate namespace.
 	luceneConnectorNS = "http://www.ontotext.com/connectors/lucene#"
@@ -268,9 +272,9 @@ func (d *discoverer) discover(ctx context.Context, endpointURL string, exec Exec
 
 // listConnectors asks the endpoint which Lucene connector instances exist.
 func (d *discoverer) listConnectors(ctx context.Context, exec ExecuteFunc) ([]string, error) {
-	query := fmt.Sprintf(`PREFIX conn: <%s>
+	query := fmt.Sprintf(`PREFIX conn: %s
 
-SELECT ?inst WHERE { ?inst conn:listConnectors ?name }`, luceneConnectorNS)
+SELECT ?inst WHERE { ?inst conn:listConnectors ?name }`, luceneConnectorTerm)
 
 	res, err := exec(ctx, query)
 	if err != nil {
@@ -314,9 +318,9 @@ func (d *discoverer) fetchOptions(ctx context.Context, iris []string, exec Execu
 		go func(iri, term string) {
 			defer wg.Done()
 
-			query := fmt.Sprintf(`PREFIX conn: <%s>
+			query := fmt.Sprintf(`PREFIX conn: %s
 
-SELECT ?options WHERE { %s conn:listOptionValues ?options }`, luceneConnectorNS, term)
+SELECT ?options WHERE { %s conn:listOptionValues ?options }`, luceneConnectorTerm, term)
 
 			res, err := exec(ctx, query)
 			if err != nil || res.Error != "" || len(res.Bindings) == 0 {
@@ -383,7 +387,7 @@ func buildLuceneQuery(index luceneIndex, group string, params SearchParams) (str
 	text := escapeString(luceneQueryText(params.Query, group))
 
 	var b strings.Builder
-	fmt.Fprintf(&b, "PREFIX luc: <%s>\n", luceneConnectorNS)
+	fmt.Fprintf(&b, "PREFIX luc: %s\n", luceneConnectorTerm)
 	b.WriteString("PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n\n")
 
 	if params.Class == "" {

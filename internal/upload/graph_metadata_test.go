@@ -4,11 +4,14 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/pdacton/visoto/internal/config"
+	"github.com/pdacton/visoto/internal/sparql"
 )
 
 func TestGraphMetadataUpdates(t *testing.T) {
 	at := time.Date(2026, 10, 21, 11, 48, 4, 0, time.UTC)
-	got := graphMetadataUpdates("urn:visoto:graph:x", `DCAT "AP"`, at)
+	got := graphMetadataUpdates(sparql.MustIRI("urn:visoto:graph:x"), `DCAT "AP"`, at)
 	if len(got) != 3 {
 		t.Fatalf("want 3 updates, got %d: %v", len(got), got)
 	}
@@ -23,21 +26,20 @@ func TestGraphMetadataUpdates(t *testing.T) {
 		}
 	}
 
-	if n := len(graphMetadataUpdates("urn:visoto:graph:x", "", at)); n != 2 {
+	if n := len(graphMetadataUpdates(sparql.MustIRI("urn:visoto:graph:x"), "", at)); n != 2 {
 		t.Errorf("empty label: want 2 updates (no label delete), got %d", n)
 	}
 }
 
-func TestValidIRI(t *testing.T) {
-	for iri, want := range map[string]bool{
-		"urn:visoto:graph:20261021T114804-dcat": true,
-		"https://example.org/g":                 true,
-		"":                                      false,
-		"urn:x> } ; DROP ALL ; {":               false,
-		"urn:has space":                         false,
-	} {
-		if validIRI(iri) != want {
-			t.Errorf("validIRI(%q) = %v, want %v", iri, !want, want)
+// The graph URI of an upload is form input that ends up in UPDATE statements.
+// writeGraphMetadata refuses one that is not a safe IRI before any request is
+// built: the endpoint is never contacted (its URL here would fail the test).
+func TestWriteGraphMetadataRefusesUnsafeGraphURI(t *testing.T) {
+	ep := &config.SparqlEndpoint{URL: "http://127.0.0.1:1/unreachable"}
+	for _, graph := range []string{"", "urn:x> } ; DROP ALL ; {", "urn:has space", "no-scheme"} {
+		err := writeGraphMetadata(ep, graph, "label")
+		if err == nil || !strings.Contains(err.Error(), "cannot be described") {
+			t.Errorf("writeGraphMetadata(%q) = %v, want a refusal", graph, err)
 		}
 	}
 }

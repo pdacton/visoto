@@ -1,6 +1,10 @@
 package search
 
-import "github.com/pdacton/visoto/internal/sparql"
+import (
+	"fmt"
+
+	"github.com/pdacton/visoto/internal/sparql"
+)
 
 // SearchParams represents user input from the search form
 type SearchParams struct {
@@ -8,6 +12,24 @@ type SearchParams struct {
 	Class    string // Optional RDF class filter (IRI)
 	Property string // Optional property filter (IRI)
 	Limit    int    // Results limit (default 20)
+}
+
+// filterTerms returns the class and property filters as SPARQL IRI terms, ""
+// for one that was not given. Both are request input (?class=, ?property=), so
+// every provider takes its terms from here rather than splicing the raw fields:
+// an IRI that could close the <…> term early is an error, not a query.
+func (p SearchParams) filterTerms() (class, property string, err error) {
+	if p.Class != "" {
+		if class, err = sparql.IRITerm(p.Class); err != nil {
+			return "", "", fmt.Errorf("class filter: %w", err)
+		}
+	}
+	if p.Property != "" {
+		if property, err = sparql.IRITerm(p.Property); err != nil {
+			return "", "", fmt.Errorf("property filter: %w", err)
+		}
+	}
+	return class, property, nil
 }
 
 // SearchResult wraps SPARQL query results for search

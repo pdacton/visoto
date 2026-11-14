@@ -70,6 +70,11 @@ jobs:
       - name: Test
         run: go test ./...
 
+      # The browser-side modules that have tests (dependency-free, Node's own
+      # runner). ubuntu-latest ships Node, so there is nothing to set up.
+      - name: Test (JS)
+        run: node --test tests/js/
+
       # Templates are parsed at runtime, not compile time, and a parse error
       # panics during startup (internal/templates/templates.go). `go build`
       # therefore cannot catch a broken template — only booting the server can.

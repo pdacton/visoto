@@ -16,10 +16,11 @@
 // /api/* fragment requests instead carry the code on the URL as `lang=`, exactly
 // like the endpoint slug (see endpoint-switcher.js), because those routes sit in
 // the shared cache and must be pure functions of their URL — reading the cookie
-// there would serve one user's language to everyone. Attaching it is this file's
-// other job: the htmx hook below covers fragment requests, while the plain
-// fetch()es that htmx cannot see get it from the server-rendered config island
-// (sparql-table.js) or from activeSiteLang() directly (faceted-table.js).
+// there would serve one user's language to everyone. static/js/api-url.js
+// attaches it, from activeSiteLang() below: one hook for htmx fragment requests,
+// VisotoApi.url() for plain fetch()es. The one exception is sparql-table.js's
+// working-set fetch, which reuses the language its own fragment was rendered
+// with (from the server-rendered config island).
 
 function siteLangSelectEl() {
     return document.getElementById('site-lang-selector');
@@ -121,27 +122,12 @@ function boot() {
     });
 }
 
-// Fold the active language into every lazily-loaded fragment request, so the
-// SPARQL data comes back in the picked language rather than the browser's. The
-// server on these routes reads only this param — not the cookie, not
-// Accept-Language — which is what lets the response be cached by URL alone.
-//
-// A separate listener from endpoint-switcher.js's rather than an edit to it:
-// htmx fires every registered listener, so keeping each param with its own
-// switcher avoids depending on which script tag parses first.
-//
-// The path test matches /api/async-table-data/ by prefix too, and covers the
-// hand-written hx-get attributes in the theme pages without touching them.
-document.addEventListener('htmx:configRequest', function (evt) {
-    const path = evt.detail.path || '';
-    if (!/^\/api\/((metric|async-table)\/|bnode-tree\?|shape-summary\?)/.test(path)) return;
-    const code = activeSiteLang();
-    // `!== null`, not truthiness: '' is the real "no language" code and must be
-    // sent as `lang=`, since an absent param means "use the server default".
-    if (code !== null && evt.detail.parameters.lang === undefined) {
-        evt.detail.parameters.lang = code;
-    }
-});
+// The language reaches /api/* requests through static/js/api-url.js, which reads
+// activeSiteLang(): its one htmx:configRequest hook covers every hx-get fragment
+// and VisotoApi.url() builds the plain fetch() URLs, so the SPARQL data comes
+// back in the picked language rather than the browser's. The server on these
+// routes reads only that param — not the cookie, not Accept-Language — which is
+// what lets the response be cached by URL alone.
 
 // Not latched at module level: HTMX swaps can re-run page scripts, and the tag
 // sits above the CDN bundles, so both readiness paths have to be covered.

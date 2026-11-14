@@ -5,8 +5,8 @@
 // is only a saved preference that uncached entry pages (/, static pages,
 // /search) honor server-side; routes in the shared Caddy/Souin cache
 // (/resource, the /api fragments) are pure functions of the URL and never read
-// it. The frontend's job is therefore to keep the slug in URLs: fragment
-// requests (htmx hook below), in-app resource links (click rewriter +
+// it. The frontend's job is therefore to keep the slug in URLs: /api requests
+// (static/js/api-url.js), in-app resource links (click rewriter +
 // visotoResourceHref), and the address bar (replaceState sync).
 
 function endpointSelectEl() {
@@ -60,35 +60,14 @@ function setEndpointCookie(slug) {
     }
 }
 
-/**
- * Builds a resource page URL carrying the active endpoint slug. Use this for
- * all JS-side navigation to /resource (graph views etc.); plain anchors are
- * covered by the delegated click rewriter below.
- * @param {string} iri - The resource IRI
- * @returns {string} /resource?iri=<escaped>&endpoint=<slug>
- */
-function visotoResourceHref(iri) {
-    let href = '/resource?iri=' + encodeURIComponent(iri);
-    const slug = activeEndpointSlug();
-    if (slug) href += '&endpoint=' + encodeURIComponent(slug);
-    return href;
-}
+// visotoResourceHref(iri) — the resource page URL carrying the active slug, for
+// JS-built links and JS-side navigation — is defined in static/js/api-url.js.
 
-// Fold the active endpoint slug into every cacheable HTMX fragment request
-// (/api/metric/*, /api/async-table/*, /api/bnode-tree, /api/shape-summary) so
-// the shared Caddy/Souin cache keys each endpoint's response separately — the
-// server ignores the cookie on these routes. A new fragment route must be added
-// to this pattern AND language-switcher.js's, or it silently queries the default
-// endpoint. Registered on document so it covers even the first load-triggered
-// hx-get on the page.
-document.addEventListener('htmx:configRequest', function (evt) {
-    const path = evt.detail.path || '';
-    if (!/^\/api\/((metric|async-table)\/|bnode-tree\?|shape-summary\?)/.test(path)) return;
-    const slug = activeEndpointSlug();
-    if (slug && evt.detail.parameters.endpoint === undefined) {
-        evt.detail.parameters.endpoint = slug;
-    }
-});
+// The slug reaches /api/* requests through static/js/api-url.js, which reads
+// activeEndpointSlug(): its one htmx:configRequest hook covers every hx-get
+// fragment, and VisotoApi.url() builds the plain fetch() URLs. No route list
+// lives here — the server ignores the cookie on those routes, so a request that
+// went out without the slug would silently query the default endpoint.
 
 // Rewrite in-app resource links to carry the active endpoint slug at click time
 // (capture phase: the default action — including middle-/ctrl-click — reads the

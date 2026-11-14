@@ -213,19 +213,12 @@ const (
 	xsdDateTime     = "http://www.w3.org/2001/XMLSchema#dateTime"
 )
 
-// validIRI reports whether s can be written as <s> in a SPARQL query without
-// breaking out of the IRI (the characters excluded by the IRIREF production).
-func validIRI(s string) bool {
-	if s == "" {
-		return false
-	}
-	for _, r := range s {
-		if r <= 0x20 || strings.ContainsRune(`<>"{}|^`+"`\\", r) {
-			return false
-		}
-	}
-	return true
-}
+// The same vocabulary terms as bracketed SPARQL terms.
+var (
+	rdfsLabelTerm       = sparql.MustIRI(rdfsLabel).Term()
+	dctermsModifiedTerm = sparql.MustIRI(dctermsModified).Term()
+	xsdDateTimeTerm     = sparql.MustIRI(xsdDateTime).Term()
+)
 
 // sparqlLiteral quotes s as a SPARQL string literal.
 func sparqlLiteral(s string) string {
@@ -263,26 +256,29 @@ func sparqlUpdate(ep *config.SparqlEndpoint, update string) error {
 // itself: rdfs:label (when label is non-empty) and dcterms:modified. Earlier
 // values are deleted first so a re-upload replaces them. Each update is sent
 // as its own request, since not every engine accepts ";"-chained operations.
-func graphMetadataUpdates(graphURI, label string, at time.Time) []string {
-	g := "<" + graphURI + ">"
+func graphMetadataUpdates(graph sparql.IRI, label string, at time.Time) []string {
+	g := graph.Term()
 	updates := []string{
-		fmt.Sprintf("DELETE WHERE { GRAPH %s { %s <%s> ?m } }", g, g, dctermsModified),
+		fmt.Sprintf("DELETE WHERE { GRAPH %s { %s %s ?m } }", g, g, dctermsModifiedTerm),
 	}
-	insert := fmt.Sprintf("%s <%s> %s^^<%s> .", g, dctermsModified,
-		sparqlLiteral(at.UTC().Format(time.RFC3339)), xsdDateTime)
+	insert := fmt.Sprintf("%s %s %s^^%s .", g, dctermsModifiedTerm,
+		sparqlLiteral(at.UTC().Format(time.RFC3339)), xsdDateTimeTerm)
 	if label != "" {
-		updates = append(updates, fmt.Sprintf("DELETE WHERE { GRAPH %s { %s <%s> ?l } }", g, g, rdfsLabel))
-		insert += fmt.Sprintf(" %s <%s> %s .", g, rdfsLabel, sparqlLiteral(label))
+		updates = append(updates, fmt.Sprintf("DELETE WHERE { GRAPH %s { %s %s ?l } }", g, g, rdfsLabelTerm))
+		insert += fmt.Sprintf(" %s %s %s .", g, rdfsLabelTerm, sparqlLiteral(label))
 	}
 	return append(updates, fmt.Sprintf("INSERT DATA { GRAPH %s { %s } }", g, insert))
 }
 
 // writeGraphMetadata records label and upload time on the named graph.
 func writeGraphMetadata(ep *config.SparqlEndpoint, graphURI, label string) error {
-	if !validIRI(graphURI) {
+	// The graph URI is form input and these are UPDATE statements: it is only
+	// spliced as a validated term.
+	graph, err := sparql.ParseIRI(graphURI)
+	if err != nil {
 		return fmt.Errorf("graph URI %q cannot be described in SPARQL", graphURI)
 	}
-	for _, u := range graphMetadataUpdates(graphURI, label, time.Now()) {
+	for _, u := range graphMetadataUpdates(graph, label, time.Now()) {
 		if err := sparqlUpdate(ep, u); err != nil {
 			return err
 		}

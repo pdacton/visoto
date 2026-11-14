@@ -210,11 +210,9 @@
     // diagram searches its own nodes through the in-memory provider.
     function search(text) {
       if (!kit.searchEndpoint) return c.search(text, SEARCH_LIMIT);
-      var params = new URLSearchParams({ q: text, limit: String(SEARCH_LIMIT) });
-      var slug = typeof window.activeEndpointSlug === 'function' ? window.activeEndpointSlug() : '';
-      if (slug) params.set('endpoint', slug);
-      params.set('lang', (document.documentElement.lang || '').slice(0, 2));
-      return fetch('/api/search?' + params.toString()).then(function (res) {
+      // src: null — a search is not scoped to a template set.
+      var url = window.VisotoApi.url('/api/search', { q: text, limit: String(SEARCH_LIMIT), src: null });
+      return fetch(url).then(function (res) {
         if (!res.ok) throw new Error('search ' + res.status);
         return res.json();
       }).then(function (hits) {

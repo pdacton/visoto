@@ -46,12 +46,20 @@ const (
 	skolemMarker = "/.well-known/genid/"
 )
 
-// Request selects the roots and the first hop of a tree. All IRIs must already
-// be validated full IRIs (no angle brackets) — they are spliced into the query.
+// The fixed vocabulary terms the query splices, as bracketed SPARQL terms.
+var (
+	rdfFirstTerm   = sparql.MustIRI(rdfFirst).Term()
+	rdfRestTerm    = sparql.MustIRI(rdfRest).Term()
+	shPropertyTerm = sparql.MustIRI(shProperty).Term()
+)
+
+// Request selects the roots and the first hop of a tree. Its IRIs are spliced
+// into the query, which is why they are sparql.IRI: a Request cannot be built
+// from request input that has not been validated (see NewRequest).
 type Request struct {
-	IRI      string // the resource the tree hangs off
-	Property string // optional: only expand blank nodes under this predicate
-	Via      string // optional: follow this predicate to IRI roots first
+	IRI      sparql.IRI // the resource the tree hangs off
+	Property sparql.IRI // optional: only expand blank nodes under this predicate
+	Via      sparql.IRI // optional: follow this predicate to IRI roots first
 
 	// RootTriples also returns the roots' own non-blank triples (a shape's
 	// sh:targetClass, sh:closed, a property shape's sh:path, …). The tree card
@@ -74,20 +82,21 @@ func nodeTest(v string) string {
 	return fmt.Sprintf(`(isBlank(%s) || CONTAINS(STR(%s), "%s"))`, v, v, skolemMarker)
 }
 
-// Validate checks every IRI of the request before it is spliced into a query.
-func (r Request) Validate() error {
-	if err := sparql.ValidateIRI(r.IRI); err != nil {
-		return err
+// NewRequest validates the three IRIs and returns the Request for them.
+// property and via are optional: pass "" for none.
+func NewRequest(iri, property, via string) (Request, error) {
+	var r Request
+	var err error
+	if r.IRI, err = sparql.ParseIRI(iri); err != nil {
+		return Request{}, err
 	}
-	for _, opt := range []string{r.Property, r.Via} {
-		if opt == "" {
-			continue
-		}
-		if err := sparql.ValidateIRI(opt); err != nil {
-			return err
-		}
+	if r.Property, err = sparql.ParseOptionalIRI(property); err != nil {
+		return Request{}, err
 	}
-	return nil
+	if r.Via, err = sparql.ParseOptionalIRI(via); err != nil {
+		return Request{}, err
+	}
+	return r, nil
 }
 
 // Query returns the SELECT that fetches every triple needed for the tree.
@@ -130,7 +139,7 @@ func (r Request) QueryTo(depth int) string {
 	fmt.Fprintf(&b, "}\nLIMIT %d\n", RowCap+1)
 	// Written with the rdf: CURIEs above for readability, sent as full IRIs so
 	// the query does not depend on an endpoint declaring the rdf: prefix.
-	return strings.NewReplacer("rdf:first", "<"+rdfFirst+">", "rdf:rest", "<"+rdfRest+">").Replace(b.String())
+	return strings.NewReplacer("rdf:first", rdfFirstTerm, "rdf:rest", rdfRestTerm).Replace(b.String())
 }
 
 // branch walks `level` hops from the root and emits the triples of the node
@@ -144,8 +153,8 @@ func (r Request) branch(level int, spine bool) string {
 	node := fmt.Sprintf("?n%d", level)
 	if !spine {
 		pred := "?p"
-		if level == 0 && r.Property != "" {
-			pred = "<" + r.Property + ">"
+		if level == 0 && !r.Property.IsZero() {
+			pred = r.Property.Term()
 			fmt.Fprintf(&b, "    %s %s ?o . FILTER%s BIND(%s AS ?p)\n", node, pred, nodeTest("?o"), pred)
 		} else if level == 0 && !r.RootTriples {
 			fmt.Fprintf(&b, "    %s ?p ?o . FILTER%s\n", node, nodeTest("?o"))
@@ -156,8 +165,8 @@ func (r Request) branch(level int, spine bool) string {
 		return b.String()
 	}
 	lp := "?lp"
-	if level == 0 && r.Property != "" {
-		lp = "<" + r.Property + ">"
+	if level == 0 && !r.Property.IsZero() {
+		lp = r.Property.Term()
 	}
 	fmt.Fprintf(&b, "    %s %s ?lh . FILTER%s\n", node, lp, nodeTest("?lh"))
 	b.WriteString("    ?lh rdf:rest* ?s . ?s ?p ?o . FILTER(?p = rdf:first || ?p = rdf:rest)\n")
@@ -167,13 +176,14 @@ func (r Request) branch(level int, spine bool) string {
 
 // rootPattern binds ?n0 to the root(s).
 func (r Request) rootPattern() string {
-	if r.Via != "" {
-		return fmt.Sprintf("<%s> <%s> ?n0 . FILTER(isIRI(?n0))", r.IRI, r.Via)
+	root := r.IRI.Term()
+	if !r.Via.IsZero() {
+		return fmt.Sprintf("%s %s ?n0 . FILTER(isIRI(?n0))", root, r.Via.Term())
 	}
 	if r.WithProperties {
-		return fmt.Sprintf("{ VALUES ?n0 { <%s> } } UNION { <%s> <%s> ?n0 . FILTER(isIRI(?n0)) }", r.IRI, r.IRI, shProperty)
+		return fmt.Sprintf("{ VALUES ?n0 { %s } } UNION { %s %s ?n0 . FILTER(isIRI(?n0)) }", root, root, shPropertyTerm)
 	}
-	return fmt.Sprintf("VALUES ?n0 { <%s> }", r.IRI)
+	return fmt.Sprintf("VALUES ?n0 { %s }", root)
 }
 
 // hop moves from ?n(k-1) to the blank node ?nk: directly, or through a list to
@@ -181,8 +191,8 @@ func (r Request) rootPattern() string {
 func (r Request) hop(k int) string {
 	from, to := fmt.Sprintf("?n%d", k-1), fmt.Sprintf("?n%d", k)
 	pred := fmt.Sprintf("?h%d", k)
-	if k == 1 && r.Property != "" {
-		pred = "<" + r.Property + ">"
+	if k == 1 && !r.Property.IsZero() {
+		pred = r.Property.Term()
 	}
 	// Neither form may step along a list's own rdf:first/rdf:rest: a list head
 	// reached as a node would otherwise lead to its members a second time, one

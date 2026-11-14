@@ -450,24 +450,25 @@ type Role struct {
 //
 // A failed ASK counts as false; the errors are joined and returned alongside
 // whatever the other ASKs found.
-func (p *Preprocessor) QueryRole(iri string, knownClass bool) (Role, error) {
+func (p *Preprocessor) QueryRole(iri IRI, knownClass bool) (Role, error) {
+	term := iri.Term()
 	type askTarget struct {
 		query  string
 		result *bool
 	}
 	role := Role{IsClass: knownClass}
 	asks := []askTarget{
-		{fmt.Sprintf(`ASK { ?s <%s> ?o }`, iri), &role.IsProperty},
-		{fmt.Sprintf(`ASK { GRAPH <%s> { ?s ?p ?o } }`, iri), &role.IsGraph},
+		{fmt.Sprintf(`ASK { ?s %s ?o }`, term), &role.IsProperty},
+		{fmt.Sprintf(`ASK { GRAPH %s { ?s ?p ?o } }`, term), &role.IsGraph},
 	}
 	if !knownClass {
 		asks = append(asks, askTarget{fmt.Sprintf(`ASK {
-		{ <%s> rdfs:subClassOf ?x }
+		{ %s rdfs:subClassOf ?x }
 		UNION
-		{ ?x rdfs:subClassOf <%s> }
+		{ ?x rdfs:subClassOf %s }
 		UNION
-		{ ?x a <%s> }
-	}`, iri, iri, iri), &role.IsClass})
+		{ ?x a %s }
+	}`, term, term, term), &role.IsClass})
 	}
 
 	var wg sync.WaitGroup
@@ -507,8 +508,8 @@ func (p *Preprocessor) ask(query string) (bool, error) {
 
 // QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI
 // Returns a slice of type URIs
-func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
-	query := fmt.Sprintf("SELECT ?type WHERE { <%s> a ?type }", iri)
+func (p *Preprocessor) QueryTypes(iri IRI) ([]string, error) {
+	query := fmt.Sprintf("SELECT ?type WHERE { %s a ?type }", iri.Term())
 
 	finalizedQuery := p.finalizeQuery(query, "", p.config.EndpointURL)
 	response, err := p.querySparqlEndpoint(context.Background(), p.config.EndpointURL, finalizedQuery)

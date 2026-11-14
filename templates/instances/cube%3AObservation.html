@@ -53,12 +53,12 @@
          always test .Value, never the Binding itself. */}}
     {{ if $cube.Value }}
       <li class="breadcrumb-item">
-        <a href="/resource?iri={{ urlquery $cube.Value }}">{{ with (index $b "cubeName").Value }}{{ . }}{{ else }}{{ lastPathSegment $cube.Value }}{{ end }}</a>
+        <a href="{{ resourceHref $cube.Value }}">{{ with (index $b "cubeName").Value }}{{ . }}{{ else }}{{ lastPathSegment $cube.Value }}{{ end }}</a>
       </li>
     {{ end }}
     {{ if $set.Value }}
       <li class="breadcrumb-item">
-        <a href="/resource?iri={{ urlquery $set.Value }}">{{ t "type.observation.observationSet" "Observation Set" }}</a>
+        <a href="{{ resourceHref $set.Value }}">{{ t "type.observation.observationSet" "Observation Set" }}</a>
       </li>
     {{ end }}
   {{ end }}
@@ -218,7 +218,7 @@
                   <div class="datagrid-item">
                     <div class="datagrid-title text-uppercase">{{ t "card.cube" "Cube" }}</div>
                     <div class="datagrid-content">
-                      <a href="/resource?iri={{ urlquery $cube.Value }}">{{ with (index $b "cubeName").Value }}{{ . }}{{ else }}{{ lastPathSegment $cube.Value }}{{ end }}</a>
+                      <a href="{{ resourceHref $cube.Value }}">{{ with (index $b "cubeName").Value }}{{ . }}{{ else }}{{ lastPathSegment $cube.Value }}{{ end }}</a>
                     </div>
                   </div>
                 {{ end }}
@@ -226,7 +226,7 @@
                   <div class="datagrid-item">
                     <div class="datagrid-title text-uppercase">{{ t "card.observationSet" "Observation set" }}</div>
                     <div class="datagrid-content">
-                      <a href="/resource?iri={{ urlquery $set.Value }}">{{ t "type.observation.allObservationsOfThisCube" "All observations of this cube" }}</a>
+                      <a href="{{ resourceHref $set.Value }}">{{ t "type.observation.allObservationsOfThisCube" "All observations of this cube" }}</a>
                     </div>
                   </div>
                 {{ end }}

@@ -383,7 +383,7 @@ func TestCompact(t *testing.T) {
 // --- query -------------------------------------------------------------------
 
 func TestQuery(t *testing.T) {
-	q := Request{IRI: shape}.Query()
+	q := Request{IRI: sparql.MustIRI(shape)}.Query()
 	for _, want := range []string{
 		"VALUES ?n0 { <" + shape + "> }",
 		"BIND(6 AS ?d)",
@@ -404,7 +404,7 @@ func TestQuery(t *testing.T) {
 		t.Errorf("top-level branches = %d, want %d", n+1, 2*queryDepth+1)
 	}
 
-	probe := Request{IRI: shape}.QueryTo(ProbeDepth)
+	probe := Request{IRI: sparql.MustIRI(shape)}.QueryTo(ProbeDepth)
 	if !strings.Contains(probe, fmt.Sprintf("BIND(%d AS ?d)", ProbeDepth)) ||
 		strings.Contains(probe, fmt.Sprintf("BIND(%d AS ?d)", ProbeDepth+1)) {
 		t.Error("probe query must stop at ProbeDepth")
@@ -413,7 +413,7 @@ func TestQuery(t *testing.T) {
 		t.Errorf("probe branches = %d, want %d", n+1, 2*ProbeDepth+1)
 	}
 
-	q = Request{IRI: cubeIRI, Property: schema + "contactPoint", Via: "https://cube.link/observationConstraint"}.Query()
+	q = Request{IRI: sparql.MustIRI(cubeIRI), Property: sparql.MustIRI(schema + "contactPoint"), Via: sparql.MustIRI("https://cube.link/observationConstraint")}.Query()
 	if !strings.Contains(q, "<"+cubeIRI+"> <https://cube.link/observationConstraint> ?n0 . FILTER(isIRI(?n0))") {
 		t.Error("via root pattern missing")
 	}
@@ -547,8 +547,8 @@ func TestSkolemList(t *testing.T) {
 }
 
 func TestQueryOptions(t *testing.T) {
-	plain := Request{IRI: shape}.QueryTo(1)
-	full := Request{IRI: shape, RootTriples: true, WithProperties: true}.QueryTo(1)
+	plain := Request{IRI: sparql.MustIRI(shape)}.QueryTo(1)
+	full := Request{IRI: sparql.MustIRI(shape), RootTriples: true, WithProperties: true}.QueryTo(1)
 
 	if !strings.Contains(plain, "?n0 ?p ?o . FILTER(isBlank(?o) ||") {
 		t.Error("without RootTriples level 0 keeps only node-valued triples")
@@ -563,7 +563,7 @@ func TestQueryOptions(t *testing.T) {
 	if !strings.Contains(plain, `CONTAINS(STR(?n1), "/.well-known/genid/")`) {
 		t.Error("hops must follow skolem IRIs")
 	}
-	via := Request{IRI: cubeIRI, Via: "https://cube.link/observationConstraint", WithProperties: true}.QueryTo(1)
+	via := Request{IRI: sparql.MustIRI(cubeIRI), Via: sparql.MustIRI("https://cube.link/observationConstraint"), WithProperties: true}.QueryTo(1)
 	if strings.Contains(via, shNS+"property> ?n0") {
 		t.Error("WithProperties is ignored with Via")
 	}
