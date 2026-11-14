@@ -169,10 +169,13 @@ class Outline:
             i += 1
             return float(toks[i - 1])
 
-        def flag():  # arc flags may be packed: "a2 2 0 011 1"
+        def flag():  # arc flags may be packed: "a2 2 0 011 1", "a2 2 0 00.996 1.73"
             nonlocal i
             t = toks[i]
-            if len(t) > 1 and t[0] in "01" and t[1] != ".":
+            # A flag is a single 0 or 1, so a longer token is the flag followed by
+            # the next number -- even when that number starts with "." ("0.996"
+            # here is flag 0, then .996).
+            if len(t) > 1 and t[0] in "01":
                 toks[i] = t[1:]
                 return int(t[0])
             i += 1

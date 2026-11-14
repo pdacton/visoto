@@ -1,0 +1,57 @@
+<!-- mdr:DataElement instance template
+     A data element of the metadata registry: its attributes, then its structure as a
+     tree -- the Data Element Concept (with its Object Class and Property) and the
+     Value Domain. classes/mdr%3ADataElement.html keeps the class page on the class
+     layout; without it this file would take that page over too. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Structure tree, drawn from one CONSTRUCT (construct mode; laid out top-down). Only the four registry edges are returned: the element also
+       carries sh:path / sh:node to the same Property and Value Domain, which would
+       only draw duplicate edges. Every node brings its rdf:type and the type's
+       rdfs:label (the box's type line) and its dct:title as the box label; the
+       proxy expands no prefixes, so all are declared. -->
+  {{ $structure := `PREFIX mdr:  <https://register.ld.admin.ch/mds/ontology/metadataregistry/>
+PREFIX dct:  <http://purl.org/dc/terms/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+CONSTRUCT {
+  ?a ?p ?b . ?p rdfs:label ?pl .
+  ?b a ?t ; rdfs:label ?l . ?t rdfs:label ?tl .
+  ?a a ?ta ; rdfs:label ?la . ?ta rdfs:label ?tla .
+} WHERE {
+  {
+    VALUES ?a { ?? }
+    VALUES ?p { mdr:dataElementConcept mdr:valueDomain }
+    ?a ?p ?b .
+  } UNION {
+    ?? mdr:dataElementConcept ?a .
+    VALUES ?p { mdr:objectClass mdr:property }
+    ?a ?p ?b .
+  }
+  OPTIONAL { ?p rdfs:label ?pl }
+  OPTIONAL { ?b a ?t OPTIONAL { ?t rdfs:label ?tl } }
+  OPTIONAL { ?b dct:title ?l }
+  OPTIONAL { ?a a ?ta OPTIONAL { ?ta rdfs:label ?tla } }
+  OPTIONAL { ?a dct:title ?la }
+}` }}
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlGraph" (dict
+        "id" "dataElementStructure"
+        "iri" .ResourceIRI
+        "construct" $structure
+        "endpointUrl" .GraphQueryURL
+        "layout" "tree-down"
+        "title" (t "card.dataElementStructure" "Data element structure")
+        "icon" "list-tree"
+        "height" "560px") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

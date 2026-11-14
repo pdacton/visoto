@@ -1,0 +1,92 @@
+<!-- mdr:ObjectClass instance template
+     An object class of the metadata registry: its attributes, the Data Element
+     Concepts built on it (mdr:objectClass), and the auto-profiling containers that
+     name it as their main object class (ap:mainObjectClass). The class page has its
+     own classes/mdr%3AObjectClass.html, so this file does not take it over. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Data Element Concepts: each pairs this object class with a property. The
+       data-element count is aggregated in its own subquery, scoped to this object
+       class's concepts so it never counts the whole registry. -->
+  <sparql-async id="objectClassDecs">
+    SELECT ?dec ?property ?dataElements ?status ?created WHERE {
+      ?dec mdr:objectClass ?? .
+      OPTIONAL { ?dec mdr:property ?property . }
+      OPTIONAL { ?dec adms:status ?status . }
+      OPTIONAL { ?dec dct:created ?created . }
+      OPTIONAL {
+        SELECT ?dec (COUNT(DISTINCT ?de_) AS ?dataElements) WHERE {
+          ?dec mdr:objectClass ?? .
+          ?de_ mdr:dataElementConcept ?dec .
+        } GROUP BY ?dec
+      }
+    }
+    ORDER BY DESC(?dataElements) ?dec
+  </sparql-async>
+  <sparql-columns for="objectClassDecs" order>
+    <sparql-column var="dec" icon label="{{ t "facet.dataElementConcept" "Data element concept" }}"></sparql-column>
+    <sparql-column var="property" icon label="{{ t "facet.property" "Property" }}"></sparql-column>
+    <sparql-column var="dataElements" label="{{ t "facet.dataElements" "Data elements" }}" type="number"></sparql-column>
+    <sparql-column var="status" label="{{ t "facet.status" "Status" }}"></sparql-column>
+    <sparql-column var="created" label="{{ t "facet.created" "Created" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "objectClassDecs"
+        "iri" .ResourceIRI
+        "title" (t "card.dataElementConcepts" "Data element concepts")
+        "icon" "lightbulb") }}
+  </div></div>
+
+  <!-- Containers (tables, layers, nested nodes) whose main object class this is,
+       with the data structure and distribution they were profiled from. A nested
+       container is reached through a slot's sh:node, not dct:hasPart, so its
+       structure columns stay empty. Slots are counted in their own subquery. -->
+  <sparql-async id="objectClassContainers">
+    SELECT ?container ?structure ?distribution ?format ?rowCount ?slots ?geometryType WHERE {
+      ?container ap:mainObjectClass ?? .
+      OPTIONAL {
+        ?structure dct:hasPart ?container .
+        OPTIONAL { ?structure ap:profiledDistribution ?distribution . }
+        OPTIONAL { ?structure dct:format ?format . }
+      }
+      OPTIONAL { ?container ap:rowCount ?rowCount . }
+      OPTIONAL { ?container ap:geometryType ?geometryType . }
+      OPTIONAL {
+        SELECT ?container (COUNT(?slot_) AS ?slots) WHERE {
+          ?container ap:mainObjectClass ?? ;
+                     sh:property ?slot_ .
+        } GROUP BY ?container
+      }
+    }
+    ORDER BY ?container
+  </sparql-async>
+  <sparql-columns for="objectClassContainers" order>
+    <sparql-column var="container" icon label="{{ t "facet.container" "Container" }}"></sparql-column>
+    <sparql-column var="structure" icon label="{{ t "facet.dataStructure" "Data structure" }}"></sparql-column>
+    <sparql-column var="distribution" label="{{ t "facet.distribution" "Distribution" }}"></sparql-column>
+    <sparql-column var="format" label="{{ t "facet.format" "Format" }}"></sparql-column>
+    <sparql-column var="rowCount" label="{{ t "facet.rowCount" "Rows" }}" type="number"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+    <sparql-column var="geometryType" label="{{ t "facet.geometryType" "Geometry" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "objectClassContainers"
+        "iri" .ResourceIRI
+        "title" (t "card.mainObjectClassOf" "Main object class of")
+        "icon" "container") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

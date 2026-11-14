@@ -144,7 +144,7 @@
             <li class="nav-item dropdown">
               <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
                 <span class="nav-link-icon d-md-none d-lg-inline-block">
-                  <img src="/static/img/resource/rico/RecordSet.svg" alt="{{ t "nav.recordsInContexts" "Records in Contexts" }}">
+                  <img src="/static/img/resource/SwissArchive.svg" alt="{{ t "nav.recordsInContexts" "Records in Contexts" }}">
                 </span>
                 <span class="nav-link-title">{{ t "nav.archivesRiC" "Archives (RiC)" }}</span>
               </a>
@@ -492,6 +492,38 @@
             </li>
 
           {{ else }}
+
+            {{ if eq .EndpointTag "visoto" }}
+            <!-- Local QLever store: metadata registry and auto-profiling models -->
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="{{ classIcon "mdr:DataElement" }}" alt="{{ t "nav.metadataRegistry" "Metadata Registry" }}">
+                </span>
+                <span class="nav-link-title">{{ t "nav.metadataRegistry" "Metadata Registry" }}</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=mdr:DataElement"><img class="nav-sub-icon" src="{{ classIcon "mdr:DataElement" }}" alt="">{{ t "nav.mdrDataElement" "Data Element" }}</a>
+                <a class="dropdown-item" href="/resource?iri=mdr:ValueDomain"><img class="nav-sub-icon" src="{{ classIcon "mdr:ValueDomain" }}" alt="">{{ t "nav.mdrValueDomain" "Value Domain" }}</a>
+                <a class="dropdown-item" href="/resource?iri=mdr:DataElementConcept"><img class="nav-sub-icon" src="{{ classIcon "mdr:DataElementConcept" }}" alt="">{{ t "nav.mdrDataElementConcept" "Data Element Concept" }}</a>
+                <a class="dropdown-item" href="/resource?iri=mdr:ObjectClass"><img class="nav-sub-icon" src="{{ classIcon "mdr:ObjectClass" }}" alt="">{{ t "nav.mdrObjectClass" "Object Class" }}</a>
+                <a class="dropdown-item" href="/resource?iri=mdr:Property"><img class="nav-sub-icon" src="{{ classIcon "mdr:Property" }}" alt="">{{ t "nav.mdrProperty" "Property" }}</a>
+              </div>
+            </li>
+
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle" href="#sidebar-submenu" data-bs-toggle="dropdown" data-bs-auto-close="false" role="button" aria-expanded="false">
+                <span class="nav-link-icon d-md-none d-lg-inline-block">
+                  <img src="{{ classIcon "ap:Container" }}" alt="{{ t "nav.autoProfiling" "Auto-profiling" }}">
+                </span>
+                <span class="nav-link-title">{{ t "nav.autoProfiling" "Auto-profiling" }}</span>
+              </a>
+              <div class="dropdown-menu">
+                <a class="dropdown-item" href="/resource?iri=ap:Container"><img class="nav-sub-icon" src="{{ classIcon "ap:Container" }}" alt="">{{ t "nav.apContainer" "Container" }}</a>
+                <a class="dropdown-item" href="/resource?iri=ap:Slot"><img class="nav-sub-icon" src="{{ classIcon "ap:Slot" }}" alt="">{{ t "nav.apSlot" "Slot" }}</a>
+              </div>
+            </li>
+            {{ end }}
 
             <!-- Generic fallback for unknown endpoints -->
             <!-- Organizations -->

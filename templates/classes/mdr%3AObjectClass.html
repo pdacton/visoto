@@ -1,0 +1,57 @@
+<!-- mdr:ObjectClass class template: the object classes of the metadata registry, with
+     when each was created and how many Data Element Concepts use it. Also keeps the
+     class page off instances/mdr%3AObjectClass.html, which template resolution would
+     otherwise pick for the class node itself. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <!-- The DEC count is aggregated in its own subquery, joined to the instance: at
+       the top level next to the OPTIONALs it would multiply rows before counting.
+       Nesting is fine here because the class is small enough to render inline
+       (far under the 20000-row working-set threshold). -->
+  <sparql-async id="objectClasses">
+    SELECT ?instance ?created ?decs WHERE {
+      ?instance a ?? .
+      OPTIONAL { ?instance dct:created ?created . }
+      OPTIONAL {
+        SELECT ?instance (COUNT(DISTINCT ?dec_) AS ?decs) WHERE {
+          ?dec_ mdr:objectClass ?instance .
+        } GROUP BY ?instance
+      }
+    }
+    ORDER BY DESC(?decs) ?instance
+  </sparql-async>
+  <sparql-columns for="objectClasses" order>
+    <sparql-column var="instance" icon label="{{ t "facet.objectClass" "Object class" }}"></sparql-column>
+    <sparql-column var="created" label="{{ t "facet.created" "Created" }}"></sparql-column>
+    <sparql-column var="decs" label="{{ t "facet.decReferences" "Data element concepts" }}" type="number"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "objectClasses"
+        "iri" .ResourceIRI
+        "title" (t "card.instances" "Instances")
+        "icon" "circle-dot") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

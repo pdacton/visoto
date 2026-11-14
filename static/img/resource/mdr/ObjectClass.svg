@@ -7,7 +7,13 @@
 <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
 </g></mask></defs>
 <g mask="url(#badge-gap)"><g transform="translate(112.00 112.00) scale(33.3333)" fill="none" color="#9E1B32" stroke="#9E1B32" stroke-width="1.92" stroke-linecap="round" stroke-linejoin="round">
-<path d="M12 3c7.2 0 9 1.8 9 9s-1.8 9-9 9-9-1.8-9-9 1.8-9 9-9" />
+<path d="M12 12v5.5" />
+<path d="M17 3h2a2 2 0 012 2v2" />
+<path d="M21 17v2a2 2 0 01-2 2h-2" />
+<path d="M3 7V5a2 2 0 012-2h2" />
+<path d="M7 21H5a2 2 0 01-2-2v-2" />
+<path d="M7.264 9.252 12 12l4.737-2.748" />
+<path d="M7.995 8.514A2 2 0 007 10.244v3.516a2 2 0 00.996 1.73l3 1.74a2 2 0 002.008 0l3-1.74A2 2 0 0017 13.76v-3.517a2 2 0 00-.995-1.73l-3-1.742a2 2 0 00-1.892-.064z" />
 </g></g>
 <g transform="translate(616 616) scale(12)" fill="none" color="#9E1B32" stroke="#9E1B32" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
 <path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
