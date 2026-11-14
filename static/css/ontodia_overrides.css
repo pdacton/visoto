@@ -519,6 +519,14 @@
 .graph-explorer-standard-template:has(img[src$="#vs-ExternalClass"]) .graph-explorer-standard-template__dropdown {
   background-color: color-mix(in srgb, var(--tblr-body-color) 12%, var(--tblr-bg-surface)) !important;
 }
+/* vs-Model: a class or a term of rdf/rdfs/owl/sh (marked in sparql-graph.js).
+ *   Light grey. The icon's squircle leaves its corners transparent and the
+ *   thumbnail box has no background of its own, so the grey shows through
+ *   there too -- the body is what carries it, not the thumbnail. */
+.graph-explorer-standard-template:has(img[src$="#vs-Model"]) .graph-explorer-standard-template__body,
+.graph-explorer-standard-template:has(img[src$="#vs-Model"]) .graph-explorer-standard-template__dropdown {
+  background-color: color-mix(in srgb, var(--tblr-body-color) 7%, var(--tblr-bg-surface)) !important;
+}
 .graph-explorer-standard-template:has(img[src$="#vs-AnyResource"]) .graph-explorer-standard-template__main {
   border-style: dashed !important;
   box-shadow: none !important;
@@ -1855,6 +1863,12 @@
   .graph-explorer-standard-template:has(img[src$="#vs-ExternalClass"]) .graph-explorer-standard-template__body,
   .graph-explorer-standard-template:has(img[src$="#vs-ExternalClass"]) .graph-explorer-standard-template__dropdown {
     background-color: color-mix(in srgb, #000 45%, var(--tblr-bg-surface)) !important;
+  }
+  /* Model nodes darker than ordinary ones -- the inverse of light mode, where
+   * they are greyer than the white instances. */
+  .graph-explorer-standard-template:has(img[src$="#vs-Model"]) .graph-explorer-standard-template__body,
+  .graph-explorer-standard-template:has(img[src$="#vs-Model"]) .graph-explorer-standard-template__dropdown {
+    background-color: color-mix(in srgb, #000 30%, var(--tblr-bg-surface)) !important;
   }
 
   .graph-explorer-standard-template__body-content {

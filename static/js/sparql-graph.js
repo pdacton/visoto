@@ -10,6 +10,7 @@
     data-sparql-graph       marker; presence means "initialize me"
     data-sparql-graph-id    DOM id prefix for this instance's islands/elements
     data-sparql-graph-lazy  "true" to defer init until a 'graph:init' event
+    data-sparql-graph-layout  first layout (network | tree-down | tree-right | radial)
 
   Two modes:
     - browse (default): seed IRIs, then Graph Explorer's SparqlDataProvider
@@ -80,7 +81,13 @@
       }
       // GL-2: a constructed diagram is a class model, read as a tree; a browse
       // graph is a network. Radial centres on the page's resource (GL-19).
+      // data-sparql-graph-layout (the partial's `layout`) overrides it per card.
       kit.defaultLayout = CONSTRUCT ? 'tree-right' : 'network';
+      var LAYOUT = root.getAttribute('data-sparql-graph-layout');
+      if (LAYOUT) {
+        if (['network', 'tree-down', 'tree-right', 'radial'].indexOf(LAYOUT) >= 0) kit.defaultLayout = LAYOUT;
+        else console.warn('sparqlGraph: unknown layout ' + LAYOUT);
+      }
       kit.searchEndpoint = !CONSTRUCT; // Add resource: endpoint search (GL-47)
       // GL-10 / GL-49: "a class includes its subclasses". Asked of the endpoint
       // for the classes on the canvas only (both ends bound by VALUES), so the
@@ -199,9 +206,63 @@
               var url = ICONS.resolve(iri, [], AVAILABLE_ICONS);
               if (url) dict[iri].image = url;
             });
-            return dict;
+            return markModelNodes(dict);
           });
         };
+
+        // Model nodes (classes, and terms of the modelling vocabularies) get a
+        // grey box: the marker rides on data.image as "#vs-Model", like the
+        // construct-mode markers (graph-memory-store.js), and the CSS shades
+        // the node body, which the transparent icon corners show through.
+        // A node is a model node when it is
+        //   - in the rdf:, rdfs:, owl: or sh: namespace,
+        //   - typed rdfs:Class / owl:Class (an explicit class), or
+        //   - the object of some rdf:type triple (an implicit class) -- asked
+        //     of the endpoint with FILTER EXISTS, which stops at the first
+        //     instance instead of counting them.
+        // Construct mode is a class diagram already, with its own shading.
+        var MODEL_NS = ['rdf:', 'rdfs:', 'owl:', 'sh:'].map(P.expand).filter(function (ns) {
+          return ns.indexOf('://') > 0;
+        });
+        var CLASS_TYPES = [P.expand('rdfs:Class'), P.expand('owl:Class')];
+        var MODEL_MARK = '#vs-Model';
+        var implicitClass = new Map(); // iri -> boolean, per graph
+        var IMPLICIT_TIMEOUT = 4000;   // past this the node renders unmarked
+
+        function askImplicitClasses(iris) {
+          var todo = iris.filter(function (iri) { return !implicitClass.has(iri) && /^https?:/.test(iri); });
+          if (!todo.length) return Promise.resolve();
+          var query = 'SELECT DISTINCT ?c WHERE { VALUES ?c { ' +
+            todo.map(function (iri) { return '<' + iri + '>'; }).join(' ') +
+            ' } FILTER EXISTS { ?s <' + RDF_TYPE + '> ?c } }';
+          var asked = dataProvider.executeSparqlQuery(query).then(function (res) {
+            todo.forEach(function (iri) { implicitClass.set(iri, false); });
+            ((res && res.results && res.results.bindings) || []).forEach(function (b) {
+              if (b.c) implicitClass.set(b.c.value, true);
+            });
+          });
+          var timeout = new Promise(function (resolve) { setTimeout(resolve, IMPLICIT_TIMEOUT); });
+          return Promise.race([asked, timeout]).catch(function (err) { console.warn('model-node check:', err); });
+        }
+
+        function markModelNodes(dict) {
+          if (constructedStore) return dict;
+          var iris = Object.keys(dict);
+          var explicit = function (iri) {
+            var el = dict[iri];
+            return MODEL_NS.some(function (ns) { return iri.indexOf(ns) === 0; }) ||
+              (el.types || []).some(function (t) { return CLASS_TYPES.indexOf(t) >= 0; });
+          };
+          return askImplicitClasses(iris.filter(function (iri) { return !explicit(iri); })).then(function () {
+            iris.forEach(function (iri) {
+              if (!explicit(iri) && !implicitClass.get(iri)) return;
+              var el = dict[iri];
+              var image = el.image || typeStyleResolver(el.types || []).icon;
+              if (image.slice(-MODEL_MARK.length) !== MODEL_MARK) el.image = image.split('#')[0] + MODEL_MARK;
+            });
+            return dict;
+          });
+        }
         // Endpoint errors surface as an inline message with Retry (GL-45).
         kit.guardProvider(dataProvider);
         // Icons for GE's result lists, by the node's own rule: the resource's own

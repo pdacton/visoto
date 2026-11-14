@@ -750,6 +750,7 @@ out a set of IRIs at initialization.
 | `construct` | `string` or `(list …)` | — | A SPARQL CONSTRUCT whose result *is* the diagram, or several, posted in parallel and combined (see below). `iris` is then ignored. |
 | `projection` | `string` | — | With `construct`: a named JS projection that turns the CONSTRUCT results into the diagram's triples first. `"ontology"` = `static/js/ontology-projection.js`. |
 | `omitPageIri` | `bool` | `false` | Do not add the page's `?iri=` as a starting IRI, so the graph shows exactly `iris` (used by the `dcmitype:Collection` page to draw members without the collection). |
+| `layout` | `string` | `"network"` / `"tree-right"` | First layout: `network`, `tree-down`, `tree-right` or `radial`. The default is `tree-right` with `construct`, else `network`. |
 | `hideTypeEdges` | `bool` | `false` | Start with `rdf:type` / `rdfs:subClassOf` edges hidden (the user can show them again). |
 | `title` / `icon` | `string` | `"Graph"` / `"share-2"` | Card header title and Lucide icon. |
 

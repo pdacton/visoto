@@ -22,6 +22,8 @@
     - omitPageIri: (optional) do not add the page's ?iri= URL parameter as a starting IRI,
       so the graph shows exactly `iris` (the collection page draws its members without
       the collection node and its spoke to every member).
+    - layout: (optional) the first layout: "network", "tree-down", "tree-right" or
+      "radial". Default "tree-right" with construct, else "network".
     - hideTypeEdges: (optional) hide rdf:type / rdfs:subClassOf edges. Use on architecture
       diagrams, where one type edge per node buries the relations that matter.
     - construct: (optional) a SPARQL CONSTRUCT whose result IS the diagram, or a
@@ -52,6 +54,7 @@
   {{ $height := or .height "calc(100vh - 200px)" }}
   {{ $lazy := .lazy }}
   {{ $hideTypeEdges := .hideTypeEdges }}
+  {{ $layout := .layout }}
   {{ $omitPageIri := .omitPageIri }}
   {{ $construct := .construct }}
   {{ $projection := .projection }}
@@ -104,7 +107,8 @@
            data-sparql-graph-id="{{ $id }}"
            {{ if $lazy }}data-sparql-graph-lazy="true"{{ end }}
            {{ if $hideTypeEdges }}data-sparql-graph-hide-type-edges="true"{{ end }}
-           {{ if $omitPageIri }}data-sparql-graph-omit-page-iri="true"{{ end }}></div>
+           {{ if $omitPageIri }}data-sparql-graph-omit-page-iri="true"{{ end }}
+           {{ if $layout }}data-sparql-graph-layout="{{ $layout }}"{{ end }}></div>
       <!-- Messages (errors with Retry) and the busy spinner, over the canvas. -->
       <div id="{{ $id }}-overlay" class="graph-overlay" aria-live="polite"></div>
       </div>
