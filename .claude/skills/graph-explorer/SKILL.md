@@ -231,3 +231,17 @@ Graph Explorer doesn't have built-in context menu support. Implement by:
 1. Create HTML buttons outside Graph Explorer container
 2. Wire `onclick` to workspace/model methods
 3. Use `workspaceRef` reference captured in `onWorkspaceMounted`
+
+## Visoto embedding (moved from CLAUDE.md)
+
+Graph Explorer 2.1.0 loads from CDN. Embed it with `{{ template "sparqlGraph" (dict ...) }}`
+(`templates/partials/sparql-graph.html`); styling overrides in
+`static/css/ontodia_overrides.css`. See also `docs/ontodia-graph-explorer-references.md`.
+
+Every embed shares one layer: `static/js/ge-adapter.js` (the only file touching GE),
+`graph-kit.js` (toolbar, undo, layouts, saving) and the `graph-*.js` modules it installs;
+markup in `templates/partials/graph-toolbar.html`. Add resource searches through
+`GET /api/search` (JSON twin of `/search`).
+
+GE queries from the browser through the `/api/sparql` proxy, which accepts only
+SELECT/ASK/CONSTRUCT/DESCRIBE. Queries stay POST (see CLAUDE.md).

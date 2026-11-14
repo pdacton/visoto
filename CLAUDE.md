@@ -7,8 +7,7 @@ is no database for RDF data. (The only local store is a SQLite file under
 
 ## Build & run
 
-- Build: `go build ./...` — Test: `go test ./...`
-- JS: `node --test tests/js/` (dependency-free; covers `static/js/graph-layout.js`)
+- JS tests: `node --test tests/js/` (dependency-free; covers `static/js/graph-layout.js`)
 - Run: `go run ./cmd/visoto/` (port from `visoto.config`, currently 8060).
   `PORT=8061 go run ./cmd/visoto/` overrides it — use a different port than the
   one the user is already running on.
@@ -19,17 +18,6 @@ is no database for RDF data. (The only local store is a SQLite file under
 
 ## Templates
 
-Templates live in `templates/`:
-
-| Dir | Purpose |
-|---|---|
-| `layout/` | base, topbar, sidebar, header, footer |
-| `partials/` | `sparqlTable`, `sparqlAsyncTable`, `sparqlGraph`, `bnodeTree`, tree, metric, … |
-| `components/` | `pageHeader`, `literals`, `relationships` |
-| `pages/` | standalone pages (`/about.html`, `/politics.html`, …) |
-| `classes/` | per-RDF-class pages |
-| `instances/` | per-instance-type pages |
-
 A template does not "extend" a layout — it **defines blocks** (`pageTitle`,
 `pageSubtitle`, `pageIcon`, `pageContent`, …) that the base layout renders.
 `{{ template "pageHeader" . }}` fills the whole header from SPARQL.
@@ -38,16 +26,6 @@ A template does not "extend" a layout — it **defines blocks** (`pageTitle`,
 authoritative authoring guide (page shell, custom tags, partial parameters).
 
 ### Custom SPARQL tags
-
-Queries are written directly in the markup and preprocessed at startup by
-`internal/parser`; results land in `.QueryResults.<id>`:
-
-- `<sparql-query id="x">` — query executed during page render
-- `<sparql-async id="x">` — lazily loaded over HTMX after paint (use for slow
-  or large queries)
-- `<sparql-column>` / `<sparql-columns>` — declare table columns; a column
-  carrying `filter` makes the table faceted
-- `<sparql-tree-query>` / `<sparql-tree-queries>` — hierarchy trees
 
 Go template actions (`{{ t }}`, `{{ if }}`) **must not** appear inside a query
 body — the text is sent to the endpoint verbatim.
@@ -65,9 +43,7 @@ from the URL only.
 
 ### Frontend
 
-Tabler 1.6 (Bootstrap 5) + Tabulator 6.5 + HTMX 2 + Lucide, loaded via CDN in
-`templates/layout/base.html`. Use Bootstrap/Tabler classes rather than custom
-CSS; overrides go in `static/css/*_overrides.css`.
+Use Bootstrap/Tabler classes rather than custom CSS; overrides go in `static/css/*_overrides.css`.
 
 Templates emit markup and `<template>` config islands only — **no inline JS**.
 Behaviour lives in `static/js/`, keyed off a `data-<name>` marker.
@@ -78,11 +54,10 @@ carries the active endpoint's prefixes (an endpoint may redeclare e.g. `schema:`
 
 ## Go backend
 
-- Idiomatic Go; prefer methods on structs over standalone functions.
+- Prefer methods on structs over standalone functions.
 - Entry point `cmd/visoto/` is a thin wrapper around `app.Main`; the server
   (config, router, HTTP handlers) lives in the public `app/` package, everything
   else under `internal/`.
-- Tests are standard `*_test.go` alongside the code.
 
 ## Data layer
 
@@ -121,20 +96,10 @@ Note: LINDAS instance counts drift between calls — query counts live with
 
 ## Graph Explorer
 
-RDF graph visualization via [Graph Explorer](https://github.com/zazuko/graph-explorer)
-2.1.0 from CDN. Embed it with `{{ template "sparqlGraph" (dict ...) }}`
-(`templates/partials/sparql-graph.html`); styling overrides in
-`static/css/ontodia_overrides.css`. See the `graph-explorer` skill and
-`docs/ontodia-graph-explorer-references.md`.
-
-Every embed shares one layer: `static/js/ge-adapter.js` (the only file touching GE),
-`graph-kit.js` (toolbar, undo, layouts, saving) and the `graph-*.js` modules it installs;
-markup in `templates/partials/graph-toolbar.html`. Add resource searches through
-`GET /api/search` (JSON twin of `/search`).
-
-It queries from the browser through the `/api/sparql` proxy (see Data layer),
-which accepts only SELECT/ASK/CONSTRUCT/DESCRIBE. Queries stay POST: a GET puts the whole query in the URL and long link queries
-blow past the ~8 KB limit, silently losing every edge.
+Embedding, the shared adapter layer and styling: see the `graph-explorer` skill.
+GE queries go through the `/api/sparql` proxy and **must stay POST**: a GET puts
+the whole query in the URL and long link queries blow past the ~8 KB limit,
+silently losing every edge.
 
 ## RDF tooling (Python)
 
@@ -148,16 +113,6 @@ is PEP 668-locked, no sudo). Call it directly, no activation needed:
 Playwright MCP is configured in `.mcp.json` (gitignored); start the server
 first. Chromium runs headless under WSL. It silently caches `static/js` and
 `static/css` — hard-clear the browser cache before verifying frontend changes.
-
-## Skills
-
-In `.claude/skills/`: **graph-explorer**, **branding**, **instanceTemplate**,
-**classTemplate**, **iconGeneration**, **maintenance**.
-
-## Docs
-
-`docs/templating.md` (template authoring), `docs/architecture.md`,
-`docs/configuration.md`, `docs/deployment.md`, `docs/getting-started.md`.
 
 ## graphify
 
