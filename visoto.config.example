@@ -263,7 +263,7 @@ prefixes = [
   "PREFIX time:   <http://www.w3.org/2006/time#>",
   "PREFIX xhv:    <https://www.w3.org/1999/xhtml/vocab#>",
   "PREFIX dblp:   <https://dblp.org/rdf/schema#>",
-  "PREFIX mdr:    <https://register.ld.admin.ch/i14y/ontology/metadataregistry/>",
+  "PREFIX mdr:    <https://register.ld.admin.ch/mds/ontology/metadataregistry/>",
   "PREFIX ap:     <https://register.ld.admin.ch/mds/ontology/ap/>",
   "PREFIX jolux:  <http://data.legilux.public.lu/resource/ontology/jolux#>",
   "PREFIX dcatapit: <http://dati.gov.it/onto/dcatapit#>",
