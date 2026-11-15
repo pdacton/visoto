@@ -144,11 +144,8 @@ immediately. See `docs/templating.md#ui-strings`.
 
 ## Configuration
 
-The skill reads SPARQL endpoint configuration from `visoto.config`:
-```toml
-[application]
-sparqlEndpoint = "https://ld.admin.ch/query/"
-```
+Endpoints are the `[[application.sparqlEndpoints]]` entries in `visoto.config`; the
+one with `default = true` is the default. Query them through the visoto MCP server.
 
 ## Output Location
 
@@ -206,7 +203,7 @@ This information is displayed before creating the template and used to generate 
 
 - Use short form URIs (e.g., `schch:Canton`) when the prefix is defined in `visoto.config`
 - The `--preview` flag is useful for testing before committing to file creation
-- Breadcrumbs should be ordered from general to specific (e.g., Country → Canton → District), use use rdf:subClassOf relationships for automatic breadcrumb generation
+- Breadcrumbs should be ordered from general to specific (e.g., Country → Canton → District), use rdfs:subClassOf relationships for automatic breadcrumb generation
 - The skill will warn if the URI doesn't return any data from the endpoint
 
 ## Workflow

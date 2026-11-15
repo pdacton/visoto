@@ -138,11 +138,8 @@ immediately. See `docs/templating.md#ui-strings`.
 
 ## Configuration
 
-The skill reads SPARQL endpoint configuration from `visoto.config`:
-```toml
-[application]
-sparqlEndpoint = "https://ld.admin.ch/query/"
-```
+Endpoints are the `[[application.sparqlEndpoints]]` entries in `visoto.config`; the
+one with `default = true` is the default. Query them through the visoto MCP server.
 
 ## Output Location
 

@@ -15,8 +15,8 @@ Reference guide for customizing the Graph Explorer library (a fork of Ontodia) u
 ## Local Project Files
 - `templates/partials/sparql-graph.html` - the `sparqlGraph` partial; embeds a graph on any
   page and self-loads the CDN bundle. This is where initialization lives.
-- `static/js/sparql-graph.js` - the partial's behaviour, including the CDN version pin
-- `static/js/schema-graph.js` - the schema diagram at `/_schema.html`; pins the same version
+- `static/js/sparql-graph.js` - the partial's behaviour
+- `static/js/schema-graph.js` - the schema diagram at `/_schema.html`
 - `static/css/ontodia_overrides.css` - Custom CSS overrides
 
 ### Visoto graph layer (graph-layout plan, Part A)
@@ -33,15 +33,14 @@ Every embed goes through a shared layer; change behaviour there, not per embed:
   `graph-store.js` - selection/pins, add/details/layout options, classes/namespaces/find,
   list view, localStorage saves.
 - `templates/partials/graph-toolbar.html` - toolbar, selection bar, panels, modal.
-- Spec and decisions: `.project/todo/graph-layout.md`, `.project/todo/graph-layout-plan.md`.
+- Spec and decisions: `.project/intent/graph-layout.md`, `.project/intent/graph-layout-plan.md`.
 
 GE 2.1 traps met on the way: `hideToolbar` replaces the toolbar; the Workspace default
 history cannot undo; `importLayout` registers link types asynchronously (seed after it
 settles); `ElementLayer.requestRedraw(el, None)` never redraws (adapter forces it after
 each history change); modifier clicks are ignored by the editor; the paper is mouse-only.
 
-There is no longer a standalone Graph Explorer page: `templates/pages/ontodia.html` was
-retired in 612bca6 and replaced by the partial above.
+There is no standalone Graph Explorer page; every graph is an embed of the partial above.
 
 ## Key Source Files Reference
 
@@ -177,19 +176,17 @@ element.setPosition({ x, y })           // Set position
 
 ## Data Provider Configuration
 
-### SPARQL Provider for LINDAS
+### SPARQL Provider
+The provider is built in one place, `sparqlProvider()` in `static/js/ge-adapter.js`:
+`endpointUrl` is the same-origin proxy path (`.GraphQueryURL`, `/api/sparql?endpoint=<slug>`),
+never an endpoint URL, and `queryMethod` is `POST`. Label settings override
+`OWLStatsSettings` because LINDAS uses `schema:name`, not `rdfs:label`:
+
 ```javascript
 var settings = Object.assign({}, GE.OWLStatsSettings, {
-  // LINDAS uses schema:name, not rdfs:label — without this, labels will be empty
   dataLabelProperty: '<http://schema.org/name> | rdfs:label',
   schemaLabelProperty: '<http://schema.org/name> | rdfs:label',
 });
-
-var dataProvider = new GE.SparqlDataProvider({
-  endpointUrl: 'https://ld.admin.ch/query/',
-  acceptBlankNodes: false,
-  queryMethod: GE.SparqlQueryMethod.GET,
-}, settings);
 ```
 
 ### Available Settings Objects
@@ -232,7 +229,7 @@ Graph Explorer doesn't have built-in context menu support. Implement by:
 2. Wire `onclick` to workspace/model methods
 3. Use `workspaceRef` reference captured in `onWorkspaceMounted`
 
-## Visoto embedding (moved from CLAUDE.md)
+## Visoto embedding
 
 Graph Explorer 2.1.0 loads from CDN. Embed it with `{{ template "sparqlGraph" (dict ...) }}`
 (`templates/partials/sparql-graph.html`); styling overrides in

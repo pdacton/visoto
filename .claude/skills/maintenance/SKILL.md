@@ -57,15 +57,14 @@ failure in the PR body. Never open a red PR.
 Frontend libraries are CDN `<script>`/`<link>` tags with no `package.json`, so
 Dependabot is structurally blind to them. This is the highest-value mode.
 
-### The pins live in five files
+### The pins live in four files
 
 | File | Pins | SRI |
 |---|---|---|
 | `templates/layout/base.html` | 12 | Yes |
 | `templates/pages/monitoring.html` | 2 (chart.js, adapter) | Yes |
-| `static/js/sparql-graph.js` | 1 (graph-explorer) | No |
+| `static/js/ge-adapter.js` | 1 (graph-explorer) | Yes |
 | `static/js/sparql-flow.js` | 1 (pele) | Yes |
-| `static/js/schema-graph.js` | 1 (graph-explorer) | No |
 
 Find them all — do not trust this table to stay current:
 
@@ -79,22 +78,17 @@ grep -rno "https://\(cdn\.jsdelivr\.net/npm\|unpkg\.com\)/[^\"' ]*" templates/ s
   "Deferred" plus the log — never applied. The boot smoke test only proves the
   server starts; it would not catch a Tabulator or Tabler major silently
   breaking table rendering or layout.
-- **graph-explorer is pinned in two files** (`sparql-graph.js`,
-  `schema-graph.js`). They must stay identical. Bump both or neither.
-- **Recompute SRI on every bump**, for the two files that carry it:
+- **Recompute SRI on every bump** (graph-explorer's `GE_SRC`/`GE_SRI` pair
+  sits at the top of `ge-adapter.js`):
   ```
   curl -sL <url> | openssl dgst -sha384 -binary | openssl base64 -A
   ```
   A stale hash makes the asset fail closed — the page loads with the library
   silently missing. Verify the new hash is actually different from the old.
-- **A Lucide bump regenerates `cmd/visoto/testdata/lucide-icons.txt`** (the
+- **A Lucide bump regenerates `app/testdata/lucide-icons.txt`** (the
   command is in its header, and its `# lucide <version>` line must match).
   `TestLucideIconNamesExist` fails until it does. If the new list drops a name
   the templates use, Lucide renamed that icon: switch to the new name.
-- **Do not add SRI to the two graph-explorer loaders.** They build their
-  `<script>` tag dynamically; adding SRI there is a real change, not
-  maintenance — propose it in `audit`, don't do it here. (`sparql-flow.js`
-  already carries SRI for Pele: recompute it on a bump.)
 - **xlsx@0.18.5 is a deliberate exception.** The comment above it in
   `base.html` documents two CVEs that are unreachable in this codebase and the
   migration path off the CDN. Leave the version alone and do not re-flag it;

@@ -28,31 +28,12 @@ Apply consistent branding and guidelines for Visoto, an RDF resource visualizati
 - **Documentation Style**: Focus on functionality and practical user experience
 - **Error Messages**: Helpful and constructive, guiding users toward solutions
 
-## Code Conventions & Standards
-- **Language**: Go with modern idiomatic patterns
-- **Web Framework**: Gin framework for HTTP routing and middleware
-- **Project Structure**:
-  - `/cmd/visoto/` - Application entry point
-  - `/templates/` - Go HTML templates organized by function
-  - `/static/` - CSS, JS, images, and other assets
-  - `/internal/` - Private application code
-- **Frontend**: Modern web standards with accessibility-first approach
-- **Templating**: Go templates with clean separation of layout and content
-- **Asset Organization**: Logical grouping of CSS, JS, and images
-
 ## Key Features to Emphasize
-- **SPARQL Integration**: Seamless connection to RDF endpoints (currently Lindas, configurable)
+- **SPARQL Integration**: Several configurable RDF endpoints (LINDAS by default)
 - **Interactive Visualization**: User-friendly display of complex RDF data
 - **Modern UI/UX**: Responsive design with dark mode support
 - **Data Tables**: Interactive tables using Tabulator for exploring query results
 - **Accessibility**: Ensure all features work with screen readers and keyboard navigation
-
-## Development Guidelines
-- **Configuration**: Make SPARQL endpoints configurable (currently hardcoded)
-- **Error Handling**: Provide clear feedback for connection issues and query errors
-- **Performance**: Optimize for handling large RDF datasets
-- **Testing**: Include connectivity tests (e.g., `/ping` endpoint)
-- **Documentation**: Maintain clear README with setup and usage instructions
 
 ## Brand Applications
 When working on Visoto:
