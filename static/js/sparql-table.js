@@ -273,7 +273,7 @@
       }
       if (binding.Type === 'uri') {
         var display = escapeHtml(binding.DisplayText || binding.Value);
-        return '<a href="/resource?iri=' + encodeURIComponent(binding.Value) + '">' + display + '</a>';
+        return '<a href="' + escapeHtml(visotoResourceHref(binding.Value)) + '">' + display + '</a>';
       }
       // A LITERAL holding an http(s) URL is a link out of Visoto, not a resource
       // to explore — an IRI above stays a resource link. A template projects
@@ -396,7 +396,7 @@
       var label = uri.includes('#') ? uri.split('#').pop() : uri.split('/').pop();
       var badge = '<span class="badge rounded-pill bg-blue-lt" style="cursor:default">' + escapeHtml(label) + '</span>';
       if (value.Type === 'uri' && uri) {
-        return '<a href="/resource?iri=' + encodeURIComponent(uri) + '">' + badge + '</a>';
+        return '<a href="' + escapeHtml(visotoResourceHref(uri)) + '">' + badge + '</a>';
       }
       return badge;
     }

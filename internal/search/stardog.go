@@ -18,6 +18,10 @@ func (s *StardogProvider) BuildQuery(params SearchParams) (string, error) {
 	if params.Query == "" {
 		return "", fmt.Errorf("search query cannot be empty")
 	}
+	classTerm, propertyTerm, err := params.filterTerms()
+	if err != nil {
+		return "", err
+	}
 
 	var queryParts []string
 
@@ -32,14 +36,14 @@ func (s *StardogProvider) BuildQuery(params SearchParams) (string, error) {
 
 	// Bind class filter (or unbound if not specified)
 	if params.Class != "" {
-		queryParts = append(queryParts, fmt.Sprintf(`  BIND (<%s> AS ?type)`, params.Class))
+		queryParts = append(queryParts, fmt.Sprintf(`  BIND (%s AS ?type)`, classTerm))
 	} else {
 		queryParts = append(queryParts, `  BIND (?undef AS ?type)`)
 	}
 
 	// Bind property filter (or unbound if not specified)
 	if params.Property != "" {
-		queryParts = append(queryParts, fmt.Sprintf(`  BIND (<%s> AS ?property)`, params.Property))
+		queryParts = append(queryParts, fmt.Sprintf(`  BIND (%s AS ?property)`, propertyTerm))
 	} else {
 		queryParts = append(queryParts, `  BIND (?undef AS ?property)`)
 	}

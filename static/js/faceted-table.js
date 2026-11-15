@@ -30,37 +30,9 @@
   // params stay clean), but the UI affordance is the same "(no value)" checkbox.
   var NO_VALUE = '__vs_no_value__';
 
-  // The active endpoint slug, so cacheable routes stay pure functions of the URL
-  // (shared resolver from endpoint-switcher.js). Returns a bare "endpoint=<slug>"
-  // pair — callers join it with the rest, so it never depends on whether other
-  // params happen to precede it.
-  function endpointParam() {
-    var slug = (typeof activeEndpointSlug === 'function') ? activeEndpointSlug() : '';
-    return slug ? 'endpoint=' + encodeURIComponent(slug) : '';
-  }
-
-  // The active site language, so these routes return labels in the picked
-  // language (they read only the URL — shared resolver from
-  // language-switcher.js).
-  //
-  // Note the deliberate asymmetry with endpointParam: an empty slug means "none
-  // selected", so dropping the pair and letting the server default is right. An
-  // empty language is a *choice* ("no language"), so this returns a bare "lang="
-  // rather than dropping it — an absent param would mean the server default,
-  // which is a different language.
-  function langParam() {
-    var code = (typeof activeSiteLang === 'function') ? activeSiteLang() : null;
-    return code === null ? '' : 'lang=' + encodeURIComponent(code);
-  }
-
-  // The template set the base query id is scoped to. Read live from the page
-  // rather than from the fragment config: unlike the endpoint and the language,
-  // it describes the page these fetches are running on, not how this fragment
-  // was rendered, and it is always present on a rendered page.
-  function srcParam() {
-    var set = (typeof activeTemplateSet === 'function') ? activeTemplateSet() : '';
-    return set ? 'src=' + encodeURIComponent(set) : '';
-  }
+  // The endpoint slug, the language and the template set are added by
+  // VisotoApi.url (static/js/api-url.js) — the same three values, resolved the
+  // same way, as on every other /api request.
 
   // Join non-empty query-param pairs into a query string.
   function joinParams(parts) {
@@ -537,8 +509,8 @@
     }
 
     menu.dataset.loaded = 'loading';
-    var url = '/api/facet-values/' + encodeURIComponent(ctx.id) + '/' + encodeURIComponent(name) +
-      '?' + joinParams(['iri=' + encodeURIComponent(ctx.iri || ''), endpointParam(), langParam(), srcParam()]);
+    var url = VisotoApi.url('/api/facet-values/' + encodeURIComponent(ctx.id) + '/' + encodeURIComponent(name),
+      { iri: ctx.iri || '' });
     fetch(url, fetchOptions({ headers: { 'Accept': 'application/json' } }))
       .then(function (r) { return r.json(); })
       .then(function (data) {
@@ -784,10 +756,7 @@
         });
       }
     });
-    parts.push(endpointParam());
-    parts.push(langParam());
-    parts.push(srcParam());
-    return '/api/faceted-table/' + encodeURIComponent(id) + '?' + joinParams(parts);
+    return VisotoApi.url('/api/faceted-table/' + encodeURIComponent(id) + '?' + joinParams(parts));
   }
 
   // Local predicate for one selection against a row's binding for the facet var.

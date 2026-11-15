@@ -27,6 +27,8 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/pdacton/visoto/internal/column"
 	"github.com/pdacton/visoto/internal/parser"
@@ -256,7 +258,49 @@ func parseDecls(path string) (fileDecls, error) {
 	if err != nil {
 		return fileDecls{}, fmt.Errorf("%s: extract tree queries: %w", path, err)
 	}
+	if err := rejectTemplateActions(path, string(content)); err != nil {
+		return fileDecls{}, err
+	}
 	return fileDecls{async: async, sync: sync, columns: columns, containers: containers, facets: facets, trees: trees}, nil
+}
+
+// goTemplateComment matches a {{/* … */}} comment. It is not an HTML comment, so
+// the DOM extraction does not skip it, and a tag merely named in one reads as an
+// unclosed element whose "body" is the rest of the file.
+var goTemplateComment = regexp.MustCompile(`(?s)\{\{-?\s*/\*.*?\*/\s*-?\}\}`)
+
+// rejectTemplateActions fails startup on a Go template action inside a SPARQL
+// query body. The body is extracted from the raw file and sent to the endpoint
+// verbatim — the template engine never runs over it — so a `{{ t "…" }}` or
+// `{{ if }}` there reaches the endpoint as literal text and comes back as a 400
+// that the page shows only as an empty card. SPARQL itself has no use for "{{".
+//
+// The queries are re-extracted with the template comments removed, so prose
+// that names a query element inside a comment is not mistaken for one.
+func rejectTemplateActions(path, content string) error {
+	live := goTemplateComment.ReplaceAllString(content, "")
+	// Extraction errors are the caller's to report, from the unmodified file.
+	async, _ := parser.ExtractAsyncElements(live)
+	sync, _ := parser.ExtractSyncElements(live)
+	trees, _ := parser.ExtractTreeQueries(live)
+	for _, els := range [][]parser.ExtractedElement{async, sync} {
+		for _, el := range els {
+			if strings.Contains(el.Content, "{{") {
+				return fmt.Errorf(`%s: <%s id=%q> has a Go template action ("{{") in its query body — `+
+					`the body is sent to the endpoint verbatim, so compute the value outside the query`,
+					path, el.TagName, el.ID)
+			}
+		}
+	}
+	for _, tree := range trees {
+		for role, query := range tree.Roles {
+			if strings.Contains(query, "{{") {
+				return fmt.Errorf(`%s: <sparql-tree-queries for=%q> role %q has a Go template action ("{{") in its query body — `+
+					`the body is sent to the endpoint verbatim`, path, tree.ID, role)
+			}
+		}
+	}
+	return nil
 }
 
 // rejectLegacyFacets fails startup on a <sparql-facet> that still carries

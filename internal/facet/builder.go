@@ -589,13 +589,13 @@ func rangeExpr(fv string, con FacetConstraint) (string, error) {
 // finds in that list). LINDAS/GraphDB happens to pre-declare xsd: implicitly, but
 // that is not SPARQL 1.1 behaviour, so a CURIE here would make every range facet
 // fail with "undefined prefix" on a conformant store. The full-IRI form needs no
-// declaration and matches how xsdDate is already written in terms.go.
+// declaration and matches how xsdDateTerm is written in terms.go.
 func coerce(fv, facetType string) string {
 	switch facetType {
 	case TypeDate:
-		return "<" + xsdDate + ">(" + fv + ")"
+		return xsdDateTerm + "(" + fv + ")"
 	default: // number
-		return "<" + xsdDecimal + ">(" + fv + ")"
+		return xsdDecimalTerm + "(" + fv + ")"
 	}
 }
 

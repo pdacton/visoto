@@ -116,3 +116,39 @@ func TestWorkingSetBuildersRejectInjection(t *testing.T) {
 		t.Errorf("MembershipBody rejected legitimate input: %v", err)
 	}
 }
+
+// An IRI can only be obtained through validation, so holding one is proof it is
+// safe to splice: the hostile strings never become a value, and the zero value
+// renders a term that is inert.
+func TestIRIType(t *testing.T) {
+	iri, err := ParseIRI("http://schema.org/Person")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if iri.Term() != "<http://schema.org/Person>" || iri.String() != "http://schema.org/Person" || iri.IsZero() {
+		t.Errorf("ParseIRI gave Term %q String %q IsZero %v", iri.Term(), iri.String(), iri.IsZero())
+	}
+
+	for _, bad := range []string{injectionIRI, "", "http://x/ y", "relative"} {
+		if got, err := ParseIRI(bad); err == nil || !got.IsZero() {
+			t.Errorf("ParseIRI(%q) = %q, %v — want the zero IRI and an error", bad, got, err)
+		}
+	}
+
+	if none, err := ParseOptionalIRI(""); err != nil || !none.IsZero() {
+		t.Errorf(`ParseOptionalIRI("") = %q, %v — want the zero IRI, no error`, none, err)
+	}
+	if _, err := ParseOptionalIRI(injectionIRI); err == nil {
+		t.Error("ParseOptionalIRI accepted an injection")
+	}
+	if term := (IRI{}).Term(); term != "<>" {
+		t.Errorf("zero IRI renders %q, want the inert <>", term)
+	}
+
+	defer func() {
+		if recover() == nil {
+			t.Error("MustIRI did not panic on an invalid IRI")
+		}
+	}()
+	MustIRI(injectionIRI)
+}

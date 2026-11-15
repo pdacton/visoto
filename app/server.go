@@ -37,6 +37,22 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Runtime asset directories. They are read from disk at startup, not embedded
+// in the binary, so each one has to be shipped next to it: runtimeAssetDirs is
+// the list the Dockerfile and deploy.sh are checked against
+// (TestRuntimeDirsAreDeployed). A new directory the server reads at runtime
+// goes here, or production starts without it and crash-loops.
+const (
+	templatesDir = "./templates"
+	staticDir    = "./static"
+	localesDir   = "./locales"
+	// dataDir is created at runtime (SQLite stores, a Docker volume in
+	// production), so it is deliberately not a shipped asset.
+	dataDir = "./data"
+)
+
+var runtimeAssetDirs = []string{templatesDir, staticDir, localesDir}
+
 // ---- Package-level state ----
 
 var cfg *config.Config
@@ -361,7 +377,7 @@ func staticPageHandler(c *gin.Context) {
 	acceptLanguage := activeLang(c)
 
 	// Construct template paths
-	templatePath := "templates/pages/" + pageName
+	templatePath := templatesDir + "/pages/" + pageName
 	templateName := "pages/" + pageName
 
 	log.Debug("processing static page request",
@@ -410,7 +426,7 @@ func staticPageHandler(c *gin.Context) {
 // any #view fragment across the redirect on its own.
 func legacyResourceRedirectHandler(c *gin.Context) {
 	iri := strings.TrimPrefix(c.Param("path"), "/")
-	target := "/resource?iri=" + url.QueryEscape(iri)
+	target := sparql.ResourceHref(iri)
 	if raw := c.Request.URL.RawQuery; raw != "" {
 		target += "&" + raw
 	}
@@ -889,16 +905,16 @@ type routeDeps struct {
 // Plugins run first so the middleware they add applies to every core route.
 func buildRoutes(router *gin.Engine, d routeDeps, plugins []Plugin) (*routeTable, error) {
 	t := newRouteTable(router)
-	host := &Host{ConfigPath: "visoto.config", DataDir: "./data", table: t, collectors: &d.collectors}
+	host := &Host{ConfigPath: "visoto.config", DataDir: dataDir, table: t, collectors: &d.collectors}
 	for _, p := range plugins {
 		if err := p.Init(host); err != nil {
 			return nil, err
 		}
 	}
 
-	t.staticFile("/favicon.ico", "./static/img/favicon.svg")
-	t.staticFile("/robots.txt", "./static/robots.txt")
-	t.static("/static", "static")
+	t.staticFile("/favicon.ico", staticDir+"/img/favicon.svg")
+	t.staticFile("/robots.txt", staticDir+"/robots.txt")
+	t.static("/static", staticDir)
 	// Endpoint resolution per route class: routes cached by the shared Caddy/Souin
 	// cache must be a pure function of the URL (no cookie); uncached entry pages
 	// honor the selectedEndpoint cookie. See resolveEndpoint.
@@ -1021,7 +1037,7 @@ func Main(plugins ...Plugin) {
 
 	// Message catalogs must exist before templates are parsed: every template set
 	// is cloned once per language with that language's translation functions.
-	catalogs, err = i18n.Load("./locales", siteLangs.Codes())
+	catalogs, err = i18n.Load(localesDir, siteLangs.Codes())
 	if err != nil {
 		log.Error("failed to load message catalogs", slog.String("error", err.Error()))
 		os.Exit(1)
@@ -1035,7 +1051,7 @@ func Main(plugins ...Plugin) {
 	// set, so /api fragment handlers can resolve an id against the ?src= set that
 	// asked for it. Fails startup on a duplicate id or a facet with no base query,
 	// which the old global scan resolved silently by directory order.
-	if err := initAsyncIndex("./templates"); err != nil {
+	if err := initAsyncIndex(templatesDir); err != nil {
 		log.Error("failed to index async template queries", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
@@ -1053,13 +1069,13 @@ func Main(plugins ...Plugin) {
 	for _, p := range cfg.RDF.ParsedPrefixes {
 		iconNamespaces[p.Name] = strings.Trim(p.URI, "<>")
 	}
-	if err := icon.Init("./static/img/resource", iconNamespaces, log); err != nil {
+	if err := icon.Init(staticDir+"/img/resource", iconNamespaces, log); err != nil {
 		log.Error("failed to initialize icon cache", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
 	// Initialize endpoint monitor (data stored in ./data/)
-	mon, err = monitor.New(&cfg.Application, "./data")
+	mon, err = monitor.New(&cfg.Application, dataDir)
 	if err != nil {
 		log.Warn("failed to initialize endpoint monitor",
 			slog.String("error", err.Error()))
@@ -1070,7 +1086,7 @@ func Main(plugins ...Plugin) {
 	}
 
 	// Daily class-instance counts for endpoints with class_stats = true.
-	classStats, err = classstats.New(&cfg.Application, "./data")
+	classStats, err = classstats.New(&cfg.Application, dataDir)
 	if err != nil {
 		log.Warn("failed to initialize class statistics", slog.String("error", err.Error()))
 		classStats = nil
@@ -1081,7 +1097,7 @@ func Main(plugins ...Plugin) {
 
 	// Shared Graph Explorer layouts. A store that fails to open leaves the
 	// routes answering 503; graph-kit.js then falls back to local layouts.
-	layoutStore, err := graphlayout.New(cfg.Application.GraphLayouts, "./data")
+	layoutStore, err := graphlayout.New(cfg.Application.GraphLayouts, dataDir)
 	if err != nil {
 		log.Warn("failed to initialize shared graph layouts", slog.String("error", err.Error()))
 		layoutStore = nil
@@ -1113,7 +1129,7 @@ func Main(plugins ...Plugin) {
 	// Load templates and register with Gin. Every page is registered once per
 	// configured language; handlers name the variant via templates.Name.
 	templates.SetFeedbackURL(cfg.Application.FeedbackURL)
-	router.HTMLRender = templates.Load("./templates", catalogs, siteLangs)
+	router.HTMLRender = templates.Load(templatesDir, catalogs, siteLangs)
 
 	var promCollectors []prometheus.Collector
 	if mon != nil {

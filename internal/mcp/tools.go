@@ -136,6 +136,16 @@ func getStringParam(request goMcp.CallToolRequest, name string) string {
 	return strings.TrimSpace(request.GetString(name, ""))
 }
 
+// iriArg renders a tool argument as a SPARQL IRI term. On an argument that is
+// not a safe absolute IRI it returns the tool error to send back instead.
+func iriArg(name, value string) (string, *goMcp.CallToolResult) {
+	term, err := sparql.IRITerm(value)
+	if err != nil {
+		return "", goMcp.NewToolResultError(fmt.Sprintf("parameter '%s' must be an absolute IRI: %v", name, err))
+	}
+	return term, nil
+}
+
 func getIntParam(request goMcp.CallToolRequest, name string, defaultVal int) int {
 	return request.GetInt(name, defaultVal)
 }
@@ -250,7 +260,11 @@ func (tc *toolContext) handleDiscoverClasses(ctx context.Context, request goMcp.
 	graph := getStringParam(request, "graph")
 
 	if graph != "" {
-		r := tc.run(ctx, fmt.Sprintf(queryDiscoverClassesInGraph, graph, limit), endpoint, false)
+		graphTerm, bad := iriArg("graph", graph)
+		if bad != nil {
+			return bad, nil
+		}
+		r := tc.run(ctx, fmt.Sprintf(queryDiscoverClassesInGraph, graphTerm, limit), endpoint, false)
 		return toMCPResult(r)
 	}
 
@@ -277,10 +291,13 @@ const discoverClassesPerGraphConcurrency = 10
 func (tc *toolContext) discoverClassesPerGraph(ctx context.Context, graphs toolResult, endpoint string, limit int) toolResult {
 	queries := make([]sparql.ExtractedQuery, 0, len(graphs.Results))
 	for _, row := range graphs.Results {
-		if iri, ok := row["graph"].(string); ok && iri != "" {
+		iri, _ := row["graph"].(string)
+		// A graph name from the endpoint's own listing; one that is not a legal
+		// IRI term cannot be queried and is left out.
+		if term, err := sparql.IRITerm(iri); err == nil {
 			queries = append(queries, sparql.ExtractedQuery{
 				ID:       iri,
-				Query:    fmt.Sprintf(queryDiscoverClassesInGraph, iri, 100000),
+				Query:    fmt.Sprintf(queryDiscoverClassesInGraph, term, 100000),
 				Endpoint: endpoint,
 			})
 		}
@@ -294,7 +311,7 @@ func (tc *toolContext) discoverClassesPerGraph(ctx context.Context, graphs toolR
 
 	r := toolResult{
 		EndpointUsed:  graphs.EndpointUsed,
-		QueryExecuted: fmt.Sprintf("-- run once per named graph (%d graphs), counts added up:%s", len(queries), fmt.Sprintf(queryDiscoverClassesInGraph, "GRAPH_IRI", 100000)),
+		QueryExecuted: fmt.Sprintf("-- run once per named graph (%d graphs), counts added up:%s", len(queries), fmt.Sprintf(queryDiscoverClassesInGraph, "<GRAPH_IRI>", 100000)),
 		RowCount:      len(classes),
 		Results:       make([]map[string]any, 0, len(classes)),
 	}
@@ -386,8 +403,12 @@ func (tc *toolContext) handleGetResource(ctx context.Context, request goMcp.Call
 		return goMcp.NewToolResultError("parameter 'iri' is required"), nil
 	}
 	endpoint := getStringParam(request, "endpoint")
+	term, bad := iriArg("iri", iri)
+	if bad != nil {
+		return bad, nil
+	}
 
-	query := fmt.Sprintf(queryGetResource, iri)
+	query := fmt.Sprintf(queryGetResource, term)
 	r := tc.run(ctx, query, endpoint, true)
 	r.VisotoLink = tc.visotoLink(ctx, iri, r.EndpointUsed)
 	return toMCPResult(r)
@@ -405,9 +426,13 @@ func (tc *toolContext) handleSearchByLabel(ctx context.Context, request goMcp.Ca
 
 	var query string
 	if typeFilter != "" {
-		query = fmt.Sprintf(querySearchByLabelWithType, text, typeFilter, limit)
+		typeTerm, bad := iriArg("type_filter", typeFilter)
+		if bad != nil {
+			return bad, nil
+		}
+		query = fmt.Sprintf(querySearchByLabelWithType, sparql.StringLiteral(text), typeTerm, limit)
 	} else {
-		query = fmt.Sprintf(querySearchByLabel, text, limit)
+		query = fmt.Sprintf(querySearchByLabel, sparql.StringLiteral(text), limit)
 	}
 
 	r := tc.run(ctx, query, endpoint, false)
@@ -444,10 +469,11 @@ func (tc *toolContext) handleListNamedGraphs(ctx context.Context, request goMcp.
 func (tc *toolContext) addTripleEstimates(r *toolResult, endpoint string) {
 	queries := make([]sparql.ExtractedQuery, 0, len(r.Results))
 	for _, row := range r.Results {
-		if iri, ok := row["graph"].(string); ok && iri != "" {
+		iri, _ := row["graph"].(string)
+		if term, err := sparql.IRITerm(iri); err == nil {
 			queries = append(queries, sparql.ExtractedQuery{
 				ID:       iri,
-				Query:    fmt.Sprintf(queryGraphTripleCountGraphDB, iri),
+				Query:    fmt.Sprintf(queryGraphTripleCountGraphDB, term),
 				Endpoint: endpoint,
 			})
 		}
@@ -494,7 +520,11 @@ func (tc *toolContext) handleCountInstances(ctx context.Context, request goMcp.C
 
 	var query string
 	if classIRI != "" {
-		query = fmt.Sprintf(queryCountInstancesForClass, classIRI)
+		classTerm, bad := iriArg("class_iri", classIRI)
+		if bad != nil {
+			return bad, nil
+		}
+		query = fmt.Sprintf(queryCountInstancesForClass, classTerm)
 	} else {
 		query = queryCountInstances
 	}

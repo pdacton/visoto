@@ -23,9 +23,8 @@ import (
 // the caller's choice. Like every /api route it is a pure function of the URL.
 func resourceIconAPIHandler(c *gin.Context) {
 	endpoint := activeEndpointURL(c)
-	iri := config.ExpandCURIE(strings.TrimSpace(c.Query("iri")), cfg.PrefixesFor(endpoint))
-	// QueryTypes splices the IRI into the query: validated first.
-	if err := sparql.ValidateIRI(iri); err != nil {
+	iri, err := sparql.ParseIRI(config.ExpandCURIE(strings.TrimSpace(c.Query("iri")), cfg.PrefixesFor(endpoint)))
+	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid iri"})
 		return
 	}
@@ -36,5 +35,5 @@ func resourceIconAPIHandler(c *gin.Context) {
 		return
 	}
 	markCacheable(c)
-	c.JSON(http.StatusOK, gin.H{"icon": icon.Resolve(iri, types)})
+	c.JSON(http.StatusOK, gin.H{"icon": icon.Resolve(iri.String(), types)})
 }

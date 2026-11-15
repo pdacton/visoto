@@ -20,6 +20,10 @@ func (q *QLeverProvider) BuildQuery(params SearchParams) (string, error) {
 	if params.Query == "" {
 		return "", fmt.Errorf("search query cannot be empty")
 	}
+	classTerm, propertyTerm, err := params.filterTerms()
+	if err != nil {
+		return "", err
+	}
 
 	limit := params.Limit
 	if limit <= 0 {
@@ -40,15 +44,15 @@ func (q *QLeverProvider) BuildQuery(params SearchParams) (string, error) {
 
 	// Optional class filter or OPTIONAL class lookup
 	if params.Class != "" {
-		parts = append(parts, fmt.Sprintf("  ?subject a <%s> .", params.Class))
-		parts = append(parts, fmt.Sprintf("  BIND(<%s> AS ?type)", params.Class))
+		parts = append(parts, fmt.Sprintf("  ?subject a %s .", classTerm))
+		parts = append(parts, fmt.Sprintf("  BIND(%s AS ?type)", classTerm))
 	} else {
 		parts = append(parts, "  OPTIONAL { ?subject a ?type . }")
 	}
 
 	// Property triple
 	if params.Property != "" {
-		parts = append(parts, fmt.Sprintf("  ?subject <%s> ?matchedText .", params.Property))
+		parts = append(parts, fmt.Sprintf("  ?subject %s ?matchedText .", propertyTerm))
 	} else {
 		parts = append(parts, "  ?subject ?property ?matchedText .")
 	}

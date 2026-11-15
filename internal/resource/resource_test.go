@@ -143,11 +143,16 @@ func TestNamedGraphsQuery(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			query, ok := namedGraphsQuery(tt.iri)
-			if ok != tt.ok {
+			// namedGraphsQuery takes a sparql.IRI, so the rejection happens where
+			// the IRI is parsed: an unsafe one never reaches the builder.
+			iri, err := sparql.ParseIRI(tt.iri)
+			if ok := err == nil; ok != tt.ok {
 				t.Fatalf("ok mismatch: got %v, want %v", ok, tt.ok)
 			}
-			if ok && query != tt.expected {
+			if err != nil {
+				return
+			}
+			if query := namedGraphsQuery(iri); query != tt.expected {
 				t.Errorf("Query mismatch:\n  got:  %s\n  want: %s", query, tt.expected)
 			}
 		})

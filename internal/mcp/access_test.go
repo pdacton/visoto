@@ -74,3 +74,27 @@ func TestListEndpointsHidesUnbrowsableStores(t *testing.T) {
 		t.Errorf("list_endpoints = %s, want only Public", text)
 	}
 }
+
+// A tool argument is whatever the calling model was persuaded to send. One that
+// is spliced into a query as an IRI is refused unless it is a safe IRI — before
+// anything runs: this context has no preprocessor, so reaching the endpoint
+// would panic rather than pass.
+func TestToolsRefuseHostileIRIArguments(t *testing.T) {
+	const hostile = "http://x/a> ?p ?o } UNION { ?s ?p ?o . FILTER(?s != <http://x/"
+	tc := accessToolContext()
+	type handler func(context.Context, goMcp.CallToolRequest) (*goMcp.CallToolResult, error)
+	for name, call := range map[string]struct {
+		h    handler
+		args map[string]any
+	}{
+		"get_resource":         {tc.handleGetResource, map[string]any{"iri": hostile}},
+		"search_by_label type": {tc.handleSearchByLabel, map[string]any{"text": "x", "type_filter": hostile}},
+		"count_instances":      {tc.handleCountInstances, map[string]any{"class_iri": hostile}},
+		"discover_classes":     {tc.handleDiscoverClasses, map[string]any{"graph": hostile}},
+	} {
+		res, err := call.h(context.Background(), toolRequest(call.args))
+		if err != nil || res == nil || !res.IsError {
+			t.Errorf("%s: hostile IRI argument was not refused (result %v, err %v)", name, res, err)
+		}
+	}
+}

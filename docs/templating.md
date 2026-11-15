@@ -160,7 +160,9 @@ For types not in the prefix table, encode the full IRI:
 
 | Full IRI | Filename |
 |---|---|
-| `https://schema.ld.admin.ch/ZefixOrganisation` | `https%3A%2F%2Fschema.ld.admin.ch%2FZefixOrganisation.html` |
+| `http://purl.org/dc/dcmitype/Collection` | `http%3A%2F%2Fpurl.org%2Fdc%2Fdcmitype%2FCollection.html` |
+
+A type that a declared prefix covers must use the prefixed form, and one type gets one file per folder: `TestTemplateFilenamesFollowConvention` fails on a full-IRI filename a prefix could shorten, on an undeclared prefix, and on two files naming the same type.
 
 **Shell helper:**
 ```sh
@@ -268,7 +270,7 @@ The set name is the page's directory and filename (`pages/plazi.html`,
 `classes/cube%3ACube.html`). It is available in templates as `{{ templateSet }}`,
 rendered into `<head>` by `base.html`, and every `/api` fragment request sends it back
 as `?src=`. Nothing has to be wired up by hand: HTMX requests pick it up from a
-`htmx:configRequest` hook in `static/js/template-set.js`, and the table's own `fetch()`es
+`htmx:configRequest` hook in `static/js/api-url.js`, and the table's own `fetch()`es
 read it through `activeTemplateSet()`.
 
 Two consequences worth knowing:

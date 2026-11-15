@@ -13,8 +13,9 @@ is no database for RDF data. (The only local store is a SQLite file under
   one the user is already running on.
 - `templates/`, `static/` and `locales/` load from disk at startup, not
   `go:embed`. **Restart the server after adding or changing a template.**
-- A new runtime asset directory must be added to both `Dockerfile` and
-  `deploy.sh`, or production crash-loops.
+- A new runtime asset directory must be added to `runtimeAssetDirs`
+  (`app/server.go`), `Dockerfile` and `deploy.sh`, or production crash-loops;
+  `TestRuntimeDirsAreDeployed` fails on a mismatch.
 
 ## Templates
 
@@ -27,8 +28,8 @@ authoritative authoring guide (page shell, custom tags, partial parameters).
 
 ### Custom SPARQL tags
 
-Go template actions (`{{ t }}`, `{{ if }}`) **must not** appear inside a query
-body — the text is sent to the endpoint verbatim.
+Go template actions (`{{ t }}`, `{{ if }}`) **must not** appear inside a SPARQL query
+body — the text is sent to the endpoint verbatim. Startup fails on one.
 
 `visoto:<key>` in a query expands to a property path from
 `[rdf.magic_properties]` in `visoto.config`. Any query selecting a label or
@@ -51,6 +52,15 @@ Behaviour lives in `static/js/`, keyed off a `data-<name>` marker.
 JS never hard-codes a vocabulary namespace: write the term as a CURIE and
 expand it through `VisotoPrefixes.fromPage()` (`static/js/prefixes.js`), which
 carries the active endpoint's prefixes (an endpoint may redeclare e.g. `schema:`).
+
+Every `/api/*` request carries `endpoint`, `lang` and `src`. `static/js/api-url.js`
+adds them: its one `htmx:configRequest` hook covers every `hx-get`, and a plain
+`fetch()` builds its URL with `VisotoApi.url(path, params)`. Never add a second
+hook or a route list.
+
+These frontend rules, the resource-link and IRI rules below and the template
+filename convention are checked by `app/conventions_test.go` — read its
+comments before working around a failure.
 
 ## Go backend
 
@@ -81,8 +91,14 @@ puts an authorization guard in front of the handler, and
 same for every visitor (they are cached); personal UI belongs in client-side
 code. See "Extension points" in `docs/architecture.md`.
 
-Build resource links with `sparql.ResourceHref` (Go) or `visotoResourceHref`
-(JS), never by hand.
+A resource link whose IRI comes from data is built with `sparql.ResourceHref`
+(Go; `{{ resourceHref <iri> }}` in templates) or `visotoResourceHref` (JS),
+never by concatenation. A link to one fixed resource may be written out
+(`href="/resource?iri=schema:Person"`).
+
+An IRI reaches a query only as a `sparql.IRI` (`ParseIRI` on request input,
+then `.Term()`) or through `sparql.IRITerm` — never spliced between `<` `>` by
+hand.
 
 Endpoint **URLs are server-side only** — the browser never receives one. All
 browser-side SPARQL (Graph Explorer, the schema diagram) posts to the

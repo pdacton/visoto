@@ -226,3 +226,30 @@ func TestIndexedSetsMatchRegisteredTemplates(t *testing.T) {
 		}
 	}
 }
+
+// A Go template action in a query body is sent to the endpoint as literal text;
+// startup refuses it for every query element, and is not fooled by a comment
+// that merely names one.
+func TestInitAsyncIndexRejectsTemplateActionInQuery(t *testing.T) {
+	bodies := map[string]string{
+		"sparql-async":      `<sparql-async id="q">SELECT ?s WHERE { ?s rdfs:label "{{ t "k" "Label" }}" }</sparql-async>`,
+		"sparql-query":      `<sparql-query id="q">SELECT ?s WHERE { {{ if .X }}?s a ex:C{{ end }} }</sparql-query>`,
+		"sparql-tree-query": `<sparql-tree-queries for="q"><sparql-tree-query role="roots">SELECT ?node WHERE { ?node a ex:{{ .C }} }</sparql-tree-query><sparql-tree-query role="children">SELECT ?node WHERE { ?node ex:b ?parent }</sparql-tree-query></sparql-tree-queries>`,
+	}
+	for tag, body := range bodies {
+		dir := t.TempDir()
+		writeTreeFixture(t, dir, body)
+		err := initAsyncIndex(dir)
+		if err == nil || !strings.Contains(err.Error(), "template action") {
+			t.Errorf("%s: initAsyncIndex() = %v, want a template-action error", tag, err)
+		}
+	}
+
+	dir := t.TempDir()
+	writeTreeFixture(t, dir, `{{/* there is no <sparql-query id="q"> here */}}
+		{{ if .Rows }}<p>{{ .Rows }}</p>{{ end }}
+		<sparql-async id="ok">SELECT ?s WHERE { ?s a ex:C }</sparql-async>`)
+	if err := initAsyncIndex(dir); err != nil {
+		t.Errorf("a tag named in a template comment was read as a query: %v", err)
+	}
+}

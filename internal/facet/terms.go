@@ -23,9 +23,11 @@ var numberLexical = regexp.MustCompile(`^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$`
 // for BCE and an optional timezone).
 var dateLexical = regexp.MustCompile(`^-?\d{4}-\d{2}-\d{2}(Z|[+-]\d{2}:\d{2})?$`)
 
-const (
-	xsdDate    = "http://www.w3.org/2001/XMLSchema#date"
-	xsdDecimal = "http://www.w3.org/2001/XMLSchema#decimal"
+// The XSD datatypes as bracketed SPARQL terms. Full IRIs rather than xsd:
+// CURIEs, so the queries do not depend on an endpoint declaring the prefix.
+var (
+	xsdDateTerm    = sparql.MustIRI("http://www.w3.org/2001/XMLSchema#date").Term()
+	xsdDecimalTerm = sparql.MustIRI("http://www.w3.org/2001/XMLSchema#decimal").Term()
 )
 
 // IRITerm renders s as a bracketed SPARQL IRI term "<s>" after validating it is a
@@ -68,7 +70,7 @@ func RangeBound(value, facetType string) (string, error) {
 		if !dateLexical.MatchString(value) {
 			return "", fmt.Errorf("invalid date %q", value)
 		}
-		return fmt.Sprintf(`"%s"^^<%s>`, value, xsdDate), nil
+		return fmt.Sprintf(`"%s"^^%s`, value, xsdDateTerm), nil
 	default:
 		return "", fmt.Errorf("range not supported for facet type %q", facetType)
 	}

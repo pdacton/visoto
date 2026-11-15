@@ -107,10 +107,10 @@
       // a bare identifier (e.g. "5359.svg") that never exists and 404s.
       var iconSrc = item.icon || '/static/img/resource/defaultInstance.svg';
       var label = item.label || item.shortIri || lastSegment(item.iri);
-      var href = '/resource?iri=' + encodeURIComponent(item.iri);
+      var href = visotoResourceHref(item.iri);
 
       li.innerHTML =
-        '<a class="nav-link pe-1" href="' + href + '" title="' + escapeHtml(item.iri) + '">' +
+        '<a class="nav-link pe-1" href="' + escapeHtml(href) + '" title="' + escapeHtml(item.iri) + '">' +
           '<span class="nav-link-icon d-none d-lg-inline-block me-2 flex-shrink-0">' +
             '<img src="' + escapeHtml(iconSrc) + '" alt="" width="16" height="16" ' +
               'onerror="this.onerror=null;this.src=\'/static/img/resource/defaultInstance.svg\'">' +
@@ -278,7 +278,7 @@
     // so dropped nodes resolve their real label instead of the resource URL.
     e.dataTransfer.setData('application/x-graph-explorer-elements', JSON.stringify([iri]));
     // Also set uri-list so it works as a native browser link drag
-    e.dataTransfer.setData('text/uri-list', href || ('/resource?iri=' + encodeURIComponent(iri)));
+    e.dataTransfer.setData('text/uri-list', href || visotoResourceHref(iri));
     e.dataTransfer.effectAllowed = 'copyMove';
   }
 

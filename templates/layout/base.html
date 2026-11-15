@@ -86,6 +86,10 @@
     <!-- The "label" magic property: the label properties, in priority order. -->
     <template id="vs-label-path">{{ toJSON .LabelPath }}</template>
     <script src="/static/js/prefixes.js"></script>
+    <!-- endpoint, lang and src on every /api request: the one htmx:configRequest
+         hook, and VisotoApi.url() for plain fetch()es. In <head> so it is defined
+         before any script that builds a URL. -->
+    <script src="/static/js/api-url.js"></script>
 
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -562,9 +566,8 @@
     <!-- UI language switcher -->
     <script src="/static/js/language-switcher.js"></script>
 
-    <!-- Template set (?src=) on async fragment requests — the scope an async
-         query id is resolved in. Third of the three htmx:configRequest hooks,
-         beside the endpoint and language ones above. -->
+    <!-- Template set (?src=) — the scope an async query id is resolved in.
+         Sent with /api requests by api-url.js, like the endpoint and language. -->
     <script src="/static/js/template-set.js"></script>
 
     <!-- Remember collapsed cards across page loads (keyed by template set) -->

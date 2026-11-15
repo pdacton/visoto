@@ -42,13 +42,64 @@ func ValidateIRI(s string) error {
 	return nil
 }
 
-// IRITerm renders s as a bracketed SPARQL IRI term "<s>" after validating it
-// with ValidateIRI.
-func IRITerm(s string) (string, error) {
+// IRI is an absolute IRI that is safe to splice into a query as a <…> term.
+//
+// Its field is unexported, so the only ways to hold a non-zero IRI are ParseIRI
+// and MustIRI: a function that takes an IRI cannot be handed unvalidated request
+// input, and forgetting to validate is a compile error rather than something a
+// review has to catch. Term is the one place in the codebase that writes the
+// angle brackets (TestNoRawIRISplices holds every other file to that).
+//
+// The zero IRI means "none" — an optional filter that was not given. Check it
+// with IsZero; its Term is "<>", which is syntactically harmless and matches
+// nothing.
+type IRI struct{ s string }
+
+// ParseIRI validates s (see ValidateIRI) and returns it as an IRI.
+func ParseIRI(s string) (IRI, error) {
 	if err := ValidateIRI(s); err != nil {
+		return IRI{}, err
+	}
+	return IRI{s}, nil
+}
+
+// ParseOptionalIRI is ParseIRI for an optional value: the empty string is the
+// zero IRI rather than an error.
+func ParseOptionalIRI(s string) (IRI, error) {
+	if s == "" {
+		return IRI{}, nil
+	}
+	return ParseIRI(s)
+}
+
+// MustIRI is ParseIRI for IRIs written in the source — vocabulary constants,
+// test fixtures. It panics on an invalid one; never pass it request input.
+func MustIRI(s string) IRI {
+	iri, err := ParseIRI(s)
+	if err != nil {
+		panic("sparql.MustIRI: " + err.Error())
+	}
+	return iri
+}
+
+// String returns the bare IRI, without brackets.
+func (i IRI) String() string { return i.s }
+
+// IsZero reports whether i is the zero IRI, i.e. no IRI at all.
+func (i IRI) IsZero() bool { return i.s == "" }
+
+// Term renders the IRI as a bracketed SPARQL term, "<…>".
+func (i IRI) Term() string { return "<" + i.s + ">" }
+
+// IRITerm renders s as a bracketed SPARQL IRI term "<s>" after validating it
+// with ValidateIRI. It is ParseIRI and Term in one step, for a builder that
+// receives a string and splices it once.
+func IRITerm(s string) (string, error) {
+	iri, err := ParseIRI(s)
+	if err != nil {
 		return "", err
 	}
-	return "<" + s + ">", nil
+	return iri.Term(), nil
 }
 
 // varNameRe matches a legal SPARQL variable name (the part after the '?'),

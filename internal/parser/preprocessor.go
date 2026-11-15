@@ -125,11 +125,11 @@ func (p *Preprocessor) FinalizeQuery(query string, acceptLanguage string, endpoi
 }
 
 // QueryTypes queries the SPARQL endpoint for the rdf:type of a given IRI
-func (p *Preprocessor) QueryTypes(iri string) ([]string, error) {
+func (p *Preprocessor) QueryTypes(iri sparql.IRI) ([]string, error) {
 	return p.sp.QueryTypes(iri)
 }
 
 // QueryRole reports whether the given IRI is used as a class, a property or a named graph
-func (p *Preprocessor) QueryRole(iri string, knownClass bool) (sparql.Role, error) {
+func (p *Preprocessor) QueryRole(iri sparql.IRI, knownClass bool) (sparql.Role, error) {
 	return p.sp.QueryRole(iri, knownClass)
 }

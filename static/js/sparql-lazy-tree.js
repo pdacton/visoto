@@ -68,26 +68,17 @@
     // The template set scopes the id, exactly as the async-table routes require;
     // the endpoint slug and language ride along so the response is a pure
     // function of its URL and the shared cache can hold it.
-    function templateSet() {
-      var meta = document.querySelector('meta[name="vs-template-set"]');
-      return meta ? meta.getAttribute('content') : '';
-    }
-
     function roleURL(role, params) {
-      var u = new URL('/api/lazy-tree/' + encodeURIComponent(cfg.treeId) + '/' + role, window.location.origin);
-      u.searchParams.set('src', templateSet());
-      if (cfg.iri) u.searchParams.set('iri', cfg.iri);
-      var slug = (typeof activeEndpointSlug === 'function') ? activeEndpointSlug() : '';
-      if (slug) u.searchParams.set('endpoint', slug);
-      var lang = document.documentElement.getAttribute('lang');
-      if (lang) u.searchParams.set('lang', lang);
-      if (cfg.limit) u.searchParams.set('limit', cfg.limit);
-      for (var k in (params || {})) {
-        var v = params[k];
-        if (Array.isArray(v)) v.forEach(function (item) { u.searchParams.append(k, item); });
-        else if (v !== undefined && v !== null && v !== '') u.searchParams.set(k, v);
+      var all = { iri: cfg.iri, limit: cfg.limit };
+      for (var k in (params || {})) all[k] = params[k];
+      // Empty values are dropped rather than sent. VisotoApi.url then adds the
+      // endpoint, the language and the template set (static/js/api-url.js).
+      var query = {};
+      for (var name in all) {
+        var v = all[name];
+        if (v !== undefined && v !== null && v !== '') query[name] = v;
       }
-      return u.toString();
+      return VisotoApi.url('/api/lazy-tree/' + encodeURIComponent(cfg.treeId) + '/' + role, query);
     }
 
     function fetchRole(role, params) {
@@ -279,9 +270,7 @@
           var titleSpan = e.nodeElem.querySelector('.wb-title');
           if (titleSpan) {
             var displayTitle = e.node.titleWithHighlight || e.node.title;
-            var href = (typeof visotoResourceHref === 'function')
-              ? visotoResourceHref(e.node.key)
-              : '/resource?iri=' + encodeURIComponent(e.node.key);
+            var href = visotoResourceHref(e.node.key).replace(/&/g, '&amp;');
             titleSpan.innerHTML = "<a href='" + href + "'>" + displayTitle + "</a>";
           }
           if (e.renderColInfosById) {
@@ -373,8 +362,7 @@
           li.textContent = label;
         } else {
           var a = document.createElement('a');
-          a.href = (typeof visotoResourceHref === 'function')
-            ? visotoResourceHref(iri) : '/resource?iri=' + encodeURIComponent(iri);
+          a.href = visotoResourceHref(iri);
           a.textContent = label;
           li.appendChild(a);
         }
@@ -441,7 +429,7 @@
         var hits = env.nodes || [];
         if (!hits.length) {
           setStatus(escapeHTML(vsT('js.lazyTree.noResults', 'No matches.')));
-          tree.filterNodes(' __no_match__');   // hide everything
+          tree.filterNodes('\u0000__no_match__');   // hide everything
           return;
         }
         var flat = flatToggle ? flatToggle.checked : !!cfg.flatSearch;

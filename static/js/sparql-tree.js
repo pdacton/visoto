@@ -150,7 +150,7 @@
         const titleSpan = e.nodeElem.querySelector(".wb-title");
         if (titleSpan) {
           const displayTitle = e.node.titleWithHighlight || e.node.title;
-          titleSpan.innerHTML = "<a href='/resource?iri=" + encodeURIComponent(e.node.key) + "'>" + displayTitle + "</a>";
+          titleSpan.innerHTML = "<a href='" + visotoResourceHref(e.node.key).replace(/&/g, '&amp;') + "'>" + displayTitle + "</a>";
         }
         if (e.renderColInfosById) {
           for (const col of Object.values(e.renderColInfosById)) {

@@ -55,7 +55,7 @@
             <strong>{{ t "type.cube.thisVersionIsSuperseded" "This version is superseded" }}</strong> &mdash; it expired {{ $exp.Value }}.
             {{ $newest := index $b "newest" }}
             {{ if $newest.Value }}
-              <a href="/resource?iri={{ urlquery $newest.Value }}" class="alert-link">{{ t "type.cube.openTheCurrentVersion" "Open the current version" }}</a>.
+              <a href="{{ resourceHref $newest.Value }}" class="alert-link">{{ t "type.cube.openTheCurrentVersion" "Open the current version" }}</a>.
             {{ end }}
           </div>
         </div>
