@@ -1073,6 +1073,9 @@ func Main(plugins ...Plugin) {
 		log.Error("failed to initialize icon cache", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+	// Multi-typed resources show the icon of their highest-priority type, the one
+	// whose template renders them (ap:Slot over sh:PropertyShape).
+	icon.SetTypePriority(cfg.RDF.TypePriority)
 
 	// Initialize endpoint monitor (data stored in ./data/)
 	mon, err = monitor.New(&cfg.Application, dataDir)

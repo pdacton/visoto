@@ -282,6 +282,12 @@ type_priority = [
   # table that is the whole point of the Person template.
   "http://schema.org/Person",                                                     #  12,292
 
+  # Auto-profiling: a container is also sh:NodeShape (and cube:Constraint for 42 of
+  # them), a slot also sh:PropertyShape; all three have instance templates. Listed
+  # before cube:Constraint so the ap: templates win (they include the shape summary).
+  "https://register.ld.admin.ch/mds/ontology/ap/Container",
+  "https://register.ld.admin.ch/mds/ontology/ap/Slot",
+
   # Every cube:Constraint is also a sh:NodeShape (2,069 on LINDAS), and both have
   # an instance template. sh:NodeShape stays unlisted, so the cube template wins.
   "https://cube.link/Constraint",

@@ -34,6 +34,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 )
@@ -63,6 +64,7 @@ const (
 type cache struct {
 	icons     map[string]string
 	fallbacks map[string]string
+	priority  map[string]int // type IRI -> index in [rdf] type_priority (SetTypePriority)
 	mu        sync.RWMutex
 }
 
@@ -125,6 +127,43 @@ func Init(dir string, namespaces map[string]string, log *slog.Logger) error {
 	return nil
 }
 
+// SetTypePriority makes Resolve try a multi-typed resource's types in
+// [rdf] type_priority order: listed types first, in list order, then the rest in
+// the order given. It is the order template resolution uses, so a resource shows
+// the icon of the type whose template renders it. Without it, a slot typed both
+// sh:PropertyShape and ap:Slot showed whichever icon the store's type order
+// reached first. Entries are full IRIs, as type_priority is written.
+func SetTypePriority(priority []string) {
+	m := make(map[string]int, len(priority))
+	for i, iri := range priority {
+		if _, seen := m[iri]; !seen {
+			m[iri] = i
+		}
+	}
+	globalCache.mu.Lock()
+	globalCache.priority = m
+	globalCache.mu.Unlock()
+}
+
+// byPriority returns types with the listed ones first, in priority order; the
+// rest keep their order. The caller holds the read lock. types is not modified.
+func byPriority(types []string, priority map[string]int) []string {
+	if len(priority) == 0 || len(types) < 2 {
+		return types
+	}
+	out := make([]string, len(types))
+	copy(out, types)
+	sort.SliceStable(out, func(i, j int) bool {
+		pi, iok := priority[out[i]]
+		pj, jok := priority[out[j]]
+		if iok != jok {
+			return iok
+		}
+		return iok && pi < pj
+	})
+	return out
+}
+
 // addIcon registers file under its local name, or, for a namespaced folder,
 // under each of keyPrefixes + local name. It reports whether file was an icon.
 func addIcon(icons, fallbacks map[string]string, file, folder string, keyPrefixes []string) bool {
@@ -181,6 +220,7 @@ func Names() map[string]string {
 //  3. any type                               (an instance: .../canton/1 typed schch:Canton)
 //  4. any type, fallback
 //
+// Types are tried in type_priority order (SetTypePriority), then as given.
 // Within each step a namespaced icon (rdf/Property.svg) beats a root icon
 // (Property.svg). Steps 3 and 4 are two separate passes on purpose: with several
 // types, an exact match on the last one must still beat a fallback match on the
@@ -200,6 +240,7 @@ func Resolve(iri string, types []string) string {
 	if p := lookup(iri, c.fallbacks); p != "" {
 		return p
 	}
+	types = byPriority(types, c.priority)
 	for _, t := range types {
 		if p := lookup(t, c.icons); p != "" {
 			return p

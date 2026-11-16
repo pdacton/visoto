@@ -1,0 +1,66 @@
+<!-- ap:DataStructure class template: the auto-profiled structures, one per profiled
+     distribution group, with their status (profiled / skipped / failed and why), the
+     profiling engine, the detected format and their size. Also keeps the class page off
+     instances/ap%3ADataStructure.html, which template resolution would otherwise pick
+     for the class node itself. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <!-- Container and slot counts are aggregated in their own subquery, joined to the
+       instance: at the top level next to the OPTIONALs they would multiply rows.
+       Slots of nested containers (reached through sh:node) are not counted. -->
+  <sparql-async id="dataStructures">
+    SELECT ?instance ?status ?engine ?format ?containers ?slots ?statusReason WHERE {
+      ?instance a ?? .
+      OPTIONAL { ?instance ap:status ?status . }
+      OPTIONAL { ?instance ap:engine ?engine . }
+      OPTIONAL { ?instance dct:format ?format . }
+      OPTIONAL { ?instance ap:statusReason ?statusReason . }
+      OPTIONAL {
+        SELECT ?instance (COUNT(DISTINCT ?container_) AS ?containers) (COUNT(?slot_) AS ?slots) WHERE {
+          ?instance a ?? ;
+                    dct:hasPart ?container_ .
+          OPTIONAL { ?container_ sh:property ?slot_ . ?slot_ a ap:Slot . }
+        } GROUP BY ?instance
+      }
+    }
+    ORDER BY ?instance
+  </sparql-async>
+  <sparql-columns for="dataStructures" order>
+    <sparql-column var="instance" icon label="{{ t "facet.dataStructure" "Data structure" }}"></sparql-column>
+    <sparql-column var="status" label="{{ t "facet.status" "Status" }}" filter></sparql-column>
+    <sparql-column var="engine" label="{{ t "facet.engine" "Engine" }}" filter></sparql-column>
+    <sparql-column var="format" label="{{ t "facet.format" "Format" }}"></sparql-column>
+    <sparql-column var="containers" label="{{ t "facet.containers" "Containers" }}" type="number"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+    <sparql-column var="statusReason" label="{{ t "facet.statusReason" "Reason" }}" tip="{{ t "facet.tip.statusReason" "Why a distribution was skipped or could not be profiled" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dataStructures"
+        "iri" .ResourceIRI
+        "title" (t "card.instances" "Instances")
+        "icon" "table") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

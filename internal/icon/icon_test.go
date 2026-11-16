@@ -270,3 +270,34 @@ func TestInitUnknownFolder(t *testing.T) {
 		t.Error("Init with an undeclared prefix folder succeeded, want an error")
 	}
 }
+
+// TestResolveFollowsTypePriority: a slot is both sh:PropertyShape and ap:Slot,
+// each with an icon. The type listed in type_priority wins whatever order the
+// store returned the types in; unlisted types keep their order behind it.
+func TestResolveFollowsTypePriority(t *testing.T) {
+	withIcons(t, "PropertyShape.svg", "Slot.svg", "Canton.svg")
+	t.Cleanup(func() { SetTypePriority(nil) })
+	shape := "http://www.w3.org/ns/shacl#PropertyShape"
+	slot := "https://register.ld.admin.ch/mds/ontology/ap/Slot"
+	iri := "https://register.ld.admin.ch/mds/structure/x/main/col"
+
+	if got, want := Resolve(iri, []string{shape, slot}), BasePath+"PropertyShape.svg"; got != want {
+		t.Fatalf("without priority: %q, want the first type's icon %q", got, want)
+	}
+	SetTypePriority([]string{"https://example.org/Other", slot})
+	for _, types := range [][]string{{shape, slot}, {slot, shape}} {
+		if got, want := Resolve(iri, types), BasePath+"Slot.svg"; got != want {
+			t.Errorf("Resolve(%v) = %q, want the listed type's icon %q", types, got, want)
+		}
+	}
+	// a listed type without an icon does not stop the search
+	if got, want := Resolve(iri, []string{"https://example.org/Other", shape}), BasePath+"PropertyShape.svg"; got != want {
+		t.Errorf("listed type without icon: %q, want %q", got, want)
+	}
+	// the caller's slice is left alone
+	types := []string{shape, slot}
+	Resolve(iri, types)
+	if types[0] != shape {
+		t.Errorf("Resolve reordered the caller's slice: %v", types)
+	}
+}

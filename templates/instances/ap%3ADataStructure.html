@@ -1,0 +1,74 @@
+<!-- ap:DataStructure instance template
+     One auto-profiled structure: its status and attributes, the containers it holds
+     (tables, sheets, layers) with their object class and size, and the distributions
+     that conform to it (dct:conformsTo), with their dataset and which one was the
+     profiled representative. The class page has its own classes/ap%3ADataStructure.html. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Slots are counted in their own subquery, scoped to this structure's containers. -->
+  <sparql-async id="structureContainers">
+    SELECT ?container ?mainObjectClass ?rowCount ?slots ?geometryType ?crs WHERE {
+      ?? dct:hasPart ?container .
+      OPTIONAL { ?container ap:mainObjectClass ?mainObjectClass . }
+      OPTIONAL { ?container ap:rowCount ?rowCount . }
+      OPTIONAL { ?container ap:geometryType ?geometryType . }
+      OPTIONAL { ?container ap:crs ?crs . }
+      OPTIONAL {
+        SELECT ?container (COUNT(?slot_) AS ?slots) WHERE {
+          ?? dct:hasPart ?container .
+          ?container sh:property ?slot_ .
+          ?slot_ a ap:Slot .
+        } GROUP BY ?container
+      }
+    }
+    ORDER BY ?container
+  </sparql-async>
+  <sparql-columns for="structureContainers" order>
+    <sparql-column var="container" icon label="{{ t "facet.container" "Container" }}"></sparql-column>
+    <sparql-column var="mainObjectClass" icon label="{{ t "facet.mainObjectClass" "Main object class" }}"></sparql-column>
+    <sparql-column var="rowCount" label="{{ t "facet.rowCount" "Rows" }}" type="number"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+    <sparql-column var="geometryType" label="{{ t "facet.geometryType" "Geometry" }}"></sparql-column>
+    <sparql-column var="crs" label="{{ t "facet.crs" "Coordinate reference system" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "structureContainers"
+        "iri" .ResourceIRI
+        "title" (t "card.containers" "Containers")
+        "icon" "container") }}
+  </div></div>
+
+  <sparql-async id="structureDistributions">
+    SELECT ?distribution ?dataset ?profiled WHERE {
+      ?distribution dct:conformsTo ?? .
+      OPTIONAL { ?dataset dcat:distribution ?distribution . }
+      BIND(EXISTS { ?? ap:profiledDistribution ?distribution } AS ?profiled)
+    }
+    ORDER BY DESC(?profiled) ?distribution
+  </sparql-async>
+  <sparql-columns for="structureDistributions" order>
+    <sparql-column var="distribution" label="{{ t "facet.distribution" "Distribution" }}"></sparql-column>
+    <sparql-column var="dataset" label="{{ t "facet.dataset" "Dataset" }}"></sparql-column>
+    <sparql-column var="profiled" label="{{ t "facet.profiled" "Profiled" }}" tip="{{ t "facet.tip.profiled" "The representative distribution whose sample was profiled; the others are equivalent exports" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "structureDistributions"
+        "iri" .ResourceIRI
+        "title" (t "card.distributions" "Distributions")
+        "icon" "download") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}
