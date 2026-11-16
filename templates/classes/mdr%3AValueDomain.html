@@ -1,0 +1,64 @@
+<!-- mdr:ValueDomain class template: the value domains of the metadata registry. Four
+     kinds share the class, told apart by their columns: code lists wrapping a LINDAS
+     scheme (permissible values), their versions (version of), identifier rules and
+     rule-made described domains (datatype, pattern). Ordered by how many slots link
+     to each. Also keeps the class page off instances/mdr%3AValueDomain.html. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <!-- Slot counts in their own subquery, so the OPTIONALs do not multiply rows. -->
+  <sparql-async id="valueDomains">
+    SELECT ?instance ?permissibleValues ?versionOf ?datatype ?pattern ?slots ?status WHERE {
+      ?instance a ?? .
+      OPTIONAL { ?instance mdr:permissibleValues ?permissibleValues . }
+      OPTIONAL { ?instance dct:isVersionOf ?versionOf . }
+      OPTIONAL { ?instance sh:datatype ?datatype . }
+      OPTIONAL { ?instance sh:pattern ?pattern . }
+      OPTIONAL { ?instance adms:status ?status . }
+      OPTIONAL {
+        SELECT ?instance (COUNT(?slot_) AS ?slots) WHERE {
+          ?instance a ?? .
+          ?slot_ ap:valueDomain ?instance .
+        } GROUP BY ?instance
+      }
+    }
+    ORDER BY DESC(?slots) ?instance
+  </sparql-async>
+  <sparql-columns for="valueDomains" order>
+    <sparql-column var="instance" icon label="{{ t "facet.valueDomain" "Value domain" }}"></sparql-column>
+    <sparql-column var="permissibleValues" label="{{ t "facet.permissibleValues" "Permissible values" }}" tip="{{ t "facet.tip.permissibleValues" "The LINDAS code list (skos:ConceptScheme) a code-list value domain wraps" }}"></sparql-column>
+    <sparql-column var="versionOf" icon label="{{ t "facet.versionOf" "Version of" }}"></sparql-column>
+    <sparql-column var="datatype" label="{{ t "facet.dataType" "Datatype" }}" filter></sparql-column>
+    <sparql-column var="pattern" label="{{ t "facet.pattern" "Pattern" }}"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+    <sparql-column var="status" label="{{ t "facet.status" "Status" }}" filter></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "valueDomains"
+        "iri" .ResourceIRI
+        "title" (t "card.instances" "Instances")
+        "icon" "brackets") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

@@ -1,0 +1,67 @@
+<!-- mdr:Property class template: the properties of the metadata registry, with how
+     many data element concepts pair them with an object class, how many distinct
+     object classes that is, and how many slots they reach. A property shared by many
+     object classes is a coarser link between datasets than a shared concept. Also
+     keeps the class page off instances/mdr%3AProperty.html. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <sparql-async id="properties">
+    SELECT ?instance ?dataElementConcepts ?objectClasses ?slots ?closeMatch ?status WHERE {
+      ?instance a ?? .
+      OPTIONAL { ?instance skos:closeMatch ?closeMatch . }
+      OPTIONAL { ?instance adms:status ?status . }
+      OPTIONAL {
+        SELECT ?instance (COUNT(DISTINCT ?dec_) AS ?dataElementConcepts) (COUNT(DISTINCT ?oc_) AS ?objectClasses) WHERE {
+          ?instance a ?? .
+          ?dec_ mdr:property ?instance ;
+                mdr:objectClass ?oc_ .
+        } GROUP BY ?instance
+      }
+      OPTIONAL {
+        SELECT ?instance (COUNT(?slot_) AS ?slots) WHERE {
+          ?instance a ?? .
+          ?dec_ mdr:property ?instance .
+          ?slot_ ap:dataElementConcept ?dec_ .
+        } GROUP BY ?instance
+      }
+    }
+    ORDER BY DESC(?slots) ?instance
+  </sparql-async>
+  <sparql-columns for="properties" order>
+    <sparql-column var="instance" icon label="{{ t "facet.property" "Property" }}"></sparql-column>
+    <sparql-column var="dataElementConcepts" label="{{ t "facet.dataElementConcepts" "Data element concepts" }}" type="number"></sparql-column>
+    <sparql-column var="objectClasses" label="{{ t "facet.objectClasses" "Object classes" }}" type="number"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+    <sparql-column var="closeMatch" label="{{ t "facet.closeMatch" "Close match" }}"></sparql-column>
+    <sparql-column var="status" label="{{ t "facet.status" "Status" }}" filter></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "properties"
+        "iri" .ResourceIRI
+        "title" (t "card.instances" "Instances")
+        "icon" "tag") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

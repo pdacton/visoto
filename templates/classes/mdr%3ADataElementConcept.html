@@ -1,0 +1,65 @@
+<!-- mdr:DataElementConcept class template: the data element concepts of the metadata
+     registry, each one object class plus one property (ISO/IEC 11179), with how many
+     data elements and slots use it. Also keeps the class page off
+     instances/mdr%3ADataElementConcept.html. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <sparql-async id="dataElementConcepts">
+    SELECT ?instance ?objectClass ?property ?slots ?dataElements ?status WHERE {
+      ?instance a ?? .
+      OPTIONAL { ?instance mdr:objectClass ?objectClass . }
+      OPTIONAL { ?instance mdr:property ?property . }
+      OPTIONAL { ?instance adms:status ?status . }
+      OPTIONAL {
+        SELECT ?instance (COUNT(?slot_) AS ?slots) WHERE {
+          ?instance a ?? .
+          ?slot_ ap:dataElementConcept ?instance .
+        } GROUP BY ?instance
+      }
+      OPTIONAL {
+        SELECT ?instance (COUNT(?de_) AS ?dataElements) WHERE {
+          ?instance a ?? .
+          ?de_ mdr:dataElementConcept ?instance .
+        } GROUP BY ?instance
+      }
+    }
+    ORDER BY DESC(?slots) ?instance
+  </sparql-async>
+  <sparql-columns for="dataElementConcepts" order>
+    <sparql-column var="instance" icon label="{{ t "facet.dataElementConcept" "Data element concept" }}"></sparql-column>
+    <sparql-column var="objectClass" icon label="{{ t "facet.objectClass" "Object class" }}" filter></sparql-column>
+    <sparql-column var="property" icon label="{{ t "facet.property" "Property" }}"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+    <sparql-column var="dataElements" label="{{ t "facet.dataElements" "Data elements" }}" type="number"></sparql-column>
+    <sparql-column var="status" label="{{ t "facet.status" "Status" }}" filter></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "dataElementConcepts"
+        "iri" .ResourceIRI
+        "title" (t "card.instances" "Instances")
+        "icon" "lightbulb") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}
