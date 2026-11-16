@@ -1,0 +1,94 @@
+<!-- ap:Container instance template
+     One auto-profiled container (a table, sheet, layer or nested node): its slots in
+     column order with what profiling observed and what concept matching linked them
+     to, the functional dependencies observed in the sample (the evidence for the
+     object class of each column), and the container as a SHACL shape. Containers are
+     also sh:NodeShape and sometimes cube:Constraint; type_priority in visoto.config
+     lists ap:Container first so this template wins. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Slots in column order. Cube containers also hold blank-node property shapes
+       (rdf:type, cube:observedBy) that are no slots; ?slot a ap:Slot drops them. -->
+  <sparql-async id="containerSlots">
+    SELECT ?order ?slot ?datatype ?valueDomain ?dataElementConcept ?objectClass ?distinct ?nullPercentage WHERE {
+      ?? sh:property ?slot .
+      ?slot a ap:Slot .
+      OPTIONAL { ?slot sh:order ?order . }
+      OPTIONAL { ?slot sh:datatype ?datatype . }
+      OPTIONAL { ?slot ap:valueDomain ?valueDomain . }
+      OPTIONAL {
+        ?slot ap:dataElementConcept ?dataElementConcept .
+        OPTIONAL { ?dataElementConcept mdr:objectClass ?objectClass . }
+      }
+      OPTIONAL {
+        ?slot ap:observed ?observation .
+        OPTIONAL { ?observation ap:distinct ?distinct . }
+        OPTIONAL { ?observation ap:nullPercentage ?nullPercentage . }
+      }
+    }
+    ORDER BY ?order
+  </sparql-async>
+  <sparql-columns for="containerSlots" order>
+    <sparql-column var="order" hidden></sparql-column>
+    <sparql-column var="slot" icon label="{{ t "facet.slot" "Slot" }}"></sparql-column>
+    <sparql-column var="datatype" label="{{ t "facet.dataType" "Datatype" }}"></sparql-column>
+    <sparql-column var="valueDomain" icon label="{{ t "facet.valueDomain" "Value domain" }}"></sparql-column>
+    <sparql-column var="dataElementConcept" icon label="{{ t "facet.dataElementConcept" "Data element concept" }}"></sparql-column>
+    <sparql-column var="objectClass" icon label="{{ t "facet.objectClass" "Object class" }}"></sparql-column>
+    <sparql-column var="distinct" label="{{ t "facet.distinct" "Distinct values" }}" type="number"></sparql-column>
+    <sparql-column var="nullPercentage" label="{{ t "facet.nullPercentage" "Empty (%)" }}" type="number"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "containerSlots"
+        "iri" .ResourceIRI
+        "title" (t "card.slots" "Slots")
+        "icon" "columns-3") }}
+  </div></div>
+
+  <!-- One row per determinant: its dependents (by name) and the support of the
+       observation. A code and its label determine each other, so they show as two rows. -->
+  <sparql-async id="containerDependencies">
+    SELECT ?determinant (GROUP_CONCAT(DISTINCT ?dependentName; separator="; ") AS ?dependents)
+           (SAMPLE(?rows) AS ?supportRows) (SAMPLE(?values) AS ?determinantValues) WHERE {
+      ?? ap:functionalDependency ?fd .
+      ?fd ap:determinant ?determinant ;
+          ap:dependent ?dependent .
+      ?dependent sh:name ?dependentName .
+      OPTIONAL { ?fd ap:supportRows ?rows . }
+      OPTIONAL { ?fd ap:determinantValues ?values . }
+    }
+    GROUP BY ?determinant
+    ORDER BY ?determinant
+  </sparql-async>
+  <sparql-columns for="containerDependencies" order>
+    <sparql-column var="determinant" icon label="{{ t "facet.determinant" "Determinant" }}"></sparql-column>
+    <sparql-column var="dependents" label="{{ t "facet.dependents" "Determines" }}"></sparql-column>
+    <sparql-column var="supportRows" label="{{ t "facet.supportRows" "Rows checked" }}" type="number"></sparql-column>
+    <sparql-column var="determinantValues" label="{{ t "facet.determinantValues" "Distinct determinant values" }}" type="number"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "containerDependencies"
+        "iri" .ResourceIRI
+        "title" (t "card.functionalDependencies" "Functional dependencies")
+        "icon" "git-merge"
+        "collapsed" true) }}
+  </div></div>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "shapeSummary" (dict "iri" .ResourceIRI "collapsed" true) }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

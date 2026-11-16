@@ -1,0 +1,130 @@
+<!-- ap:Slot instance template
+     One auto-profiled slot (a column, field or property): what concept matching linked
+     it to (value domain, data element concept with its object class and property, data
+     element), what profiling observed in the sample, the ranked candidates and accepted
+     matches with their evidence, and the slots of other tables that share its data
+     element concept, which is how datasets become comparable. Slots are also
+     sh:PropertyShape; type_priority in visoto.config lists ap:Slot first. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="slotRegistry">
+    SELECT ?valueDomain ?dataElementConcept ?objectClass ?property ?dataElement WHERE {
+      OPTIONAL { ?? ap:valueDomain ?valueDomain . }
+      OPTIONAL {
+        ?? ap:dataElementConcept ?dataElementConcept .
+        OPTIONAL { ?dataElementConcept mdr:objectClass ?objectClass . }
+        OPTIONAL { ?dataElementConcept mdr:property ?property . }
+      }
+      OPTIONAL { ?? ap:dataElement ?dataElement . }
+    }
+  </sparql-async>
+  <sparql-columns for="slotRegistry" order>
+    <sparql-column var="valueDomain" icon label="{{ t "facet.valueDomain" "Value domain" }}"></sparql-column>
+    <sparql-column var="dataElementConcept" icon label="{{ t "facet.dataElementConcept" "Data element concept" }}"></sparql-column>
+    <sparql-column var="objectClass" icon label="{{ t "facet.objectClass" "Object class" }}"></sparql-column>
+    <sparql-column var="property" icon label="{{ t "facet.property" "Property" }}"></sparql-column>
+    <sparql-column var="dataElement" icon label="{{ t "facet.dataElement" "Data element" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "slotRegistry"
+        "iri" .ResourceIRI
+        "title" (t "card.metadataRegistry" "Metadata registry")
+        "icon" "book-open") }}
+  </div></div>
+
+  <!-- Statistics, examples and pattern hang off one observation blank node. -->
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "bnodeTree" (dict
+        "iri" .ResourceIRI
+        "property" "ap:observed"
+        "title" (t "card.observed" "Observed in the sample")
+        "icon" "chart-column") }}
+  </div></div>
+
+  <!-- Candidates and matches are blank nodes with a nested evidence node; the kind of
+       registry entry (value domain, concept, data element) is its mdr: class. -->
+  <sparql-async id="slotCandidates">
+    SELECT ?concept ?kind ?rank ?score ?method ?matchedOn ?containment WHERE {
+      ?? ap:candidate ?candidate .
+      ?candidate ap:concept ?concept .
+      OPTIONAL { ?candidate ap:candidateRank ?rank . }
+      OPTIONAL { ?candidate ap:candidateScore ?score . }
+      OPTIONAL {
+        ?candidate ap:evidence ?evidence .
+        OPTIONAL { ?evidence ap:method ?method . }
+        OPTIONAL { ?evidence ap:matchedOn ?matchedOn . }
+        OPTIONAL { ?evidence ap:containment ?containment . }
+      }
+      OPTIONAL { ?concept a ?kind . FILTER(?kind IN (mdr:ValueDomain, mdr:DataElementConcept, mdr:DataElement)) }
+    }
+    ORDER BY ?kind ?rank DESC(?score)
+  </sparql-async>
+  <sparql-columns for="slotCandidates" order>
+    <sparql-column var="concept" icon label="{{ t "facet.registryEntry" "Registry entry" }}"></sparql-column>
+    <sparql-column var="kind" label="{{ t "facet.kind" "Kind" }}" group></sparql-column>
+    <sparql-column var="rank" label="{{ t "facet.rank" "Rank" }}" type="number"></sparql-column>
+    <sparql-column var="score" label="{{ t "facet.score" "Score" }}" type="number"></sparql-column>
+    <sparql-column var="method" label="{{ t "facet.method" "Method" }}"></sparql-column>
+    <sparql-column var="matchedOn" label="{{ t "facet.matchedOn" "Matched on" }}" tip="{{ t "facet.tip.matchedOn" "Code-list hits: whether the values matched the codes, their labels, or both" }}"></sparql-column>
+    <sparql-column var="containment" label="{{ t "facet.containment" "Containment" }}" type="number" tip="{{ t "facet.tip.containment" "Share of the slot's distinct values found in the code list" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "slotCandidates"
+        "iri" .ResourceIRI
+        "title" (t "card.candidates" "Candidates")
+        "icon" "list-ordered"
+        "collapsed" true) }}
+  </div></div>
+
+  <!-- Other slots with the same data element concept: the same meaning in another
+       table or dataset, whatever the representation. -->
+  <sparql-async id="slotSameConcept">
+    SELECT ?slot ?container ?dataset ?valueDomain WHERE {
+      ?? ap:dataElementConcept ?dec .
+      ?slot ap:dataElementConcept ?dec .
+      FILTER(?slot != ??)
+      OPTIONAL {
+        ?container sh:property ?slot .
+        OPTIONAL {
+          ?structure dct:hasPart ?container ;
+                     ap:profiledDistribution ?distribution .
+          OPTIONAL { ?dataset dcat:distribution ?distribution . }
+        }
+      }
+      OPTIONAL { ?slot ap:valueDomain ?valueDomain . }
+    }
+    ORDER BY ?dataset ?slot
+  </sparql-async>
+  <sparql-columns for="slotSameConcept" order>
+    <sparql-column var="slot" icon label="{{ t "facet.slot" "Slot" }}"></sparql-column>
+    <sparql-column var="container" icon label="{{ t "facet.container" "Container" }}"></sparql-column>
+    <sparql-column var="dataset" label="{{ t "facet.dataset" "Dataset" }}"></sparql-column>
+    <sparql-column var="valueDomain" icon label="{{ t "facet.valueDomain" "Value domain" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "slotSameConcept"
+        "iri" .ResourceIRI
+        "title" (t "card.sameConcept" "Same data element concept elsewhere")
+        "icon" "link") }}
+  </div></div>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "shapeSummary" (dict "iri" .ResourceIRI "collapsed" true) }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

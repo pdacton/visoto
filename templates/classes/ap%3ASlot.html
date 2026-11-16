@@ -1,0 +1,57 @@
+<!-- ap:Slot class template: the auto-profiled slots (columns, fields, properties) with
+     their container, datatype and the metadata-registry entries concept matching
+     linked them to: value domain, data element concept and its object class. Also
+     keeps the class page off instances/ap%3ASlot.html. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="instanceCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
+  </sparql-async>
+  <div class="row row-deck row-cards">
+    {{ template "sparqlMetric" (dict
+        "queryId" "instanceCount"
+        "iri" .ResourceIRI
+        "title" (t "card.instanceCount" "Instances")
+        "icon" (resourceIcon .)) }}
+  </div>
+
+  <sparql-async id="slots">
+    SELECT ?instance ?container ?datatype ?valueDomain ?dataElementConcept ?objectClass WHERE {
+      ?instance a ?? .
+      OPTIONAL { ?container sh:property ?instance . }
+      OPTIONAL { ?instance sh:datatype ?datatype . }
+      OPTIONAL { ?instance ap:valueDomain ?valueDomain . }
+      OPTIONAL {
+        ?instance ap:dataElementConcept ?dataElementConcept .
+        OPTIONAL { ?dataElementConcept mdr:objectClass ?objectClass . }
+      }
+    }
+    ORDER BY ?instance
+  </sparql-async>
+  <sparql-columns for="slots" order>
+    <sparql-column var="instance" icon label="{{ t "facet.slot" "Slot" }}"></sparql-column>
+    <sparql-column var="container" icon label="{{ t "facet.container" "Container" }}"></sparql-column>
+    <sparql-column var="datatype" label="{{ t "facet.dataType" "Datatype" }}" filter></sparql-column>
+    <sparql-column var="valueDomain" icon label="{{ t "facet.valueDomain" "Value domain" }}" filter></sparql-column>
+    <sparql-column var="dataElementConcept" icon label="{{ t "facet.dataElementConcept" "Data element concept" }}"></sparql-column>
+    <sparql-column var="objectClass" icon label="{{ t "facet.objectClass" "Object class" }}" filter></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "slots"
+        "iri" .ResourceIRI
+        "title" (t "card.instances" "Instances")
+        "icon" "columns-3") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}
