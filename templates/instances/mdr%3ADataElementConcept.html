@@ -1,0 +1,74 @@
+<!-- mdr:DataElementConcept instance template
+     One data element concept (object class + property): the slots that carry it, which
+     is the answer to "which datasets use this, whatever its representation", and the
+     data elements that pair it with a value domain. The class page has its own
+     classes/mdr%3ADataElementConcept.html. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="decSlots">
+    SELECT ?slot ?container ?dataset ?valueDomain WHERE {
+      ?slot ap:dataElementConcept ?? .
+      OPTIONAL {
+        ?container sh:property ?slot .
+        OPTIONAL {
+          ?structure dct:hasPart ?container ;
+                     ap:profiledDistribution ?distribution .
+          OPTIONAL { ?dataset dcat:distribution ?distribution . }
+        }
+      }
+      OPTIONAL { ?slot ap:valueDomain ?valueDomain . }
+    }
+    ORDER BY ?dataset ?slot
+  </sparql-async>
+  <sparql-columns for="decSlots" order>
+    <sparql-column var="slot" icon label="{{ t "facet.slot" "Slot" }}"></sparql-column>
+    <sparql-column var="container" icon label="{{ t "facet.container" "Container" }}"></sparql-column>
+    <sparql-column var="dataset" label="{{ t "facet.dataset" "Dataset" }}"></sparql-column>
+    <sparql-column var="valueDomain" icon label="{{ t "facet.valueDomain" "Value domain" }}" filter></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "decSlots"
+        "iri" .ResourceIRI
+        "title" (t "card.linkedSlots" "Linked slots")
+        "icon" "columns-3") }}
+  </div></div>
+
+  <sparql-async id="decDataElements">
+    SELECT ?dataElement ?valueDomain ?slots WHERE {
+      ?dataElement mdr:dataElementConcept ?? .
+      OPTIONAL { ?dataElement mdr:valueDomain ?valueDomain . }
+      OPTIONAL {
+        SELECT ?dataElement (COUNT(?slot_) AS ?slots) WHERE {
+          ?dataElement mdr:dataElementConcept ?? .
+          ?slot_ ap:dataElement ?dataElement .
+        } GROUP BY ?dataElement
+      }
+    }
+    ORDER BY DESC(?slots) ?dataElement
+  </sparql-async>
+  <sparql-columns for="decDataElements" order>
+    <sparql-column var="dataElement" icon label="{{ t "facet.dataElement" "Data element" }}"></sparql-column>
+    <sparql-column var="valueDomain" icon label="{{ t "facet.valueDomain" "Value domain" }}"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "decDataElements"
+        "iri" .ResourceIRI
+        "title" (t "card.dataElements" "Data elements")
+        "icon" "rectangle-ellipsis") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

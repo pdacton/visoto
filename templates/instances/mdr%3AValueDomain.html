@@ -1,0 +1,116 @@
+<!-- mdr:ValueDomain instance template
+     One value domain: its attributes, its versions (a code list's versions point to it
+     with dct:isVersionOf), the slots that link to it, directly or through one of its
+     versions, with what their values matched (codes or labels), and the data elements
+     built on it. The class page has its own classes/mdr%3AValueDomain.html. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <!-- Versions of a code list; empty (and hidden) for every other kind. -->
+  <sparql-async id="valueDomainVersions">
+    SELECT ?version ?versionLabel ?slots WHERE {
+      ?version dct:isVersionOf ?? .
+      OPTIONAL { ?version dcat:version ?versionLabel . }
+      OPTIONAL {
+        SELECT ?version (COUNT(?slot_) AS ?slots) WHERE {
+          ?version dct:isVersionOf ?? .
+          ?slot_ ap:valueDomain ?version .
+        } GROUP BY ?version
+      }
+    }
+    ORDER BY DESC(?versionLabel)
+  </sparql-async>
+  <sparql-columns for="valueDomainVersions" order>
+    <sparql-column var="version" icon label="{{ t "facet.valueDomain" "Value domain" }}"></sparql-column>
+    <sparql-column var="versionLabel" label="{{ t "facet.version" "Version" }}"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "valueDomainVersions"
+        "iri" .ResourceIRI
+        "title" (t "card.versions" "Versions")
+        "icon" "git-branch") }}
+  </div></div>
+
+  <!-- Slots linked to this value domain or to one of its versions (?via names the
+       version). UNION rather than a dct:isVersionOf? path, which QLever evaluates over
+       every value domain. What matched comes from the slot's accepted match. -->
+  <sparql-async id="valueDomainSlots">
+    SELECT ?slot ?container ?dataset ?via ?matchedOn ?dataElementConcept WHERE {
+      { ?slot ap:valueDomain ?? . BIND(?? AS ?vd) }
+      UNION
+      { ?via dct:isVersionOf ?? . ?slot ap:valueDomain ?via . BIND(?via AS ?vd) }
+      OPTIONAL {
+        ?container sh:property ?slot .
+        OPTIONAL {
+          ?structure dct:hasPart ?container ;
+                     ap:profiledDistribution ?distribution .
+          OPTIONAL { ?dataset dcat:distribution ?distribution . }
+        }
+      }
+      OPTIONAL {
+        ?slot ap:match ?match .
+        ?match ap:concept ?vd ;
+               ap:evidence ?evidence .
+        ?evidence ap:matchedOn ?matchedOn .
+      }
+      OPTIONAL { ?slot ap:dataElementConcept ?dataElementConcept . }
+    }
+    ORDER BY ?dataset ?slot
+  </sparql-async>
+  <sparql-columns for="valueDomainSlots" order>
+    <sparql-column var="slot" icon label="{{ t "facet.slot" "Slot" }}"></sparql-column>
+    <sparql-column var="container" icon label="{{ t "facet.container" "Container" }}"></sparql-column>
+    <sparql-column var="dataset" label="{{ t "facet.dataset" "Dataset" }}"></sparql-column>
+    <sparql-column var="via" icon label="{{ t "facet.viaVersion" "Via version" }}"></sparql-column>
+    <sparql-column var="matchedOn" label="{{ t "facet.matchedOn" "Matched on" }}" tip="{{ t "facet.tip.matchedOn" "Code-list hits: whether the values matched the codes, their labels, or both" }}"></sparql-column>
+    <sparql-column var="dataElementConcept" icon label="{{ t "facet.dataElementConcept" "Data element concept" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "valueDomainSlots"
+        "iri" .ResourceIRI
+        "title" (t "card.linkedSlots" "Linked slots")
+        "icon" "columns-3") }}
+  </div></div>
+
+  <sparql-async id="valueDomainDataElements">
+    SELECT ?dataElement ?dataElementConcept ?slots WHERE {
+      ?dataElement mdr:valueDomain ?? .
+      OPTIONAL { ?dataElement mdr:dataElementConcept ?dataElementConcept . }
+      OPTIONAL {
+        SELECT ?dataElement (COUNT(?slot_) AS ?slots) WHERE {
+          ?dataElement mdr:valueDomain ?? .
+          ?slot_ ap:dataElement ?dataElement .
+        } GROUP BY ?dataElement
+      }
+    }
+    ORDER BY DESC(?slots) ?dataElement
+  </sparql-async>
+  <sparql-columns for="valueDomainDataElements" order>
+    <sparql-column var="dataElement" icon label="{{ t "facet.dataElement" "Data element" }}"></sparql-column>
+    <sparql-column var="dataElementConcept" icon label="{{ t "facet.dataElementConcept" "Data element concept" }}"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "valueDomainDataElements"
+        "iri" .ResourceIRI
+        "title" (t "card.dataElements" "Data elements")
+        "icon" "rectangle-ellipsis"
+        "collapsed" true) }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}

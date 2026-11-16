@@ -1,0 +1,45 @@
+<!-- mdr:Property instance template
+     One property of the metadata registry: the data element concepts that pair it with
+     an object class (the same characteristic of different kinds of thing), each with
+     its slot count. The class page has its own classes/mdr%3AProperty.html. -->
+
+{{ template "pageHeader" . }}
+
+{{ define "pageContent" }}
+<div>
+
+  {{ template "literals" . }}
+
+  <sparql-async id="propertyDecs">
+    SELECT ?dec ?objectClass ?slots ?status WHERE {
+      ?dec mdr:property ?? .
+      OPTIONAL { ?dec mdr:objectClass ?objectClass . }
+      OPTIONAL { ?dec adms:status ?status . }
+      OPTIONAL {
+        SELECT ?dec (COUNT(?slot_) AS ?slots) WHERE {
+          ?dec mdr:property ?? .
+          ?slot_ ap:dataElementConcept ?dec .
+        } GROUP BY ?dec
+      }
+    }
+    ORDER BY DESC(?slots) ?dec
+  </sparql-async>
+  <sparql-columns for="propertyDecs" order>
+    <sparql-column var="dec" icon label="{{ t "facet.dataElementConcept" "Data element concept" }}"></sparql-column>
+    <sparql-column var="objectClass" icon label="{{ t "facet.objectClass" "Object class" }}"></sparql-column>
+    <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
+    <sparql-column var="status" label="{{ t "facet.status" "Status" }}"></sparql-column>
+  </sparql-columns>
+
+  <div class="row row-deck row-cards"><div class="col-12">
+    {{ template "sparqlAsyncTable" (dict
+        "queryId" "propertyDecs"
+        "iri" .ResourceIRI
+        "title" (t "card.dataElementConcepts" "Data element concepts")
+        "icon" "lightbulb") }}
+  </div></div>
+
+  {{ template "relationships" (dict "page" .) }}
+
+</div>
+{{ end }}
