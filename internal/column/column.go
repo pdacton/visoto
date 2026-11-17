@@ -52,6 +52,9 @@ type Spec struct {
 	Group  bool   // group the table by this column initially
 	Hidden bool   // keep the variable (grouping, exports) but don't show the column
 	Width  string // fixed column width: "180", "180px", "20%"
+	// Minimum names a boolean variable: where a row binds it true, the cell is a lower
+	// bound and renders as "≥ value" (sorting and filtering still use the value).
+	Minimum string
 }
 
 // FromAttributes reads one <sparql-column> element's attributes. It normalizes
@@ -59,17 +62,18 @@ type Spec struct {
 // the file that holds it rather than silently degraded.
 func FromAttributes(attrs map[string]string) Spec {
 	s := Spec{
-		Var:    strings.TrimPrefix(strings.TrimSpace(attrs["var"]), "?"),
-		Label:  attrs["label"],
-		Tip:    attrs["tip"],
-		Type:   strings.TrimSpace(attrs["type"]),
-		Root:   strings.TrimSpace(attrs["root"]),
-		Path:   strings.TrimSpace(attrs["path"]),
-		Icon:   flagAttr(attrs, "icon"),
-		Badge:  flagAttr(attrs, "badge"),
-		Group:  flagAttr(attrs, "group"),
-		Hidden: flagAttr(attrs, "hidden"),
-		Width:  strings.TrimSpace(attrs["width"]),
+		Var:     strings.TrimPrefix(strings.TrimSpace(attrs["var"]), "?"),
+		Label:   attrs["label"],
+		Tip:     attrs["tip"],
+		Type:    strings.TrimSpace(attrs["type"]),
+		Root:    strings.TrimSpace(attrs["root"]),
+		Path:    strings.TrimSpace(attrs["path"]),
+		Icon:    flagAttr(attrs, "icon"),
+		Badge:   flagAttr(attrs, "badge"),
+		Group:   flagAttr(attrs, "group"),
+		Hidden:  flagAttr(attrs, "hidden"),
+		Width:   strings.TrimSpace(attrs["width"]),
+		Minimum: strings.TrimPrefix(strings.TrimSpace(attrs["minimum"]), "?"),
 	}
 	// Presence is the signal: a bare filter= asks for inference, so it must be
 	// distinguishable from no filter at all.
@@ -124,6 +128,10 @@ func (s Spec) Validate() error {
 		return fmt.Errorf("column %q: width=%q is not a number of pixels (%q, %q) or a percentage (%q)",
 			s.Var, s.Width, "180", "180px", "20%")
 	}
+	if s.Minimum != "" && (!varRe.MatchString(s.Minimum) || s.Minimum == s.Var) {
+		return fmt.Errorf("column %q: minimum=%q must name another SELECTed variable, the boolean that marks the value a lower bound",
+			s.Var, s.Minimum)
+	}
 	// Root/path coherence belongs to the facet builder — ask it rather than restate
 	// the rule here, so the two can never drift.
 	return s.Facet("", "").Validate()
@@ -173,6 +181,9 @@ func (s Spec) Facet(resolvedControl, resolvedType string) facet.FacetSpec {
 // else: a bare pixel count, an explicit unit, or a percentage. Validated here so a
 // typo fails at startup rather than producing a column of no width at all.
 var widthRe = regexp.MustCompile(`^\d+(px|%|em|rem)?$`)
+
+// varRe is a SPARQL variable name without its "?".
+var varRe = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 
 func knownType(t string) bool {
 	switch t {

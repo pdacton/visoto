@@ -645,6 +645,7 @@ A table's columns are described by `<sparql-column>` elements, nested in a
 | `icon` / `badge` / `group` | Resource icon / Tabler badge / initial grouping. |
 | `hidden` | Keep the variable, drop the column from view. |
 | `width` | Fixed width: `180`, `180px`, `20%`. |
+| `minimum` | Another SELECTed boolean variable; where a row binds it true the cell reads `≥ value` (a lower bound). Sort, filter and exports keep the plain value. Declare the flag `hidden`. |
 
 `order` goes on the **container**, not a column: `<sparql-columns for="x" order>` makes
 declaration order the column order, with any undeclared columns following in query

@@ -25,11 +25,12 @@
        ap%3ADataStructure.html). A nested container is reached through a slot's
        sh:node, not dct:hasPart, so its structure column stays empty. -->
   <sparql-async id="containers">
-    SELECT ?instance ?structure ?mainObjectClass ?rowCount ?slots ?dependencies ?geometryType WHERE {
+    SELECT ?instance ?structure ?mainObjectClass ?rowCount ?rowCountIsMinimum ?slots ?dependencies ?geometryType WHERE {
       ?instance a ?? .
       OPTIONAL { ?structure dct:hasPart ?instance . }
       OPTIONAL { ?instance ap:mainObjectClass ?mainObjectClass . }
       OPTIONAL { ?instance ap:rowCount ?rowCount . }
+      OPTIONAL { ?instance ap:rowCountIsMinimum ?rowCountIsMinimum . }
       OPTIONAL { ?instance ap:geometryType ?geometryType . }
       OPTIONAL {
         SELECT ?instance (COUNT(?slot_) AS ?slots) WHERE {
@@ -51,7 +52,8 @@
     <sparql-column var="instance" icon label="{{ t "facet.container" "Container" }}"></sparql-column>
     <sparql-column var="structure" icon label="{{ t "facet.dataStructure" "Data structure" }}"></sparql-column>
     <sparql-column var="mainObjectClass" icon label="{{ t "facet.mainObjectClass" "Main object class" }}" filter></sparql-column>
-    <sparql-column var="rowCount" label="{{ t "facet.rowCount" "Rows" }}" type="number"></sparql-column>
+    <sparql-column var="rowCount" label="{{ t "facet.rowCount" "Rows" }}" type="number" minimum="rowCountIsMinimum"></sparql-column>
+    <sparql-column var="rowCountIsMinimum" hidden></sparql-column>
     <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
     <sparql-column var="dependencies" label="{{ t "facet.dependencies" "Dependencies" }}" type="number" tip="{{ t "facet.tip.dependencies" "Functional dependencies observed in the profiled sample" }}"></sparql-column>
     <sparql-column var="geometryType" label="{{ t "facet.geometryType" "Geometry" }}" filter></sparql-column>

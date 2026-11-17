@@ -99,6 +99,9 @@ func TestValidate(t *testing.T) {
 		{"hidden and filtered", Spec{Var: "x", Hidden: true, Filter: FilterAuto}, "contradictory"},
 		{"bad width", Spec{Var: "x", Width: "wide"}, "width="},
 		{"bad width unit", Spec{Var: "x", Width: "12ch"}, "width="},
+		{"ok minimum", Spec{Var: "n", Minimum: "nIsMin"}, ""},
+		{"minimum is itself", Spec{Var: "n", Minimum: "n"}, "minimum="},
+		{"minimum not a var", Spec{Var: "n", Minimum: "is min"}, "minimum="},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.spec.Validate()

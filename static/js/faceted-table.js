@@ -108,6 +108,7 @@
         group: flagAttr(el, 'group'),
         hidden: flagAttr(el, 'hidden'),
         width: (el.getAttribute('width') || '').trim(),
+        minimum: (el.getAttribute('minimum') || '').trim().replace(/^\?/, ''),
         ordered: ordered
       });
     });
@@ -172,6 +173,7 @@
       group: spec.group,
       hidden: spec.hidden,
       width: spec.width,
+      minimum: spec.minimum,
       ordered: spec.ordered
     };
   }

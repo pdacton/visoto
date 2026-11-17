@@ -291,6 +291,16 @@
       return escapeHtml(binding.DisplayText || binding.Value);
     }
     function htmlCellFormatter(cell) { return renderBinding(cell.getValue()); }
+    // <sparql-column minimum="flag">: the value is a lower bound where the row's flag
+    // is true. Only the display changes; sort, filter and export keep the value.
+    function minimumFormatter(flagVar, inner) {
+      return function (cell) {
+        var html = inner(cell);
+        var flag = cell.getRow().getData()[flagVar];
+        var v = flag ? String(flag.Value).toLowerCase() : '';
+        return (v === 'true' || v === '1') && cell.getValue() ? '\u2265\u00a0' + html : html;
+      };
+    }
     function plainValueAccessor(value) { return value ? (value.DisplayText || value.Value || '') : ''; }
     // Per-column header filter: cell values are binding objects, so compare
     // their plain text (same semantics as the global search box).
@@ -492,6 +502,9 @@
           console.warn('column "' + s.name + '" is declared but not selected — add ?' +
             s.name + ' to the base query for it to appear.');
         }
+        if (s.minimum && (vars || []).indexOf(s.minimum) === -1) {
+          console.warn('column "' + s.name + '" names minimum="' + s.minimum + '", which is not selected.');
+        }
       });
       // Heuristic cap so one long literal can't push other columns out of view
       // (fitDataStretch otherwise sizes columns to full content width). Window
@@ -546,6 +559,9 @@
         // Capped literal cells wrap and are clamped to a few lines (see
         // .vs-cell-wrap in tabulator_overrides.css); the full text is shown
         // in a hover tooltip, but only when the clamp actually hides content.
+        if (facetSpec && facetSpec.minimum) {
+          col.formatter = minimumFormatter(facetSpec.minimum, col.formatter);
+        }
         if (isLiteral) {
           col.cssClass = "vs-cell-wrap";
           col.tooltip = function(e, cell) {
