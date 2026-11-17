@@ -13,10 +13,11 @@
 
   <!-- Slots are counted in their own subquery, scoped to this structure's containers. -->
   <sparql-async id="structureContainers">
-    SELECT ?container ?mainObjectClass ?rowCount ?slots ?geometryType ?crs WHERE {
+    SELECT ?container ?mainObjectClass ?rowCount ?rowCountIsMinimum ?slots ?geometryType ?crs WHERE {
       ?? dct:hasPart ?container .
       OPTIONAL { ?container ap:mainObjectClass ?mainObjectClass . }
       OPTIONAL { ?container ap:rowCount ?rowCount . }
+      OPTIONAL { ?container ap:rowCountIsMinimum ?rowCountIsMinimum . }
       OPTIONAL { ?container ap:geometryType ?geometryType . }
       OPTIONAL { ?container ap:crs ?crs . }
       OPTIONAL {
@@ -32,7 +33,8 @@
   <sparql-columns for="structureContainers" order>
     <sparql-column var="container" icon label="{{ t "facet.container" "Container" }}"></sparql-column>
     <sparql-column var="mainObjectClass" icon label="{{ t "facet.mainObjectClass" "Main object class" }}"></sparql-column>
-    <sparql-column var="rowCount" label="{{ t "facet.rowCount" "Rows" }}" type="number"></sparql-column>
+    <sparql-column var="rowCount" label="{{ t "facet.rowCount" "Rows" }}" type="number" minimum="rowCountIsMinimum"></sparql-column>
+    <sparql-column var="rowCountIsMinimum" hidden></sparql-column>
     <sparql-column var="slots" label="{{ t "facet.slots" "Slots" }}" type="number"></sparql-column>
     <sparql-column var="geometryType" label="{{ t "facet.geometryType" "Geometry" }}"></sparql-column>
     <sparql-column var="crs" label="{{ t "facet.crs" "Coordinate reference system" }}"></sparql-column>
