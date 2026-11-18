@@ -124,16 +124,16 @@ if [ "$WITH_QLEVER" = true ]; then
 EOF
 fi
 
-# Remove source directories first to avoid stale files from previous deploys
-ssh ${SSH_OPTS} "${SSH_TARGET}" "rm -rf ${REMOTE_DIR}/app ${REMOTE_DIR}/cmd ${REMOTE_DIR}/internal ${REMOTE_DIR}/templates ${REMOTE_DIR}/static ${REMOTE_DIR}/locales"
-
-# Copy source directories
-scp ${SCP_OPTS} -r "${SCRIPT_DIR}/app" "${SSH_TARGET}:${REMOTE_DIR}/"
-scp ${SCP_OPTS} -r "${SCRIPT_DIR}/cmd" "${SSH_TARGET}:${REMOTE_DIR}/"
-scp ${SCP_OPTS} -r "${SCRIPT_DIR}/internal" "${SSH_TARGET}:${REMOTE_DIR}/"
-scp ${SCP_OPTS} -r "${SCRIPT_DIR}/templates" "${SSH_TARGET}:${REMOTE_DIR}/"
-scp ${SCP_OPTS} -r "${SCRIPT_DIR}/static" "${SSH_TARGET}:${REMOTE_DIR}/"
-scp ${SCP_OPTS} -r "${SCRIPT_DIR}/locales" "${SSH_TARGET}:${REMOTE_DIR}/"
+# Sync source directories: only changed files are transferred, and --delete
+# removes files that no longer exist locally (no stale files from old deploys).
+# No trailing slash on the sources, so each lands as ${REMOTE_DIR}/<dir>.
+if ! ssh ${SSH_OPTS} "${SSH_TARGET}" "command -v rsync" > /dev/null 2>&1; then
+    echo -e "${RED}Error: rsync is not installed on ${SERVER}${NC}"
+    echo "Install it with: ssh ${SSH_OPTS} ${SSH_TARGET} 'sudo apt-get install -y rsync'"
+    exit 1
+fi
+(cd "${SCRIPT_DIR}" && rsync -az --delete --itemize-changes -e "ssh ${SSH_OPTS}" \
+    app cmd internal templates static locales "${SSH_TARGET}:${REMOTE_DIR}/")
 
 echo "Files copied"
 

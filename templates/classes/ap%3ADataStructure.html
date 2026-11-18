@@ -14,12 +14,39 @@
   <sparql-async id="instanceCount">
     SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? . }
   </sparql-async>
+  <sparql-async id="profiledCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? ; ap:status ap:profiled . }
+  </sparql-async>
+  <sparql-async id="failedCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? ; ap:status ap:failed . }
+  </sparql-async>
+  <sparql-async id="skippedCount">
+    SELECT (COUNT(DISTINCT ?instance) AS ?count) WHERE { ?instance a ?? ; ap:status ap:skipped . }
+  </sparql-async>
   <div class="row row-deck row-cards">
     {{ template "sparqlMetric" (dict
         "queryId" "instanceCount"
         "iri" .ResourceIRI
-        "title" (t "card.instanceCount" "Instances")
+        "title" (t "card.dataStructures" "Data Structures")
         "icon" (resourceIcon .)) }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "profiledCount"
+        "iri" .ResourceIRI
+        "title" (t "card.profiled" "Profiled")
+        "href" "/resource?iri=ap:profiled"
+        "icon" "/static/img/resource/ap/profiled.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "skippedCount"
+        "iri" .ResourceIRI
+        "title" (t "card.skipped" "Skipped")
+        "href" "/resource?iri=ap:skipped"
+        "icon" "/static/img/resource/ap/skipped.svg") }}
+    {{ template "sparqlMetric" (dict
+        "queryId" "failedCount"
+        "iri" .ResourceIRI
+        "title" (t "card.failed" "Failed")
+        "href" "/resource?iri=ap:failed"
+        "icon" "/static/img/resource/ap/failed.svg") }}
   </div>
 
   <!-- Container and slot counts are aggregated in their own subquery, joined to the
@@ -44,7 +71,7 @@
   </sparql-async>
   <sparql-columns for="dataStructures" order>
     <sparql-column var="instance" icon label="{{ t "facet.dataStructure" "Data structure" }}"></sparql-column>
-    <sparql-column var="status" label="{{ t "facet.status" "Status" }}" filter></sparql-column>
+    <sparql-column var="status" icon label="{{ t "facet.status" "Status" }}" filter></sparql-column>
     <sparql-column var="engine" label="{{ t "facet.engine" "Engine" }}" filter></sparql-column>
     <sparql-column var="format" label="{{ t "facet.format" "Format" }}"></sparql-column>
     <sparql-column var="containers" label="{{ t "facet.containers" "Containers" }}" type="number"></sparql-column>
@@ -56,7 +83,7 @@
     {{ template "sparqlAsyncTable" (dict
         "queryId" "dataStructures"
         "iri" .ResourceIRI
-        "title" (t "card.instances" "Instances")
+        "title" (t "card.dataStructures" "Data Structures")
         "icon" "table") }}
   </div></div>
 

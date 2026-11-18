@@ -503,12 +503,23 @@ func TestRuntimeDirsAreDeployed(t *testing.T) {
 			needed[e.Name()] = true
 		}
 	}
+	// The directories go up in one `rsync --delete` (backslash-continued over
+	// several lines); --delete is what keeps files deleted here from surviving there.
+	joined := strings.ReplaceAll(deploy, "\\\n", " ")
+	syncLine := regexp.MustCompile(`(?m)^.*\brsync\b.*\$\{REMOTE_DIR\}/.*$`).FindString(joined)
+	if syncLine == "" {
+		t.Fatal("deploy.sh: no rsync of the source directories to ${REMOTE_DIR}/")
+	}
+	if !strings.Contains(syncLine, "--delete") {
+		t.Error("deploy.sh: the rsync lacks --delete, so files deleted here survive there")
+	}
+	words := map[string]bool{}
+	for _, w := range strings.Fields(syncLine) {
+		words[w] = true
+	}
 	for name := range needed {
-		if !regexp.MustCompile(`(?m)^scp .*-r "\$\{SCRIPT_DIR\}/` + name + `" `).MatchString(deploy) {
-			t.Errorf(`deploy.sh: does not scp -r "${SCRIPT_DIR}/%s" to the build host`, name)
-		}
-		if !regexp.MustCompile(`(?m)^ssh .*rm -rf .*\$\{REMOTE_DIR\}/` + name + `\b`).MatchString(deploy) {
-			t.Errorf("deploy.sh: does not remove ${REMOTE_DIR}/%s before copying, so files deleted here survive there", name)
+		if !words[name] {
+			t.Errorf("deploy.sh: the rsync does not ship %s to the build host", name)
 		}
 	}
 
