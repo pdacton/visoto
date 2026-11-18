@@ -281,6 +281,10 @@ func NewServer(cfg *config.Config, preprocessor *sparql.Preprocessor, classStats
 
 	mux := http.NewServeMux()
 	mux.Handle("/mcp", httpServer)
+	// The same server for clients that sign in: an edition with accounts
+	// answers 401 here without a token, which is what starts an MCP client's
+	// OAuth flow; /mcp itself stays anonymous. Without accounts both are equal.
+	mux.Handle("/mcp/signin", httpServer)
 	mux.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))

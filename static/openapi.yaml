@@ -1301,6 +1301,42 @@ paths:
             text/event-stream:
               schema: { type: string }
 
+  /mcp/signin:
+    post:
+      tags: [Operations]
+      summary: MCP server for signed-in clients
+      description: |
+        The same server as `/mcp`. In an edition with user accounts it answers
+        `401` with a `WWW-Authenticate` header naming the OAuth protected-resource
+        metadata when no bearer token is sent, so MCP clients such as the
+        claude.ai connector sign in and then act with the user's rights. The
+        open-source build treats it exactly like `/mcp`.
+      operationId: mcpSignin
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        "200":
+          description: JSON-RPC response, as JSON or an event stream.
+          content:
+            application/json:
+              schema: { type: object }
+            text/event-stream:
+              schema: { type: string }
+        "401": { description: Sign-in required (accounts edition only). }
+    get:
+      tags: [Operations]
+      summary: MCP event stream for signed-in clients
+      operationId: mcpSigninStream
+      responses:
+        "200":
+          description: Server-sent events.
+          content:
+            text/event-stream:
+              schema: { type: string }
+
   /health:
     get:
       tags: [Operations]

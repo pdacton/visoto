@@ -990,6 +990,7 @@ func buildRoutes(router *gin.Engine, d routeDeps, plugins []Plugin) (*routeTable
 	t.GET("/resource/*path", access.Public, legacyResourceRedirectHandler)
 	// MCP decides per tool (internal/mcp), so the HTTP route itself is public.
 	t.Any("/mcp", access.Public, gin.WrapH(d.mcp))
+	t.Any("/mcp/signin", access.Public, gin.WrapH(d.mcp))
 	t.GET("/health", access.Public, gin.WrapH(d.mcp))
 	t.GET(authCheckPath, access.Public, authCheckHandler(router))
 	t.GET("/:page", access.Browse, epFromURLOrCookie, staticPageHandler)

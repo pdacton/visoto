@@ -15,7 +15,7 @@ const openAPISpec = "../static/openapi.yaml"
 // spec: everything under /api plus the operational routes. HTML pages do not.
 func documentedRoute(path string) bool {
 	switch path {
-	case "/metrics", "/mcp", "/health", "/ping":
+	case "/metrics", "/mcp", "/mcp/signin", "/health", "/ping":
 		return true
 	}
 	return strings.HasPrefix(path, "/api/")
