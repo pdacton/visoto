@@ -11,6 +11,9 @@
 
   Keep the rules in step with internal/icon/icon.go:
     - a resource's own IRI wins over any of its types
+    - types are tried in [rdf] type_priority order (the base layout's
+      vs-icon-type-priority island), then as given — the order template
+      resolution uses, so a node shows the icon of the type its page renders as
     - across several types, ANY exact match beats ANY .fallback match
       (a LINDAS resource routinely carries a generic class alongside a specific
       one, often listed first)
@@ -53,12 +56,40 @@
     return rel ? BASE + rel : '';
   }
 
+  // [rdf] type_priority as type IRI -> index, read once from the base layout's
+  // island. Empty (no reordering) when the island is absent or unreadable.
+  var priority = null;
+  function priorityMap() {
+    if (priority) return priority;
+    priority = {};
+    var el = typeof document !== 'undefined' &&
+      document.getElementById('vs-icon-type-priority');
+    if (!el) return priority;
+    try {
+      (JSON.parse(el.innerHTML) || []).forEach(function (iri, i) {
+        if (!(iri in priority)) priority[iri] = i;
+      });
+    } catch (e) { /* no priority */ }
+    return priority;
+  }
+
+  // Mirror of icon.byPriority: listed types first, in priority order; the rest
+  // keep their order. Does not modify types.
+  function byPriority(types) {
+    if (types.length < 2) return types;
+    var p = priorityMap();
+    return types
+      .map(function (t, i) { return { t: t, i: i, p: Object.prototype.hasOwnProperty.call(p, t) ? p[t] : Infinity }; })
+      .sort(function (a, b) { return a.p - b.p || a.i - b.i; })
+      .map(function (x) { return x.t; });
+  }
+
   // available is the -available-icons island (icon.Names): lookup key -> file
   // path relative to BASE; fallback keys carry a ".fallback" suffix. Returns ''
   // when nothing matches, so each caller applies its own default.
   function resolve(iri, types, available) {
     if (!available) return '';
-    types = types || [];
+    types = byPriority(types || []);
 
     var url = lookup(iri, '', available) || lookup(iri, '.fallback', available);
     if (url) return url;

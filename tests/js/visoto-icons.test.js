@@ -5,12 +5,19 @@ const test = require('node:test');
 const assert = require('node:assert');
 
 global.window = {};
+// The base layout's type_priority island (read once, on first multi-type resolve).
+global.document = {
+  getElementById: (id) => id === 'vs-icon-type-priority'
+    ? { innerHTML: JSON.stringify(['https://x.org/Container']) } : null,
+};
 require('../../static/js/visoto-icons.js');
 const { resolve } = global.window.VisotoIcons;
 
 const RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
 const available = {
   'Canton': 'Canton.svg',
+  'Container': 'Container.svg',
+  'NodeShape': 'NodeShape.svg',
   'Property': 'Property.svg',
   'DefinedTerm.fallback': 'DefinedTerm.fallback.svg',
   [RDF + 'Property']: 'rdf/Property.svg',
@@ -38,4 +45,9 @@ test('exact type beats fallback type regardless of order', () => {
 test('miss returns empty string', () => {
   assert.strictEqual(resolve('https://x.org/1', ['https://x.org/Nope'], available), '');
   assert.strictEqual(resolve('x', [], null), '');
+});
+
+test('type_priority orders types before the given order', () => {
+  // ap:Container is listed, sh:NodeShape is not: Container wins even listed last.
+  assert.strictEqual(resolve('', ['https://x.org/NodeShape', 'https://x.org/Container'], available), B + 'Container.svg');
 });

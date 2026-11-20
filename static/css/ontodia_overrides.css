@@ -483,9 +483,10 @@
   overflow-wrap: break-word;
 }
 
-/* Expanded panel photo — GE repeats data.image full-width above the IRI. Our
- * data.image is the resource icon stamped in sparql-graph.js, already shown in
- * the thumbnail, so the repeat only blows the box up to icon-sized height. */
+/* Expanded panel photo — GE repeats data.image full-width above the IRI. In
+ * construct mode data.image is the resource icon (graph-memory-store.js),
+ * already shown in the thumbnail, so the repeat only blows the box up to
+ * icon-sized height. */
 .graph-explorer-standard-template__photo {
   display: none !important;
 }

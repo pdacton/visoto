@@ -85,6 +85,9 @@
     <template id="vs-prefixes">{{ toJSON .EndpointPrefixes }}</template>
     <!-- The "label" magic property: the label properties, in priority order. -->
     <template id="vs-label-path">{{ toJSON .LabelPath }}</template>
+    <!-- [rdf] type_priority, so static/js/visoto-icons.js orders a multi-typed
+         node's types as the server's icon resolver does. -->
+    <template id="vs-icon-type-priority">{{ toJSON iconTypePriority }}</template>
     <script src="/static/js/prefixes.js"></script>
     <!-- endpoint, lang and src on every /api request: the one htmx:configRequest
          hook, and VisotoApi.url() for plain fetch()es. In <head> so it is defined

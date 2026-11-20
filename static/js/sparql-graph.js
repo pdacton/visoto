@@ -118,6 +118,9 @@
       }
       kit.pageIri = singleIri || urlIri;
       var constructedStore = null;
+      // Whether a node is a model node (grey box); set once the provider exists
+      // (onWorkspaceMounted), read by nodeIcon at render time.
+      var isModelNode = function () { return false; };
 
       function onWorkspaceMounted(workspace) {
         if (!workspace) return;
@@ -176,42 +179,17 @@
         // nobody can predict from the page.
         var dataProvider = window.VisotoGE.sparqlProvider(ENDPOINT_URL, settings);
 
-        // Set data.image from an element's own IRI, preserving the rest of its
-        // data. setData replaces the model wholesale, so the existing fields are
-        // carried over; GE re-renders from the model, so this survives.
-        function stampIcon(element, iri) {
-          if (!element) return;
-          var url = ICONS.resolve(iri, [], AVAILABLE_ICONS);
-          if (!url) return;
-          var data = element.data || {};
-          if (data.image) return; // a real image from the data wins
-          element.setData(Object.assign({}, data, { id: data.id || iri, iri: iri, image: url }));
-        }
-
-        // Stamp each element's own-IRI icon onto the model as data.image.
-        //
-        // typeStyleResolver() below covers instances, whose rdf:type names a real
-        // class. It cannot cover a CLASS node (a class resource page puts one at the
-        // centre): its type is owl:Class, so every class would resolve to the same
-        // generic icon. GE 1.3.0 let a StandardTemplate subclass patch iconUrl into
-        // this.props before super.render(); in 2.x props are rebuilt from the model
-        // on every render, so that patch is discarded (and React 19 makes props
-        // read-only besides). data.image survives because it IS the model, and
-        // renderThumbnail() prefers it over iconUrl.
+        // elementInfo answers only once the implicit-class check for its
+        // elements is in (markModelNodes), so a node renders grey from its first
+        // draw with data. Icons are not stamped here: nodeIcon works them out at
+        // render time (VisotoGE.iconTemplate).
         var innerElementInfo = dataProvider.elementInfo.bind(dataProvider);
         dataProvider.elementInfo = function (params) {
-          return innerElementInfo(params).then(function (dict) {
-            Object.keys(dict).forEach(function (iri) {
-              if (dict[iri].image) return; // a real image from the data wins
-              var url = ICONS.resolve(iri, [], AVAILABLE_ICONS);
-              if (url) dict[iri].image = url;
-            });
-            return markModelNodes(dict);
-          });
+          return innerElementInfo(params).then(markModelNodes);
         };
 
         // Model nodes (classes, and terms of the modelling vocabularies) get a
-        // grey box: the marker rides on data.image as "#vs-Model", like the
+        // grey box: nodeIcon appends "#vs-Model" to the icon URL, like the
         // construct-mode markers (graph-memory-store.js), and the CSS shades
         // the node body, which the transparent icon corners show through.
         // A node is a model node when it is
@@ -225,7 +203,6 @@
           return ns.indexOf('://') > 0;
         });
         var CLASS_TYPES = [P.expand('rdfs:Class'), P.expand('owl:Class')];
-        var MODEL_MARK = '#vs-Model';
         var implicitClass = new Map(); // iri -> boolean, per graph
         var IMPLICIT_TIMEOUT = 4000;   // past this the node renders unmarked
 
@@ -245,28 +222,25 @@
           return Promise.race([asked, timeout]).catch(function (err) { console.warn('model-node check:', err); });
         }
 
+        function explicitModelNode(iri, types) {
+          return MODEL_NS.some(function (ns) { return iri.indexOf(ns) === 0; }) ||
+            types.some(function (t) { return CLASS_TYPES.indexOf(t) >= 0; });
+        }
+        isModelNode = function (iri, types) {
+          return !constructedStore && (explicitModelNode(iri, types) || implicitClass.get(iri) === true);
+        };
+
         function markModelNodes(dict) {
           if (constructedStore) return dict;
-          var iris = Object.keys(dict);
-          var explicit = function (iri) {
-            var el = dict[iri];
-            return MODEL_NS.some(function (ns) { return iri.indexOf(ns) === 0; }) ||
-              (el.types || []).some(function (t) { return CLASS_TYPES.indexOf(t) >= 0; });
-          };
-          return askImplicitClasses(iris.filter(function (iri) { return !explicit(iri); })).then(function () {
-            iris.forEach(function (iri) {
-              if (!explicit(iri) && !implicitClass.get(iri)) return;
-              var el = dict[iri];
-              var image = el.image || typeStyleResolver(el.types || []).icon;
-              if (image.slice(-MODEL_MARK.length) !== MODEL_MARK) el.image = image.split('#')[0] + MODEL_MARK;
-            });
-            return dict;
+          var iris = Object.keys(dict).filter(function (iri) {
+            return !explicitModelNode(iri, dict[iri].types || []);
           });
+          return askImplicitClasses(iris).then(function () { return dict; });
         }
         // Endpoint errors surface as an inline message with Retry (GL-45).
         kit.guardProvider(dataProvider);
         // Icons for GE's result lists, by the node's own rule: the resource's own
-        // icon (data.image, see elementInfo above), else its types' icon.
+        // icon, else its types' icon (listIcon, as nodeIcon draws it).
         kit.recordListIcons(dataProvider, listIcon);
         kit.recordLinkCounts(dataProvider);
 
@@ -356,7 +330,6 @@
                 x: CENTER_X + radius * Math.cos(angle),
                 y: CENTER_Y + radius * Math.sin(angle),
               });
-              stampIcon(element, startIRI);
             }
           });
           // requestElementData fetches each element's OWN data (labels, types,
@@ -563,14 +536,28 @@
       }
 
       // The icon a node shows, for an element GE lists in a result row (see
-      // kit.recordListIcons): own-IRI icon first (what elementInfo stamps as
-      // data.image), else what typeStyleResolver gives the node's thumbnail.
+      // kit.recordListIcons): own-IRI icon first, else what typeStyleResolver
+      // gives for its types -- nodeIcon's rule, without the model marker.
       function listIcon(iri, types) {
         return ICONS.resolve(iri, [], AVAILABLE_ICONS) || typeStyleResolver(types).icon;
       }
 
-      // No element template override: icons ride on data.image (see above), which
-      // StandardTemplate.renderThumbnail() renders directly.
+      // The icon a node box shows, at render time (VisotoGE.iconTemplate), so a
+      // node gets its icon however it reached the canvas -- even one the query
+      // returned no triples for.
+      //   - a real image from the data (outside the icon folder) wins: '' leaves
+      //     the box to GE;
+      //   - an icon-folder image carrying a "#vs-" marker is construct mode's
+      //     (graph-memory-store.js) and is kept as is;
+      //   - otherwise listIcon's rule, plus "#vs-Model" for a model node. An
+      //     unmarked icon-folder image (a layout saved when icons were stamped
+      //     into data.image) is recomputed, so it follows today's icons.
+      function nodeIcon(iri, types, image) {
+        if (image && image.indexOf(ICONS.basePath) !== 0) return '';
+        if (image && image.indexOf('#vs-') > 0) return image;
+        var url = listIcon(iri, types);
+        return isModelNode(iri, types) ? url.split('#')[0] + '#vs-Model' : url;
+      }
 
       // linkTemplateResolver: style all edges with Tabler-palette neutrals instead of
       // the library's default black arrowheads / per-type colors.
@@ -662,6 +649,9 @@
       var props = kit.workspaceProps({
         ref: onWorkspaceMounted,
         typeStyleResolver: typeStyleResolver,
+        elementTemplateResolver: (function (template) {
+          return function () { return template; };
+        })(window.VisotoGE.iconTemplate(nodeIcon)),
         linkTemplateResolver: linkTemplateResolver,
         viewOptions: {
           onIriClick: function(iriEvent) {

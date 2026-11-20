@@ -22,7 +22,8 @@ var funcMap = template.FuncMap{
 	"list":             makeList,
 	"resourceIcon":     resource.GetIconForResource,
 	"iconNames":        icon.Names,
-	"classIcon":        classIcon, // {{ classIcon "schema:Person" }} — sidebar submenu icons
+	"iconTypePriority": icon.TypePriority, // type_priority for the JS icon resolver (visoto-icons.js)
+	"classIcon":        classIcon,         // {{ classIcon "schema:Person" }} — sidebar submenu icons
 	"toJSON":           toJSON,
 	"toJSONRaw":        toJSONRaw,
 	"toJSONPretty":     toJSONPretty,

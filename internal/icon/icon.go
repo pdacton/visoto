@@ -145,6 +145,22 @@ func SetTypePriority(priority []string) {
 	globalCache.mu.Unlock()
 }
 
+// TypePriority returns the type IRIs set by SetTypePriority, in priority order,
+// for the JS mirror (static/js/visoto-icons.js reads it from the base layout's
+// vs-icon-type-priority island) so Graph Explorer orders types as Resolve does.
+func TypePriority() []string {
+	globalCache.mu.RLock()
+	defer globalCache.mu.RUnlock()
+	out := make([]string, 0, len(globalCache.priority))
+	for iri := range globalCache.priority {
+		out = append(out, iri)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		return globalCache.priority[out[i]] < globalCache.priority[out[j]]
+	})
+	return out
+}
+
 // byPriority returns types with the listed ones first, in priority order; the
 // rest keep their order. The caller holds the read lock. types is not modified.
 func byPriority(types []string, priority map[string]int) []string {

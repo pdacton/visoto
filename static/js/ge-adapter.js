@@ -187,6 +187,36 @@
     ge.renderTo(ge.Workspace, container, Object.assign({ hideToolbar: true }, props));
   }
 
+  // An element template whose thumbnail icon is iconFor(iri, types, image),
+  // worked out at render time from what GE hands every template: the element's
+  // own IRI, its types and its data.image. GE's typeStyleResolver only sees the
+  // types, so before this the own-IRI icon had to be stamped into data.image
+  // from the query result -- and an element the query returned nothing for
+  // (an IRI with no triples of its own) kept the grey default.
+  //
+  // GE rebuilds a template's props from the model on every recompute and React
+  // 19 freezes them, so the icon cannot be patched into this.props. Instead
+  // StandardTemplate's own render runs against a view of this instance whose
+  // props carry the icon: that render touches nothing but this.props and its
+  // own methods. The bundle does not export React, so no markup of our own.
+  //
+  // iconFor returns the icon URL, or '' to leave the element to GE as is (a real
+  // image from the data). imgUrl is cleared alongside, as renderThumbnail
+  // prefers it over iconUrl.
+  function iconTemplate(iconFor) {
+    var Standard = GE().StandardTemplate;
+    var standardRender = Standard.prototype.render;
+    return class IconTemplate extends Standard {
+      render() {
+        var p = this.props;
+        var url = iconFor(p.iri, (p.data && p.data.types) || [], p.imgUrl || '');
+        if (!url) return standardRender.call(this);
+        var props = Object.assign({}, p, { iconUrl: url, imgUrl: undefined });
+        return standardRender.call(Object.create(this, { props: { value: props } }));
+      }
+    };
+  }
+
   // The Connections menu lists every predicate this query returns. GE's stock
   // version keeps predicates whose only values are literals (rdfs:label,
   // schema:description, …); its count query then filters to IRIs, so they
@@ -764,6 +794,7 @@
     load: load,
     createHistory: createHistory,
     render: render,
+    iconTemplate: iconTemplate,
     sparqlProvider: sparqlProvider,
     commands: commands,
   };
