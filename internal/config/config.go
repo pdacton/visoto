@@ -26,6 +26,10 @@ type OntologyEntry struct {
 	Name  string `toml:"name"  json:"name"`  // Short display name (e.g. "SKOS")
 	URL   string `toml:"url"   json:"url"`   // Canonical ontology URL to fetch
 	Graph string `toml:"graph" json:"graph"` // Target named graph URI (e.g. "urn:ontology:w3/skos")
+	// Namespace is the vocabulary's namespace IRI, declared as the owl:Ontology
+	// when the fetched data has none (e.g. "https://cube.link/"). Optional:
+	// without it the upload derives one from the data.
+	Namespace string `toml:"namespace" json:"namespace,omitempty"`
 }
 
 // Config represents the complete application configuration

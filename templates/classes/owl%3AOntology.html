@@ -85,7 +85,12 @@
                 UNION
                 { ?instance rdfs:member ?term_ . }
                 UNION
-                { VALUES ?kind_ { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
+                # ?instance is re-bound here: a UNION branch is evaluated on its
+                # own, so the outer binding is not visible to this FILTER and an
+                # unbound STR(?instance) silently drops every row
+                { ?instance a ?? .
+                  FILTER (isIRI(?instance))
+                  VALUES ?kind_ { owl:Class rdfs:Class owl:ObjectProperty owl:DatatypeProperty owl:AnnotationProperty rdf:Property }
                   ?term_ a ?kind_ .
                   FILTER (STRSTARTS(STR(?term_), STR(?instance))) }
               } GROUP BY ?instance

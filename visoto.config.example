@@ -322,47 +322,56 @@ modified = "dct:modified|schema:dateModified|dct:issued|schema:datePublished"
 name  = "RDF"
 url   = "https://www.w3.org/1999/02/22-rdf-syntax-ns#"
 graph = "urn:ontology:w3/rdf-syntax-ns"
+namespace = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
 [[ontologies]]
 name  = "RDFS"
 url   = "https://www.w3.org/2000/01/rdf-schema"
 graph = "urn:ontology:w3/rdf-schema"
+namespace = "http://www.w3.org/2000/01/rdf-schema#"
 
 [[ontologies]]
 name  = "OWL"
 url   = "https://www.w3.org/2002/07/owl#"
 graph = "urn:ontology:w3/owl"
+namespace = "http://www.w3.org/2002/07/owl#"
 
 [[ontologies]]
 name  = "DC"
 url   = "http://purl.org/dc/elements/1.1/"
 graph = "urn:ontology:dc/elements"
+namespace = "http://purl.org/dc/elements/1.1/"
 
 [[ontologies]]
 name  = "DCT"
 url   = "http://purl.org/dc/terms/"
 graph = "urn:ontology:dc/terms"
+namespace = "http://purl.org/dc/terms/"
 
 [[ontologies]]
 name  = "SHACL"
 url   = "https://www.w3.org/ns/shacl.ttl"
 graph = "urn:ontology:w3/shacl"
+namespace = "http://www.w3.org/ns/shacl#"
 
 [[ontologies]]
 name  = "cube.link"
 url   = "https://cube.link/"
 graph = "urn:ontology:cube.link/cube"
+namespace = "https://cube.link/"
 
 [[ontologies]]
 name  = "QUDT"
 url   = "https://qudt.org/schema/qudt.ttl"
 graph = "urn:ontology:qudt/schema"
+namespace = "http://qudt.org/schema/qudt/"
 
 # XSD has no official RDF document; this is the RDF WG's Turtle description.
 [[ontologies]]
 name  = "XSD"
 url   = "https://raw.githubusercontent.com/w3c/rdf-schema/main/ns/rdf-xsd.ttl"
 graph = "urn:ontology:w3/xsd"
+namespace = "http://www.w3.org/2001/XMLSchema#"
 
 # MCP server settings
 # Note: port is unused when MCP is embedded in the main server (default).

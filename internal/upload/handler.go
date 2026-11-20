@@ -344,6 +344,10 @@ func tooLargeResponse(c *gin.Context, limit int64) {
 //   - url    (mutually exclusive with file) — a remote RDF URL the server will fetch
 //   - graphURI — target named graph URI
 //   - label    — optional rdfs:label stored on the graph with its upload time
+//   - declareOntology — "true" to type the graph's vocabulary as an owl:Ontology
+//     when the data declares none (see ontologyDeclaration)
+//   - ontologyIRI — the ontology IRI for declareOntology; empty = derived from
+//     the namespace of the declared classes and properties
 //
 // and ?endpoint= — slug of the SPARQL endpoint (matches visoto.config entry).
 func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
@@ -461,15 +465,29 @@ func UploadHandler(cfg *config.ApplicationConfig) gin.HandlerFunc {
 			slog.String("endpoint", ep.URL),
 			slog.String("graph", graphURI))
 
-		// The data is in; a metadata failure is reported but does not fail the upload.
+		// The data is in; a metadata or ontology failure is reported but does not
+		// fail the upload.
+		resp := gin.H{"success": true}
+		var warnings []string
 		if graphURI != "" {
 			if err := writeGraphMetadata(ep, graphURI, label); err != nil {
 				log.Warn("graph metadata write failed", slog.String("graph", graphURI), slog.String("error", err.Error()))
-				c.JSON(http.StatusOK, gin.H{"success": true, "warning": fmt.Sprintf("Label and timestamp were not stored: %v", err)})
-				return
+				warnings = append(warnings, fmt.Sprintf("Label and timestamp were not stored: %v", err))
 			}
 		}
-		c.JSON(http.StatusOK, gin.H{"success": true})
+		if c.PostForm("declareOntology") == "true" {
+			result, err := declareOntology(ep, graphURI, normalizeGraphURI(c.PostForm("ontologyIRI")), label, remoteURL)
+			if err != nil {
+				log.Warn("ontology declaration failed", slog.String("graph", graphURI), slog.String("error", err.Error()))
+				warnings = append(warnings, fmt.Sprintf("Not declared as an ontology: %v", err))
+			} else {
+				resp["ontology"] = result
+			}
+		}
+		if len(warnings) > 0 {
+			resp["warning"] = strings.Join(warnings, " ")
+		}
+		c.JSON(http.StatusOK, resp)
 	}
 }
 

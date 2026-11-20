@@ -345,6 +345,20 @@
           <div class="form-text">{{ t "upload.graphLabelHelp" "Stored on the named graph as rdfs:label, together with the upload time." }}</div>
         </div>
 
+        <!-- Declare the upload as an owl:Ontology (static/js/upload.js toggles the IRI field) -->
+        <div class="mb-3" id="upload-ontology-section">
+          <label class="form-check">
+            <input class="form-check-input" type="checkbox" id="upload-declare-ontology">
+            <span class="form-check-label">{{ t "upload.declareOntology" "Declare as ontology" }}</span>
+          </label>
+          <div class="form-text">{{ t "upload.declareOntologyHelp" "If the data declares no owl:Ontology, visoto inserts additional triples into the graph: the ontology IRI typed owl:Ontology, the label above as rdfs:label, and an rdfs:comment marking them as generated. The vocabulary then appears on the Ontologies page." }}</div>
+          <div class="mt-2 d-none" id="upload-ontology-iri-section">
+            <label for="upload-ontology-iri" class="form-label">{{ t "upload.ontologyIRILabel" "Ontology IRI" }}</label>
+            <input type="text" class="form-control" id="upload-ontology-iri" autocomplete="off" placeholder="{{ t "upload.ontologyIRIPlaceholder" "e.g. https://cube.link/" }}">
+            <div class="form-text">{{ t "upload.ontologyIRIHelp" "Usually the vocabulary's namespace. Leave empty to use the most common namespace of the classes and properties in the data." }}</div>
+          </div>
+        </div>
+
         <!-- Result area -->
         <div id="upload-result" class="d-none"></div>
       </div>

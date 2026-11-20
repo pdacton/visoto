@@ -997,12 +997,40 @@ paths:
                   example: urn:ontology:w3/skos
                 label:
                   type: string
+                declareOntology:
+                  type: string
+                  enum: ["true"]
+                  description: |
+                    Type the uploaded vocabulary as an `owl:Ontology` when the
+                    graph declares none. Inserts `a owl:Ontology`, an
+                    `rdfs:comment` marking the triples as generated, `label` as
+                    `rdfs:label` and, in URL mode, `dct:source`. Needs `graphURI`.
+                ontologyIRI:
+                  type: string
+                  description: |
+                    IRI to declare with `declareOntology`. Empty: the most
+                    common namespace among the classes and properties the graph
+                    declares.
+                  example: https://cube.link/
       responses:
         "200":
-          description: Loaded. `warning` is set when the label could not be stored.
+          description: |
+            Loaded. `warning` is set when the label could not be stored or the
+            ontology could not be declared; `ontology` reports what
+            `declareOntology` did.
           content:
             application/json:
-              schema: { $ref: "#/components/schemas/Success" }
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Success"
+                  - type: object
+                    properties:
+                      ontology:
+                        type: object
+                        properties:
+                          iri: { type: string }
+                          declared: { type: boolean, description: visoto inserted the declaration }
+                          existing: { type: boolean, description: the data already declared this owl:Ontology; nothing inserted }
         "400":
           description: No file or URL, unsupported extension, malformed form, or undetectable content type.
           content:

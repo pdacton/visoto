@@ -372,12 +372,14 @@ dialog. Fetching one loads it into the given named graph on the active endpoint.
 | `name` | string | Short display label (e.g. `"SKOS"`). |
 | `url` | string | Canonical ontology URL to fetch. |
 | `graph` | string | Target named graph URI to load it into. |
+| `namespace` | string | Optional. The vocabulary's namespace IRI. When the fetched data declares no `owl:Ontology`, the upload declares this IRI as one (inside the graph, marked with an `rdfs:comment`) so the vocabulary appears on the Ontologies page. Without it the namespace is derived from the declared classes and properties. Use the namespace, not the download URL: the Ontologies page counts terms by IRI prefix. |
 
 ```toml
 [[ontologies]]
 name  = "SKOS"
 url   = "http://www.w3.org/2004/02/skos/core#"
 graph = "urn:ontology:w3/skos"
+namespace = "http://www.w3.org/2004/02/skos/core#"
 ```
 
 Writing to a graph requires the active endpoint to have `access_token` or

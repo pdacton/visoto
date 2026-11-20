@@ -93,9 +93,35 @@
     if (!loading && window.lucide) lucide.createIcons();
   }
 
+  // ontologyNote turns the upload response's `ontology` report into a sentence.
+  function ontologyNote(ontology) {
+    if (!ontology) return '';
+    return ontology.existing
+      ? ` The data already declares <${ontology.iri}> as owl:Ontology; nothing was added.`
+      : ` Declared <${ontology.iri}> as owl:Ontology.`;
+  }
+
+  function resetOntologyOption() {
+    const cb = document.getElementById('upload-declare-ontology');
+    if (cb) cb.checked = false;
+    const iri = document.getElementById('upload-ontology-iri');
+    if (iri) iri.value = '';
+    document.getElementById('upload-ontology-iri-section')?.classList.add('d-none');
+  }
+
+  function initOntologyOption() {
+    const cb = document.getElementById('upload-declare-ontology');
+    if (!cb) return;
+    cb.addEventListener('change', () => {
+      document.getElementById('upload-ontology-iri-section')?.classList.toggle('d-none', !cb.checked);
+    });
+  }
+
   function setOntologyTabUI(ontologiesActive) {
     const graphSection = document.getElementById('upload-graph-uri-section');
     const labelSection = document.getElementById('upload-graph-label-section');
+    const ontologySection = document.getElementById('upload-ontology-section');
+    if (ontologySection) ontologySection.classList.toggle('d-none', ontologiesActive);
     const submitBtn = document.getElementById('upload-submit-btn');
     const ontoBtn = document.getElementById('upload-ontologies-btn');
     if (graphSection) graphSection.classList.toggle('d-none', ontologiesActive);
@@ -236,7 +262,7 @@
     const rows = ontologies.map((o, i) => `
       <div class="d-flex align-items-start gap-2 py-1 border-bottom">
         <input class="form-check-input mt-1 flex-shrink-0 ontology-checkbox" type="checkbox"
-               id="onto-${i}" data-url="${escapeAttr(o.url)}" data-graph="${escapeAttr(o.graph)}" data-label="${escapeAttr(o.name)}">
+               id="onto-${i}" data-url="${escapeAttr(o.url)}" data-graph="${escapeAttr(o.graph)}" data-label="${escapeAttr(o.name)}" data-namespace="${escapeAttr(o.namespace || '')}">
         <label class="form-check-label w-100" for="onto-${i}" style="cursor:pointer;">
           <span class="fw-semibold">${escapeHTML(o.name)}</span>
           <span class="text-muted small d-block text-truncate" title="${escapeAttr(o.url)}">${escapeHTML(o.url)}</span>
@@ -269,6 +295,7 @@
     const total = checkboxes.length;
     let done = 0;
     const errors = [];
+    const warnings = [];
 
     for (const cb of checkboxes) {
       const url = cb.dataset.url;
@@ -279,11 +306,16 @@
       formData.append('url', url);
       formData.append('graphURI', graph);
       formData.append('label', cb.dataset.label || '');
+      // A well-known vocabulary is always an ontology: declare it when the
+      // fetched data does not (the server skips it when one exists).
+      formData.append('declareOntology', 'true');
+      formData.append('ontologyIRI', cb.dataset.namespace || '');
 
       try {
         const resp = await fetch(uploadURL(endpoint), { method: 'POST', body: formData });
         const data = await resp.json();
         if (!data.success) errors.push(`${cb.dataset.url}: ${data.error || 'failed'}`);
+        else if (data.warning) warnings.push(`${cb.dataset.url}: ${data.warning}`);
       } catch (err) {
         errors.push(`${url}: ${err.message}`);
       }
@@ -291,10 +323,11 @@
     }
 
     setOntologySubmitLoading(false);
+    const warningNote = warnings.length ? `\nWarnings:\n${warnings.join('\n')}` : '';
     if (errors.length) {
-      showResult(false, `${done - errors.length}/${total} loaded. Errors:\n${errors.join('\n')}`);
+      showResult(false, `${done - errors.length}/${total} loaded. Errors:\n${errors.join('\n')}${warningNote}`);
     } else {
-      showResult(true, `${total} ontolog${total === 1 ? 'y' : 'ies'} loaded successfully.`);
+      showResult(true, `${total} ontolog${total === 1 ? 'y' : 'ies'} loaded successfully.${warningNote}`);
     }
   }
 
@@ -333,6 +366,10 @@
       const formData = new FormData();
       formData.append('graphURI', graphURI);
       formData.append('label', document.getElementById('upload-graph-label')?.value?.trim() || '');
+      if (document.getElementById('upload-declare-ontology')?.checked) {
+        formData.append('declareOntology', 'true');
+        formData.append('ontologyIRI', document.getElementById('upload-ontology-iri')?.value?.trim() || '');
+      }
 
       if (fileTabActive) {
         formData.append('file', selectedFile);
@@ -345,7 +382,7 @@
         const resp = await fetch(uploadURL(selectedEndpoint()), { method: 'POST', body: formData });
         const data = await resp.json();
         if (data.success) {
-          const note = data.warning ? ` ${data.warning}` : '';
+          const note = ontologyNote(data.ontology) + (data.warning ? ` ${data.warning}` : '');
           showResult(true, `Upload successful. Data loaded into <${graphURI}>.${note}`);
         } else {
           showResult(false, data.error || 'Upload failed.');
@@ -372,6 +409,7 @@
     const graphInput = document.getElementById('upload-graph-uri');
     if (graphInput) graphInput.value = '';
     setLabel('');
+    resetOntologyOption();
     clearResult();
     setOntologyTabUI(false);
     // Switch back to File tab
@@ -383,6 +421,7 @@
     initDropzone();
     initURLInput();
     initSubmit();
+    initOntologyOption();
 
     // Read-only endpoint (notice rendered by the template): nothing to submit.
     if (document.querySelector('[data-upload-read-only]')) {
