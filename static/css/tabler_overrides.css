@@ -104,6 +104,87 @@ header.navbar.sticky-top.is-scrolled {
     opacity: 0;
 }
 
+/* Suggestion list under the topbar search (static/js/search-suggest.js): a
+   Tabler dropdown-menu, shown with .show, as wide as the field. */
+.topbar-search form {
+    position: relative;
+}
+
+.vs-search-suggest {
+    top: calc(100% + 0.25rem);
+    left: 0;
+    right: 0;
+    max-height: min(26rem, 70vh);
+    overflow-y: auto;
+    padding: 0.25rem 0;
+}
+
+.vs-search-suggest .vs-suggest-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+    white-space: normal;
+}
+
+.vs-suggest-main {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.vs-suggest-label {
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vs-suggest-iri {
+    font-family: var(--tblr-font-monospace);
+    font-size: 0.75rem;
+    color: var(--tblr-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.vs-suggest-type {
+    flex-shrink: 0;
+    max-width: 40%;
+    font-size: 0.75rem;
+    color: var(--tblr-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Tabler colours an .active item primary on a primary tint, which is blue on
+   blue in dark mode: the tint alone marks the highlighted row. */
+.vs-search-suggest .vs-suggest-item.active {
+    color: var(--tblr-body-color);
+}
+
+.vs-search-suggest .vs-suggest-all .vs-suggest-label {
+    font-weight: 500;
+    color: var(--tblr-primary);
+}
+
+/* Phones: the type and version count matter more than the IRI tail. */
+@media (max-width: 575.98px) {
+    .vs-suggest-type {
+        max-width: 55%;
+    }
+}
+
+.vs-suggest-note {
+    color: var(--tblr-secondary);
+    white-space: normal;
+}
+
 /* No physical keyboard to press, so the hint would only be noise. */
 @media (hover: none) and (pointer: coarse) {
     .topbar-search .topbar-search-hint {

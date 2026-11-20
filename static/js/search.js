@@ -16,14 +16,9 @@ document.addEventListener('DOMContentLoaded', function() {
       topbarInput.value = searchPageInput.value;
     }
 
-    topbarInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        if (topbarInput.value.trim()) {
-          topbarForm.submit();
-        }
-      }
-    });
+    // Enter, Escape and the suggestion list: static/js/search-suggest.js (opens
+    // a pasted IRI or CURIE directly, suggests labels while typing).
+    window.VisotoSearchSuggest.attach(topbarForm, topbarInput);
 
     // "/" focuses search from anywhere on the page, Escape gives focus back.
     // Ignored while the user is already typing into a field (including
@@ -36,10 +31,6 @@ document.addEventListener('DOMContentLoaded', function() {
       e.preventDefault();
       topbarInput.focus();
       topbarInput.select();
-    });
-
-    topbarInput.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') topbarInput.blur();
     });
 
     // Phones: the field is folded behind a button (tabler_overrides.css); open

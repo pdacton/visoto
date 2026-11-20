@@ -2,8 +2,16 @@
 
 # ── Topbar ───────────────────────────────────────────────────────────────────
 "topbar.toggleSidebar" = "Afficher/masquer la barre latérale"
-"topbar.search" = "Rechercher..."
+"topbar.search" = "Rechercher ou coller un IRI"
 "topbar.searchAria" = "Rechercher"
+"topbar.suggest.list" = "Suggestions"
+"topbar.suggest.open" = "Ouvrir la page de la ressource"
+"topbar.suggest.all" = "Tous les résultats pour « %s »"
+"topbar.suggest.searching" = "Recherche en cours…"
+"topbar.suggest.empty" = "Aucun libellé correspondant – Entrée pour tout rechercher"
+"topbar.suggest.versionOne" = "+1 version"
+"topbar.suggest.versionOther" = "+%s versions"
+"topbar.suggest.instances" = "%s instances"
 "topbar.selectEndpoint" = "Sélectionner le point d'accès SPARQL"
 "topbar.selectLanguage" = "Choisir la langue"
 "topbar.enableDarkMode" = "Activer le mode sombre"

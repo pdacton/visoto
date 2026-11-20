@@ -2,8 +2,16 @@
 
 # ── Topbar ───────────────────────────────────────────────────────────────────
 "topbar.toggleSidebar" = "Seitenleiste ein-/ausblenden"
-"topbar.search" = "Suchen..."
+"topbar.search" = "Suchen oder IRI einfügen"
 "topbar.searchAria" = "Suchen"
+"topbar.suggest.list" = "Vorschläge"
+"topbar.suggest.open" = "Ressourcenseite öffnen"
+"topbar.suggest.all" = "Alle Ergebnisse für «%s»"
+"topbar.suggest.searching" = "Suche läuft…"
+"topbar.suggest.empty" = "Keine passenden Labels – Enter durchsucht alles"
+"topbar.suggest.versionOne" = "+1 Version"
+"topbar.suggest.versionOther" = "+%s Versionen"
+"topbar.suggest.instances" = "%s Instanzen"
 "topbar.selectEndpoint" = "SPARQL-Endpunkt auswählen"
 "topbar.selectLanguage" = "Sprache auswählen"
 "topbar.enableDarkMode" = "Dunkelmodus aktivieren"

@@ -18,7 +18,16 @@
 
     <!-- search field -->
     <div class="nav-item topbar-search mx-auto">
-      <form action="/search" method="GET" id="topbar-search-form">
+      <!-- data-str-*: strings for the suggestion list (static/js/search-suggest.js). -->
+      <form action="/search" method="GET" id="topbar-search-form"
+            data-str-list="{{ t "topbar.suggest.list" "Suggestions" }}"
+            data-str-open="{{ t "topbar.suggest.open" "Open resource page" }}"
+            data-str-all="{{ t "topbar.suggest.all" "All results for “%s”" }}"
+            data-str-searching="{{ t "topbar.suggest.searching" "Searching…" }}"
+            data-str-empty="{{ t "topbar.suggest.empty" "No matching labels – press Enter to search everything" }}"
+            data-str-version-one="{{ t "topbar.suggest.versionOne" "+1 version" }}"
+            data-str-version-other="{{ t "topbar.suggest.versionOther" "+%s versions" }}"
+            data-str-instances="{{ t "topbar.suggest.instances" "%s instances" }}">
         {{ if .SelectedEndpointSlug }}
         <!-- Make /search URLs explicit and shareable instead of cookie-dependent -->
         <input type="hidden" name="endpoint" value="{{ .SelectedEndpointSlug }}">
@@ -36,7 +45,7 @@
             name="q"
             id="topbar-search-input"
             class="form-control form-control-rounded"
-            placeholder="{{ t "topbar.search" "Search..." }}"
+            placeholder="{{ t "topbar.search" "Search or paste an IRI" }}"
             aria-label="{{ t "topbar.searchAria" "Search" }}"
             aria-keyshortcuts="/">
           <!-- Hint for the "/" focus shortcut wired up in static/js/search.js.
