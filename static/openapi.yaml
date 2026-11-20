@@ -790,6 +790,8 @@ paths:
       description: |
         The Graph Explorer class tree as SPARQL JSON (`?class ?label ?parent`,
         plus `?instcount` from the latest daily snapshot once one exists).
+        Types the snapshot counted without them being declared `rdfs:Class` /
+        `owl:Class` are appended as rows without a `?parent`.
         Cached in memory for up to 6 hours.
       operationId: classTree
       parameters:

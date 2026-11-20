@@ -55,7 +55,20 @@ func TestMetricsHandlerToken(t *testing.T) {
 func classTreeStore() *httptest.Server {
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
-		if strings.Contains(string(body), "SELECT ?class ?label ?parent") {
+		q := string(body)
+		if strings.Contains(q, "SELECT DISTINCT ?t") {
+			fmt.Fprint(w, `{"head":{"vars":["t"]},"results":{"bindings":[
+				{"t":{"type":"uri","value":"https://example.org/A"}},
+				{"t":{"type":"uri","value":"https://example.org/U"}},
+				{"t":{"type":"uri","value":"https://example.org/V"}}]}}`)
+			return
+		}
+		if strings.Contains(q, "SELECT ?class ?label WHERE") {
+			fmt.Fprint(w, `{"head":{"vars":["class","label"]},"results":{"bindings":[
+				{"class":{"type":"uri","value":"https://example.org/U"},"label":{"type":"literal","value":"Undeclared","xml:lang":"en"}}]}}`)
+			return
+		}
+		if strings.Contains(q, "SELECT ?class ?label ?parent") {
 			fmt.Fprint(w, `{"head":{"vars":["class","label","parent"]},"results":{"bindings":[
 				{"class":{"type":"uri","value":"https://example.org/A"},"label":{"type":"literal","value":"A","xml:lang":"de"}},
 				{"class":{"type":"uri","value":"https://example.org/B"},"parent":{"type":"uri","value":"https://example.org/A"}}]}}`)
@@ -121,8 +134,30 @@ func TestClassTreeHandler(t *testing.T) {
 	if _, err := cs.Run(context.Background(), "store"); err != nil {
 		t.Fatal(err)
 	}
-	if got := counts(serve("twin")); got["https://example.org/A"] != "3" || got["https://example.org/B"] != "3" {
+	classTreeMu.Lock()
+	classTreeCache = map[string]classTreeEntry{}
+	classTreeMu.Unlock()
+	w = serve("twin")
+	if got := counts(w); got["https://example.org/A"] != "3" || got["https://example.org/B"] != "3" {
 		t.Errorf("after a run: %v, want instcount 3 for both", got)
+	}
+	// The run also counted the undeclared U and V: the tree appends them, U
+	// with its label, V bare, both without a parent.
+	var res classstats.Results
+	if err := json.Unmarshal(w.Body.Bytes(), &res); err != nil {
+		t.Fatal(err)
+	}
+	extra := map[string]string{}
+	for _, b := range res.Results.Bindings {
+		if v := b["class"].Value; v == "https://example.org/U" || v == "https://example.org/V" {
+			if b["parent"].Value != "" || b["instcount"].Value != "3" {
+				t.Errorf("undeclared row %v: want no parent and instcount 3", b)
+			}
+			extra[v] = b["label"].Value
+		}
+	}
+	if len(extra) != 2 || extra["https://example.org/U"] != "Undeclared" || extra["https://example.org/V"] != "" {
+		t.Errorf("undeclared classes = %v, want U labelled and V bare", extra)
 	}
 }
 

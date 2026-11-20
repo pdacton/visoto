@@ -183,9 +183,11 @@ A daily run per `class_stats` endpoint:
    (`<http://www.ontotext.com/owlim/system#statistics>`); a result above 0 means
    GraphDB. Elsewhere a plain `COUNT(*)` with a 10 s timeout.
 2. **Classes.** The declared classes (`rdfs:Class` / `owl:Class`) that have
-   instances, directly or through a subclass (`classstats.ClassTreeQuery`).
-   Classes used without being declared are not found — listing every class in
-   use times out on large stores.
+   instances, directly or through a subclass (`classstats.ClassTreeQuery`),
+   plus every type used without being declared (`SELECT DISTINCT ?t { ?s a ?t }`,
+   ≈60 s on LINDAS prod — 142 such types, `dwcFP:TaxonName` among them — so it
+   runs here once a day with a 3-minute timeout, never per request). If that
+   query fails, the run counts the declared classes only.
 3. **One count per class**, one after the other. On GraphDB the statistics
    answer a single bound pattern `?s a <C>` from the index (0.2 s even for 14 M
    instances, approximate); batching classes with `VALUES` defeats that and
@@ -194,6 +196,9 @@ A daily run per `class_stats` endpoint:
 The Graph Explorer Classes panel reads the tree from `/api/class-tree` on these
 endpoints (with count badges) instead of running GE's own query, which counts
 over the whole store and times out on LINDAS. Other endpoints keep GE's query.
+The undeclared types the last run counted are appended to the tree as
+top-level classes, labelled where they have an `rdfs:label`. The topbar search
+suggests classes for a typed CURIE (`dcat:`) from the same tree.
 
 ### Per-endpoint prefixes {#endpoint-prefixes}
 

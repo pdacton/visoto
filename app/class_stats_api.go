@@ -4,6 +4,7 @@ import (
 	"crypto/subtle"
 	"encoding/json"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -15,6 +16,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
 	"github.com/pdacton/visoto/internal/classstats"
+	"github.com/pdacton/visoto/internal/config"
 )
 
 // classStats is the daily class-instance collector (nil when it failed to open).
@@ -68,6 +70,7 @@ func classTreeHandler(c *gin.Context) {
 			c.JSON(http.StatusBadGateway, gin.H{"error": err.Error()})
 			return
 		}
+		res = withUndeclaredClasses(c, ep, res, snap)
 		body, err := json.Marshal(withInstanceCounts(res, snap))
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -80,6 +83,52 @@ func classTreeHandler(c *gin.Context) {
 	}
 	markCacheable(c)
 	c.Data(http.StatusOK, "application/sparql-results+json", e.body)
+}
+
+// withUndeclaredClasses appends the classes the snapshot counted but the tree
+// query cannot see — types used without being declared rdfs:Class / owl:Class
+// (142 on LINDAS, dwcFP:TaxonName among them) — as parentless rows, with their
+// labels when they have any. A failed label query keeps the bare rows: the
+// class is still worth listing.
+func withUndeclaredClasses(c *gin.Context, ep *config.SparqlEndpoint, res *classstats.Results, snap *classstats.Snapshot) *classstats.Results {
+	if snap == nil || len(snap.Counts) == 0 {
+		return res
+	}
+	inTree := make(map[string]bool, len(res.Results.Bindings))
+	for _, b := range res.Results.Bindings {
+		inTree[b["class"].Value] = true
+	}
+	var missing []string
+	for iri := range snap.Counts {
+		if !inTree[iri] {
+			missing = append(missing, iri)
+		}
+	}
+	if len(missing) == 0 {
+		return res
+	}
+	sort.Strings(missing)
+
+	labelled := map[string]bool{}
+	if labels, err := classStats.ClassLabels(c.Request.Context(), ep, missing); err == nil {
+		for _, b := range labels.Results.Bindings {
+			if iri := b["class"].Value; iri != "" && !inTree[iri] {
+				res.Results.Bindings = append(res.Results.Bindings, map[string]classstats.Term{
+					"class": {Type: "uri", Value: iri},
+					"label": b["label"],
+				})
+				labelled[iri] = true
+			}
+		}
+	}
+	for _, iri := range missing {
+		if !labelled[iri] {
+			res.Results.Bindings = append(res.Results.Bindings, map[string]classstats.Term{
+				"class": {Type: "uri", Value: iri},
+			})
+		}
+	}
+	return res
 }
 
 // withInstanceCounts adds ?instcount to every row whose class the snapshot

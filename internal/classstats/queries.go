@@ -24,11 +24,27 @@ const queryTriples = `SELECT (COUNT(*) AS ?n) WHERE { ?s ?p ?o }`
 const queryStatsClass = `SELECT (COUNT(*) AS ?n) FROM <` + statisticsGraph + `> WHERE { ?s a %s }`
 const queryClass = `SELECT (COUNT(*) AS ?n) WHERE { ?s a %s }`
 
+// queryTypesInUse is every type with a direct instance, declared or not: what
+// ClassTreeQuery cannot see. 60 s on LINDAS prod, uncached (675 types, 142 of
+// them undeclared — dwcFP:TaxonName with ~918k instances among them), so it
+// runs once a day in the collector, never per request. The statistics graph
+// does not speed it up: with ?t unbound it is a scan there too.
+const queryTypesInUse = `SELECT DISTINCT ?t WHERE { ?s a ?t }`
+
+// queryClassLabels is the labels of the undeclared types the class tree adds;
+// %s is a list of IRI terms (<…> <…>).
+const queryClassLabels = `PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+SELECT ?class ?label WHERE {
+  VALUES ?class { %s }
+  ?class rdfs:label ?label
+}`
+
 // ClassTreeQuery lists the declared classes that have instances — directly or
 // through a subclass, so the hierarchy stays connected — with their labels (all
 // languages) and parents: 589 classes in 0.36 s on LINDAS, where "every class in
 // use" (SELECT DISTINCT ?class { ?s a ?class }) times out. Classes used without
-// being declared rdfs:Class / owl:Class are not found; that is the price.
+// being declared rdfs:Class / owl:Class are not found here; the daily run adds
+// them (queryTypesInUse) and /api/class-tree appends the ones it counted.
 //
 // The variable names are Graph Explorer's classTreeQuery bindings, so the
 // /api/class-tree route can hand the result to GE's own tree builder.

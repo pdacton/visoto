@@ -43,6 +43,7 @@ const (
 	runHour       = 7 // daily run at 07:00 Swiss time, after LINDAS's nightly reloads
 	staleAfter    = 24 * time.Hour
 	listTimeout   = 60 * time.Second
+	typesTimeout  = 3 * time.Minute // queryTypesInUse: ~60 s on LINDAS prod
 	statsTimeout  = 20 * time.Second
 	sizeTimeout   = 10 * time.Second
 	classTimeout  = 60 * time.Second
@@ -219,6 +220,13 @@ func (c *Collector) Run(ctx context.Context, slug string) (*Snapshot, error) {
 		return nil, fmt.Errorf("class list: %w", err)
 	}
 	classes := uniqueClasses(rows)
+	// Types used without being declared rdfs:Class / owl:Class. Optional: a
+	// timeout or error leaves the run with the declared classes, as before.
+	if used, err := c.typesInUse(ctx, ep); err != nil {
+		log.Warn("classstats: types in use", slog.String("endpoint", ep.Slug), slog.String("error", err.Error()))
+	} else {
+		classes = appendNew(classes, used)
+	}
 	snap.Classes = len(classes)
 
 	methods := make(map[string]string, len(classes))
@@ -291,6 +299,52 @@ func uniqueClasses(rows []map[string]string) []string {
 		}
 	}
 	return out
+}
+
+// typesInUse lists the IRI types that have a direct instance.
+func (c *Collector) typesInUse(ctx context.Context, ep *config.SparqlEndpoint) ([]string, error) {
+	res, err := c.selectJSON(ctx, ep, queryTypesInUse, typesTimeout)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]string, 0, len(res.Results.Bindings))
+	for _, b := range res.Results.Bindings {
+		if t := b["t"]; t.Type == "uri" && t.Value != "" {
+			out = append(out, t.Value)
+		}
+	}
+	return out, nil
+}
+
+// appendNew appends the entries of more that list does not hold yet.
+func appendNew(list, more []string) []string {
+	seen := make(map[string]bool, len(list))
+	for _, s := range list {
+		seen[s] = true
+	}
+	for _, s := range more {
+		if !seen[s] {
+			seen[s] = true
+			list = append(list, s)
+		}
+	}
+	return list
+}
+
+// ClassLabels fetches the rdfs:labels (all languages) of classes, as
+// ?class ?label rows — for the undeclared types /api/class-tree appends.
+// Unlabelled classes have no row.
+func (c *Collector) ClassLabels(ctx context.Context, ep *config.SparqlEndpoint, iris []string) (*Results, error) {
+	terms := make([]string, 0, len(iris))
+	for _, iri := range iris {
+		if term, err := sparql.IRITerm(iri); err == nil {
+			terms = append(terms, term)
+		}
+	}
+	if len(terms) == 0 {
+		return &Results{}, nil
+	}
+	return c.selectJSON(ctx, ep, fmt.Sprintf(queryClassLabels, strings.Join(terms, " ")), listTimeout)
 }
 
 // --- SPARQL transport --------------------------------------------------------

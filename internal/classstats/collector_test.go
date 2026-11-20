@@ -25,6 +25,7 @@ type fakeEndpoint struct {
 	stats   map[string]int64
 	live    map[string]int64
 	slow    map[string]bool // live count of these classes hangs
+	used    []string        // queryTypesInUse answer; nil = the query fails
 	queries []string
 }
 
@@ -53,6 +54,17 @@ func (f *fakeEndpoint) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	case q == queryTriples:
 		n(42)
+	case q == queryTypesInUse:
+		if f.used == nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		var rows []string
+		for _, t := range f.used {
+			rows = append(rows, fmt.Sprintf(`{"t":{"type":"uri","value":%q}}`, t))
+		}
+		rows = append(rows, `{"t":{"type":"bnode","value":"b0"}}`)
+		fmt.Fprintf(w, `{"head":{"vars":["t"]},"results":{"bindings":[%s]}}`, strings.Join(rows, ","))
 	case strings.Contains(q, statisticsGraph):
 		cl := classOf(q)
 		n(f.stats[cl])
@@ -304,5 +316,36 @@ visoto_class_stats_failures{endpoint="store"} 1
 	if err := testutil.CollectAndCompare(c, strings.NewReader(want),
 		"visoto_class_instances", "visoto_store_triples", "visoto_class_stats_run_duration_seconds", "visoto_class_stats_failures"); err != nil {
 		t.Error(err)
+	}
+}
+
+// Types used without being declared are counted too; a failed types query
+// leaves the run with the declared classes.
+func TestRunAddsUndeclaredTypes(t *testing.T) {
+	f := &fakeEndpoint{
+		classes: []string{cA},
+		used:    []string{cA, cC}, // cA declared and used; cC used only
+		stats:   map[string]int64{cA: 5, cC: 918_000},
+	}
+	srv := httptest.NewServer(f)
+	defer srv.Close()
+	c := newTestCollector(t, srv.URL)
+
+	snap, err := c.Run(context.Background(), "store")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.Classes != 2 || snap.Counts[cA] != 5 || snap.Counts[cC] != 918_000 {
+		t.Fatalf("snapshot = %+v, want cA and the undeclared cC counted", snap)
+	}
+
+	f.used = nil
+	c2 := newTestCollector(t, srv.URL)
+	snap, err = c2.Run(context.Background(), "store")
+	if err != nil {
+		t.Fatalf("a failed types query must not fail the run: %v", err)
+	}
+	if snap.Classes != 1 || snap.Counts[cA] != 5 {
+		t.Fatalf("snapshot = %+v, want the declared class only", snap)
 	}
 }
