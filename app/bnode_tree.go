@@ -57,12 +57,20 @@ func bnodeTreeHandler(c *gin.Context) {
 	ctx, cancel := context.WithTimeout(c.Request.Context(), cfg.GetTimeout())
 	defer cancel()
 
-	// Two stages: a cheap query down to ProbeDepth, and the full one only when
-	// the structure goes deeper (see Request.QueryTo for why depth is costly).
-	// Should the full one fail — out of memory on a small QLever — the probe
-	// result is shown with its unloaded levels marked, not an error.
-	query := req.QueryTo(bnodetree.ProbeDepth)
+	// Three stages, each run only when the previous one stops short (see
+	// Request.QueryTo for why depth is costly): level 0 alone, which settles the
+	// common case of a resource without blank nodes — on QLever even the
+	// ProbeDepth query can exhaust query memory for such a resource; then down
+	// to ProbeDepth; then the full depth. Should the full one fail — out of
+	// memory on a small QLever — the probe result is shown with its unloaded
+	// levels marked, not an error.
+	query := req.QueryTo(0)
 	result, err := preprocessor.ExecuteQueryWithContext(ctx, query, true, dataLang, "")
+	if err == nil && len(result.Bindings) <= bnodetree.RowCap &&
+		bnodetree.NeedsDeeper(bnodetree.RowsFrom(result), 0) {
+		query = req.QueryTo(bnodetree.ProbeDepth)
+		result, err = preprocessor.ExecuteQueryWithContext(ctx, query, true, dataLang, "")
+	}
 	cut := 0
 	if err == nil && len(result.Bindings) <= bnodetree.RowCap &&
 		bnodetree.NeedsDeeper(bnodetree.RowsFrom(result), bnodetree.ProbeDepth) {

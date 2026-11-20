@@ -179,8 +179,24 @@ func TestBnodeTreeHandlerShallow(t *testing.T) {
 	if w := get(r, "/api/bnode-tree?iri=https%3A%2F%2Fexample.org%2Fshape"); w.Code != http.StatusOK {
 		t.Fatalf("status %d", w.Code)
 	}
+	if n != 2 {
+		t.Errorf("shallow structure: %d tree queries, want 2 (level 0, then the probe)", n)
+	}
+}
+
+// A resource without blank nodes is settled by the level-0 query alone: on
+// QLever even the probe can exhaust query memory for one.
+func TestBnodeTreeHandlerNoBlankNodes(t *testing.T) {
+	var n int
+	srv := chainStore(0, false, &n)
+	defer srv.Close()
+	r := setupBnodeTree(t, srv.URL)
+	w := get(r, "/api/bnode-tree?iri=https%3A%2F%2Fexample.org%2Fshape")
+	if w.Code != http.StatusOK || strings.TrimSpace(w.Body.String()) != "" {
+		t.Fatalf("status %d, body %q", w.Code, w.Body.String())
+	}
 	if n != 1 {
-		t.Errorf("shallow structure: %d tree queries, want 1 (the probe only)", n)
+		t.Errorf("no blank nodes: %d tree queries, want 1 (level 0 only)", n)
 	}
 }
 
@@ -190,8 +206,8 @@ func TestBnodeTreeHandlerDeep(t *testing.T) {
 	defer srv.Close()
 	r := setupBnodeTree(t, srv.URL)
 	w := get(r, "/api/bnode-tree?iri=https%3A%2F%2Fexample.org%2Fshape")
-	if n != 2 {
-		t.Errorf("deep structure: %d tree queries, want 2 (probe, then full)", n)
+	if n != 3 {
+		t.Errorf("deep structure: %d tree queries, want 3 (level 0, probe, then full)", n)
 	}
 	if strings.Contains(w.Body.String(), "could not be loaded") {
 		t.Error("full query succeeded, nothing may be marked as not loaded")
