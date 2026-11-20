@@ -20,6 +20,15 @@
     background-color: var(--tblr-bg-surface);
 }
 
+/* No sparql table sets a height: the holder is sized to its rows and
+   pagination bounds them, so it never needs to scroll vertically. At
+   fractional zoom Tabulator rounds the content height DOWN (191px for 191.6px
+   of rows); the sub-pixel overflow brought up a vertical scrollbar, whose width
+   then pushed the stretched last column into a horizontal scrollbar too. */
+.tabulator .tabulator-tableholder {
+    overflow-y: hidden;
+}
+
 /* Ensure table element has proper background */
 .tabulator .tabulator-table {
     background-color: var(--tblr-bg-surface);
